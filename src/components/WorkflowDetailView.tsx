@@ -18,7 +18,11 @@ import {
   ChevronRight,
   Network,
   Users,
-  Activity
+  Activity,
+  RefreshCw,
+  Plus,
+  RotateCcw,
+  Unlock as UnlockIcon
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
@@ -26,6 +30,7 @@ import DocumentsList from './DocumentsList';
 import DependencyTreeMap from './DependencyTreeMap';
 import RoleAssignments from './RoleAssignments';
 import ActivityLog from './ActivityLog';
+import WorkflowHierarchyBreadcrumb, { HierarchyNode } from './WorkflowHierarchyBreadcrumb';
 
 interface WorkflowDetailViewProps {
   workflowTitle: string;
@@ -45,6 +50,45 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     tasks: true
   });
+  const [isLocked, setIsLocked] = useState<boolean>(true);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [countdown, setCountdown] = useState<number>(15);
+
+  // Mock hierarchy path for the breadcrumb navigation
+  const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([
+    { id: 'app-001', name: 'Daily Named PNL', progress: 45, level: 'app' },
+    { id: 'asset-001', name: 'Rates', progress: 60, level: 'workflow' },
+    { id: 'wf-level-001', name: 'eRates', progress: 75, level: 'hierarchy' },
+  ]);
+
+  // Handle node click in the hierarchy breadcrumb
+  const handleHierarchyNodeClick = (node: HierarchyNode) => {
+    console.log(`Navigate to ${node.level} level: ${node.name}`);
+    // In a real application, this would navigate to the appropriate level
+    // For now, we'll just truncate the path to this node
+    const nodeIndex = hierarchyPath.findIndex(item => item.id === node.id);
+    if (nodeIndex >= 0) {
+      setHierarchyPath(hierarchyPath.slice(0, nodeIndex + 1));
+    }
+  };
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    setLastRefreshed(new Date());
+    setCountdown(15);
+    // In a real application, this would fetch fresh data
+  };
+
+  // Toggle workflow lock state
+  const toggleLock = () => {
+    setIsLocked(prev => !prev);
+  };
+
+  // Format seconds since last refresh
+  const getSecondsSinceRefresh = () => {
+    const seconds = Math.floor((new Date().getTime() - lastRefreshed.getTime()) / 1000);
+    return seconds;
+  };
 
   const handleStageClick = (stageId: string) => {
     setActiveStage(stageId);
@@ -339,11 +383,87 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     { action: 'Process Resumed', timestamp: '2025-04-14 07:20', user: 'John Doe' },
   ];
 
+  // Set up auto-refresh effect
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          handleRefresh();
+          return 15;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold mb-4">{workflowTitle}</h1>
-        <WorkflowProgressIndicator steps={progressSteps} />
+      {/* Hierarchy Navigation Breadcrumb */}
+      <WorkflowHierarchyBreadcrumb 
+        nodes={hierarchyPath}
+        onNodeClick={handleHierarchyNodeClick}
+      />
+      
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold mb-4">{workflowTitle}</h1>
+          <WorkflowProgressIndicator steps={progressSteps} />
+        </div>
+        
+        {/* Workflow Controls */}
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={toggleLock}
+            >
+              {isLocked ? (
+                <>
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>Locked</span>
+                </>
+              ) : (
+                <>
+                  <UnlockIcon className="h-3.5 w-3.5" />
+                  <span>Unlocked</span>
+                </>
+              )}
+            </Button>
+            
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Adhoc Stage</span>
+            </Button>
+            
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Reset Workflow</span>
+            </Button>
+            
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <UnlockIcon className="h-3.5 w-3.5" />
+              <span>Reopen Toll Gate</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={handleRefresh}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>Refresh</span>
+            </Button>
+          </div>
+          
+          <div className="text-xs text-muted-foreground">
+            Last refreshed: {getSecondsSinceRefresh()} seconds ago | Auto-refresh in: {countdown}s
+          </div>
+        </div>
       </div>
 
       <WorkflowStagesBar 
