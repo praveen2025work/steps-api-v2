@@ -16,12 +16,16 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  Network
+  Network,
+  Users,
+  Activity
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
 import DocumentsList from './DocumentsList';
 import DependencyTreeMap from './DependencyTreeMap';
+import RoleAssignments from './RoleAssignments';
+import ActivityLog from './ActivityLog';
 
 interface WorkflowDetailViewProps {
   workflowTitle: string;
@@ -195,6 +199,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="parameters">Parameters</TabsTrigger>
                 <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+                <TabsTrigger value="roles">
+                  <Users className="h-4 w-4 mr-1" />
+                  Roles
+                </TabsTrigger>
+                <TabsTrigger value="activity">
+                  <Activity className="h-4 w-4 mr-1" />
+                  Activity
+                </TabsTrigger>
                 <TabsTrigger value="audit">Audit Info</TabsTrigger>
               </TabsList>
               
@@ -370,6 +382,76 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     />
                   </div>
                 </div>
+              </TabsContent>
+              
+              <TabsContent value="roles">
+                <RoleAssignments roleAssignments={{
+                  "producer": [
+                    { name: "John Doe", lastActivity: "Completed Books Open For Correction", timestamp: "2025-04-14T07:00:00" },
+                    { name: "Jane Smith", lastActivity: "Uploaded corrections file", timestamp: "2025-04-14T06:45:00" },
+                    { name: "Robert Chen", lastActivity: "Preparing Non-recurring Adjustments", timestamp: "2025-04-14T07:30:00" }
+                  ],
+                  "approver": [
+                    { name: "Mike Johnson", lastActivity: "Reviewed Books Open For Correction", timestamp: "2025-04-14T07:20:00" },
+                    { name: "Sarah Williams", lastActivity: "Logged in", timestamp: "2025-04-14T07:15:00" }
+                  ],
+                  "viewer": [
+                    { name: "Tom Brown", lastActivity: "Viewed workflow status", timestamp: "2025-04-14T07:25:00" }
+                  ]
+                }} />
+              </TabsContent>
+              
+              <TabsContent value="activity">
+                <ActivityLog activities={[
+                  {
+                    user: 'System',
+                    action: 'SOD Roll completed successfully',
+                    timestamp: '2025-04-14T06:15:00',
+                    role: 'system',
+                    substage: 'SOD Roll',
+                    status: 'completed'
+                  },
+                  {
+                    user: 'John Doe',
+                    action: 'Started Books Open For Correction',
+                    timestamp: '2025-04-14T06:30:00',
+                    role: 'producer',
+                    substage: 'Books Open For Correction',
+                    status: 'in_progress'
+                  },
+                  {
+                    user: 'Jane Smith',
+                    action: 'Uploaded corrections file',
+                    timestamp: '2025-04-14T06:45:00',
+                    role: 'producer',
+                    substage: 'Books Open For Correction',
+                    status: 'in_progress'
+                  },
+                  {
+                    user: 'John Doe',
+                    action: 'Completed Books Open For Correction',
+                    timestamp: '2025-04-14T07:00:00',
+                    role: 'producer',
+                    substage: 'Books Open For Correction',
+                    status: 'completed'
+                  },
+                  {
+                    user: 'System',
+                    action: 'Started Poll Book OFC Rec Factory',
+                    timestamp: '2025-04-14T07:15:00',
+                    role: 'system',
+                    substage: 'Poll Book OFC Rec Factory',
+                    status: 'in_progress'
+                  },
+                  {
+                    user: 'Mike Johnson',
+                    action: 'Reviewed Books Open For Correction process',
+                    timestamp: '2025-04-14T07:20:00',
+                    role: 'approver',
+                    substage: 'Books Open For Correction',
+                    status: 'completed'
+                  }
+                ]} />
               </TabsContent>
               
               <TabsContent value="audit">

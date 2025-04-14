@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DashboardLayout from '@/components/DashboardLayout';
 import WorkflowDetailView from '@/components/WorkflowDetailView';
+import WorkflowHierarchyNavigation from '@/components/WorkflowHierarchyNavigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { WorkflowTask } from '@/components/WorkflowTaskItem';
@@ -225,6 +226,44 @@ const WorkflowDetailPage = () => {
     );
   }
   
+  // Mock hierarchy data for navigation
+  const hierarchyData = {
+    applications: [
+      { id: "daily_pnl", name: "Daily Named PNL", completion: 45 },
+      { id: "workspace_pnl", name: "Workspace PNL", completion: 60 },
+      { id: "monthend_pnl", name: "Monthend PNL", completion: 72 }
+    ],
+    categories: {
+      "daily_pnl": [
+        { id: "rates", name: "Rates", completion: 60 },
+        { id: "equities", name: "Equities", completion: 35 },
+        { id: "commodities", name: "Commodities", completion: 72 }
+      ],
+      "rates": [
+        { id: "erates", name: "eRates", completion: 75 },
+        { id: "fx", name: "FX", completion: 62 }
+      ]
+    }
+  };
+
+  const [currentPath, setCurrentPath] = useState<string[]>(['daily_pnl', 'rates']);
+
+  const handleNavigate = (id: string, level: string) => {
+    if (level === 'root') {
+      setCurrentPath([]);
+    } else if (level === 'application') {
+      setCurrentPath([id]);
+    } else if (level === 'category') {
+      // If we're already at this level, don't change the path
+      if (currentPath.includes(id)) {
+        setCurrentPath(currentPath.slice(0, currentPath.indexOf(id) + 1));
+      } else {
+        // Otherwise, add this level to the path
+        setCurrentPath([...currentPath, id]);
+      }
+    }
+  };
+
   return (
     <>
       <Head>
@@ -244,12 +283,23 @@ const WorkflowDetailPage = () => {
           </Button>
         </div>
         
-        <WorkflowDetailView 
-          workflowTitle={workflowData.title}
-          progressSteps={workflowData.progressSteps}
-          stages={workflowData.stages}
-          tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="md:col-span-1">
+            <WorkflowHierarchyNavigation 
+              hierarchyData={hierarchyData}
+              currentPath={currentPath}
+              onNavigate={handleNavigate}
+            />
+          </div>
+          <div className="md:col-span-3">
+            <WorkflowDetailView 
+              workflowTitle={workflowData.title}
+              progressSteps={workflowData.progressSteps}
+              stages={workflowData.stages}
+              tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
+            />
+          </div>
+        </div>
       </DashboardLayout>
     </>
   );
