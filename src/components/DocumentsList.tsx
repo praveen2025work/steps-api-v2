@@ -1,6 +1,8 @@
-import React from 'react';
-import { FileText, FileSpreadsheet, FilePdf, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileText, FileSpreadsheet, FilePdf, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 interface Document {
   id: string;
@@ -9,6 +11,8 @@ interface Document {
   size: string;
   updatedAt: string;
   updatedBy: string;
+  category?: 'download' | 'upload';
+  subStage?: string;
 }
 
 interface DocumentsListProps {
@@ -16,6 +20,8 @@ interface DocumentsListProps {
 }
 
 const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
+  const [activeTab, setActiveTab] = useState<string>('all');
+  
   const getFileIcon = (type: string) => {
     switch (type) {
       case 'excel':
@@ -32,6 +38,55 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
     console.log(`Downloading document ${documentId}`);
   };
 
+  const handleUpload = (documentId: string) => {
+    // In a real application, this would trigger an upload
+    console.log(`Uploading document ${documentId}`);
+  };
+
+  const downloadDocuments = documents.filter(doc => doc.category === 'download' || !doc.category);
+  const uploadDocuments = documents.filter(doc => doc.category === 'upload');
+  const displayDocuments = activeTab === 'all' 
+    ? documents 
+    : activeTab === 'download' 
+      ? downloadDocuments 
+      : uploadDocuments;
+
+  return (
+    <div className="space-y-4">
+      <Tabs defaultValue="all" onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="all">All Documents ({documents.length})</TabsTrigger>
+          <TabsTrigger value="download">Download ({downloadDocuments.length})</TabsTrigger>
+          <TabsTrigger value="upload">Upload ({uploadDocuments.length})</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="all" className="mt-4">
+          <DocumentsGrid documents={displayDocuments} onDownload={handleDownload} onUpload={handleUpload} />
+        </TabsContent>
+        
+        <TabsContent value="download" className="mt-4">
+          <DocumentsGrid documents={displayDocuments} onDownload={handleDownload} onUpload={handleUpload} />
+        </TabsContent>
+        
+        <TabsContent value="upload" className="mt-4">
+          <DocumentsGrid documents={displayDocuments} onDownload={handleDownload} onUpload={handleUpload} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+interface DocumentsGridProps {
+  documents: Document[];
+  onDownload: (id: string) => void;
+  onUpload: (id: string) => void;
+}
+
+const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, onUpload }) => {
+  if (documents.length === 0) {
+    return <p className="text-muted-foreground">No documents found.</p>;
+  }
+
   return (
     <div className="space-y-4">
       {documents.map((document) => (
@@ -47,21 +102,47 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
                 <span className="text-xs text-muted-foreground">{document.size}</span>
                 <span className="text-xs text-muted-foreground">Updated: {document.updatedAt}</span>
                 <span className="text-xs text-muted-foreground">By: {document.updatedBy}</span>
+                {document.subStage && (
+                  <Badge variant="outline" className="text-xs">{document.subStage}</Badge>
+                )}
               </div>
             </div>
           </div>
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={() => handleDownload(document.id)}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Download
-          </Button>
+          {document.category === 'upload' ? (
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => onUpload(document.id)}
+            >
+              <Upload className="h-4 w-4 mr-1" />
+              Upload
+            </Button>
+          ) : (
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => onDownload(document.id)}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Download
+            </Button>
+          )}
         </div>
       ))}
     </div>
   );
+};
+
+// Helper function to get file icon based on file type
+const getFileIcon = (type: string) => {
+  switch (type) {
+    case 'excel':
+      return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
+    case 'pdf':
+      return <FilePdf className="h-5 w-5 text-red-600" />;
+    default:
+      return <FileText className="h-5 w-5 text-blue-600" />;
+  }
 };
 
 export default DocumentsList;
