@@ -7,15 +7,9 @@ export default function App({ Component, pageProps }: AppProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Get the color-scheme value from :root
-    const root = document.documentElement;
-    const computedStyle = getComputedStyle(root);
-    const colorScheme = computedStyle.getPropertyValue('--mode').trim().replace(/"/g, '');
-    if (colorScheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.add('light');
-    }
+    // Set light mode as default based on theme update
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
     setMounted(true);
   }, []);
 

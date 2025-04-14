@@ -4,6 +4,7 @@
 
 :root {
   --mode: light;
+  --radius: 0.5rem;
 }
 
 /* Theme: gray */
