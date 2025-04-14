@@ -362,7 +362,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           <CardContent>
             <Tabs defaultValue="tasks-substages" onValueChange={setActiveTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="tasks-substages">Tasks & Sub-Stages</TabsTrigger>
+                <TabsTrigger value="tasks-substages">Sub-Stages</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="parameters">Parameters</TabsTrigger>
                 <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
@@ -379,7 +379,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               
               <TabsContent value="tasks-substages">
                 <div className="space-y-4">
-                  {/* Combined Tasks and Sub-Stages Section with Collapsible */}
+                  {/* Combined Sub-Stages with Tasks Section */}
                   <Collapsible 
                     open={expandedSections.tasks} 
                     onOpenChange={() => toggleSection('tasks')}
@@ -391,30 +391,114 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           <ChevronDown className="h-4 w-4" /> : 
                           <ChevronRight className="h-4 w-4" />
                         }
-                        <h3 className="font-medium">Tasks & Sub-Stages</h3>
-                        <Badge variant="outline">{activeStageTasks.length + mockSubStages.length}</Badge>
+                        <h3 className="font-medium">Sub-Stages</h3>
+                        <Badge variant="outline">{mockSubStages.length}</Badge>
                       </div>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <Separator />
                       <div className="p-4">
-                        {/* Tasks Section */}
-                        {activeStageTasks.length > 0 && (
-                          <div className="mb-6">
-                            <h4 className="text-sm font-medium mb-3">Tasks</h4>
-                            <div className="space-y-4">
-                              {activeStageTasks.map(task => (
-                                <WorkflowTaskItem key={task.id} task={task} />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Sub-Stages Section */}
-                        <div>
-                          <h4 className="text-sm font-medium mb-3">Sub-Stages</h4>
-                          <SubStagesList subStages={mockSubStages} />
-                        </div>
+                        {/* Convert tasks to sub-stage tasks and merge with existing sub-stages */}
+                        <SubStagesList 
+                          subStages={[
+                            // SOD Roll with tasks
+                            {
+                              id: 'sod_roll',
+                              name: 'SOD Roll',
+                              status: 'completed',
+                              progress: 100,
+                              processId: 'PROC-1234',
+                              type: 'auto',
+                              timing: {
+                                start: '06:00',
+                                duration: '15m',
+                                avgDuration: '12m',
+                                avgStart: '06:00 AM'
+                              },
+                              message: 'Successfully rolled over positions',
+                              meta: {
+                                updatedBy: 'System',
+                                updatedOn: '2025-04-12T06:15:00',
+                              },
+                              files: [
+                                { name: 'sod_report.xlsx', type: 'download', size: '2.4 MB' },
+                                { name: 'validation.log', type: 'preview', size: '150 KB' }
+                              ],
+                              tasks: [
+                                {
+                                  id: 'task-1',
+                                  name: 'SOD Roll',
+                                  processId: 'PROC-1234',
+                                  status: 'completed',
+                                  duration: '15m',
+                                  expectedStart: '06:00',
+                                  files: [
+                                    { name: 'sod_report.xlsx', type: 'download', size: '2.4 MB' },
+                                    { name: 'validation.log', type: 'preview', size: '150 KB' }
+                                  ],
+                                  messages: [
+                                    'Successfully rolled over positions',
+                                    'All 2,500 positions processed'
+                                  ],
+                                  updatedBy: 'System',
+                                  updatedAt: '2025-04-12T06:15:00'
+                                }
+                              ]
+                            },
+                            // Books Open For Correction with tasks
+                            {
+                              id: 'books_open',
+                              name: 'Books Open For Correction',
+                              status: 'in-progress',
+                              progress: 50,
+                              processId: 'PROC-1235',
+                              type: 'manual',
+                              timing: {
+                                start: '06:30',
+                                duration: '30m',
+                                avgDuration: '25m',
+                                avgStart: '06:30 AM'
+                              },
+                              message: 'Books opened for correction',
+                              meta: {
+                                updatedBy: 'John Doe',
+                                updatedOn: '2025-04-12T06:30:00',
+                              },
+                              files: [
+                                { name: 'corrections.xlsx', type: 'download', size: '1.2 MB' }
+                              ],
+                              dependencies: [
+                                { name: 'SOD Roll', status: 'completed', id: 'sod_roll' }
+                              ],
+                              tasks: [
+                                {
+                                  id: 'task-2',
+                                  name: 'Books Open For Correction',
+                                  processId: 'PROC-1235',
+                                  status: 'in-progress',
+                                  duration: '30m',
+                                  expectedStart: '06:30',
+                                  dependencies: [
+                                    { name: 'SOD Roll', status: 'completed' }
+                                  ],
+                                  files: [
+                                    { name: 'corrections.xlsx', type: 'download', size: '1.2 MB' }
+                                  ],
+                                  messages: [
+                                    'Books opened for correction'
+                                  ],
+                                  updatedBy: 'John Doe',
+                                  updatedAt: '2025-04-12T06:30:00'
+                                }
+                              ]
+                            },
+                            // Add remaining sub-stages
+                            ...mockSubStages.filter(s => 
+                              s.id !== 'sod_roll' && 
+                              s.id !== 'books_open'
+                            )
+                          ]} 
+                        />
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
