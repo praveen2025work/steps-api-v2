@@ -26,6 +26,30 @@ interface Document {
   subStage?: string;
 }
 
+// Helper function to get file icon based on file type
+const getFileIcon = (type: string, fileName: string) => {
+  // Check file extension
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  
+  switch (extension) {
+    case 'xlsx':
+    case 'xls':
+    case 'csv':
+      return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
+    case 'pdf':
+      return <FilePdf className="h-5 w-5 text-red-600" />;
+    case 'html':
+    case 'css':
+      return <FileCode className="h-5 w-5 text-purple-600" />;
+    case 'msg':
+      return <Mail className="h-5 w-5 text-blue-600" />;
+    case 'zip':
+      return <Archive className="h-5 w-5 text-amber-600" />;
+    default:
+      return <FileText className="h-5 w-5 text-blue-600" />;
+  }
+};
+
 interface DocumentsListProps {
   documents: Document[];
 }
@@ -165,30 +189,6 @@ const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, on
       ))}
     </div>
   );
-};
-
-// Helper function to get file icon based on file type
-const getFileIcon = (type: string, fileName: string) => {
-  // Check file extension
-  const extension = fileName.split('.').pop()?.toLowerCase();
-  
-  switch (extension) {
-    case 'xlsx':
-    case 'xls':
-    case 'csv':
-      return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
-    case 'pdf':
-      return <FilePdf className="h-5 w-5 text-red-600" />;
-    case 'html':
-    case 'css':
-      return <FileCode className="h-5 w-5 text-purple-600" />;
-    case 'msg':
-      return <Mail className="h-5 w-5 text-blue-600" />;
-    case 'zip':
-      return <Archive className="h-5 w-5 text-amber-600" />;
-    default:
-      return <FileText className="h-5 w-5 text-blue-600" />;
-  }
 };
 
 export default DocumentsList;
