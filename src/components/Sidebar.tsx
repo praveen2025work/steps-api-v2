@@ -164,7 +164,7 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Sidebar toggle button for when sidebar is closed */}
+      {/* Single toggle button that's visible when sidebar is collapsed */}
       {!sidebarOpen && (
         <Button 
           variant="outline" 

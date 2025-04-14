@@ -50,12 +50,12 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
     if (!currentPath || currentPath.length === 0) return null;
 
     return (
-      <div className="flex items-center text-sm text-muted-foreground mb-4 overflow-x-auto">
+      <div className="flex items-center text-xs text-muted-foreground mb-2 overflow-x-auto">
         <span 
           className="cursor-pointer hover:text-primary"
           onClick={() => onNavigate('', 'root')}
         >
-          Applications
+          Apps
         </span>
         
         {currentPath.map((id, index) => {
@@ -76,9 +76,12 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
             }
           }
           
+          // Truncate long names
+          const displayName = name.length > 15 ? name.substring(0, 12) + '...' : name;
+          
           return (
             <React.Fragment key={id}>
-              <ChevronRight className="h-4 w-4 mx-1" />
+              <ChevronRight className="h-3 w-3 mx-1" />
               <span 
                 className={index === currentPath.length - 1 
                   ? "font-medium text-foreground" 
@@ -88,8 +91,9 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
                     onNavigate(id, index === 0 ? 'application' : 'category');
                   }
                 }}
+                title={name}
               >
-                {name}
+                {displayName}
               </span>
             </React.Fragment>
           );
@@ -100,27 +104,27 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
 
   return (
     <Card className="shadow-md">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 pt-3 px-3">
         <CardTitle className="text-lg font-medium">
           {level === 'application' ? 'Applications' : 
            level === 'category' ? 'Categories' : 'Workflows'}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 py-2">
         {generateBreadcrumb()}
         
-        <div className="space-y-3">
+        <div className="space-y-2">
           {items.map((item) => (
             <div 
               key={item.id}
-              className="p-3 rounded-md bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors"
+              className="p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors"
               onClick={() => onNavigate(item.id, level)}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-medium">{item.name}</div>
-                <Badge variant="outline">{item.completion}%</Badge>
+              <div className="flex items-center justify-between mb-1">
+                <div className="font-medium text-sm">{item.name}</div>
+                <Badge variant="outline" className="text-xs py-0 h-5">{item.completion}%</Badge>
               </div>
-              <Progress value={item.completion} className="h-2" />
+              <Progress value={item.completion} className="h-1.5" />
             </div>
           ))}
           
