@@ -103,6 +103,10 @@ const WorkflowStatusCard = ({
     router.push(`/stages/${id}`);
   };
   
+  const handleViewWorkflow = () => {
+    router.push(`/workflow/${id}`);
+  };
+  
   // Get initials for avatar
   const getInitials = (name: string) => {
     return name
@@ -179,9 +183,10 @@ const WorkflowStatusCard = ({
               variant="outline" 
               size="sm" 
               className="flex-1 justify-center"
+              onClick={handleViewWorkflow}
             >
               <FileText className="h-4 w-4 mr-1" />
-              Documents
+              Workflow Detail
             </Button>
             <Button 
               variant="default" 
