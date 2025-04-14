@@ -1,6 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { workflowData } from "@/data/workflowData";
+import { Separator } from "@/components/ui/separator";
+import { FileCheck, FileText, AlertTriangle, Clock, CheckCircle2, User } from "lucide-react";
 
 type Activity = {
   id: string;
@@ -8,7 +10,7 @@ type Activity = {
   action: string;
   workflow: string;
   time: string;
-  type: "create" | "update" | "complete" | "reject" | "assign";
+  type: "create" | "update" | "complete" | "reject" | "assign" | "review";
 };
 
 // Convert user activity from the new data structure
@@ -27,6 +29,8 @@ const activities: Activity[] = workflowData.userActivity.map((activity, index) =
   } else if (activity.action.toLowerCase().includes("uploaded")) {
     type = "update";
   } else if (activity.action.toLowerCase().includes("reviewed")) {
+    type = "review";
+  } else if (activity.action.toLowerCase().includes("assigned")) {
     type = "assign";
   }
   
@@ -56,45 +60,69 @@ const activities: Activity[] = workflowData.userActivity.map((activity, index) =
   };
 });
 
-const getActivityBadge = (type: Activity["type"]) => {
+const getActivityIcon = (type: Activity["type"]) => {
   switch (type) {
     case "create":
-      return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/10">Created</Badge>;
+      return <div className="p-2 rounded-full bg-blue-500/10"><FileText className="h-4 w-4 text-blue-500" /></div>;
     case "update":
-      return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/10">Updated</Badge>;
+      return <div className="p-2 rounded-full bg-yellow-500/10"><Clock className="h-4 w-4 text-yellow-500" /></div>;
     case "complete":
-      return <Badge variant="outline" className="bg-green-500/10 text-green-500 hover:bg-green-500/10">Completed</Badge>;
+      return <div className="p-2 rounded-full bg-green-500/10"><CheckCircle2 className="h-4 w-4 text-green-500" /></div>;
     case "reject":
-      return <Badge variant="outline" className="bg-red-500/10 text-red-500 hover:bg-red-500/10">Rejected</Badge>;
+      return <div className="p-2 rounded-full bg-red-500/10"><AlertTriangle className="h-4 w-4 text-red-500" /></div>;
     case "assign":
-      return <Badge variant="outline" className="bg-purple-500/10 text-purple-500 hover:bg-purple-500/10">Assigned</Badge>;
+      return <div className="p-2 rounded-full bg-purple-500/10"><User className="h-4 w-4 text-purple-500" /></div>;
+    case "review":
+      return <div className="p-2 rounded-full bg-indigo-500/10"><FileCheck className="h-4 w-4 text-indigo-500" /></div>;
     default:
-      return <Badge variant="outline">Action</Badge>;
+      return <div className="p-2 rounded-full bg-gray-500/10"><Clock className="h-4 w-4 text-gray-500" /></div>;
   }
+};
+
+// Get initials for avatar
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
 };
 
 const RecentActivities = () => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Activities</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {activities.map((activity) => (
-            <div key={activity.id} className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium leading-none">
-                  {activity.user} {activity.action} <span className="font-bold">{activity.workflow}</span>
-                </p>
-                <p className="text-sm text-muted-foreground">{activity.time}</p>
-              </div>
-              {getActivityBadge(activity.type)}
+    <div className="space-y-4">
+      {activities.slice(0, 6).map((activity, index) => (
+        <div key={activity.id}>
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center">
+              {getActivityIcon(activity.type)}
+              {index < activities.length - 1 && (
+                <div className="w-px h-full bg-border mt-2"></div>
+              )}
             </div>
-          ))}
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {activity.user === "System" ? "SY" : getInitials(activity.user)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-sm">{activity.user}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{activity.time}</span>
+              </div>
+              <p className="text-sm">
+                {activity.action} <span className="font-medium">{activity.workflow}</span>
+              </p>
+            </div>
+          </div>
+          {index < activities.length - 1 && <div className="h-2"></div>}
         </div>
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
 };
 

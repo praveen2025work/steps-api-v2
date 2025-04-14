@@ -7,9 +7,15 @@ import {
   Settings,
   Users,
   Calendar,
-  Bell
+  Bell,
+  BarChart4,
+  ShieldAlert,
+  Building2,
+  FileCheck,
+  HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 type NavItem = {
   title: string;
@@ -18,47 +24,97 @@ type NavItem = {
   pattern?: RegExp;
 };
 
-const navItems: NavItem[] = [
+type NavSection = {
+  title: string;
+  items: NavItem[];
+};
+
+const navSections: NavSection[] = [
   {
-    title: 'Dashboard',
-    href: '/',
-    icon: <LayoutDashboard className="h-5 w-5" />
+    title: "Main",
+    items: [
+      {
+        title: 'Dashboard',
+        href: '/',
+        icon: <LayoutDashboard className="h-5 w-5" />
+      },
+      {
+        title: 'Stage Viewer',
+        href: '/stages/[workflowId]',
+        icon: <Layers className="h-5 w-5" />,
+        pattern: /^\/stages/
+      },
+      {
+        title: 'Analytics',
+        href: '/analytics',
+        icon: <BarChart4 className="h-5 w-5" />
+      }
+    ]
   },
   {
-    title: 'Stage Viewer',
-    href: '/stages/[workflowId]',
-    icon: <Layers className="h-5 w-5" />,
-    pattern: /^\/stages/
+    title: "Regulatory",
+    items: [
+      {
+        title: 'Compliance',
+        href: '/compliance',
+        icon: <ShieldAlert className="h-5 w-5" />
+      },
+      {
+        title: 'Audit Trails',
+        href: '/audit',
+        icon: <FileCheck className="h-5 w-5" />
+      },
+      {
+        title: 'Risk Assessment',
+        href: '/risk',
+        icon: <Activity className="h-5 w-5" />
+      }
+    ]
   },
   {
-    title: 'File Manager',
-    href: '/files',
-    icon: <FileText className="h-5 w-5" />
+    title: "Management",
+    items: [
+      {
+        title: 'Document Center',
+        href: '/files',
+        icon: <FileText className="h-5 w-5" />
+      },
+      {
+        title: 'User Management',
+        href: '/users',
+        icon: <Users className="h-5 w-5" />
+      },
+      {
+        title: 'Organizations',
+        href: '/organizations',
+        icon: <Building2 className="h-5 w-5" />
+      },
+      {
+        title: 'Calendar',
+        href: '/calendar',
+        icon: <Calendar className="h-5 w-5" />
+      },
+      {
+        title: 'Notifications',
+        href: '/notifications',
+        icon: <Bell className="h-5 w-5" />
+      }
+    ]
   },
   {
-    title: 'Process Monitor',
-    href: '/monitor',
-    icon: <Activity className="h-5 w-5" />
-  },
-  {
-    title: 'User Management',
-    href: '/users',
-    icon: <Users className="h-5 w-5" />
-  },
-  {
-    title: 'Calendar',
-    href: '/calendar',
-    icon: <Calendar className="h-5 w-5" />
-  },
-  {
-    title: 'Notifications',
-    href: '/notifications',
-    icon: <Bell className="h-5 w-5" />
-  },
-  {
-    title: 'Settings',
-    href: '/settings',
-    icon: <Settings className="h-5 w-5" />
+    title: "System",
+    items: [
+      {
+        title: 'Settings',
+        href: '/settings',
+        icon: <Settings className="h-5 w-5" />
+      },
+      {
+        title: 'Help & Support',
+        href: '/help',
+        icon: <HelpCircle className="h-5 w-5" />
+      }
+    ]
   }
 ];
 
@@ -69,28 +125,47 @@ const Sidebar = () => {
   return (
     <div className="hidden md:flex h-screen w-64 flex-col fixed inset-y-0 z-50 border-r border-border bg-card">
       <div className="p-4 border-b border-border">
-        <h2 className="text-xl font-bold">Workflow System</h2>
+        <h2 className="text-xl font-bold">FinReg Suite</h2>
+        <p className="text-xs text-muted-foreground mt-1">Regulatory Workflow Management</p>
       </div>
       <nav className="flex-1 overflow-auto py-4 px-2">
-        <ul className="space-y-1">
-          {navItems.map((item) => (
-            <li key={item.href}>
-              <a
-                href={item.href === '/stages/[workflowId]' ? '#' : item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                  (item.pattern ? item.pattern.test(currentPath) : currentPath === item.href) 
-                    ? "bg-accent text-accent-foreground" 
-                    : "text-muted-foreground"
-                )}
-              >
-                {item.icon}
-                {item.title}
-              </a>
-            </li>
-          ))}
-        </ul>
+        {navSections.map((section, index) => (
+          <div key={section.title} className={index > 0 ? "mt-6" : ""}>
+            <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              {section.title}
+            </h3>
+            <ul className="space-y-1">
+              {section.items.map((item) => (
+                <li key={item.href}>
+                  <a
+                    href={item.href === '/stages/[workflowId]' ? '#' : item.href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                      (item.pattern ? item.pattern.test(currentPath) : currentPath === item.href) 
+                        ? "bg-primary text-primary-foreground" 
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {item.icon}
+                    {item.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </nav>
+      <div className="p-4 border-t border-border">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-primary/10">
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+            <Users className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">Premium Plan</p>
+            <p className="text-xs text-muted-foreground">Enterprise Access</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
