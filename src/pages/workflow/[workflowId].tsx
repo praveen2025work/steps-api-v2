@@ -14,7 +14,9 @@ const findWorkflowById = (id: string) => {
   // Helper function to search through the hierarchy
   const searchInWorkflowLevels = (levels: any[], targetId: string): any => {
     for (const level of levels) {
-      if (level.id === targetId) {
+      // Case-insensitive ID comparison
+      if (level.id.toLowerCase() === targetId.toLowerCase() || 
+          (level.name && level.name.toLowerCase() === targetId.toLowerCase())) {
         return level;
       }
       
@@ -30,20 +32,23 @@ const findWorkflowById = (id: string) => {
   
   // Search through all applications
   for (const app of mockHierarchicalWorkflows) {
-    // Check if the app itself is the target
-    if (app.id === id) {
+    // Check if the app itself is the target (case-insensitive)
+    if (app.id.toLowerCase() === id.toLowerCase() || 
+        (app.name && app.name.toLowerCase() === id.toLowerCase())) {
       return app;
     }
     
     // Check asset classes
     for (const assetClass of app.assetClasses) {
-      if (assetClass.id === id) {
+      if (assetClass.id.toLowerCase() === id.toLowerCase() || 
+          (assetClass.name && assetClass.name.toLowerCase() === id.toLowerCase())) {
         return assetClass;
       }
       
       // Check workflow levels
       for (const wfLevel of assetClass.workflowLevels) {
-        if (wfLevel.id === id) {
+        if (wfLevel.id.toLowerCase() === id.toLowerCase() || 
+            (wfLevel.name && wfLevel.name.toLowerCase() === id.toLowerCase())) {
           return wfLevel;
         }
         
@@ -199,6 +204,10 @@ const WorkflowDetailPage = () => {
   useEffect(() => {
     if (workflowId) {
       console.log(`Fetching workflow data for ID: ${workflowId}`);
+      
+      // Check if we're looking for a workflow by name (like "erates")
+      console.log(`Checking if "${workflowId}" matches any workflow names or IDs (case-insensitive)`);
+      
       // In a real application, you would fetch the workflow data from an API
       const data = getMockWorkflowData(workflowId as string);
       console.log(`Workflow data found:`, data ? 'Yes' : 'No');
@@ -206,16 +215,23 @@ const WorkflowDetailPage = () => {
       // Add more detailed logging to help diagnose issues
       if (!data) {
         console.error(`Failed to find workflow with ID: ${workflowId}`);
-        console.log('Available workflow IDs in hierarchical data:');
+        console.log('Available workflow IDs and names in hierarchical data:');
         mockHierarchicalWorkflows.forEach(app => {
           console.log(`- App: ${app.id} (${app.name})`);
           app.assetClasses.forEach(assetClass => {
             console.log(`  - Asset Class: ${assetClass.id} (${assetClass.name})`);
             assetClass.workflowLevels.forEach(level => {
               console.log(`    - Workflow Level: ${level.id} (${level.name})`);
+              if (level.children && level.children.length > 0) {
+                level.children.forEach(child => {
+                  console.log(`      - Child Level: ${child.id} (${child.name})`);
+                });
+              }
             });
           });
         });
+      } else {
+        console.log(`Successfully found workflow: ${data.title}`);
       }
       
       setWorkflowData(data);
@@ -301,24 +317,27 @@ const WorkflowDetailPage = () => {
       return path;
     }
     
-    // Find the workflow in the hierarchy
+    // Find the workflow in the hierarchy (case-insensitive)
     for (const app of mockHierarchicalWorkflows) {
-      // If this is the app itself
-      if (app.id === workflowData.id) {
+      // If this is the app itself (case-insensitive comparison)
+      if (app.id.toLowerCase() === workflowData.id.toLowerCase() || 
+          (app.name && app.name.toLowerCase() === workflowData.id.toLowerCase())) {
         path.push(app.id);
         return path;
       }
       
       // Check asset classes
       for (const assetClass of app.assetClasses) {
-        if (assetClass.id === workflowData.id) {
+        if (assetClass.id.toLowerCase() === workflowData.id.toLowerCase() || 
+            (assetClass.name && assetClass.name.toLowerCase() === workflowData.id.toLowerCase())) {
           path.push(app.id, assetClass.id);
           return path;
         }
         
         // Check workflow levels
         for (const wfLevel of assetClass.workflowLevels) {
-          if (wfLevel.id === workflowData.id) {
+          if (wfLevel.id.toLowerCase() === workflowData.id.toLowerCase() || 
+              (wfLevel.name && wfLevel.name.toLowerCase() === workflowData.id.toLowerCase())) {
             path.push(app.id, assetClass.id, wfLevel.id);
             return path;
           }
@@ -326,7 +345,8 @@ const WorkflowDetailPage = () => {
           // Check deeper levels if they exist
           if (wfLevel.children && wfLevel.children.length > 0) {
             for (const childLevel of wfLevel.children) {
-              if (childLevel.id === workflowData.id) {
+              if (childLevel.id.toLowerCase() === workflowData.id.toLowerCase() || 
+                  (childLevel.name && childLevel.name.toLowerCase() === workflowData.id.toLowerCase())) {
                 path.push(app.id, assetClass.id, wfLevel.id, childLevel.id);
                 return path;
               }
