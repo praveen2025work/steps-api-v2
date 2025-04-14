@@ -400,23 +400,25 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       // Truncate the path to this node to navigate to that level
       setHierarchyPath(hierarchyPath.slice(0, nodeIndex + 1));
       
-      // In a real application, this would also:
-      // 1. For 'app' level - navigate to the app view
-      // 2. For 'workflow' level - load its child workflows
-      // 3. For 'hierarchy' level - load its child hierarchies
-      
-      // Example navigation logic (commented out as it's just for demonstration)
-      /*
+      // In a real application, this would navigate to the appropriate level
       if (node.level === 'app') {
-        router.push(`/application/${node.id}`);
+        // Navigate to dashboard view (show sibling apps)
+        console.log(`Loading dashboard view for ${node.name}`);
+        // router.push(`/application/${node.id}`);
       } else if (node.level === 'workflow') {
-        router.push(`/workflow/${node.id}`);
-      } else {
-        // Load child hierarchies for this level
-        loadChildHierarchies(node.id);
+        // Load child workflows (eRates, Euro Bonds, BRIE, etc.)
+        console.log(`Loading child workflows for ${node.name}`);
+        // router.push(`/workflow/${node.id}`);
       }
-      */
+      // If it's the current hierarchy level, we're already there
     }
+  };
+  
+  // Handle home button click
+  const handleHomeClick = () => {
+    console.log('Navigate to home dashboard');
+    // In a real application, this would navigate to the home/dashboard page
+    // router.push('/');
   };
 
   return (
@@ -425,6 +427,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       <WorkflowHierarchyBreadcrumb 
         nodes={hierarchyPath}
         onNodeClick={handleHierarchyNodeClick}
+        onHomeClick={handleHomeClick}
       />
       
       <div className="flex justify-between items-start">
