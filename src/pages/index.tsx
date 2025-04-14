@@ -7,7 +7,7 @@ import RecentActivities from "@/components/RecentActivities";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Filter } from "lucide-react";
-import { mockWorkflows } from "@/data/mockWorkflows";
+import { mockWorkflowsFromNewData } from "@/data/workflowData";
 
 export default function Home() {
   return (
@@ -50,7 +50,7 @@ export default function Home() {
                 
                 <TabsContent value="all" className="mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {mockWorkflows.map((workflow) => (
+                    {mockWorkflowsFromNewData.map((workflow) => (
                       <WorkflowStatusCard
                         key={workflow.id}
                         id={workflow.id}
@@ -67,7 +67,7 @@ export default function Home() {
                 
                 <TabsContent value="in-progress" className="mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {mockWorkflows
+                    {mockWorkflowsFromNewData
                       .filter(workflow => workflow.status === "in-progress")
                       .map((workflow) => (
                         <WorkflowStatusCard
@@ -86,7 +86,7 @@ export default function Home() {
                 
                 <TabsContent value="pending" className="mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {mockWorkflows
+                    {mockWorkflowsFromNewData
                       .filter(workflow => workflow.status === "pending")
                       .map((workflow) => (
                         <WorkflowStatusCard
@@ -105,7 +105,7 @@ export default function Home() {
                 
                 <TabsContent value="completed" className="mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {mockWorkflows
+                    {mockWorkflowsFromNewData
                       .filter(workflow => workflow.status === "completed")
                       .map((workflow) => (
                         <WorkflowStatusCard

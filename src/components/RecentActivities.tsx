@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { workflowData } from "@/data/workflowData";
 
 type Activity = {
   id: string;
@@ -10,48 +11,50 @@ type Activity = {
   type: "create" | "update" | "complete" | "reject" | "assign";
 };
 
-const activities: Activity[] = [
-  {
-    id: "1",
-    user: "John Doe",
-    action: "completed stage",
-    workflow: "Invoice Approval",
-    time: "10 minutes ago",
-    type: "complete"
-  },
-  {
-    id: "2",
-    user: "Jane Smith",
-    action: "created new workflow",
-    workflow: "Contract Review",
-    time: "1 hour ago",
-    type: "create"
-  },
-  {
-    id: "3",
-    user: "Mike Johnson",
-    action: "updated",
-    workflow: "Employee Onboarding",
-    time: "2 hours ago",
-    type: "update"
-  },
-  {
-    id: "4",
-    user: "Sarah Williams",
-    action: "assigned to",
-    workflow: "Budget Approval",
-    time: "3 hours ago",
-    type: "assign"
-  },
-  {
-    id: "5",
-    user: "Robert Brown",
-    action: "rejected",
-    workflow: "Vendor Registration",
-    time: "5 hours ago",
-    type: "reject"
+// Convert user activity from the new data structure
+const activities: Activity[] = workflowData.userActivity.map((activity, index) => {
+  // Find the application name for the substage
+  const substage = workflowData.subStages.find(s => s.name === activity.substage);
+  const stage = substage ? workflowData.stages.find(s => s.id === substage.defaultStage) : null;
+  const app = stage ? workflowData.applications.find(a => a.id === stage.appId) : null;
+  
+  // Determine activity type
+  let type: Activity["type"] = "update";
+  if (activity.action.toLowerCase().includes("completed")) {
+    type = "complete";
+  } else if (activity.action.toLowerCase().includes("started")) {
+    type = "create";
+  } else if (activity.action.toLowerCase().includes("uploaded")) {
+    type = "update";
+  } else if (activity.action.toLowerCase().includes("reviewed")) {
+    type = "assign";
   }
-];
+  
+  // Format time
+  const activityTime = new Date(activity.timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - activityTime.getTime();
+  const diffMins = Math.round(diffMs / 60000);
+  let timeString = "";
+  
+  if (diffMins < 60) {
+    timeString = `${diffMins} minutes ago`;
+  } else if (diffMins < 1440) {
+    timeString = `${Math.floor(diffMins / 60)} hours ago`;
+  } else {
+    timeString = `${Math.floor(diffMins / 1440)} days ago`;
+  }
+  
+  return {
+    id: `activity-${index}`,
+    user: activity.user === "system" ? "System" : 
+      workflowData.users.find(u => u.username === activity.user)?.displayName || activity.user,
+    action: activity.action,
+    workflow: app?.name || "Unknown Workflow",
+    time: timeString,
+    type
+  };
+});
 
 const getActivityBadge = (type: Activity["type"]) => {
   switch (type) {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/DashboardLayout';
-import { mockWorkflows } from '@/data/mockWorkflows';
+import { mockWorkflowsFromNewData } from '@/data/workflowData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,7 +18,7 @@ const WorkflowStageViewer = () => {
   const [activeStage, setActiveStage] = useState<string | null>(null);
   
   // Find the workflow from mock data
-  const workflow = mockWorkflows.find(wf => wf.id === workflowId);
+  const workflow = mockWorkflowsFromNewData.find(wf => wf.id === workflowId);
   
   if (!workflow) {
     return (
