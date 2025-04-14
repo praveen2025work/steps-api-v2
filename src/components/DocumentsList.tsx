@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
-import { FileText, FileSpreadsheet, FilePdf, Download, Upload } from 'lucide-react';
+import { 
+  FileText, 
+  FileSpreadsheet, 
+  FilePdf, 
+  Download, 
+  Upload, 
+  Eye, 
+  FileCode, 
+  Mail, 
+  Archive 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Document {
   id: string;
@@ -22,15 +33,8 @@ interface DocumentsListProps {
 const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
   const [activeTab, setActiveTab] = useState<string>('all');
   
-  const getFileIcon = (type: string) => {
-    switch (type) {
-      case 'excel':
-        return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
-      case 'pdf':
-        return <FilePdf className="h-5 w-5 text-red-600" />;
-      default:
-        return <FileText className="h-5 w-5 text-blue-600" />;
-    }
+  const getDocumentIcon = (document: Document) => {
+    return getFileIcon(document.type, document.name);
   };
 
   const handleDownload = (documentId: string) => {
@@ -87,6 +91,10 @@ const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, on
     return <p className="text-muted-foreground">No documents found.</p>;
   }
 
+  const handlePreview = (documentId: string) => {
+    console.log(`Previewing document ${documentId}`);
+  };
+
   return (
     <div className="space-y-4">
       {documents.map((document) => (
@@ -95,7 +103,7 @@ const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, on
           className="flex items-center justify-between p-3 border rounded-lg"
         >
           <div className="flex items-center gap-3">
-            {getFileIcon(document.type)}
+            {getFileIcon(document.type, document.name)}
             <div>
               <p className="font-medium">{document.name}</p>
               <div className="flex items-center gap-4 mt-1">
@@ -108,25 +116,51 @@ const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, on
               </div>
             </div>
           </div>
-          {document.category === 'upload' ? (
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => onUpload(document.id)}
-            >
-              <Upload className="h-4 w-4 mr-1" />
-              Upload
-            </Button>
-          ) : (
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => onDownload(document.id)}
-            >
-              <Download className="h-4 w-4 mr-1" />
-              Download
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => handlePreview(document.id)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Preview document</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => document.category === 'upload' ? onUpload(document.id) : onDownload(document.id)}
+                  >
+                    {document.category === 'upload' ? (
+                      <>
+                        <Upload className="h-4 w-4 mr-1" />
+                        Upload
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{document.category === 'upload' ? 'Upload document' : 'Download document'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       ))}
     </div>
@@ -134,12 +168,24 @@ const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, on
 };
 
 // Helper function to get file icon based on file type
-const getFileIcon = (type: string) => {
-  switch (type) {
-    case 'excel':
+const getFileIcon = (type: string, fileName: string) => {
+  // Check file extension
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  
+  switch (extension) {
+    case 'xlsx':
+    case 'xls':
+    case 'csv':
       return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
     case 'pdf':
       return <FilePdf className="h-5 w-5 text-red-600" />;
+    case 'html':
+    case 'css':
+      return <FileCode className="h-5 w-5 text-purple-600" />;
+    case 'msg':
+      return <Mail className="h-5 w-5 text-blue-600" />;
+    case 'zip':
+      return <Archive className="h-5 w-5 text-amber-600" />;
     default:
       return <FileText className="h-5 w-5 text-blue-600" />;
   }

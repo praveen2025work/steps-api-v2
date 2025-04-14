@@ -238,10 +238,19 @@ const HierarchyLevelDetail: React.FC<HierarchyLevelDetailProps> = ({
     app: [
       { name: 'APP_TIMEOUT', value: '3600', description: 'Application timeout in seconds' },
       { name: 'MAX_RETRIES', value: '3', description: 'Maximum number of retries' },
+      { name: 'BATCH_SIZE', value: '100', description: 'Number of records to process in a batch' },
+      { name: 'NOTIFICATION_ENABLED', value: 'true', description: 'Enable email notifications' },
     ],
     global: [
       { name: 'ENV', value: 'PRODUCTION', description: 'Environment' },
       { name: 'LOG_LEVEL', value: 'INFO', description: 'Logging level' },
+      { name: 'REGION', value: 'US-EAST', description: 'Processing region' },
+      { name: 'DATA_RETENTION_DAYS', value: '90', description: 'Number of days to retain data' },
+    ],
+    workflow: [
+      { name: 'WORKFLOW_ID', value: 'WF-12345', description: 'Unique workflow identifier' },
+      { name: 'PRIORITY', value: 'HIGH', description: 'Workflow priority' },
+      { name: 'MAX_RUNTIME', value: '120', description: 'Maximum runtime in minutes' },
     ]
   };
 
@@ -270,7 +279,7 @@ const HierarchyLevelDetail: React.FC<HierarchyLevelDetailProps> = ({
         <Tabs defaultValue="overview" onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="substages">Sub-Stages</TabsTrigger>
+            <TabsTrigger value="tasks">Tasks & Sub-Stages</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="parameters">Parameters</TabsTrigger>
             <TabsTrigger value="audit">Audit Info</TabsTrigger>
@@ -322,8 +331,13 @@ const HierarchyLevelDetail: React.FC<HierarchyLevelDetailProps> = ({
             </div>
           </TabsContent>
           
-          <TabsContent value="substages">
-            <SubStagesList subStages={mockSubStages} />
+          <TabsContent value="tasks">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium">Tasks & Sub-Stages</h3>
+              </div>
+              <SubStagesList subStages={mockSubStages} />
+            </div>
           </TabsContent>
           
           <TabsContent value="documents">
@@ -370,6 +384,30 @@ const HierarchyLevelDetail: React.FC<HierarchyLevelDetailProps> = ({
                     <tbody>
                       {mockParameters.global.map((param, index) => (
                         <tr key={index} className={index < mockParameters.global.length - 1 ? "border-b" : ""}>
+                          <td className="p-2 font-mono text-sm">{param.name}</td>
+                          <td className="p-2 font-mono text-sm">{param.value}</td>
+                          <td className="p-2 text-sm text-muted-foreground">{param.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium mb-2">Workflow Instance Parameters</h3>
+                <div className="border rounded-md">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Name</th>
+                        <th className="text-left p-2">Value</th>
+                        <th className="text-left p-2">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mockParameters.workflow.map((param, index) => (
+                        <tr key={index} className={index < mockParameters.workflow.length - 1 ? "border-b" : ""}>
                           <td className="p-2 font-mono text-sm">{param.name}</td>
                           <td className="p-2 font-mono text-sm">{param.value}</td>
                           <td className="p-2 text-sm text-muted-foreground">{param.description}</td>

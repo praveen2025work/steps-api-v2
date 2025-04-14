@@ -1,24 +1,21 @@
 import React, { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   CheckCircle, 
   Clock, 
   AlertCircle, 
   ChevronDown, 
   ChevronRight, 
-  Play, 
-  RefreshCw, 
-  FastForward, 
-  SkipForward, 
-  Mail,
   Lock,
   User,
   FileText,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Settings,
+  Zap
 } from 'lucide-react';
 
 interface SubStage {
@@ -36,15 +33,8 @@ interface SubStage {
   avgDuration?: number;
   avgStartTime?: string;
   expectedUser?: string;
-  dependencies?: { name: string; status: string }[];
+  dependencies?: { name: string; status: string; id?: string }[];
   fileInfo?: { name: string; type: string }[];
-  config?: {
-    canTrigger?: boolean;
-    canRerun?: boolean;
-    canForceStart?: boolean;
-    canSkip?: boolean;
-    canSendEmail?: boolean;
-  };
 }
 
 interface SubStagesListProps {
@@ -93,16 +83,31 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
 
   const getTypeIcon = (type?: string) => {
     if (type === 'manual') {
-      return <User className="h-4 w-4 text-amber-500" />;
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <User className="h-4 w-4 text-amber-500" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Manual Step</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
     }
-    return <Clock className="h-4 w-4 text-blue-500" />;
-  };
-
-  const getTypeBadge = (type?: string) => {
-    if (type === 'manual') {
-      return <Badge variant="outline" className="text-amber-500 border-amber-500/20">Manual</Badge>;
-    }
-    return <Badge variant="outline" className="text-blue-500 border-blue-500/20">Automatic</Badge>;
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <Zap className="h-4 w-4 text-blue-500" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Automatic Step</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   };
 
   return (
@@ -129,7 +134,7 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                       {subStage.sequence && (
                         <Badge variant="outline" className="ml-2">Seq: {subStage.sequence}</Badge>
                       )}
-                      {getTypeBadge(subStage.type)}
+                      {getTypeIcon(subStage.type)}
                     </div>
                     {getStatusBadge(subStage.status)}
                   </div>
@@ -174,39 +179,6 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                 </div>
               </div>
             </CollapsibleTrigger>
-            
-            <div className="flex flex-wrap gap-2 mt-4">
-              {subStage.config?.canTrigger !== false && (
-                <Button size="sm" variant="outline">
-                  <Play className="h-4 w-4 mr-1" />
-                  Trigger
-                </Button>
-              )}
-              {subStage.config?.canRerun !== false && (
-                <Button size="sm" variant="outline">
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Rerun
-                </Button>
-              )}
-              {subStage.config?.canForceStart !== false && (
-                <Button size="sm" variant="outline">
-                  <FastForward className="h-4 w-4 mr-1" />
-                  Force Start
-                </Button>
-              )}
-              {subStage.config?.canSkip !== false && (
-                <Button size="sm" variant="outline">
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Skip
-                </Button>
-              )}
-              {subStage.config?.canSendEmail !== false && (
-                <Button size="sm" variant="outline">
-                  <Mail className="h-4 w-4 mr-1" />
-                  Send Email
-                </Button>
-              )}
-            </div>
           </div>
           
           <CollapsibleContent>
@@ -243,9 +215,27 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                   <h4 className="text-sm font-medium mb-2">Dependencies</h4>
                   <div className="space-y-2">
                     {subStage.dependencies.map((dep, index) => (
-                      <div key={index} className="flex items-center justify-between bg-background p-2 rounded-md">
+                      <div 
+                        key={index} 
+                        className="flex items-center justify-between bg-background p-2 rounded-md cursor-pointer hover:bg-accent/20"
+                        onClick={() => dep.id && console.log(`Navigate to dependency: ${dep.id}`)}
+                        title="Click to navigate to this step"
+                      >
                         <div className="flex items-center gap-2">
-                          <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <ArrowRightLeft className={
+                                  dep.status === 'completed' ? 'h-4 w-4 text-green-500' : 
+                                  dep.status === 'in-progress' ? 'h-4 w-4 text-blue-500' : 
+                                  'h-4 w-4 text-muted-foreground'
+                                } />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Click to navigate to this dependency</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                           <span>{dep.name}</span>
                         </div>
                         <Badge 
@@ -274,7 +264,29 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <span>{file.name}</span>
                         </div>
-                        <Badge variant="outline">{file.type}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{file.type}</Badge>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button className="text-xs text-blue-500 hover:underline">Preview</button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Preview file</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button className="text-xs text-blue-500 hover:underline">Download</button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Download file</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                       </div>
                     ))}
                   </div>
