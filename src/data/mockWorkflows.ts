@@ -351,14 +351,14 @@ export const mockWorkflows: Workflow[] = [
       {
         id: "stage-019",
         name: "Financial Assessment",
-        status: "skipped",
+        status: "pending",
         assignee: "John Doe",
         dueDate: "2025-04-12"
       },
       {
         id: "stage-020",
         name: "Final Approval",
-        status: "skipped",
+        status: "pending",
         assignee: "Sarah Williams",
         dueDate: "2025-04-15"
       }
