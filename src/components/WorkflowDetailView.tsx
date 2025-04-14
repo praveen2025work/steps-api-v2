@@ -61,16 +61,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     { id: 'wf-level-001', name: 'eRates', progress: 75, level: 'hierarchy' },
   ]);
 
-  // Handle node click in the hierarchy breadcrumb
-  const handleHierarchyNodeClick = (node: HierarchyNode) => {
-    console.log(`Navigate to ${node.level} level: ${node.name}`);
-    // In a real application, this would navigate to the appropriate level
-    // For now, we'll just truncate the path to this node
-    const nodeIndex = hierarchyPath.findIndex(item => item.id === node.id);
-    if (nodeIndex >= 0) {
-      setHierarchyPath(hierarchyPath.slice(0, nodeIndex + 1));
-    }
-  };
+  // This function has been replaced with an enhanced version below
 
   // Handle manual refresh
   const handleRefresh = () => {
@@ -398,6 +389,36 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     return () => clearInterval(timer);
   }, []);
 
+  // Enhanced hierarchy node click handler to properly navigate between levels
+  const handleHierarchyNodeClick = (node: HierarchyNode) => {
+    console.log(`Navigate to ${node.level} level: ${node.name}`);
+    
+    // Find the index of the clicked node
+    const nodeIndex = hierarchyPath.findIndex(item => item.id === node.id);
+    
+    if (nodeIndex >= 0) {
+      // Truncate the path to this node to navigate to that level
+      setHierarchyPath(hierarchyPath.slice(0, nodeIndex + 1));
+      
+      // In a real application, this would also:
+      // 1. For 'app' level - navigate to the app view
+      // 2. For 'workflow' level - load its child workflows
+      // 3. For 'hierarchy' level - load its child hierarchies
+      
+      // Example navigation logic (commented out as it's just for demonstration)
+      /*
+      if (node.level === 'app') {
+        router.push(`/application/${node.id}`);
+      } else if (node.level === 'workflow') {
+        router.push(`/workflow/${node.id}`);
+      } else {
+        // Load child hierarchies for this level
+        loadChildHierarchies(node.id);
+      }
+      */
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Hierarchy Navigation Breadcrumb */}
@@ -408,7 +429,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold mb-4">{workflowTitle}</h1>
+          {/* Removed redundant title as it's now displayed in the breadcrumb */}
           <WorkflowProgressIndicator steps={progressSteps} />
         </div>
         
