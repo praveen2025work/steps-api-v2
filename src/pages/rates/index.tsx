@@ -11,8 +11,8 @@ import { mockWorkflows } from '@/data/mockWorkflows';
 // Using the correct IDs from hierarchicalWorkflowData.ts
 const rateWorkflows = [
   {
-    id: "asset-001", // Using the Rates asset class ID
-    title: "Daily Named PNL",
+    id: "app-001", // Using the Application ID for Daily Named PNL
+    title: "Daily Named PNL Rates",
     description: "Daily named PNL workflow",
     status: "in-progress" as const,
     progress: 60,
@@ -22,7 +22,7 @@ const rateWorkflows = [
     stages: []
   },
   {
-    id: "asset-004", // Using the Equities asset class ID
+    id: "app-002", // Using the Application ID for Daily Workspace PNL
     title: "Daily Workspace PNL",
     description: "Daily workspace PNL workflow",
     status: "in-progress" as const,
@@ -33,7 +33,7 @@ const rateWorkflows = [
     stages: []
   },
   {
-    id: "asset-006", // Using the Global Markets asset class ID
+    id: "app-003", // Using the Application ID for Monthend PNL
     title: "Monthend PNL",
     description: "Monthend PNL workflow",
     status: "in-progress" as const,

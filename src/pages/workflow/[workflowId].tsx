@@ -202,6 +202,22 @@ const WorkflowDetailPage = () => {
       // In a real application, you would fetch the workflow data from an API
       const data = getMockWorkflowData(workflowId as string);
       console.log(`Workflow data found:`, data ? 'Yes' : 'No');
+      
+      // Add more detailed logging to help diagnose issues
+      if (!data) {
+        console.error(`Failed to find workflow with ID: ${workflowId}`);
+        console.log('Available workflow IDs in hierarchical data:');
+        mockHierarchicalWorkflows.forEach(app => {
+          console.log(`- App: ${app.id} (${app.name})`);
+          app.assetClasses.forEach(assetClass => {
+            console.log(`  - Asset Class: ${assetClass.id} (${assetClass.name})`);
+            assetClass.workflowLevels.forEach(level => {
+              console.log(`    - Workflow Level: ${level.id} (${level.name})`);
+            });
+          });
+        });
+      }
+      
       setWorkflowData(data);
       setLoading(false);
     }
