@@ -247,27 +247,87 @@ const WorkflowDetailPage = () => {
     );
   }
   
-  // Mock hierarchy data for navigation
-  const hierarchyData = {
-    applications: [
-      { id: "daily_pnl", name: "Daily Named PNL", completion: 45 },
-      { id: "workspace_pnl", name: "Workspace PNL", completion: 60 },
-      { id: "monthend_pnl", name: "Monthend PNL", completion: 72 }
-    ],
-    categories: {
-      "daily_pnl": [
-        { id: "rates", name: "Rates", completion: 60 },
-        { id: "equities", name: "Equities", completion: 35 },
-        { id: "commodities", name: "Commodities", completion: 72 }
-      ],
-      "rates": [
-        { id: "erates", name: "eRates", completion: 75 },
-        { id: "fx", name: "FX", completion: 62 }
-      ]
-    }
+  // Generate hierarchy data for navigation based on the actual workflow structure
+  const generateHierarchyData = () => {
+    // Default hierarchy data structure
+    const hierarchyData = {
+      applications: mockHierarchicalWorkflows.map(app => ({
+        id: app.id,
+        name: app.name,
+        completion: app.progress
+      })),
+      categories: {}
+    };
+    
+    // Populate categories based on the workflow structure
+    mockHierarchicalWorkflows.forEach(app => {
+      hierarchyData.categories[app.id] = app.assetClasses.map(assetClass => ({
+        id: assetClass.id,
+        name: assetClass.name,
+        completion: assetClass.progress
+      }));
+      
+      // Add workflow levels as categories
+      app.assetClasses.forEach(assetClass => {
+        hierarchyData.categories[assetClass.id] = assetClass.workflowLevels.map(wfLevel => ({
+          id: wfLevel.id,
+          name: wfLevel.name,
+          completion: wfLevel.progress
+        }));
+      });
+    });
+    
+    return hierarchyData;
   };
-
-  const [currentPath, setCurrentPath] = useState<string[]>(['daily_pnl', 'rates']);
+  
+  // Generate the hierarchy data
+  const hierarchyData = generateHierarchyData();
+  
+  // Determine the current path based on the workflow ID
+  const determineCurrentPath = () => {
+    // Default path is empty
+    const path: string[] = [];
+    
+    // Find the workflow in the hierarchy
+    for (const app of mockHierarchicalWorkflows) {
+      // If this is the app itself
+      if (app.id === workflowData.id) {
+        path.push(app.id);
+        return path;
+      }
+      
+      // Check asset classes
+      for (const assetClass of app.assetClasses) {
+        if (assetClass.id === workflowData.id) {
+          path.push(app.id, assetClass.id);
+          return path;
+        }
+        
+        // Check workflow levels
+        for (const wfLevel of assetClass.workflowLevels) {
+          if (wfLevel.id === workflowData.id) {
+            path.push(app.id, assetClass.id, wfLevel.id);
+            return path;
+          }
+          
+          // Check deeper levels if they exist
+          if (wfLevel.children && wfLevel.children.length > 0) {
+            for (const childLevel of wfLevel.children) {
+              if (childLevel.id === workflowData.id) {
+                path.push(app.id, assetClass.id, wfLevel.id, childLevel.id);
+                return path;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    return path;
+  };
+  
+  // Set the initial current path based on the workflow
+  const [currentPath, setCurrentPath] = useState<string[]>(determineCurrentPath());
 
   const handleNavigate = (id: string, level: string) => {
     if (level === 'root') {
@@ -279,8 +339,29 @@ const WorkflowDetailPage = () => {
       if (currentPath.includes(id)) {
         setCurrentPath(currentPath.slice(0, currentPath.indexOf(id) + 1));
       } else {
-        // Otherwise, add this level to the path
-        setCurrentPath([...currentPath, id]);
+        // Check if this is a direct child of the current path's last item
+        const lastId = currentPath[currentPath.length - 1];
+        if (hierarchyData.categories[lastId]?.some(item => item.id === id)) {
+          // Add this level to the path
+          setCurrentPath([...currentPath, id]);
+        } else {
+          // This is not a direct child, so we need to find its parent
+          for (const [parentId, children] of Object.entries(hierarchyData.categories)) {
+            if (children.some(item => item.id === id)) {
+              // If the parent is already in the path, truncate to it and add this item
+              if (currentPath.includes(parentId)) {
+                setCurrentPath([
+                  ...currentPath.slice(0, currentPath.indexOf(parentId) + 1),
+                  id
+                ]);
+              } else {
+                // Otherwise, just set to this item
+                setCurrentPath([id]);
+              }
+              break;
+            }
+          }
+        }
       }
     }
   };

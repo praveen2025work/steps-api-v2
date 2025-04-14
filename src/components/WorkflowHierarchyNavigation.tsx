@@ -31,12 +31,12 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
 }) => {
   // Determine which items to show based on the current path
   const getItemsToShow = () => {
-    if (currentPath.length === 0) {
-      return { items: hierarchyData.applications, level: 'application' };
+    if (!currentPath || currentPath.length === 0) {
+      return { items: hierarchyData.applications || [], level: 'application' };
     }
     
     const lastId = currentPath[currentPath.length - 1];
-    if (hierarchyData.categories[lastId]) {
+    if (lastId && hierarchyData.categories && hierarchyData.categories[lastId]) {
       return { items: hierarchyData.categories[lastId], level: 'category' };
     }
     
@@ -47,7 +47,7 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
 
   // Generate breadcrumb from current path
   const generateBreadcrumb = () => {
-    if (currentPath.length === 0) return null;
+    if (!currentPath || currentPath.length === 0) return null;
 
     return (
       <div className="flex items-center text-sm text-muted-foreground mb-4 overflow-x-auto">
@@ -59,15 +59,21 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
         </span>
         
         {currentPath.map((id, index) => {
+          if (!id) return null;
+          
           // Find the name for this id
           let name = '';
           if (index === 0) {
-            const app = hierarchyData.applications.find(a => a.id === id);
+            const app = hierarchyData.applications?.find(a => a.id === id);
             name = app?.name || id;
           } else {
             const parentId = currentPath[index - 1];
-            const category = hierarchyData.categories[parentId]?.find(c => c.id === id);
-            name = category?.name || id;
+            if (parentId && hierarchyData.categories) {
+              const category = hierarchyData.categories[parentId]?.find(c => c.id === id);
+              name = category?.name || id;
+            } else {
+              name = id;
+            }
           }
           
           return (
