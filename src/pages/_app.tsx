@@ -7,9 +7,9 @@ export default function App({ Component, pageProps }: AppProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Set light mode as default based on theme update
-    document.documentElement.classList.remove('dark');
-    document.documentElement.classList.add('light');
+    // Set dark mode as default based on theme update
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
     setMounted(true);
   }, []);
 
