@@ -1,7 +1,9 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Clock, User, Calendar } from "lucide-react";
+import { Clock, User, Calendar, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/router";
 
 type WorkflowStatus = "pending" | "in-progress" | "completed" | "rejected";
 
@@ -38,6 +40,12 @@ const WorkflowStatusCard = ({
   assignee,
   createdAt
 }: WorkflowStatusCardProps) => {
+  const router = useRouter();
+  
+  const handleViewStages = () => {
+    router.push(`/stages/${id}`);
+  };
+  
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
@@ -68,6 +76,16 @@ const WorkflowStatusCard = ({
               <span>Due: {dueDate}</span>
             </div>
           </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full justify-between"
+            onClick={handleViewStages}
+          >
+            View Stages
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </CardContent>
       <CardFooter className="pt-1 text-xs text-muted-foreground">

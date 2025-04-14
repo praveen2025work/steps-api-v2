@@ -23,6 +23,7 @@ type NavItem = {
   title: string;
   href: string;
   icon: React.ReactNode;
+  pattern?: RegExp;
 };
 
 const navItems: NavItem[] = [
@@ -33,8 +34,9 @@ const navItems: NavItem[] = [
   },
   {
     title: 'Stage Viewer',
-    href: '/stages',
-    icon: <Layers className="h-5 w-5" />
+    href: '/stages/[workflowId]',
+    icon: <Layers className="h-5 w-5" />,
+    pattern: /^\/stages/
   },
   {
     title: 'File Manager',
@@ -100,10 +102,12 @@ const MobileNav = () => {
               {navItems.map((item) => (
                 <li key={item.href}>
                   <button
-                    onClick={() => handleNavigation(item.href)}
+                    onClick={() => item.href === '/stages/[workflowId]' ? setOpen(false) : handleNavigation(item.href)}
                     className={cn(
                       "w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                      currentPath === item.href ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                      (item.pattern ? item.pattern.test(currentPath) : currentPath === item.href) 
+                        ? "bg-accent text-accent-foreground" 
+                        : "text-muted-foreground"
                     )}
                   >
                     {item.icon}
