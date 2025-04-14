@@ -3,11 +3,12 @@ import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
 import Logo from './Logo';
 import ThemeSwitcher from './ThemeSwitcher';
-import { Bell, Search, User } from 'lucide-react';
+import { Bell, Search, User, Menu } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -15,18 +16,29 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
+  const { sidebarOpen, toggleSidebar } = useSidebar();
+  
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar for desktop */}
       <Sidebar />
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col md:ml-64">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
         {/* Header for mobile and desktop */}
         <header className="sticky top-0 z-40 border-b bg-background">
           <div className="container flex h-16 items-center justify-between py-4">
             <div className="flex items-center gap-4">
               <MobileNav />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleSidebar} 
+                className="hidden md:flex"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle sidebar</span>
+              </Button>
               <Logo />
               
               {/* Search bar */}

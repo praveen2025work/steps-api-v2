@@ -37,8 +37,8 @@ const Logo: React.FC = () => {
         <ShieldCheck className={`h-5 w-5 ${textColor}`} />
       </div>
       <div className="font-bold text-lg">
-        <span className={spanColor}>Fin</span>
-        <span>Reg</span>
+        <span className={spanColor}>Workflow</span>
+        <span> Tool</span>
       </div>
     </div>
   );

@@ -91,7 +91,7 @@ const MobileNav = () => {
       <SheetContent side="left" className="w-64 p-0">
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-border flex justify-between items-center">
-            <h2 className="text-xl font-bold">Workflow System</h2>
+            <h2 className="text-xl font-bold">Workflow Tool</h2>
             <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
               <X className="h-5 w-5" />
               <span className="sr-only">Close</span>
