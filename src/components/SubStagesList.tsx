@@ -15,8 +15,14 @@ import {
   FileText,
   ArrowRightLeft,
   Settings,
-  Zap
+  Zap,
+  Play,
+  RotateCw,
+  FastForward,
+  SkipForward,
+  Mail
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface SubStage {
   id: string;
@@ -35,6 +41,13 @@ interface SubStage {
   expectedUser?: string;
   dependencies?: { name: string; status: string; id?: string }[];
   fileInfo?: { name: string; type: string }[];
+  config?: {
+    canTrigger?: boolean;
+    canRerun?: boolean;
+    canForceStart?: boolean;
+    canSkip?: boolean;
+    canSendEmail?: boolean;
+  };
 }
 
 interface SubStagesListProps {
@@ -49,6 +62,32 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
       ...prev,
       [id]: !prev[id]
     }));
+  };
+  
+  // Action handlers
+  const handleTrigger = (id: string, name: string) => {
+    console.log(`Triggering sub-stage: ${name} (${id})`);
+    // Implement actual trigger logic here
+  };
+  
+  const handleRerun = (id: string, name: string) => {
+    console.log(`Rerunning sub-stage: ${name} (${id})`);
+    // Implement actual rerun logic here
+  };
+  
+  const handleForceStart = (id: string, name: string) => {
+    console.log(`Force starting sub-stage: ${name} (${id})`);
+    // Implement actual force start logic here
+  };
+  
+  const handleSkip = (id: string, name: string) => {
+    console.log(`Skipping sub-stage: ${name} (${id})`);
+    // Implement actual skip logic here
+  };
+  
+  const handleSendEmail = (id: string, name: string) => {
+    console.log(`Sending email for sub-stage: ${name} (${id})`);
+    // Implement actual email sending logic here
   };
 
   const getStatusIcon = (status: string) => {
@@ -184,6 +223,134 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
           <CollapsibleContent>
             <Separator />
             <div className="p-4 space-y-4 bg-accent/10">
+              {/* Action Buttons */}
+              {subStage.config && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Actions</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {subStage.config.canTrigger && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTrigger(subStage.id, subStage.name);
+                              }}
+                            >
+                              <Play className="h-3.5 w-3.5" />
+                              <span>Trigger</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Trigger this step</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    
+                    {subStage.config.canRerun && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRerun(subStage.id, subStage.name);
+                              }}
+                            >
+                              <RotateCw className="h-3.5 w-3.5" />
+                              <span>Rerun</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Rerun this step</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    
+                    {subStage.config.canForceStart && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleForceStart(subStage.id, subStage.name);
+                              }}
+                            >
+                              <FastForward className="h-3.5 w-3.5" />
+                              <span>Force Start</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Force start this step</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    
+                    {subStage.config.canSkip && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSkip(subStage.id, subStage.name);
+                              }}
+                            >
+                              <SkipForward className="h-3.5 w-3.5" />
+                              <span>Skip</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Skip this step</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    
+                    {subStage.config.canSendEmail && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSendEmail(subStage.id, subStage.name);
+                              }}
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                              <span>Send Email</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Send email notification</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               {/* Performance Metrics */}
               <div>
                 <h4 className="text-sm font-medium mb-2">Performance Metrics</h4>
