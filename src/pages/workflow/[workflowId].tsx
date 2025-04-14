@@ -199,82 +199,16 @@ const WorkflowDetailPage = () => {
   const { workflowId } = router.query;
   const [workflowData, setWorkflowData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Fetch workflow data based on workflowId
-  useEffect(() => {
-    if (workflowId) {
-      console.log(`Fetching workflow data for ID: ${workflowId}`);
-      
-      // Check if we're looking for a workflow by name (like "erates")
-      console.log(`Checking if "${workflowId}" matches any workflow names or IDs (case-insensitive)`);
-      
-      // In a real application, you would fetch the workflow data from an API
-      const data = getMockWorkflowData(workflowId as string);
-      console.log(`Workflow data found:`, data ? 'Yes' : 'No');
-      
-      // Add more detailed logging to help diagnose issues
-      if (!data) {
-        console.error(`Failed to find workflow with ID: ${workflowId}`);
-        console.log('Available workflow IDs and names in hierarchical data:');
-        mockHierarchicalWorkflows.forEach(app => {
-          console.log(`- App: ${app.id} (${app.name})`);
-          app.assetClasses.forEach(assetClass => {
-            console.log(`  - Asset Class: ${assetClass.id} (${assetClass.name})`);
-            assetClass.workflowLevels.forEach(level => {
-              console.log(`    - Workflow Level: ${level.id} (${level.name})`);
-              if (level.children && level.children.length > 0) {
-                level.children.forEach(child => {
-                  console.log(`      - Child Level: ${child.id} (${child.name})`);
-                });
-              }
-            });
-          });
-        });
-      } else {
-        console.log(`Successfully found workflow: ${data.title}`);
-      }
-      
-      setWorkflowData(data);
-      setLoading(false);
-    }
-  }, [workflowId]);
-  
-  // Update currentPath when workflowData is available
-  useEffect(() => {
-    if (workflowData) {
-      const path = determineCurrentPath();
-      setCurrentPath(path);
-    }
-  }, [workflowData]);
-  
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center h-[60vh]">
-          <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Loading...</h2>
-        </div>
-      </DashboardLayout>
-    );
-  }
-  
-  if (!workflowData) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center h-[60vh]">
-          <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Workflow Not Found</h2>
-          <p className="text-muted-foreground mb-4">The workflow you're looking for doesn't exist or you don't have access to it.</p>
-          <Button onClick={() => router.push('/')}>Return to Dashboard</Button>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const [currentPath, setCurrentPath] = useState<string[]>([]);
+  const [hierarchyData, setHierarchyData] = useState<any>({
+    applications: [],
+    categories: {}
+  });
   
   // Generate hierarchy data for navigation based on the actual workflow structure
-  const generateHierarchyData = () => {
+  const generateHierarchyData = React.useCallback(() => {
     // Default hierarchy data structure
-    const hierarchyData = {
+    const data = {
       applications: mockHierarchicalWorkflows.map(app => ({
         id: app.id,
         name: app.name,
@@ -285,7 +219,7 @@ const WorkflowDetailPage = () => {
     
     // Populate categories based on the workflow structure
     mockHierarchicalWorkflows.forEach(app => {
-      hierarchyData.categories[app.id] = app.assetClasses.map(assetClass => ({
+      data.categories[app.id] = app.assetClasses.map(assetClass => ({
         id: assetClass.id,
         name: assetClass.name,
         completion: assetClass.progress
@@ -293,7 +227,7 @@ const WorkflowDetailPage = () => {
       
       // Add workflow levels as categories
       app.assetClasses.forEach(assetClass => {
-        hierarchyData.categories[assetClass.id] = assetClass.workflowLevels.map(wfLevel => ({
+        data.categories[assetClass.id] = assetClass.workflowLevels.map(wfLevel => ({
           id: wfLevel.id,
           name: wfLevel.name,
           completion: wfLevel.progress
@@ -301,14 +235,11 @@ const WorkflowDetailPage = () => {
       });
     });
     
-    return hierarchyData;
-  };
-  
-  // Generate the hierarchy data - this is safe to call even when workflowData is null
-  const hierarchyData = generateHierarchyData();
+    return data;
+  }, []);
   
   // Determine the current path based on the workflow ID
-  const determineCurrentPath = () => {
+  const determineCurrentPath = React.useCallback(() => {
     // Default path is empty
     const path: string[] = [];
     
@@ -357,11 +288,83 @@ const WorkflowDetailPage = () => {
     }
     
     return path;
-  };
+  }, [workflowData]);
   
-  // Set the initial current path based on the workflow
-  // Initialize with empty array and update when workflowData is available
-  const [currentPath, setCurrentPath] = useState<string[]>([]);
+  // Initialize hierarchy data
+  useEffect(() => {
+    setHierarchyData(generateHierarchyData());
+  }, [generateHierarchyData]);
+  
+  // Fetch workflow data based on workflowId
+  useEffect(() => {
+    if (workflowId) {
+      console.log(`Fetching workflow data for ID: ${workflowId}`);
+      
+      // Check if we're looking for a workflow by name (like "erates")
+      console.log(`Checking if "${workflowId}" matches any workflow names or IDs (case-insensitive)`);
+      
+      // In a real application, you would fetch the workflow data from an API
+      const data = getMockWorkflowData(workflowId as string);
+      console.log(`Workflow data found:`, data ? 'Yes' : 'No');
+      
+      // Add more detailed logging to help diagnose issues
+      if (!data) {
+        console.error(`Failed to find workflow with ID: ${workflowId}`);
+        console.log('Available workflow IDs and names in hierarchical data:');
+        mockHierarchicalWorkflows.forEach(app => {
+          console.log(`- App: ${app.id} (${app.name})`);
+          app.assetClasses.forEach(assetClass => {
+            console.log(`  - Asset Class: ${assetClass.id} (${assetClass.name})`);
+            assetClass.workflowLevels.forEach(level => {
+              console.log(`    - Workflow Level: ${level.id} (${level.name})`);
+              if (level.children && level.children.length > 0) {
+                level.children.forEach(child => {
+                  console.log(`      - Child Level: ${child.id} (${child.name})`);
+                });
+              }
+            });
+          });
+        });
+      } else {
+        console.log(`Successfully found workflow: ${data.title}`);
+      }
+      
+      setWorkflowData(data);
+      setLoading(false);
+    }
+  }, [workflowId]);
+  
+  // Update currentPath when workflowData is available
+  useEffect(() => {
+    if (workflowData) {
+      const path = determineCurrentPath();
+      setCurrentPath(path);
+    }
+  }, [workflowData, determineCurrentPath]);
+  
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-[60vh]">
+          <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Loading...</h2>
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
+  if (!workflowData) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-[60vh]">
+          <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Workflow Not Found</h2>
+          <p className="text-muted-foreground mb-4">The workflow you're looking for doesn't exist or you don't have access to it.</p>
+          <Button onClick={() => router.push('/')}>Return to Dashboard</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const handleNavigate = (id: string, level: string) => {
     if (level === 'root') {
@@ -375,13 +378,13 @@ const WorkflowDetailPage = () => {
       } else {
         // Check if this is a direct child of the current path's last item
         const lastId = currentPath[currentPath.length - 1];
-        if (hierarchyData.categories[lastId]?.some(item => item.id === id)) {
+        if (hierarchyData.categories[lastId]?.some((item: any) => item.id === id)) {
           // Add this level to the path
           setCurrentPath([...currentPath, id]);
         } else {
           // This is not a direct child, so we need to find its parent
           for (const [parentId, children] of Object.entries(hierarchyData.categories)) {
-            if (children.some(item => item.id === id)) {
+            if (children.some((item: any) => item.id === id)) {
               // If the parent is already in the path, truncate to it and add this item
               if (currentPath.includes(parentId)) {
                 setCurrentPath([
