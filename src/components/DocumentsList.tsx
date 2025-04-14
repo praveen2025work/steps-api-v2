@@ -115,8 +115,35 @@ const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, on
     return <p className="text-muted-foreground">No documents found.</p>;
   }
 
-  const handlePreview = (documentId: string) => {
-    console.log(`Previewing document ${documentId}`);
+  const handlePreview = (document: Document) => {
+    console.log(`Previewing document ${document.id}`);
+    
+    // In a real application, this would open a preview based on file type
+    const extension = document.name.split('.').pop()?.toLowerCase();
+    
+    switch (extension) {
+      case 'xlsx':
+      case 'xls':
+        console.log('Opening Excel viewer');
+        break;
+      case 'pdf':
+        console.log('Opening PDF viewer');
+        break;
+      case 'html':
+        console.log('Opening HTML preview');
+        break;
+      case 'css':
+        console.log('Opening code viewer');
+        break;
+      case 'msg':
+        console.log('Opening email viewer');
+        break;
+      case 'zip':
+        console.log('Showing zip contents');
+        break;
+      default:
+        console.log('Opening generic file viewer');
+    }
   };
 
   return (
@@ -147,13 +174,34 @@ const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, on
                   <Button 
                     size="sm" 
                     variant="ghost"
-                    onClick={() => handlePreview(document.id)}
+                    onClick={() => handlePreview(document)}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Preview document</p>
+                  <p>
+                    {(() => {
+                      const extension = document.name.split('.').pop()?.toLowerCase();
+                      switch (extension) {
+                        case 'xlsx':
+                        case 'xls':
+                          return 'View Excel document';
+                        case 'pdf':
+                          return 'View PDF document';
+                        case 'html':
+                          return 'View HTML document';
+                        case 'css':
+                          return 'View CSS code';
+                        case 'msg':
+                          return 'View email message';
+                        case 'zip':
+                          return 'View archive contents';
+                        default:
+                          return 'Preview document';
+                      }
+                    })()}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
