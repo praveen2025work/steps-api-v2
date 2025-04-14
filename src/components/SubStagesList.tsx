@@ -149,6 +149,23 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
     );
   };
 
+  // Check if the sub-stage should have action buttons (SOD Roll or Books Open For Correction)
+  const shouldShowActionButtons = (name: string) => {
+    const lowerCaseName = name.toLowerCase();
+    return lowerCaseName.includes('sod roll') || lowerCaseName.includes('books open for correction');
+  };
+
+  // Preview and download handlers for file info
+  const handleFilePreview = (fileName: string, fileType: string) => {
+    console.log(`Previewing file: ${fileName} (${fileType})`);
+    // Implement actual preview logic here
+  };
+
+  const handleFileDownload = (fileName: string, fileType: string) => {
+    console.log(`Downloading file: ${fileName} (${fileType})`);
+    // Implement actual download logic here
+  };
+
   return (
     <div className="space-y-4">
       {subStages.map((subStage) => (
@@ -215,6 +232,121 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                     </div>
                     <Progress value={subStage.progress} className="h-2" />
                   </div>
+
+                  {/* Action Buttons for specific sub-stages at workflow instance level */}
+                  {shouldShowActionButtons(subStage.name) && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTrigger(subStage.id, subStage.name);
+                              }}
+                            >
+                              <Play className="h-3.5 w-3.5" />
+                              <span>Trigger</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Trigger this step</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRerun(subStage.id, subStage.name);
+                              }}
+                            >
+                              <RotateCw className="h-3.5 w-3.5" />
+                              <span>Rerun</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Rerun this step</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleForceStart(subStage.id, subStage.name);
+                              }}
+                            >
+                              <FastForward className="h-3.5 w-3.5" />
+                              <span>Force Start</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Force start this step</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSkip(subStage.id, subStage.name);
+                              }}
+                            >
+                              <SkipForward className="h-3.5 w-3.5" />
+                              <span>Skip</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Skip this step</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSendEmail(subStage.id, subStage.name);
+                              }}
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                              <span>Send Email</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Send email notification</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  )}
                 </div>
               </div>
             </CollapsibleTrigger>
@@ -223,8 +355,8 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
           <CollapsibleContent>
             <Separator />
             <div className="p-4 space-y-4 bg-accent/10">
-              {/* Action Buttons */}
-              {subStage.config && (
+              {/* Action Buttons - Only show for non-specific sub-stages that have config */}
+              {subStage.config && !shouldShowActionButtons(subStage.name) && (
                 <div>
                   <h4 className="text-sm font-medium mb-2">Actions</h4>
                   <div className="flex flex-wrap gap-2">
@@ -428,7 +560,7 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                     {subStage.fileInfo.map((file, index) => (
                       <div key={index} className="flex items-center justify-between bg-background p-2 rounded-md">
                         <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          {getFileIcon(file.type, file.name)}
                           <span>{file.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -436,7 +568,15 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <button className="text-xs text-blue-500 hover:underline">Preview</button>
+                                <button 
+                                  className="text-xs text-blue-500 hover:underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFilePreview(file.name, file.type);
+                                  }}
+                                >
+                                  Preview
+                                </button>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Preview file</p>
@@ -446,7 +586,15 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <button className="text-xs text-blue-500 hover:underline">Download</button>
+                                <button 
+                                  className="text-xs text-blue-500 hover:underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFileDownload(file.name, file.type);
+                                  }}
+                                >
+                                  Download
+                                </button>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Download file</p>

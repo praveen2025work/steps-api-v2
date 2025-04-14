@@ -8,20 +8,20 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { 
-  Play, 
-  RefreshCw, 
-  FastForward, 
-  SkipForward, 
-  Mail, 
   FileText, 
   Lock, 
   Unlock, 
   CheckCircle, 
   Clock, 
-  AlertTriangle 
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Network
 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
 import DocumentsList from './DocumentsList';
+import DependencyTreeMap from './DependencyTreeMap';
 
 interface WorkflowDetailViewProps {
   workflowTitle: string;
@@ -37,10 +37,21 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   tasks,
 }) => {
   const [activeStage, setActiveStage] = useState<string>(stages[0]?.id || '');
-  const [activeTab, setActiveTab] = useState<string>('tasks');
+  const [activeTab, setActiveTab] = useState<string>('tasks-substages');
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    tasks: true,
+    substages: true
+  });
 
   const handleStageClick = (stageId: string) => {
     setActiveStage(stageId);
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
 
   const activeStageTasks = tasks[activeStage] || [];
@@ -48,16 +59,66 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
   // Mock data for the additional tabs
   const mockSubStages = [
-    { id: 'sub-1', name: 'Data Collection', status: 'completed', progress: 100 },
-    { id: 'sub-2', name: 'Validation', status: 'completed', progress: 100 },
-    { id: 'sub-3', name: 'Processing', status: 'in-progress', progress: 60 },
-    { id: 'sub-4', name: 'Review', status: 'not-started', progress: 0 },
+    { 
+      id: 'sub-1', 
+      name: 'SOD Roll', 
+      status: 'completed', 
+      progress: 100,
+      type: 'auto',
+      processId: 'PROC-001',
+      updatedBy: 'System',
+      duration: 15
+    },
+    { 
+      id: 'sub-2', 
+      name: 'Books Open For Correction', 
+      status: 'in-progress', 
+      progress: 60,
+      type: 'manual',
+      processId: 'PROC-002',
+      updatedBy: 'John Doe',
+      duration: 30
+    },
+    { 
+      id: 'sub-3', 
+      name: 'Data Validation', 
+      status: 'not-started', 
+      progress: 0,
+      type: 'auto',
+      processId: 'PROC-003',
+      config: {
+        canTrigger: true,
+        canRerun: true,
+        canForceStart: true,
+        canSkip: true,
+        canSendEmail: true
+      }
+    },
+    { 
+      id: 'sub-4', 
+      name: 'Review', 
+      status: 'not-started', 
+      progress: 0,
+      type: 'manual',
+      processId: 'PROC-004',
+      config: {
+        canTrigger: true,
+        canRerun: false,
+        canForceStart: true,
+        canSkip: true,
+        canSendEmail: true
+      }
+    },
   ];
 
   const mockDocuments = [
     { id: 'doc-1', name: 'input_data.xlsx', type: 'excel', size: '2.4 MB', updatedAt: '2025-04-14 02:30', updatedBy: 'John Doe' },
     { id: 'doc-2', name: 'validation_report.pdf', type: 'pdf', size: '1.2 MB', updatedAt: '2025-04-14 02:45', updatedBy: 'System' },
     { id: 'doc-3', name: 'process_log.txt', type: 'text', size: '450 KB', updatedAt: '2025-04-14 03:00', updatedBy: 'System' },
+    { id: 'doc-4', name: 'report_template.html', type: 'html', size: '120 KB', updatedAt: '2025-04-14 03:15', updatedBy: 'Jane Smith' },
+    { id: 'doc-5', name: 'styles.css', type: 'css', size: '45 KB', updatedAt: '2025-04-14 03:20', updatedBy: 'Jane Smith' },
+    { id: 'doc-6', name: 'notification.msg', type: 'email', size: '75 KB', updatedAt: '2025-04-14 03:30', updatedBy: 'System' },
+    { id: 'doc-7', name: 'archive.zip', type: 'archive', size: '3.2 MB', updatedAt: '2025-04-14 03:45', updatedBy: 'John Doe' },
   ];
 
   const mockParameters = {
@@ -76,8 +137,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   };
 
   const mockDependencies = [
-    { name: 'SOD Roll', status: 'completed', completedAt: '2025-04-14 06:15' },
-    { name: 'Market Data Load', status: 'completed', completedAt: '2025-04-14 06:30' },
+    { name: 'SOD Roll', status: 'completed', completedAt: '2025-04-14 06:15', id: 'dep-1' },
+    { name: 'Market Data Load', status: 'completed', completedAt: '2025-04-14 06:30', id: 'dep-2' },
+    { name: 'Risk Calculation', status: 'in-progress', completedAt: null, id: 'dep-3' },
+    { name: 'Compliance Check', status: 'not-started', completedAt: null, id: 'dep-4' },
   ];
 
   const mockAuditInfo = [
@@ -104,55 +167,76 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
               <CardTitle>{activeStageInfo?.name || 'Tasks'}</CardTitle>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline">
-                  <Play className="h-4 w-4 mr-1" />
-                  Trigger
-                </Button>
-                <Button size="sm" variant="outline">
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Rerun
-                </Button>
-                <Button size="sm" variant="outline">
-                  <FastForward className="h-4 w-4 mr-1" />
-                  Force Start
-                </Button>
-                <Button size="sm" variant="outline">
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Skip
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Mail className="h-4 w-4 mr-1" />
-                  Send Email
-                </Button>
-              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="tasks" onValueChange={setActiveTab}>
+            <Tabs defaultValue="tasks-substages" onValueChange={setActiveTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                <TabsTrigger value="substages">Sub-Stages</TabsTrigger>
+                <TabsTrigger value="tasks-substages">Tasks & Sub-Stages</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="parameters">Parameters</TabsTrigger>
                 <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
                 <TabsTrigger value="audit">Audit Info</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="tasks">
-                {activeStageTasks.length > 0 ? (
-                  <div className="space-y-4">
-                    {activeStageTasks.map(task => (
-                      <WorkflowTaskItem key={task.id} task={task} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No tasks found for this stage.</p>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="substages">
-                <SubStagesList subStages={mockSubStages} />
+              <TabsContent value="tasks-substages">
+                <div className="space-y-4">
+                  {/* Tasks Section with Collapsible */}
+                  <Collapsible 
+                    open={expandedSections.tasks} 
+                    onOpenChange={() => toggleSection('tasks')}
+                    className="border rounded-lg overflow-hidden"
+                  >
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-accent/10">
+                      <div className="flex items-center gap-2">
+                        {expandedSections.tasks ? 
+                          <ChevronDown className="h-4 w-4" /> : 
+                          <ChevronRight className="h-4 w-4" />
+                        }
+                        <h3 className="font-medium">Tasks</h3>
+                        <Badge variant="outline">{activeStageTasks.length}</Badge>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <Separator />
+                      <div className="p-4">
+                        {activeStageTasks.length > 0 ? (
+                          <div className="space-y-4">
+                            {activeStageTasks.map(task => (
+                              <WorkflowTaskItem key={task.id} task={task} />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground">No tasks found for this stage.</p>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                  
+                  {/* Sub-Stages Section with Collapsible */}
+                  <Collapsible 
+                    open={expandedSections.substages} 
+                    onOpenChange={() => toggleSection('substages')}
+                    className="border rounded-lg overflow-hidden"
+                  >
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-accent/10">
+                      <div className="flex items-center gap-2">
+                        {expandedSections.substages ? 
+                          <ChevronDown className="h-4 w-4" /> : 
+                          <ChevronRight className="h-4 w-4" />
+                        }
+                        <h3 className="font-medium">Sub-Stages</h3>
+                        <Badge variant="outline">{mockSubStages.length}</Badge>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <Separator />
+                      <div className="p-4">
+                        <SubStagesList subStages={mockSubStages} />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
               </TabsContent>
               
               <TabsContent value="documents">
@@ -237,20 +321,51 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               
               <TabsContent value="dependencies">
                 <div className="space-y-4">
-                  {mockDependencies.map((dep, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <div>
-                          <p className="font-medium">{dep.name}</p>
-                          <p className="text-sm text-muted-foreground">Completed at: {dep.completedAt}</p>
-                        </div>
-                      </div>
-                      <Badge className="bg-green-500 text-white">
-                        {dep.status}
-                      </Badge>
-                    </div>
-                  ))}
+                  <h3 className="text-sm font-medium mb-2">Dependency Tree</h3>
+                  <div className="border rounded-lg p-4 bg-accent/5">
+                    {/* Using the new DependencyTreeMap component */}
+                    <DependencyTreeMap 
+                      dependencies={[
+                        {
+                          id: 'dep-1',
+                          name: 'SOD Roll',
+                          status: 'completed',
+                          completedAt: '2025-04-14 06:15',
+                          children: [
+                            {
+                              id: 'dep-2',
+                              name: 'Market Data Load',
+                              status: 'completed',
+                              completedAt: '2025-04-14 06:30',
+                              children: [
+                                {
+                                  id: 'dep-3',
+                                  name: 'Risk Calculation',
+                                  status: 'in-progress'
+                                }
+                              ]
+                            },
+                            {
+                              id: 'dep-4',
+                              name: 'Books Open For Correction',
+                              status: 'in-progress',
+                              children: [
+                                {
+                                  id: 'dep-5',
+                                  name: 'Compliance Check',
+                                  status: 'not-started'
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]}
+                      onDependencyClick={(id) => {
+                        console.log(`Navigate to dependency: ${id}`);
+                        // In a real application, this would navigate to the specific step
+                      }}
+                    />
+                  </div>
                 </div>
               </TabsContent>
               

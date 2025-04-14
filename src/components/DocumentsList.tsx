@@ -26,6 +26,10 @@ interface Document {
   subStage?: string;
 }
 
+interface DocumentsListProps {
+  documents: Document[];
+}
+
 // Helper function to get file icon based on file type
 const getFileIcon = (type: string, fileName: string) => {
   // Check file extension
@@ -50,17 +54,9 @@ const getFileIcon = (type: string, fileName: string) => {
   }
 };
 
-interface DocumentsListProps {
-  documents: Document[];
-}
-
 const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
   const [activeTab, setActiveTab] = useState<string>('all');
   
-  const getDocumentIcon = (document: Document) => {
-    return getFileIcon(document.type, document.name);
-  };
-
   const handleDownload = (documentId: string) => {
     // In a real application, this would trigger a download
     console.log(`Downloading document ${documentId}`);
@@ -70,50 +66,6 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
     // In a real application, this would trigger an upload
     console.log(`Uploading document ${documentId}`);
   };
-
-  const downloadDocuments = documents.filter(doc => doc.category === 'download' || !doc.category);
-  const uploadDocuments = documents.filter(doc => doc.category === 'upload');
-  const displayDocuments = activeTab === 'all' 
-    ? documents 
-    : activeTab === 'download' 
-      ? downloadDocuments 
-      : uploadDocuments;
-
-  return (
-    <div className="space-y-4">
-      <Tabs defaultValue="all" onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all">All Documents ({documents.length})</TabsTrigger>
-          <TabsTrigger value="download">Download ({downloadDocuments.length})</TabsTrigger>
-          <TabsTrigger value="upload">Upload ({uploadDocuments.length})</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="all" className="mt-4">
-          <DocumentsGrid documents={displayDocuments} onDownload={handleDownload} onUpload={handleUpload} />
-        </TabsContent>
-        
-        <TabsContent value="download" className="mt-4">
-          <DocumentsGrid documents={displayDocuments} onDownload={handleDownload} onUpload={handleUpload} />
-        </TabsContent>
-        
-        <TabsContent value="upload" className="mt-4">
-          <DocumentsGrid documents={displayDocuments} onDownload={handleDownload} onUpload={handleUpload} />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
-
-interface DocumentsGridProps {
-  documents: Document[];
-  onDownload: (id: string) => void;
-  onUpload: (id: string) => void;
-}
-
-const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, onUpload }) => {
-  if (documents.length === 0) {
-    return <p className="text-muted-foreground">No documents found.</p>;
-  }
 
   const handlePreview = (document: Document) => {
     console.log(`Previewing document ${document.id}`);
@@ -146,6 +98,66 @@ const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, on
     }
   };
 
+  const downloadDocuments = documents.filter(doc => doc.category === 'download' || !doc.category);
+  const uploadDocuments = documents.filter(doc => doc.category === 'upload');
+  const displayDocuments = activeTab === 'all' 
+    ? documents 
+    : activeTab === 'download' 
+      ? downloadDocuments 
+      : uploadDocuments;
+
+  return (
+    <div className="space-y-4">
+      <Tabs defaultValue="all" onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="all">All Documents ({documents.length})</TabsTrigger>
+          <TabsTrigger value="download">Download ({downloadDocuments.length})</TabsTrigger>
+          <TabsTrigger value="upload">Upload ({uploadDocuments.length})</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="all" className="mt-4">
+          <DocumentsGrid 
+            documents={displayDocuments} 
+            onDownload={handleDownload} 
+            onUpload={handleUpload} 
+            onPreview={handlePreview} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="download" className="mt-4">
+          <DocumentsGrid 
+            documents={displayDocuments} 
+            onDownload={handleDownload} 
+            onUpload={handleUpload} 
+            onPreview={handlePreview} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="upload" className="mt-4">
+          <DocumentsGrid 
+            documents={displayDocuments} 
+            onDownload={handleDownload} 
+            onUpload={handleUpload} 
+            onPreview={handlePreview} 
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+interface DocumentsGridProps {
+  documents: Document[];
+  onDownload: (id: string) => void;
+  onUpload: (id: string) => void;
+  onPreview: (document: Document) => void;
+}
+
+const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, onUpload, onPreview }) => {
+  if (documents.length === 0) {
+    return <p className="text-muted-foreground">No documents found.</p>;
+  }
+
   return (
     <div className="space-y-4">
       {documents.map((document) => (
@@ -174,7 +186,7 @@ const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, on
                   <Button 
                     size="sm" 
                     variant="ghost"
-                    onClick={() => handlePreview(document)}
+                    onClick={() => onPreview(document)}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
