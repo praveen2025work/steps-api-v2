@@ -8,35 +8,36 @@ import { Button } from '@/components/ui/button';
 import { mockWorkflows } from '@/data/mockWorkflows';
 
 // Create sample rate-specific workflows
+// Using the correct IDs from hierarchicalWorkflowData.ts
 const rateWorkflows = [
   {
-    id: "rate-001",
+    id: "asset-001", // Using the Rates asset class ID
     title: "Daily Named PNL",
     description: "Daily named PNL workflow",
-    status: "pending" as const,
-    progress: 0,
+    status: "in-progress" as const,
+    progress: 60,
     dueDate: "2025-02-15",
     assignee: "John Doe",
     createdAt: "2025-02-15",
     stages: []
   },
   {
-    id: "rate-002",
+    id: "asset-004", // Using the Equities asset class ID
     title: "Daily Workspace PNL",
     description: "Daily workspace PNL workflow",
-    status: "pending" as const,
-    progress: 0,
+    status: "in-progress" as const,
+    progress: 70,
     dueDate: "2025-01-20",
     assignee: "Unassigned",
     createdAt: "2025-01-20",
     stages: []
   },
   {
-    id: "rate-003",
+    id: "asset-006", // Using the Global Markets asset class ID
     title: "Monthend PNL",
     description: "Monthend PNL workflow",
-    status: "pending" as const,
-    progress: 0,
+    status: "in-progress" as const,
+    progress: 10,
     dueDate: "2025-03-05",
     assignee: "Unassigned",
     createdAt: "2025-03-05",

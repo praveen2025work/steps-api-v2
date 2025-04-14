@@ -23,12 +23,6 @@ const findWorkflowById = (id: string) => {
         const found = searchInWorkflowLevels(level.children, targetId);
         if (found) return found;
       }
-      
-      // Check workflowLevels if they exist
-      if (level.workflowLevels && level.workflowLevels.length > 0) {
-        const found = searchInWorkflowLevels(level.workflowLevels, targetId);
-        if (found) return found;
-      }
     }
     
     return null;
@@ -48,8 +42,17 @@ const findWorkflowById = (id: string) => {
       }
       
       // Check workflow levels
-      const found = searchInWorkflowLevels(assetClass.workflowLevels, id);
-      if (found) return found;
+      for (const wfLevel of assetClass.workflowLevels) {
+        if (wfLevel.id === id) {
+          return wfLevel;
+        }
+        
+        // Check children if they exist
+        if (wfLevel.children && wfLevel.children.length > 0) {
+          const found = searchInWorkflowLevels(wfLevel.children, id);
+          if (found) return found;
+        }
+      }
     }
   }
   
@@ -195,8 +198,10 @@ const WorkflowDetailPage = () => {
   // Fetch workflow data based on workflowId
   useEffect(() => {
     if (workflowId) {
+      console.log(`Fetching workflow data for ID: ${workflowId}`);
       // In a real application, you would fetch the workflow data from an API
       const data = getMockWorkflowData(workflowId as string);
+      console.log(`Workflow data found:`, data ? 'Yes' : 'No');
       setWorkflowData(data);
       setLoading(false);
     }
