@@ -39,8 +39,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [activeStage, setActiveStage] = useState<string>(stages[0]?.id || '');
   const [activeTab, setActiveTab] = useState<string>('tasks-substages');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    tasks: true,
-    substages: true
+    tasks: true
   });
 
   const handleStageClick = (stageId: string) => {
@@ -67,7 +66,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       type: 'auto',
       processId: 'PROC-001',
       updatedBy: 'System',
-      duration: 15
+      duration: 15,
+      fileInfo: [
+        { name: 'sod_report.xlsx', type: 'excel' },
+        { name: 'sod_log.txt', type: 'text' }
+      ],
+      dependencies: [
+        { name: 'Market Data Load', status: 'completed', id: 'dep-2' }
+      ]
     },
     { 
       id: 'sub-2', 
@@ -77,7 +83,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       type: 'manual',
       processId: 'PROC-002',
       updatedBy: 'John Doe',
-      duration: 30
+      duration: 30,
+      fileInfo: [
+        { name: 'correction_template.xlsx', type: 'excel' },
+        { name: 'instructions.html', type: 'html' }
+      ],
+      dependencies: [
+        { name: 'SOD Roll', status: 'completed', id: 'sub-1' }
+      ]
     },
     { 
       id: 'sub-3', 
@@ -92,7 +105,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         canForceStart: true,
         canSkip: true,
         canSendEmail: true
-      }
+      },
+      dependencies: [
+        { name: 'Books Open For Correction', status: 'in-progress', id: 'sub-2' }
+      ]
     },
     { 
       id: 'sub-4', 
@@ -107,7 +123,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         canForceStart: true,
         canSkip: true,
         canSendEmail: true
-      }
+      },
+      dependencies: [
+        { name: 'Data Validation', status: 'not-started', id: 'sub-3' }
+      ]
     },
   ];
 
@@ -181,7 +200,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               
               <TabsContent value="tasks-substages">
                 <div className="space-y-4">
-                  {/* Tasks Section with Collapsible */}
+                  {/* Combined Tasks and Sub-Stages Section with Collapsible */}
                   <Collapsible 
                     open={expandedSections.tasks} 
                     onOpenChange={() => toggleSection('tasks')}
@@ -193,46 +212,30 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           <ChevronDown className="h-4 w-4" /> : 
                           <ChevronRight className="h-4 w-4" />
                         }
-                        <h3 className="font-medium">Tasks</h3>
-                        <Badge variant="outline">{activeStageTasks.length}</Badge>
+                        <h3 className="font-medium">Tasks & Sub-Stages</h3>
+                        <Badge variant="outline">{activeStageTasks.length + mockSubStages.length}</Badge>
                       </div>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <Separator />
                       <div className="p-4">
-                        {activeStageTasks.length > 0 ? (
-                          <div className="space-y-4">
-                            {activeStageTasks.map(task => (
-                              <WorkflowTaskItem key={task.id} task={task} />
-                            ))}
+                        {/* Tasks Section */}
+                        {activeStageTasks.length > 0 && (
+                          <div className="mb-6">
+                            <h4 className="text-sm font-medium mb-3">Tasks</h4>
+                            <div className="space-y-4">
+                              {activeStageTasks.map(task => (
+                                <WorkflowTaskItem key={task.id} task={task} />
+                              ))}
+                            </div>
                           </div>
-                        ) : (
-                          <p className="text-muted-foreground">No tasks found for this stage.</p>
                         )}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                  
-                  {/* Sub-Stages Section with Collapsible */}
-                  <Collapsible 
-                    open={expandedSections.substages} 
-                    onOpenChange={() => toggleSection('substages')}
-                    className="border rounded-lg overflow-hidden"
-                  >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-accent/10">
-                      <div className="flex items-center gap-2">
-                        {expandedSections.substages ? 
-                          <ChevronDown className="h-4 w-4" /> : 
-                          <ChevronRight className="h-4 w-4" />
-                        }
-                        <h3 className="font-medium">Sub-Stages</h3>
-                        <Badge variant="outline">{mockSubStages.length}</Badge>
-                      </div>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <Separator />
-                      <div className="p-4">
-                        <SubStagesList subStages={mockSubStages} />
+                        
+                        {/* Sub-Stages Section */}
+                        <div>
+                          <h4 className="text-sm font-medium mb-3">Sub-Stages</h4>
+                          <SubStagesList subStages={mockSubStages} />
+                        </div>
                       </div>
                     </CollapsibleContent>
                   </Collapsible>

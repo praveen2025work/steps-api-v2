@@ -31,7 +31,7 @@ interface DocumentsListProps {
 }
 
 // Helper function to get file icon based on file type
-const getFileIcon = (type: string, fileName: string) => {
+export const getFileIcon = (type: string, fileName: string) => {
   // Check file extension
   const extension = fileName.split('.').pop()?.toLowerCase();
   

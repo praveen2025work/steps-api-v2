@@ -23,6 +23,7 @@ import {
   Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getFileIcon } from './DocumentsList';
 
 interface SubStage {
   id: string;
