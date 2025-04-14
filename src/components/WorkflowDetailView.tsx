@@ -60,78 +60,245 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const activeStageTasks = tasks[activeStage] || [];
   const activeStageInfo = stages.find(stage => stage.id === activeStage);
 
-  // Mock data for the additional tabs
+  // Enhanced mock data for the additional tabs with the new structure
   const mockSubStages = [
     { 
-      id: 'sub-1', 
-      name: 'SOD Roll', 
-      status: 'completed', 
-      progress: 100,
+      id: 'trigger_file',
+      name: 'Create Trigger File for Rec Factory',
       type: 'auto',
-      processId: 'PROC-001',
-      updatedBy: 'System',
-      duration: 15,
-      fileInfo: [
-        { name: 'sod_report.xlsx', type: 'excel' },
-        { name: 'sod_log.txt', type: 'text' }
-      ],
-      dependencies: [
-        { name: 'Market Data Load', status: 'completed', id: 'dep-2' }
-      ]
-    },
-    { 
-      id: 'sub-2', 
-      name: 'Books Open For Correction', 
-      status: 'in-progress', 
-      progress: 60,
-      type: 'manual',
-      processId: 'PROC-002',
-      updatedBy: 'John Doe',
-      duration: 30,
-      fileInfo: [
-        { name: 'correction_template.xlsx', type: 'excel' },
-        { name: 'instructions.html', type: 'html' }
-      ],
-      dependencies: [
-        { name: 'SOD Roll', status: 'completed', id: 'sub-1' }
-      ]
-    },
-    { 
-      id: 'sub-3', 
-      name: 'Data Validation', 
-      status: 'not-started', 
+      status: 'not-started',
       progress: 0,
+      processId: 'PROC-1237',
+      timing: {
+        start: '07:30:00',
+        duration: '5m',
+        avgDuration: '3m',
+        avgStart: '07:30 AM'
+      },
+      stats: {
+        success: '99%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'trigger.dat', type: 'download', size: '2 KB' }
+      ],
+      messages: [],
+      dependencies: [
+        { name: 'Poll Book OFC Rec Factory', status: 'in_progress', id: 'poll_book' }
+      ]
+    },
+    { 
+      id: 'file_rec_adj',
+      name: 'File Availability - Recurring Adjustment',
+      type: 'manual',
+      status: 'not-started',
+      progress: 0,
+      processId: 'PROC-1238',
+      timing: {
+        start: '08:00:00',
+        duration: '20m',
+        avgDuration: '15m',
+        avgStart: '08:00 AM'
+      },
+      stats: {
+        success: '92%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'recurring_adj.xlsx', type: 'upload', size: '1.8 MB' },
+        { name: 'adj_template.xlsx', type: 'download', size: '250 KB' }
+      ],
+      messages: [],
+      dependencies: [
+        { name: 'SOD Roll', status: 'completed', id: 'sod_roll' }
+      ]
+    },
+    { 
+      id: 'file_dod',
+      name: 'File Availability - DOD Rule',
+      type: 'manual',
+      status: 'not-started',
+      progress: 0,
+      processId: 'PROC-1239',
+      timing: {
+        start: '08:15:00',
+        duration: '15m',
+        avgDuration: '10m',
+        avgStart: '08:15 AM'
+      },
+      stats: {
+        success: '90%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'dod_rules.xlsx', type: 'upload', size: '950 KB' },
+        { name: 'dod_template.xlsx', type: 'download', size: '180 KB' }
+      ],
+      messages: [],
+      dependencies: []
+    },
+    { 
+      id: 'balance_check',
+      name: 'Balance in Closed, Central, Default And Other Auto Excluded Books',
       type: 'auto',
-      processId: 'PROC-003',
-      config: {
-        canTrigger: true,
-        canRerun: true,
-        canForceStart: true,
-        canSkip: true,
-        canSendEmail: true
+      status: 'not-started',
+      progress: 0,
+      processId: 'PROC-1243',
+      timing: {
+        start: '09:15:00',
+        duration: '15m',
+        avgDuration: '12m',
+        avgStart: '09:15 AM'
       },
+      stats: {
+        success: '94%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'balance_report.xlsx', type: 'download', size: '2.2 MB' },
+        { name: 'exceptions.log', type: 'preview', size: '120 KB' }
+      ],
+      messages: [],
       dependencies: [
-        { name: 'Books Open For Correction', status: 'in-progress', id: 'sub-2' }
+        { name: 'Books Open For Correction', status: 'completed', id: 'books_open' }
       ]
     },
     { 
-      id: 'sub-4', 
-      name: 'Review', 
-      status: 'not-started', 
+      id: 'recurring_adj',
+      name: 'Recurring Adjustments',
+      type: 'auto',
+      status: 'not-started',
       progress: 0,
-      type: 'manual',
-      processId: 'PROC-004',
-      config: {
-        canTrigger: true,
-        canRerun: false,
-        canForceStart: true,
-        canSkip: true,
-        canSendEmail: true
+      processId: 'PROC-1244',
+      timing: {
+        start: '09:30:00',
+        duration: '20m',
+        avgDuration: '18m',
+        avgStart: '09:30 AM'
       },
+      stats: {
+        success: '91%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'rec_adjustments.xlsx', type: 'download', size: '1.8 MB' },
+        { name: 'adj_log.txt', type: 'preview', size: '95 KB' }
+      ],
+      messages: [],
       dependencies: [
-        { name: 'Data Validation', status: 'not-started', id: 'sub-3' }
+        { name: 'Books Open For Correction', status: 'completed', id: 'books_open' },
+        { name: 'File Availability - Recurring Adjustment', status: 'not-started', id: 'file_rec_adj' }
       ]
     },
+    { 
+      id: 'non_rec_adj',
+      name: 'Post Non-recurring Adjustments',
+      type: 'manual',
+      status: 'not-started',
+      progress: 0,
+      processId: 'PROC-1245',
+      timing: {
+        start: '09:50:00',
+        duration: '30m',
+        avgDuration: '25m',
+        avgStart: '09:50 AM'
+      },
+      stats: {
+        success: '88%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'non_rec_adj.xlsx', type: 'upload', size: '1.4 MB' },
+        { name: 'adj_template.xlsx', type: 'download', size: '230 KB' }
+      ],
+      messages: [],
+      dependencies: [
+        { name: 'SOD Roll', status: 'completed', id: 'sod_roll' }
+      ]
+    },
+    { 
+      id: 'review_pnl_dod',
+      name: 'Review Daily PnL-Generate DoD Movement',
+      type: 'auto',
+      status: 'not-started',
+      progress: 0,
+      processId: 'PROC-1246',
+      timing: {
+        start: '10:30:00',
+        duration: '20m',
+        avgDuration: '18m',
+        avgStart: '10:30 AM'
+      },
+      stats: {
+        success: '95%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'dod_movement.xlsx', type: 'download', size: '1.9 MB' },
+        { name: 'movement_log.txt', type: 'preview', size: '110 KB' }
+      ],
+      messages: [],
+      dependencies: [
+        { name: 'File Availability - DOD Rule', status: 'not-started', id: 'file_dod' },
+        { name: 'Recurring Adjustments', status: 'not-started', id: 'recurring_adj' }
+      ]
+    }
   ];
 
   const mockDocuments = [

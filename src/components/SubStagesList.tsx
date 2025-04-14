@@ -41,7 +41,7 @@ interface SubStage {
   avgStartTime?: string;
   expectedUser?: string;
   dependencies?: { name: string; status: string; id?: string }[];
-  fileInfo?: { name: string; type: string }[];
+  fileInfo?: { name: string; type: string; size?: string }[];
   config?: {
     canTrigger?: boolean;
     canRerun?: boolean;
@@ -49,6 +49,30 @@ interface SubStage {
     canSkip?: boolean;
     canSendEmail?: boolean;
   };
+  timing?: {
+    start?: string;
+    duration?: string;
+    avgDuration?: string;
+    avgStart?: string;
+  };
+  stats?: {
+    success?: string;
+    lastRun?: string | null;
+  };
+  meta?: {
+    updatedBy?: string | null;
+    updatedOn?: string | null;
+    lockedBy?: string | null;
+    lockedOn?: string | null;
+    completedBy?: string | null;
+    completedOn?: string | null;
+  };
+  files?: {
+    name: string;
+    type: string;
+    size: string;
+  }[];
+  messages?: string[];
 }
 
 interface SubStagesListProps {
@@ -202,20 +226,30 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                         <span className="text-muted-foreground">Process ID:</span> {subStage.processId}
                       </div>
                     )}
-                    {subStage.updatedBy && (
+                    {subStage.meta?.updatedBy && (
                       <div className="text-sm">
-                        <span className="text-muted-foreground">Updated by:</span> {subStage.updatedBy}
+                        <span className="text-muted-foreground">Updated by:</span> {subStage.meta.updatedBy}
                       </div>
                     )}
-                    {subStage.lockedBy && (
+                    {subStage.meta?.lockedBy && (
                       <div className="text-sm flex items-center gap-1">
                         <Lock className="h-3 w-3" />
-                        <span className="text-muted-foreground">Locked by:</span> {subStage.lockedBy}
+                        <span className="text-muted-foreground">Locked by:</span> {subStage.meta.lockedBy}
                       </div>
                     )}
-                    {subStage.duration !== undefined && (
+                    {subStage.timing?.duration && (
                       <div className="text-sm">
-                        <span className="text-muted-foreground">Duration:</span> {subStage.duration} min
+                        <span className="text-muted-foreground">Duration:</span> {subStage.timing.duration}
+                      </div>
+                    )}
+                    {subStage.stats?.success && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Success Rate:</span> {subStage.stats.success}
+                      </div>
+                    )}
+                    {subStage.timing?.start && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Start Time:</span> {subStage.timing.start}
                       </div>
                     )}
                   </div>
@@ -488,22 +522,34 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
               <div>
                 <h4 className="text-sm font-medium mb-2">Performance Metrics</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {subStage.avgDuration !== undefined && (
+                  {(subStage.timing?.avgDuration || subStage.avgDuration) && (
                     <div className="bg-background p-3 rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">Average Duration</div>
-                      <div className="font-medium">{subStage.avgDuration} min</div>
+                      <div className="font-medium">{subStage.timing?.avgDuration || `${subStage.avgDuration} min`}</div>
                     </div>
                   )}
-                  {subStage.avgStartTime && (
+                  {(subStage.timing?.avgStart || subStage.avgStartTime) && (
                     <div className="bg-background p-3 rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">Average Start Time</div>
-                      <div className="font-medium">{subStage.avgStartTime}</div>
+                      <div className="font-medium">{subStage.timing?.avgStart || subStage.avgStartTime}</div>
+                    </div>
+                  )}
+                  {subStage.stats?.success && (
+                    <div className="bg-background p-3 rounded-md">
+                      <div className="text-xs text-muted-foreground mb-1">Success Rate</div>
+                      <div className="font-medium">{subStage.stats.success}</div>
                     </div>
                   )}
                   {subStage.type === 'manual' && subStage.expectedUser && (
                     <div className="bg-background p-3 rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">Expected User</div>
                       <div className="font-medium">{subStage.expectedUser}</div>
+                    </div>
+                  )}
+                  {subStage.stats?.lastRun && (
+                    <div className="bg-background p-3 rounded-md">
+                      <div className="text-xs text-muted-foreground mb-1">Last Run</div>
+                      <div className="font-medium">{subStage.stats.lastRun}</div>
                     </div>
                   )}
                 </div>
@@ -554,15 +600,89 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
               )}
               
               {/* File Information */}
-              {subStage.fileInfo && subStage.fileInfo.length > 0 && (
+              {(subStage.files || (subStage.fileInfo && subStage.fileInfo.length > 0)) && (
                 <div>
                   <h4 className="text-sm font-medium mb-2">Files</h4>
                   <div className="space-y-2">
-                    {subStage.fileInfo.map((file, index) => (
+                    {subStage.files && subStage.files.map((file, index) => (
                       <div key={index} className="flex items-center justify-between bg-background p-2 rounded-md">
                         <div className="flex items-center gap-2">
                           {getFileIcon(file.type, file.name)}
                           <span>{file.name}</span>
+                          {file.size && <span className="text-xs text-muted-foreground">({file.size})</span>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{file.type}</Badge>
+                          {file.type === 'preview' && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button 
+                                    className="text-xs text-blue-500 hover:underline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFilePreview(file.name, file.type);
+                                    }}
+                                  >
+                                    Preview
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Preview file</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {(file.type === 'download' || !file.type) && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button 
+                                    className="text-xs text-blue-500 hover:underline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFileDownload(file.name, file.type);
+                                    }}
+                                  >
+                                    Download
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Download file</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {file.type === 'upload' && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button 
+                                    className="text-xs text-blue-500 hover:underline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      console.log(`Upload file: ${file.name}`);
+                                    }}
+                                  >
+                                    Upload
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Upload file</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {subStage.fileInfo && subStage.fileInfo.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-background p-2 rounded-md">
+                        <div className="flex items-center gap-2">
+                          {getFileIcon(file.type, file.name)}
+                          <span>{file.name}</span>
+                          {file.size && <span className="text-xs text-muted-foreground">({file.size})</span>}
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">{file.type}</Badge>
@@ -603,6 +723,20 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                             </Tooltip>
                           </TooltipProvider>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Messages */}
+              {subStage.messages && subStage.messages.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Messages</h4>
+                  <div className="space-y-2">
+                    {subStage.messages.map((message, index) => (
+                      <div key={index} className="bg-background p-2 rounded-md text-sm">
+                        {message}
                       </div>
                     ))}
                   </div>
