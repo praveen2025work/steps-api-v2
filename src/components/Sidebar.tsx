@@ -60,6 +60,11 @@ const navSections: NavSection[] = [
     title: "Regulatory",
     items: [
       {
+        title: 'Rates',
+        href: '/rates',
+        icon: <BarChart4 className="h-5 w-5" />
+      },
+      {
         title: 'Compliance',
         href: '/compliance',
         icon: <ShieldAlert className="h-5 w-5" />
