@@ -68,7 +68,7 @@ const WorkflowStageViewer = () => {
   return (
     <>
       <Head>
-        <title>Stage Viewer | {workflow.title}</title>
+        <title>Workflow Tool | Stage Viewer</title>
         <meta name="description" content={`View stages for ${workflow.title}`} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />

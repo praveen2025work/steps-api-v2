@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import WorkflowStats from "@/components/WorkflowStats";
 import WorkflowStatusCard from "@/components/WorkflowStatusCard";
 import RecentActivities from "@/components/RecentActivities";
+import WorkflowHierarchyView from "@/components/WorkflowHierarchyView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Filter, Download, Upload, BarChart3 } from "lucide-react";
@@ -14,54 +15,18 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>FinReg Suite - Regulatory Workflow Dashboard</title>
-        <meta name="description" content="Financial Regulatory Workflow Management System Dashboard" />
+        <title>Workflow Tool - Financial Workflow Dashboard</title>
+        <meta name="description" content="Financial Workflow Management System Dashboard" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <DashboardLayout title="Regulatory Dashboard">
+      <DashboardLayout title="Workflow Dashboard">
         <div className="space-y-8">
           {/* Stats Overview */}
           <WorkflowStats />
           
-          {/* Regulatory Insights */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold">Regulatory Compliance Timeline</CardTitle>
-                  <Button variant="ghost" size="sm">
-                    <BarChart3 className="h-4 w-4 mr-1" />
-                    View Details
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px] flex items-center justify-center">
-                  <img 
-                    src="https://assets.co.dev/19129c8d-1c91-4384-9bc0-e0d1fdc82154/image-ed69719.png" 
-                    alt="Regulatory Timeline" 
-                    className="max-h-full object-contain"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold">Risk Assessment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px] flex items-center justify-center">
-                  <img 
-                    src="https://assets.co.dev/19129c8d-1c91-4384-9bc0-e0d1fdc82154/image-d0cb8f5.png" 
-                    alt="Risk Assessment" 
-                    className="max-h-full object-contain"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Workflow Hierarchy View */}
+          <WorkflowHierarchyView />
           
           {/* Workflows and Activities */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

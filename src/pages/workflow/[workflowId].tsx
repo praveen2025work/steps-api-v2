@@ -95,7 +95,7 @@ const WorkflowDetailPage = () => {
   return (
     <>
       <Head>
-        <title>Workflow Detail | {mockWorkflowData.title}</title>
+        <title>Workflow Tool | {mockWorkflowData.title}</title>
         <meta name="description" content={`Workflow details for ${mockWorkflowData.title}`} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
