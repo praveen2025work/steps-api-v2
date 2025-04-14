@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/router";
 import { ChevronRight } from "lucide-react";
 
@@ -19,6 +20,8 @@ interface ApplicationCardProps {
   description: string;
   taskCounts: TaskCounts;
   eligibleRoles: string[];
+  progress?: number;
+  status?: string;
 }
 
 const ApplicationCard = ({
@@ -26,7 +29,9 @@ const ApplicationCard = ({
   title,
   description,
   taskCounts,
-  eligibleRoles
+  eligibleRoles,
+  progress = 0,
+  status = "pending"
 }: ApplicationCardProps) => {
   const router = useRouter();
   
@@ -40,10 +45,22 @@ const ApplicationCard = ({
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg">{title}</CardTitle>
+          <Badge variant="outline" className="text-xs">
+            {status}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent className="pb-2">
-        <p className="text-sm text-muted-foreground mb-4">{description}</p>
+        <p className="text-sm text-muted-foreground mb-3">{description}</p>
+        
+        <div className="mb-3">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm font-medium">{progress}%</span>
+          </div>
+          <Progress value={progress} className="h-2" />
+        </div>
         
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div className="p-2 bg-green-500/10 rounded-md">

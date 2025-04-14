@@ -1,46 +1,97 @@
 import React from 'react';
 import ApplicationCard from './ApplicationCard';
 
-// Mock application data
+// Updated application data based on user request
 const mockApplications = [
   {
     id: "app-001",
-    title: "eRates",
-    description: "Electronic rates processing and management system",
+    title: "Daily Named PNL",
+    description: "Daily named profit and loss tracking",
+    progress: 45,
+    status: "in-progress",
     taskCounts: {
-      completed: 24,
-      failed: 2,
+      completed: 9,
+      failed: 1,
       rejected: 1,
       pending: 5,
+      processing: 4
+    },
+    eligibleRoles: ["PNL Manager", "Finance Analyst", "Compliance Officer"]
+  },
+  {
+    id: "app-002",
+    title: "Rates",
+    description: "Rates processing and management system",
+    progress: 60,
+    status: "in-progress",
+    taskCounts: {
+      completed: 12,
+      failed: 0,
+      rejected: 2,
+      pending: 3,
       processing: 3
     },
     eligibleRoles: ["Rate Manager", "Rate Analyst", "Compliance Officer"]
   },
   {
-    id: "app-002",
-    title: "Credit Risk",
-    description: "Credit risk assessment and management platform",
+    id: "app-003",
+    title: "FI Credit",
+    description: "Financial institution credit management",
+    progress: 30,
+    status: "in-progress",
     taskCounts: {
-      completed: 18,
-      failed: 0,
+      completed: 6,
+      failed: 1,
       rejected: 2,
-      pending: 7,
-      processing: 4
+      pending: 8,
+      processing: 3
     },
-    eligibleRoles: ["Risk Manager", "Credit Analyst", "Compliance Officer"]
+    eligibleRoles: ["Credit Manager", "Risk Analyst", "Compliance Officer"]
   },
   {
-    id: "app-003",
-    title: "Regulatory Reporting",
-    description: "Automated regulatory reporting and compliance tracking",
+    id: "app-004",
+    title: "Prime",
+    description: "Prime brokerage services management",
+    progress: 20,
+    status: "in-progress",
     taskCounts: {
-      completed: 32,
-      failed: 1,
-      rejected: 0,
-      pending: 3,
+      completed: 4,
+      failed: 2,
+      rejected: 1,
+      pending: 10,
+      processing: 3
+    },
+    eligibleRoles: ["Prime Manager", "Brokerage Analyst", "Compliance Officer"]
+  },
+  {
+    id: "app-005",
+    title: "Daily Workspace PNL",
+    description: "Daily workspace profit and loss tracking",
+    progress: 65,
+    status: "in-progress",
+    taskCounts: {
+      completed: 13,
+      failed: 0,
+      rejected: 1,
+      pending: 4,
       processing: 2
     },
-    eligibleRoles: ["Compliance Officer", "Regulatory Specialist", "Report Manager"]
+    eligibleRoles: ["PNL Manager", "Finance Analyst", "Compliance Officer"]
+  },
+  {
+    id: "app-006",
+    title: "Monthend PNL",
+    description: "Month-end profit and loss reporting",
+    progress: 10,
+    status: "in-progress",
+    taskCounts: {
+      completed: 2,
+      failed: 1,
+      rejected: 0,
+      pending: 12,
+      processing: 5
+    },
+    eligibleRoles: ["PNL Manager", "Finance Analyst", "Compliance Officer"]
   }
 ];
 
@@ -57,6 +108,8 @@ const ApplicationsGrid = () => {
             description={app.description}
             taskCounts={app.taskCounts}
             eligibleRoles={app.eligibleRoles}
+            progress={app.progress}
+            status={app.status}
           />
         ))}
       </div>
