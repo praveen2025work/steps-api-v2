@@ -223,6 +223,14 @@ const WorkflowDetailPage = () => {
     }
   }, [workflowId]);
   
+  // Update currentPath when workflowData is available
+  useEffect(() => {
+    if (workflowData) {
+      const path = determineCurrentPath();
+      setCurrentPath(path);
+    }
+  }, [workflowData]);
+  
   if (loading) {
     return (
       <DashboardLayout>
@@ -256,7 +264,7 @@ const WorkflowDetailPage = () => {
         name: app.name,
         completion: app.progress
       })),
-      categories: {}
+      categories: {} as Record<string, { id: string; name: string; completion: number }[]>
     };
     
     // Populate categories based on the workflow structure
@@ -280,13 +288,18 @@ const WorkflowDetailPage = () => {
     return hierarchyData;
   };
   
-  // Generate the hierarchy data
+  // Generate the hierarchy data - this is safe to call even when workflowData is null
   const hierarchyData = generateHierarchyData();
   
   // Determine the current path based on the workflow ID
   const determineCurrentPath = () => {
     // Default path is empty
     const path: string[] = [];
+    
+    // Safety check - if workflowData is not available, return empty path
+    if (!workflowData || !workflowData.id) {
+      return path;
+    }
     
     // Find the workflow in the hierarchy
     for (const app of mockHierarchicalWorkflows) {
@@ -327,7 +340,8 @@ const WorkflowDetailPage = () => {
   };
   
   // Set the initial current path based on the workflow
-  const [currentPath, setCurrentPath] = useState<string[]>(determineCurrentPath());
+  // Initialize with empty array and update when workflowData is available
+  const [currentPath, setCurrentPath] = useState<string[]>([]);
 
   const handleNavigate = (id: string, level: string) => {
     if (level === 'root') {
