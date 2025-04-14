@@ -44,6 +44,11 @@ const navSections: NavSection[] = [
         icon: <LayoutDashboard className="h-5 w-5" />
       },
       {
+        title: 'Management Board',
+        href: '/management',
+        icon: <BarChart4 className="h-5 w-5" />
+      },
+      {
         title: 'Stage Viewer',
         href: '/stages/[workflowId]',
         icon: <Layers className="h-5 w-5" />,
@@ -52,7 +57,7 @@ const navSections: NavSection[] = [
       {
         title: 'Analytics',
         href: '/analytics',
-        icon: <BarChart4 className="h-5 w-5" />
+        icon: <Activity className="h-5 w-5" />
       }
     ]
   },

@@ -5,6 +5,7 @@ import WorkflowStats from "@/components/WorkflowStats";
 import WorkflowStatusCard from "@/components/WorkflowStatusCard";
 import RecentActivities from "@/components/RecentActivities";
 import WorkflowHierarchyView from "@/components/WorkflowHierarchyView";
+import ApplicationsGrid from "@/components/ApplicationsGrid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Filter, Download, Upload, BarChart3 } from "lucide-react";
@@ -24,6 +25,9 @@ export default function Home() {
         <div className="space-y-8">
           {/* Stats Overview */}
           <WorkflowStats />
+          
+          {/* Applications Grid */}
+          <ApplicationsGrid />
           
           {/* Workflow Hierarchy View */}
           <WorkflowHierarchyView />
