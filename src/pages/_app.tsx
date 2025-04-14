@@ -2,14 +2,12 @@ import type { AppProps } from 'next/app'
 import '../styles/globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { useEffect, useState } from 'react';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 export default function App({ Component, pageProps }: AppProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Set dark mode as default based on theme update
-    document.documentElement.classList.remove('light');
-    document.documentElement.classList.add('dark');
     setMounted(true);
   }, []);
 
@@ -19,9 +17,11 @@ export default function App({ Component, pageProps }: AppProps) {
   }
 
   return (
-    <div className="min-h-screen">
-      <Component {...pageProps} />
-      <Toaster />
-    </div>
+    <ThemeProvider>
+      <div className="min-h-screen">
+        <Component {...pageProps} />
+        <Toaster />
+      </div>
+    </ThemeProvider>
   )
 }

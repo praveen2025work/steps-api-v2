@@ -2,10 +2,12 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
 import Logo from './Logo';
+import ThemeSwitcher from './ThemeSwitcher';
 import { Bell, Search, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -43,6 +45,12 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
             )}
             
             <div className="flex items-center gap-4">
+              {/* Theme Switcher */}
+              <ThemeSwitcher />
+              
+              {/* Separator */}
+              <div className="h-6 w-px bg-border hidden md:block"></div>
+              
               {/* Notification button */}
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
@@ -70,7 +78,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold hidden md:block">{title}</h1>
               <div className="text-sm text-muted-foreground">
-                <span>Last updated: April 14, 2025 | 02:22 PM</span>
+                <span>Last updated: April 14, 2025 | 02:28 PM</span>
               </div>
             </div>
           )}

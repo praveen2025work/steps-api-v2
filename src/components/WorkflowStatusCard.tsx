@@ -5,6 +5,7 @@ import { Clock, User, Calendar, ChevronRight, FileText, AlertTriangle, CheckCirc
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type WorkflowStatus = "pending" | "in-progress" | "completed" | "rejected";
 
@@ -18,29 +19,6 @@ interface WorkflowStatusCardProps {
   createdAt: string;
 }
 
-const statusConfig = {
-  "pending": {
-    color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-    label: "Pending Review",
-    icon: <AlertTriangle className="h-4 w-4 text-yellow-500" />
-  },
-  "in-progress": {
-    color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-    label: "In Progress",
-    icon: <Clock className="h-4 w-4 text-blue-500" />
-  },
-  "completed": {
-    color: "bg-green-500/10 text-green-500 border-green-500/20",
-    label: "Completed",
-    icon: <CheckCircle2 className="h-4 w-4 text-green-500" />
-  },
-  "rejected": {
-    color: "bg-red-500/10 text-red-500 border-red-500/20",
-    label: "Rejected",
-    icon: <AlertTriangle className="h-4 w-4 text-red-500" />
-  }
-};
-
 const WorkflowStatusCard = ({
   id,
   title,
@@ -51,7 +29,75 @@ const WorkflowStatusCard = ({
   createdAt
 }: WorkflowStatusCardProps) => {
   const router = useRouter();
-  const config = statusConfig[status];
+  const { theme } = useTheme();
+  
+  // Get theme-specific status colors
+  const getStatusConfig = (status: WorkflowStatus) => {
+    // Base configuration
+    const baseConfig = {
+      "pending": {
+        color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+        label: "Pending Review",
+        icon: <AlertTriangle className="h-4 w-4 text-yellow-500" />,
+        borderColor: "#f59e0b"
+      },
+      "in-progress": {
+        color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+        label: "In Progress",
+        icon: <Clock className="h-4 w-4 text-blue-500" />,
+        borderColor: "#3b82f6"
+      },
+      "completed": {
+        color: "bg-green-500/10 text-green-500 border-green-500/20",
+        label: "Completed",
+        icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+        borderColor: "#10b981"
+      },
+      "rejected": {
+        color: "bg-red-500/10 text-red-500 border-red-500/20",
+        label: "Rejected",
+        icon: <AlertTriangle className="h-4 w-4 text-red-500" />,
+        borderColor: "#ef4444"
+      }
+    };
+    
+    // Theme-specific overrides
+    if (theme === 'banking-blue') {
+      return {
+        ...baseConfig[status],
+        color: status === "completed" 
+          ? "bg-cyan-500/10 text-cyan-500 border-cyan-500/20"
+          : status === "in-progress"
+            ? "bg-blue-600/10 text-blue-600 border-blue-600/20"
+            : baseConfig[status].color,
+        borderColor: status === "completed" 
+          ? "#06b6d4" 
+          : status === "in-progress" 
+            ? "#2563eb" 
+            : baseConfig[status].borderColor
+      };
+    }
+    
+    if (theme === 'regulatory-green') {
+      return {
+        ...baseConfig[status],
+        color: status === "completed" 
+          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+          : status === "in-progress"
+            ? "bg-teal-600/10 text-teal-600 border-teal-600/20"
+            : baseConfig[status].color,
+        borderColor: status === "completed" 
+          ? "#10b981" 
+          : status === "in-progress" 
+            ? "#0d9488" 
+            : baseConfig[status].borderColor
+      };
+    }
+    
+    return baseConfig[status];
+  };
+  
+  const config = getStatusConfig(status);
   
   const handleViewStages = () => {
     router.push(`/stages/${id}`);
@@ -67,8 +113,28 @@ const WorkflowStatusCard = ({
       .substring(0, 2);
   };
   
+  // Get progress bar colors based on theme and status
+  const getProgressBarStyles = () => {
+    let bgColor = "rgba(59, 130, 246, 0.2)"; // Default blue bg
+    let fillColor = "#3b82f6"; // Default blue fill
+    
+    if (status === "completed") {
+      fillColor = theme === 'regulatory-green' ? "#10b981" : theme === 'banking-blue' ? "#06b6d4" : "#10b981";
+    } else if (status === "rejected") {
+      bgColor = "rgba(239, 68, 68, 0.2)";
+      fillColor = "#ef4444";
+    } else if (status === "in-progress") {
+      fillColor = theme === 'regulatory-green' ? "#0d9488" : theme === 'banking-blue' ? "#2563eb" : "#3b82f6";
+    }
+    
+    return {
+      backgroundColor: bgColor,
+      "--tw-progress-fill": fillColor
+    } as React.CSSProperties;
+  };
+  
   return (
-    <Card className="overflow-hidden border-l-4" style={{ borderLeftColor: status === "completed" ? "#10b981" : status === "rejected" ? "#ef4444" : status === "in-progress" ? "#3b82f6" : "#f59e0b" }}>
+    <Card className="overflow-hidden border-l-4" style={{ borderLeftColor: config.borderColor }}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">{title}</CardTitle>
@@ -90,10 +156,7 @@ const WorkflowStatusCard = ({
             <Progress 
               value={progress} 
               className="h-2" 
-              style={{ 
-                backgroundColor: status === "rejected" ? "rgba(239, 68, 68, 0.2)" : "rgba(59, 130, 246, 0.2)",
-                "--tw-progress-fill": status === "completed" ? "#10b981" : status === "rejected" ? "#ef4444" : "#3b82f6"
-              } as React.CSSProperties}
+              style={getProgressBarStyles()}
             />
           </div>
           

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type NavItem = {
   title: string;
@@ -121,6 +122,30 @@ const navSections: NavSection[] = [
 const Sidebar = () => {
   const router = useRouter();
   const currentPath = router.pathname;
+  const { theme } = useTheme();
+  
+  // Get theme-specific styles
+  const getActiveStyles = () => {
+    switch (theme) {
+      case 'banking-blue':
+        return "bg-blue-500 text-white";
+      case 'regulatory-green':
+        return "bg-green-500 text-white";
+      default:
+        return "bg-primary text-primary-foreground";
+    }
+  };
+  
+  const getThemeAccentColor = () => {
+    switch (theme) {
+      case 'banking-blue':
+        return "bg-blue-500/20 text-blue-500";
+      case 'regulatory-green':
+        return "bg-green-500/20 text-green-500";
+      default:
+        return "bg-primary/20 text-primary";
+    }
+  };
 
   return (
     <div className="hidden md:flex h-screen w-64 flex-col fixed inset-y-0 z-50 border-r border-border bg-card">
@@ -142,7 +167,7 @@ const Sidebar = () => {
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
                       (item.pattern ? item.pattern.test(currentPath) : currentPath === item.href) 
-                        ? "bg-primary text-primary-foreground" 
+                        ? getActiveStyles()
                         : "text-muted-foreground"
                     )}
                   >
@@ -156,7 +181,7 @@ const Sidebar = () => {
         ))}
       </nav>
       <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-primary/10">
+        <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${getThemeAccentColor()}`}>
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
             <Users className="h-4 w-4" />
           </div>
