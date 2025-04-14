@@ -1,5 +1,5 @@
 export type WorkflowStatus = "pending" | "in-progress" | "completed" | "rejected";
-export type StageStatus = "pending" | "in-progress" | "completed" | "skipped";
+export type StageStatus = "pending" | "in-progress" | "completed";
 
 export interface Workflow {
   id: string;

@@ -47,8 +47,6 @@ const WorkflowStageViewer = () => {
         return <Clock className="h-5 w-5 text-blue-500" />;
       case 'pending':
         return <Clock className="h-5 w-5 text-muted-foreground" />;
-      case 'skipped':
-        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
       default:
         return <Clock className="h-5 w-5 text-muted-foreground" />;
     }
@@ -62,8 +60,6 @@ const WorkflowStageViewer = () => {
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">In Progress</Badge>;
       case 'pending':
         return <Badge variant="outline">Pending</Badge>;
-      case 'skipped':
-        return <Badge className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20">Skipped</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
@@ -253,9 +249,7 @@ const WorkflowStageViewer = () => {
                             {stage.status === 'pending' && (
                               <p>Scheduled to start after previous stage completion</p>
                             )}
-                            {stage.status === 'skipped' && (
-                              <p className="text-yellow-500">Stage was skipped</p>
-                            )}
+                            {/* We don't have skipped status in our new data model */}
                           </div>
                         </div>
                       </div>

@@ -20,8 +20,6 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ substages }) => {
         return <Clock className="h-4 w-4 text-blue-500" />;
       case 'pending':
         return <Clock className="h-4 w-4 text-muted-foreground" />;
-      case 'skipped':
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
       default:
         return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
@@ -35,8 +33,6 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ substages }) => {
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">In Progress</Badge>;
       case 'pending':
         return <Badge variant="outline">Pending</Badge>;
-      case 'skipped':
-        return <Badge className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20">Skipped</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
