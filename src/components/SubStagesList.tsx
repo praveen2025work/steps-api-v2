@@ -1,27 +1,32 @@
 import React from 'react';
-import { SubStage } from '@/data/mockWorkflows';
+import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { User, Calendar, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
-interface SubStagesListProps {
-  substages: SubStage[];
+interface SubStage {
+  id: string;
+  name: string;
+  status: 'completed' | 'in-progress' | 'not-started' | 'skipped';
+  progress: number;
 }
 
-const SubStagesList: React.FC<SubStagesListProps> = ({ substages }) => {
-  if (!substages || substages.length === 0) {
-    return <p className="text-sm text-muted-foreground">No substages defined</p>;
-  }
+interface SubStagesListProps {
+  subStages: SubStage[];
+}
 
+const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'in-progress':
-        return <Clock className="h-4 w-4 text-blue-500" />;
-      case 'pending':
-        return <Clock className="h-4 w-4 text-muted-foreground" />;
+        return <Clock className="h-5 w-5 text-blue-500" />;
+      case 'not-started':
+        return <Clock className="h-5 w-5 text-muted-foreground" />;
+      case 'skipped':
+        return <AlertCircle className="h-5 w-5 text-amber-500" />;
       default:
-        return <Clock className="h-4 w-4 text-muted-foreground" />;
+        return <Clock className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -31,42 +36,40 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ substages }) => {
         return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">Completed</Badge>;
       case 'in-progress':
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">In Progress</Badge>;
-      case 'pending':
-        return <Badge variant="outline">Pending</Badge>;
+      case 'not-started':
+        return <Badge variant="outline">Not Started</Badge>;
+      case 'skipped':
+        return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20">Skipped</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
   };
 
   return (
-    <div className="space-y-3">
-      <h4 className="text-sm font-medium">Substages</h4>
-      <div className="space-y-2">
-        {substages.map((substage) => (
-          <div 
-            key={substage.id} 
-            className="p-3 border rounded-md bg-background/50"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div className="flex items-center gap-2">
-                {getStatusIcon(substage.status)}
-                <span className="font-medium">{substage.name}</span>
+    <div className="space-y-4">
+      {subStages.map((subStage) => (
+        <div 
+          key={subStage.id} 
+          className="border rounded-lg p-4"
+        >
+          <div className="flex items-start gap-3 mb-3">
+            <div className="mt-1">{getStatusIcon(subStage.status)}</div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">{subStage.name}</h3>
+                {getStatusBadge(subStage.status)}
               </div>
-              {getStatusBadge(substage.status)}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>{substage.assignee}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>Due: {substage.dueDate}</span>
+              <div className="mt-3">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-muted-foreground">Progress</span>
+                  <span className="text-sm font-medium">{subStage.progress}%</span>
+                </div>
+                <Progress value={subStage.progress} className="h-2" />
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 };

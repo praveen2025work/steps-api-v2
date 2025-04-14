@@ -1,7 +1,7 @@
 import React from 'react';
 import ApplicationCard from './ApplicationCard';
 
-// Updated application data based on user request
+// Updated application data based on user request - removed Rates, FI Credit, Prime
 const mockApplications = [
   {
     id: "app-001",
@@ -17,51 +17,6 @@ const mockApplications = [
       processing: 4
     },
     eligibleRoles: ["PNL Manager", "Finance Analyst", "Compliance Officer"]
-  },
-  {
-    id: "app-002",
-    title: "Rates",
-    description: "Rates processing and management system",
-    progress: 60,
-    status: "in-progress",
-    taskCounts: {
-      completed: 12,
-      failed: 0,
-      rejected: 2,
-      pending: 3,
-      processing: 3
-    },
-    eligibleRoles: ["Rate Manager", "Rate Analyst", "Compliance Officer"]
-  },
-  {
-    id: "app-003",
-    title: "FI Credit",
-    description: "Financial institution credit management",
-    progress: 30,
-    status: "in-progress",
-    taskCounts: {
-      completed: 6,
-      failed: 1,
-      rejected: 2,
-      pending: 8,
-      processing: 3
-    },
-    eligibleRoles: ["Credit Manager", "Risk Analyst", "Compliance Officer"]
-  },
-  {
-    id: "app-004",
-    title: "Prime",
-    description: "Prime brokerage services management",
-    progress: 20,
-    status: "in-progress",
-    taskCounts: {
-      completed: 4,
-      failed: 2,
-      rejected: 1,
-      pending: 10,
-      processing: 3
-    },
-    eligibleRoles: ["Prime Manager", "Brokerage Analyst", "Compliance Officer"]
   },
   {
     id: "app-005",

@@ -36,6 +36,7 @@ const ApplicationCard = ({
   const router = useRouter();
   
   const handleViewApplication = () => {
+    // Navigate to the application detail page which will show the hierarchy levels
     router.push(`/application/${id}`);
   };
   

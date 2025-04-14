@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -6,82 +6,202 @@ import WorkflowDetailView from '@/components/WorkflowDetailView';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { WorkflowTask } from '@/components/WorkflowTaskItem';
+import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
+
+// Find workflow by ID from hierarchical data
+const findWorkflowById = (id: string) => {
+  // Helper function to search through the hierarchy
+  const searchInWorkflowLevels = (levels: any[], targetId: string): any => {
+    for (const level of levels) {
+      if (level.id === targetId) {
+        return level;
+      }
+      
+      // Check children if they exist
+      if (level.children && level.children.length > 0) {
+        const found = searchInWorkflowLevels(level.children, targetId);
+        if (found) return found;
+      }
+      
+      // Check workflowLevels if they exist
+      if (level.workflowLevels && level.workflowLevels.length > 0) {
+        const found = searchInWorkflowLevels(level.workflowLevels, targetId);
+        if (found) return found;
+      }
+    }
+    
+    return null;
+  };
+  
+  // Search through all applications
+  for (const app of mockHierarchicalWorkflows) {
+    // Check if the app itself is the target
+    if (app.id === id) {
+      return app;
+    }
+    
+    // Check asset classes
+    for (const assetClass of app.assetClasses) {
+      if (assetClass.id === id) {
+        return assetClass;
+      }
+      
+      // Check workflow levels
+      const found = searchInWorkflowLevels(assetClass.workflowLevels, id);
+      if (found) return found;
+    }
+  }
+  
+  return null;
+};
 
 // Mock data for the workflow detail view
-const mockWorkflowData = {
-  id: 'wf-001',
-  title: 'eRates',
-  progressSteps: [
-    { name: 'Daily Named PNL', progress: 45 },
-    { name: 'Rates', progress: 60 },
-    { name: 'eRates', progress: 75 },
-  ],
-  stages: [
-    { id: 'stage-001', name: 'Pre WF' },
-    { id: 'stage-002', name: 'Substantiation' },
-    { id: 'stage-003', name: 'Review' },
-    { id: 'stage-004', name: 'Publish' },
-    { id: 'stage-005', name: 'Sign Off' },
-    { id: 'stage-006', name: 'Rainy Day' },
-    { id: 'stage-007', name: 'Exception' },
-  ],
-  tasks: {
-    'stage-001': [
-      {
-        id: 'task-001',
-        name: 'SOD Roll',
-        processId: 'PROC-1234',
-        status: 'completed',
-        duration: 15,
-        expectedStart: '06:00',
-        documents: [
-          { name: 'sod_report.xlsx', size: '2.4 MB' },
-          { name: 'validation.log', size: '150 KB' },
-        ],
-        messages: [
-          'Successfully rolled over positions',
-          'All 2,500 positions processed',
-        ],
-        updatedBy: 'System',
-        updatedAt: '4/12/2025, 6:15:00 AM',
-      },
-      {
-        id: 'task-002',
-        name: 'Books Open For Correction',
-        processId: 'PROC-1235',
-        status: 'in_progress',
-        duration: 30,
-        expectedStart: '06:30',
-        dependencies: [
-          { name: 'SOD Roll', status: 'completed' },
-        ],
-        documents: [
-          { name: 'corrections.xlsx', size: '1.2 MB' },
-        ],
-        messages: [
-          'Books opened for correction',
-        ],
-        updatedBy: 'John Doe',
-        updatedAt: '4/12/2025, 6:30:00 AM',
-      },
+const getMockWorkflowData = (workflowId: string) => {
+  // Find the workflow in our hierarchical data
+  const workflow = findWorkflowById(workflowId);
+  
+  if (!workflow) return null;
+  
+  // Build the breadcrumb path
+  const buildProgressSteps = (workflow: any) => {
+    const steps = [];
+    
+    // Find the application this workflow belongs to
+    for (const app of mockHierarchicalWorkflows) {
+      let found = false;
+      
+      // Check if this is the app itself
+      if (app.id === workflow.id) {
+        steps.push({ name: app.name, progress: app.progress });
+        found = true;
+        break;
+      }
+      
+      // Check asset classes
+      for (const assetClass of app.assetClasses) {
+        if (assetClass.id === workflow.id) {
+          steps.push({ name: app.name, progress: app.progress });
+          steps.push({ name: assetClass.name, progress: assetClass.progress });
+          found = true;
+          break;
+        }
+        
+        // Check workflow levels
+        for (const wfLevel of assetClass.workflowLevels) {
+          if (wfLevel.id === workflow.id) {
+            steps.push({ name: app.name, progress: app.progress });
+            steps.push({ name: assetClass.name, progress: assetClass.progress });
+            steps.push({ name: wfLevel.name, progress: wfLevel.progress });
+            found = true;
+            break;
+          }
+          
+          // Check deeper levels if they exist
+          if (wfLevel.children && wfLevel.children.length > 0) {
+            for (const childLevel of wfLevel.children) {
+              if (childLevel.id === workflow.id) {
+                steps.push({ name: app.name, progress: app.progress });
+                steps.push({ name: assetClass.name, progress: assetClass.progress });
+                steps.push({ name: wfLevel.name, progress: wfLevel.progress });
+                steps.push({ name: childLevel.name, progress: childLevel.progress });
+                found = true;
+                break;
+              }
+            }
+          }
+          
+          if (found) break;
+        }
+        
+        if (found) break;
+      }
+      
+      if (found) break;
+    }
+    
+    return steps;
+  };
+  
+  return {
+    id: workflow.id,
+    title: workflow.name,
+    progressSteps: buildProgressSteps(workflow),
+    stages: [
+      { id: 'stage-001', name: 'Pre WF' },
+      { id: 'stage-002', name: 'Substantiation' },
+      { id: 'stage-003', name: 'Review' },
+      { id: 'stage-004', name: 'Publish' },
+      { id: 'stage-005', name: 'Sign Off' },
+      { id: 'stage-006', name: 'Rainy Day' },
+      { id: 'stage-007', name: 'Exception' },
     ],
-    'stage-002': [],
-    'stage-003': [],
-    'stage-004': [],
-    'stage-005': [],
-    'stage-006': [],
-    'stage-007': [],
-  },
+    tasks: {
+      'stage-001': [
+        {
+          id: 'task-001',
+          name: 'SOD Roll',
+          processId: 'PROC-1234',
+          status: 'completed',
+          duration: 15,
+          expectedStart: '06:00',
+          documents: [
+            { name: 'sod_report.xlsx', size: '2.4 MB' },
+            { name: 'validation.log', size: '150 KB' },
+          ],
+          messages: [
+            'Successfully rolled over positions',
+            'All 2,500 positions processed',
+          ],
+          updatedBy: 'System',
+          updatedAt: '4/12/2025, 6:15:00 AM',
+        },
+        {
+          id: 'task-002',
+          name: 'Books Open For Correction',
+          processId: 'PROC-1235',
+          status: 'in_progress',
+          duration: 30,
+          expectedStart: '06:30',
+          dependencies: [
+            { name: 'SOD Roll', status: 'completed' },
+          ],
+          documents: [
+            { name: 'corrections.xlsx', size: '1.2 MB' },
+          ],
+          messages: [
+            'Books opened for correction',
+          ],
+          updatedBy: 'John Doe',
+          updatedAt: '4/12/2025, 6:30:00 AM',
+        },
+      ],
+      'stage-002': [],
+      'stage-003': [],
+      'stage-004': [],
+      'stage-005': [],
+      'stage-006': [],
+      'stage-007': [],
+    },
+  };
 };
 
 const WorkflowDetailPage = () => {
   const router = useRouter();
   const { workflowId } = router.query;
+  const [workflowData, setWorkflowData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
-  // In a real application, you would fetch the workflow data based on the workflowId
-  // For now, we'll use the mock data
+  // Fetch workflow data based on workflowId
+  useEffect(() => {
+    if (workflowId) {
+      // In a real application, you would fetch the workflow data from an API
+      const data = getMockWorkflowData(workflowId as string);
+      setWorkflowData(data);
+      setLoading(false);
+    }
+  }, [workflowId]);
   
-  if (!workflowId) {
+  if (loading) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-[60vh]">
@@ -92,11 +212,24 @@ const WorkflowDetailPage = () => {
     );
   }
   
+  if (!workflowData) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-[60vh]">
+          <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Workflow Not Found</h2>
+          <p className="text-muted-foreground mb-4">The workflow you're looking for doesn't exist or you don't have access to it.</p>
+          <Button onClick={() => router.push('/')}>Return to Dashboard</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
   return (
     <>
       <Head>
-        <title>Workflow Tool | {mockWorkflowData.title}</title>
-        <meta name="description" content={`Workflow details for ${mockWorkflowData.title}`} />
+        <title>Workflow Tool | {workflowData.title}</title>
+        <meta name="description" content={`Workflow details for ${workflowData.title}`} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -105,17 +238,17 @@ const WorkflowDetailPage = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => router.push('/')}
+            onClick={() => router.back()}
           >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
         </div>
         
         <WorkflowDetailView 
-          workflowTitle={mockWorkflowData.title}
-          progressSteps={mockWorkflowData.progressSteps}
-          stages={mockWorkflowData.stages}
-          tasks={mockWorkflowData.tasks as Record<string, WorkflowTask[]>}
+          workflowTitle={workflowData.title}
+          progressSteps={workflowData.progressSteps}
+          stages={workflowData.stages}
+          tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
         />
       </DashboardLayout>
     </>
