@@ -362,20 +362,73 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           <CardContent>
             <Tabs defaultValue="tasks-substages" onValueChange={setActiveTab}>
               <TabsList className="mb-4">
+                <TabsTrigger value="pre-wf">Pre WF</TabsTrigger>
                 <TabsTrigger value="tasks-substages">Sub-Stages</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="parameters">Parameters</TabsTrigger>
                 <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
-                <TabsTrigger value="roles">
-                  <Users className="h-4 w-4 mr-1" />
-                  Roles
-                </TabsTrigger>
-                <TabsTrigger value="activity">
-                  <Activity className="h-4 w-4 mr-1" />
-                  Activity
-                </TabsTrigger>
+                <TabsTrigger value="roles">Roles</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
                 <TabsTrigger value="audit">Audit Info</TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="pre-wf">
+                <div className="space-y-4">
+                  <div className="border rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-4">Pre-Workflow Configuration</h3>
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Workflow Information</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-accent/5 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">Workflow ID</div>
+                            <div className="font-medium">WF-2025-04-14-001</div>
+                          </div>
+                          <div className="bg-accent/5 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">Business Date</div>
+                            <div className="font-medium">2025-04-14</div>
+                          </div>
+                          <div className="bg-accent/5 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">Expected Completion</div>
+                            <div className="font-medium">2025-04-14 11:30 AM</div>
+                          </div>
+                          <div className="bg-accent/5 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">Priority</div>
+                            <div className="font-medium">High</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Pre-Workflow Checks</h4>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between bg-accent/5 p-3 rounded-md">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span>System Availability</span>
+                            </div>
+                            <Badge className="bg-green-500/10 text-green-500">Passed</Badge>
+                          </div>
+                          <div className="flex items-center justify-between bg-accent/5 p-3 rounded-md">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span>Data Integrity</span>
+                            </div>
+                            <Badge className="bg-green-500/10 text-green-500">Passed</Badge>
+                          </div>
+                          <div className="flex items-center justify-between bg-accent/5 p-3 rounded-md">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span>Prerequisite Workflows</span>
+                            </div>
+                            <Badge className="bg-green-500/10 text-green-500">Passed</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
               
               <TabsContent value="tasks-substages">
                 <div className="space-y-4">
@@ -391,8 +444,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           <ChevronDown className="h-4 w-4" /> : 
                           <ChevronRight className="h-4 w-4" />
                         }
-                        <h3 className="font-medium">Sub-Stages</h3>
-                        <Badge variant="outline">{mockSubStages.length}</Badge>
+                        <h3 className="font-medium">Sub-Stages {mockSubStages.length}</h3>
                       </div>
                     </CollapsibleTrigger>
                     <CollapsibleContent>

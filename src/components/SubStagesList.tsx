@@ -208,59 +208,15 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       }
                       <h3 className="font-medium">{subStage.name}</h3>
-                      {subStage.sequence && (
-                        <Badge variant="outline" className="ml-2">Seq: {subStage.sequence}</Badge>
-                      )}
                       {getTypeIcon(subStage.type)}
                     </div>
-                    {getStatusBadge(subStage.status)}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-                    {subStage.processId && (
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Process ID:</span> {subStage.processId}
-                      </div>
-                    )}
-                    {subStage.meta?.updatedBy && (
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Updated by:</span> {subStage.meta.updatedBy}
-                      </div>
-                    )}
-                    {subStage.meta?.lockedBy && (
-                      <div className="text-sm flex items-center gap-1">
-                        <Lock className="h-3 w-3" />
-                        <span className="text-muted-foreground">Locked by:</span> {subStage.meta.lockedBy}
-                      </div>
-                    )}
-                    {subStage.timing?.duration && (
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Duration:</span> {subStage.timing.duration}
-                      </div>
-                    )}
-                    {subStage.stats?.success && (
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Success Rate:</span> {subStage.stats.success}
-                      </div>
-                    )}
-                    {subStage.timing?.start && (
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Start Time:</span> {subStage.timing.start}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {subStage.message && (
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      {subStage.message}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{subStage.progress}%</span>
+                      {getStatusBadge(subStage.status)}
                     </div>
-                  )}
+                  </div>
                   
                   <div className="mt-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-muted-foreground">Progress</span>
-                      <span className="text-sm font-medium">{subStage.progress}%</span>
-                    </div>
                     <Progress value={subStage.progress} className="h-2" />
                   </div>
 
