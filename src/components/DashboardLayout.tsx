@@ -30,15 +30,6 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           <div className="container flex h-16 items-center justify-between py-4">
             <div className="flex items-center gap-4">
               <MobileNav />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={toggleSidebar} 
-                className="hidden md:flex"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle sidebar</span>
-              </Button>
               <Logo />
               
               {/* Search bar */}
