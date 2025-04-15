@@ -72,9 +72,9 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
   };
   
   return (
-    <div className="space-y-4">
+    <div>
       {/* Breadcrumb Navigation */}
-      <Breadcrumb className="mb-2">
+      <Breadcrumb>
         <BreadcrumbList>
           {/* Home Icon */}
           <BreadcrumbItem>
@@ -111,14 +111,6 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
           ))}
         </BreadcrumbList>
       </Breadcrumb>
-      
-      {/* Active Level (Highlighted) */}
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold">{activeNode.name}</h1>
-        <Badge variant="outline" className="text-sm">
-          in-progress
-        </Badge>
-      </div>
     </div>
   );
 };

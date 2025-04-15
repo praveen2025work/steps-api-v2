@@ -425,9 +425,55 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           <WorkflowProgressIndicator steps={progressSteps} />
         </div>
         
-        {/* Simplified Workflow Controls - only keeping the refresh button */}
+        {/* Restored Workflow Controls with all requested buttons */}
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={toggleLock}
+            >
+              {isLocked ? (
+                <>
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>Locked</span>
+                </>
+              ) : (
+                <>
+                  <Unlock className="h-3.5 w-3.5" />
+                  <span>Unlocked</span>
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Adhoc Stage</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Reset Workflow</span>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+            >
+              <UnlockIcon className="h-3.5 w-3.5" />
+              <span>Reopen Toll Gate</span>
+            </Button>
+            
             <Button 
               variant="outline" 
               size="sm" 
