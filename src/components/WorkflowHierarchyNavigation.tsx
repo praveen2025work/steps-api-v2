@@ -1,9 +1,10 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronDown, Layers, FileText } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 type HierarchyItem = {
   id: string;
@@ -22,15 +23,21 @@ type WorkflowHierarchyNavigationProps = {
   hierarchyData: HierarchyData;
   currentPath?: string[];
   onNavigate?: (id: string, level: string) => void;
+  isVisible?: boolean;
+  onToggleVisibility?: () => void;
 };
 
 const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = ({
   hierarchyData,
   currentPath = [],
   onNavigate = () => {},
+  isVisible = true,
+  onToggleVisibility = () => {}
 }) => {
-  // Determine which items to show based on the current path
-  // Modified to show one level backwards instead of the current level
+  const [expandedApps, setExpandedApps] = useState<Record<string, boolean>>({});
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  
+  // Function to get items to show based on the current path
   const getItemsToShow = () => {
     if (!currentPath || currentPath.length === 0) {
       return { items: hierarchyData.applications || [], level: 'application', title: 'Categories' };
@@ -55,84 +62,181 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
     return { items: hierarchyData.applications || [], level: 'application', title: 'Categories' };
   };
 
-  const { items, level, title } = getItemsToShow();
+  // Toggle expansion state for an application
+  const toggleAppExpansion = (appId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedApps(prev => ({
+      ...prev,
+      [appId]: !prev[appId]
+    }));
+  };
 
-  // Generate breadcrumb from current path
-  const generateBreadcrumb = () => {
-    if (!currentPath || currentPath.length === 0) return null;
+  // Toggle expansion state for a category
+  const toggleCategoryExpansion = (categoryId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
 
+  // Check if an application is currently selected
+  const isAppSelected = (appId: string) => {
+    return currentPath.length > 0 && currentPath[0] === appId;
+  };
+
+  // Check if a category is currently selected
+  const isCategorySelected = (categoryId: string) => {
+    return currentPath.length > 1 && currentPath[1] === categoryId;
+  };
+
+  // Check if a workflow is currently selected
+  const isWorkflowSelected = (workflowId: string) => {
+    return currentPath.length > 2 && currentPath[2] === workflowId;
+  };
+
+  // Render a tree item with proper indentation and expansion controls
+  const renderTreeItem = (
+    item: HierarchyItem, 
+    level: 'application' | 'category' | 'workflow',
+    depth: number = 0,
+    isExpanded: boolean = false,
+    hasChildren: boolean = false,
+    onExpand?: (e: React.MouseEvent) => void
+  ) => {
+    const isSelected = level === 'application' 
+      ? isAppSelected(item.id)
+      : level === 'category'
+        ? isCategorySelected(item.id)
+        : isWorkflowSelected(item.id);
+    
+    const paddingLeft = `${depth * 16}px`;
+    
     return (
-      <div className="flex items-center text-xs text-muted-foreground mb-2 overflow-x-auto">
-        <span 
-          className="cursor-pointer hover:text-primary"
-          onClick={() => onNavigate('', 'root')}
-        >
-          Apps
-        </span>
-        
-        {currentPath.map((id, index) => {
-          if (!id) return null;
-          
-          // Find the name for this id
-          let name = '';
-          if (index === 0) {
-            const app = hierarchyData.applications?.find(a => a.id === id);
-            name = app?.name || id;
-          } else {
-            const parentId = currentPath[index - 1];
-            if (parentId && hierarchyData.categories) {
-              const category = hierarchyData.categories[parentId]?.find(c => c.id === id);
-              name = category?.name || id;
-            } else {
-              name = id;
-            }
-          }
-          
-          // Truncate long names
-          const displayName = name.length > 15 ? name.substring(0, 12) + '...' : name;
-          
-          return (
-            <React.Fragment key={id}>
-              <ChevronRight className="h-3 w-3 mx-1" />
-              <span 
-                className={index === currentPath.length - 1 
-                  ? "font-medium text-foreground" 
-                  : "cursor-pointer hover:text-primary"}
-                onClick={() => {
-                  if (index < currentPath.length - 1) {
-                    onNavigate(id, index === 0 ? 'application' : 'category');
-                  }
-                }}
-                title={name}
+      <div 
+        key={item.id}
+        className={`p-2 rounded-md ${isSelected ? 'bg-primary/10' : 'hover:bg-secondary/50'} cursor-pointer transition-colors`}
+        style={{ paddingLeft }}
+        onClick={() => onNavigate(item.id, level)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-1">
+            {hasChildren && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-5 w-5 p-0" 
+                onClick={onExpand}
               >
-                {displayName}
-              </span>
-            </React.Fragment>
-          );
-        })}
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            
+            {!hasChildren && <div className="w-5" />}
+            
+            {level === 'application' && <Layers className="h-4 w-4 text-primary" />}
+            {level === 'category' && <FileText className="h-4 w-4 text-primary" />}
+            {level === 'workflow' && <FileText className="h-4 w-4 text-primary" />}
+            
+            <div className="font-medium text-sm truncate">{item.name}</div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{item.completion}%</span>
+            <div className="w-16">
+              <Progress value={item.completion} className="h-1.5" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
 
-  return (
-    <div className="space-y-2">
-      {items.map((item) => (
-        <div 
-          key={item.id}
-          className="p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors"
-          onClick={() => onNavigate(item.id, level)}
-        >
-          <div className="flex items-center justify-between mb-1">
-            <div className="font-medium text-sm">{item.name}</div>
+  // Render the complete tree structure
+  const renderHierarchyTree = () => {
+    return (
+      <div className="space-y-1">
+        {hierarchyData.applications.map(app => {
+          const hasCategories = hierarchyData.categories && hierarchyData.categories[app.id] && hierarchyData.categories[app.id].length > 0;
+          const isExpanded = expandedApps[app.id];
+          
+          return (
+            <React.Fragment key={app.id}>
+              {renderTreeItem(
+                app, 
+                'application', 
+                0, 
+                isExpanded, 
+                hasCategories, 
+                (e) => toggleAppExpansion(app.id, e)
+              )}
+              
+              {hasCategories && isExpanded && (
+                <div className="ml-2">
+                  {hierarchyData.categories[app.id].map(category => {
+                    const hasWorkflows = hierarchyData.categories && 
+                                        hierarchyData.categories[category.id] && 
+                                        hierarchyData.categories[category.id].length > 0;
+                    const isCatExpanded = expandedCategories[category.id];
+                    
+                    return (
+                      <React.Fragment key={category.id}>
+                        {renderTreeItem(
+                          category, 
+                          'category', 
+                          1, 
+                          isCatExpanded, 
+                          hasWorkflows, 
+                          (e) => toggleCategoryExpansion(category.id, e)
+                        )}
+                        
+                        {hasWorkflows && isCatExpanded && (
+                          <div className="ml-2">
+                            {hierarchyData.categories[category.id].map(workflow => (
+                              <React.Fragment key={workflow.id}>
+                                {renderTreeItem(workflow, 'workflow', 2)}
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+        
+        {hierarchyData.applications.length === 0 && (
+          <div className="text-center py-6 text-muted-foreground">
+            No items found
           </div>
-        </div>
-      ))}
+        )}
+      </div>
+    );
+  };
+
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2 border rounded-md p-3 bg-background shadow-sm">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-sm font-medium">Workflow Hierarchy</h3>
+        <Button variant="ghost" size="sm" onClick={onToggleVisibility}>
+          Hide
+        </Button>
+      </div>
       
-      {items.length === 0 && (
-        <div className="text-center py-6 text-muted-foreground">
-          No items found at this level
-        </div>
-      )}
+      <Separator className="my-2" />
+      
+      {renderHierarchyTree()}
     </div>
   );
 };

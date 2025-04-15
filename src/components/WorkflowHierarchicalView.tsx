@@ -3,8 +3,9 @@ import { useRouter } from 'next/router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ArrowLeft, Layers, FileText, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { ChevronRight, ArrowLeft, Layers, FileText, CheckCircle, Clock, AlertTriangle, Menu } from 'lucide-react';
 import WorkflowHierarchyBreadcrumb, { HierarchyNode } from './WorkflowHierarchyBreadcrumb';
+import WorkflowHierarchyNavigation from './WorkflowHierarchyNavigation';
 import { 
   sampleApplications, 
   sampleBusinessAreas, 
@@ -29,6 +30,7 @@ const WorkflowHierarchicalView: React.FC<WorkflowHierarchicalViewProps> = ({
   const [selectedBusinessAreaId, setSelectedBusinessAreaId] = useState<number | null>(null);
   const [selectedWorkflowInstanceId, setSelectedWorkflowInstanceId] = useState<number | null>(null);
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([]);
+  const [showNavigation, setShowNavigation] = useState<boolean>(true);
   
   // Initialize based on props
   useEffect(() => {
@@ -425,44 +427,159 @@ const WorkflowHierarchicalView: React.FC<WorkflowHierarchicalViewProps> = ({
     );
   };
   
+  // Prepare hierarchical data for the navigation component
+  const prepareHierarchyData = () => {
+    // Convert sample data to the format expected by WorkflowHierarchyNavigation
+    const applications = sampleApplications.map(app => ({
+      id: app.appId.toString(),
+      name: app.configName,
+      completion: app.percentageCompleted
+    }));
+    
+    // Create categories map
+    const categories: Record<string, { id: string; name: string; completion: number }[]> = {};
+    
+    // Add business areas as categories under applications
+    sampleApplications.forEach(app => {
+      const appBusinessAreas = sampleBusinessAreas
+        .filter(ba => ba.appId === app.appId)
+        .map(ba => ({
+          id: ba.configId.toString(),
+          name: ba.name,
+          completion: ba.percentageCompleted
+        }));
+      
+      if (appBusinessAreas.length > 0) {
+        categories[app.appId.toString()] = appBusinessAreas;
+      }
+    });
+    
+    // Add workflow instances as categories under business areas
+    sampleBusinessAreas.forEach(ba => {
+      const baWorkflows = sampleWorkflowInstances
+        .filter(wi => wi.businessAreaId === ba.configId)
+        .map(wi => ({
+          id: wi.configId.toString(),
+          name: wi.name,
+          completion: wi.percentageCompleted
+        }));
+      
+      if (baWorkflows.length > 0) {
+        categories[ba.configId.toString()] = baWorkflows;
+      }
+    });
+    
+    return {
+      applications,
+      categories
+    };
+  };
+  
+  // Create current path array for navigation
+  const getCurrentPath = () => {
+    const path: string[] = [];
+    
+    if (selectedAppId) {
+      path.push(selectedAppId.toString());
+      
+      if (selectedBusinessAreaId) {
+        path.push(selectedBusinessAreaId.toString());
+        
+        if (selectedWorkflowInstanceId) {
+          path.push(selectedWorkflowInstanceId.toString());
+        }
+      }
+    }
+    
+    return path;
+  };
+  
+  // Handle navigation from the tree view
+  const handleNavigate = (id: string, level: string) => {
+    if (level === 'root') {
+      handleHomeClick();
+      return;
+    }
+    
+    if (level === 'application') {
+      const appId = parseInt(id);
+      handleSelectApplication(appId);
+    } else if (level === 'category') {
+      const categoryId = parseInt(id);
+      handleSelectBusinessArea(categoryId);
+    } else if (level === 'workflow') {
+      const workflowId = parseInt(id);
+      handleSelectWorkflowInstance(workflowId);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Breadcrumb Navigation */}
-      <WorkflowHierarchyBreadcrumb 
-        nodes={hierarchyPath}
-        onNodeClick={handleHierarchyNodeClick}
-        onHomeClick={handleHomeClick}
-      />
-      
-      {/* Back Button (except at top level) */}
-      {currentLevel !== 'applications' && (
+      <div className="flex justify-between items-center">
+        {/* Breadcrumb Navigation */}
+        <WorkflowHierarchyBreadcrumb 
+          nodes={hierarchyPath}
+          onNodeClick={handleHierarchyNodeClick}
+          onHomeClick={handleHomeClick}
+        />
+        
+        {/* Toggle Navigation Button */}
         <Button 
           variant="outline" 
           size="sm" 
-          className="mb-4 flex items-center gap-1"
-          onClick={() => {
-            if (currentLevel === 'processSteps' && selectedBusinessAreaId) {
-              setSelectedWorkflowInstanceId(null);
-              setCurrentLevel('workflowInstances');
-            } else if (currentLevel === 'workflowInstances' && selectedAppId) {
-              setSelectedBusinessAreaId(null);
-              setCurrentLevel('businessAreas');
-            } else {
-              setSelectedAppId(null);
-              setCurrentLevel('applications');
-            }
-          }}
+          className="flex items-center gap-1"
+          onClick={() => setShowNavigation(!showNavigation)}
         >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back</span>
+          <Menu className="h-4 w-4" />
+          <span>{showNavigation ? 'Hide Navigation' : 'Show Navigation'}</span>
         </Button>
-      )}
+      </div>
       
-      {/* Render appropriate view based on current level */}
-      {currentLevel === 'applications' && renderApplications()}
-      {currentLevel === 'businessAreas' && renderBusinessAreas()}
-      {currentLevel === 'workflowInstances' && renderWorkflowInstances()}
-      {currentLevel === 'processSteps' && renderProcessSteps()}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Navigation Tree */}
+        <div className="md:col-span-1">
+          <WorkflowHierarchyNavigation 
+            hierarchyData={prepareHierarchyData()}
+            currentPath={getCurrentPath()}
+            onNavigate={handleNavigate}
+            isVisible={showNavigation}
+            onToggleVisibility={() => setShowNavigation(false)}
+          />
+        </div>
+        
+        {/* Main Content */}
+        <div className={showNavigation ? "md:col-span-3" : "md:col-span-4"}>
+          {/* Back Button (except at top level) */}
+          {currentLevel !== 'applications' && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mb-4 flex items-center gap-1"
+              onClick={() => {
+                if (currentLevel === 'processSteps' && selectedBusinessAreaId) {
+                  setSelectedWorkflowInstanceId(null);
+                  setCurrentLevel('workflowInstances');
+                } else if (currentLevel === 'workflowInstances' && selectedAppId) {
+                  setSelectedBusinessAreaId(null);
+                  setCurrentLevel('businessAreas');
+                } else {
+                  setSelectedAppId(null);
+                  setCurrentLevel('applications');
+                }
+              }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back</span>
+            </Button>
+          )}
+          
+          {/* Render appropriate view based on current level */}
+          {currentLevel === 'applications' && renderApplications()}
+          {currentLevel === 'businessAreas' && renderBusinessAreas()}
+          {currentLevel === 'workflowInstances' && renderWorkflowInstances()}
+          {currentLevel === 'processSteps' && renderProcessSteps()}
+        </div>
+      </div>
     </div>
   );
 };
