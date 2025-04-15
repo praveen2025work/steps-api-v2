@@ -55,6 +55,12 @@ const navSections: NavSection[] = [
         pattern: /^\/stages/
       },
       {
+        title: 'Workflow Hierarchy',
+        href: '/hierarchy',
+        icon: <Layers className="h-5 w-5" />,
+        pattern: /^\/hierarchy/
+      },
+      {
         title: 'Analytics',
         href: '/analytics',
         icon: <Activity className="h-5 w-5" />
