@@ -30,7 +30,7 @@ const WorkflowHierarchicalView: React.FC<WorkflowHierarchicalViewProps> = ({
   const [selectedBusinessAreaId, setSelectedBusinessAreaId] = useState<number | null>(null);
   const [selectedWorkflowInstanceId, setSelectedWorkflowInstanceId] = useState<number | null>(null);
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([]);
-  const [showNavigation, setShowNavigation] = useState<boolean>(true);
+  const [showNavigation, setShowNavigation] = useState<boolean>(false);
   
   // Initialize based on props
   useEffect(() => {
@@ -121,8 +121,8 @@ const WorkflowHierarchicalView: React.FC<WorkflowHierarchicalViewProps> = ({
   };
   
   const handleSelectWorkflowInstance = (workflowInstanceId: number) => {
-    setSelectedWorkflowInstanceId(workflowInstanceId);
-    setCurrentLevel('processSteps');
+    // Navigate to the workflow detail page
+    router.push(`/hierarchy/${workflowInstanceId}`);
   };
   
   const handleHierarchyNodeClick = (node: HierarchyNode) => {
@@ -136,8 +136,8 @@ const WorkflowHierarchicalView: React.FC<WorkflowHierarchicalViewProps> = ({
       setSelectedWorkflowInstanceId(null);
       setCurrentLevel('workflowInstances');
     } else if (node.level === 'hierarchy') {
-      setSelectedWorkflowInstanceId(parseInt(node.id));
-      setCurrentLevel('processSteps');
+      // Navigate to the workflow detail page
+      router.push(`/hierarchy/${node.id}`);
     }
   };
   
@@ -509,7 +509,8 @@ const WorkflowHierarchicalView: React.FC<WorkflowHierarchicalViewProps> = ({
       handleSelectBusinessArea(categoryId);
     } else if (level === 'workflow') {
       const workflowId = parseInt(id);
-      handleSelectWorkflowInstance(workflowId);
+      // Navigate to the workflow detail page
+      router.push(`/hierarchy/${workflowId}`);
     }
   };
 
