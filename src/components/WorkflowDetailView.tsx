@@ -54,7 +54,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [countdown, setCountdown] = useState<number>(15);
 
-  // Mock hierarchy path for the breadcrumb navigation
+  // Mock hierarchy path for the breadcrumb navigation - removing percentages from display
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([
     { id: 'app-001', name: 'Daily Named PNL', progress: 45, level: 'app' },
     { id: 'asset-001', name: 'Rates', progress: 60, level: 'workflow' },
@@ -425,43 +425,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           <WorkflowProgressIndicator steps={progressSteps} />
         </div>
         
-        {/* Workflow Controls */}
+        {/* Simplified Workflow Controls - only keeping the refresh button */}
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={toggleLock}
-            >
-              {isLocked ? (
-                <>
-                  <Lock className="h-3.5 w-3.5" />
-                  <span>Locked</span>
-                </>
-              ) : (
-                <>
-                  <UnlockIcon className="h-3.5 w-3.5" />
-                  <span>Unlocked</span>
-                </>
-              )}
-            </Button>
-            
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add Adhoc Stage</span>
-            </Button>
-            
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Reset Workflow</span>
-            </Button>
-            
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <UnlockIcon className="h-3.5 w-3.5" />
-              <span>Reopen Toll Gate</span>
-            </Button>
-            
             <Button 
               variant="outline" 
               size="sm" 

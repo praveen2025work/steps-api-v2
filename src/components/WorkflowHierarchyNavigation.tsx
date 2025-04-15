@@ -118,7 +118,7 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
     <Card className="shadow-md">
       <CardHeader className="pb-1 pt-3 px-3">
         <CardTitle className="text-lg font-medium">
-          {title}
+          Navigation
         </CardTitle>
       </CardHeader>
       <CardContent className="px-3 py-2">
@@ -133,9 +133,7 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="font-medium text-sm">{item.name}</div>
-                <Badge variant="outline" className="text-xs py-0 h-5">{item.completion}%</Badge>
               </div>
-              <Progress value={item.completion} className="h-1.5" />
             </div>
           ))}
           

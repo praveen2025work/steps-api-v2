@@ -57,8 +57,8 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
       // Navigate to workflow level
       router.push(`/workflow/${node.id}`);
     } else if (node.level === 'hierarchy') {
-      // Navigate to hierarchy level
-      router.push(`/workflow/${node.id}`);
+      // Navigate to hierarchy level - this was the issue, we need to navigate to the correct view
+      router.push(`/stages/${node.id}`);
     }
   };
   
@@ -102,7 +102,6 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
                   onClick={() => handleNodeClick(node)}
                 >
                   <span className="font-medium">{node.name}</span>
-                  <Badge variant="secondary" className="ml-1">{node.progress}%</Badge>
                 </Button>
               </BreadcrumbItem>
               
@@ -118,9 +117,6 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
         <h1 className="text-2xl font-bold">{activeNode.name}</h1>
         <Badge variant="outline" className="text-sm">
           in-progress
-        </Badge>
-        <Badge variant="secondary" className="text-sm">
-          Progress: {activeNode.progress}%
         </Badge>
       </div>
     </div>
