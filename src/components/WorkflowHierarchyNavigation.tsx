@@ -115,36 +115,25 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
   };
 
   return (
-    <Card className="shadow-md">
-      <CardHeader className="pb-1 pt-3 px-3">
-        <CardTitle className="text-lg font-medium">
-          Navigation
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-3 py-2">
-        {generateBreadcrumb()}
-        
-        <div className="space-y-2">
-          {items.map((item) => (
-            <div 
-              key={item.id}
-              className="p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors"
-              onClick={() => onNavigate(item.id, level)}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <div className="font-medium text-sm">{item.name}</div>
-              </div>
-            </div>
-          ))}
-          
-          {items.length === 0 && (
-            <div className="text-center py-6 text-muted-foreground">
-              No items found at this level
-            </div>
-          )}
+    <div className="space-y-2">
+      {items.map((item) => (
+        <div 
+          key={item.id}
+          className="p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors"
+          onClick={() => onNavigate(item.id, level)}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <div className="font-medium text-sm">{item.name}</div>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      ))}
+      
+      {items.length === 0 && (
+        <div className="text-center py-6 text-muted-foreground">
+          No items found at this level
+        </div>
+      )}
+    </div>
   );
 };
 
