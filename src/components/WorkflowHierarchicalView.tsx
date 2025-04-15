@@ -527,14 +527,27 @@ const WorkflowHierarchicalView: React.FC<WorkflowHierarchicalViewProps> = ({
         {/* Toggle Navigation Button */}
         <Button 
           variant="outline" 
-          size="sm" 
-          className="flex items-center gap-1"
+          size="icon" 
+          className="flex items-center justify-center"
           onClick={() => setShowNavigation(!showNavigation)}
         >
-          <Menu className="h-4 w-4" />
-          <span>{showNavigation ? 'Hide Navigation' : 'Show Navigation'}</span>
+          {showNavigation ? <ChevronLeft className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          <span className="sr-only">{showNavigation ? 'Hide Navigation' : 'Show Navigation'}</span>
         </Button>
       </div>
+      
+      {/* Fixed position show button when navigation is hidden */}
+      {!showNavigation && (
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => setShowNavigation(true)}
+          className="fixed top-32 left-0 z-50 rounded-r-full rounded-l-none border-l-0 h-12 w-6"
+        >
+          <ChevronRight className="h-4 w-4" />
+          <span className="sr-only">Show navigation</span>
+        </Button>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Navigation Tree */}

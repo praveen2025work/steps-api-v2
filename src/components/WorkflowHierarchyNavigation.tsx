@@ -112,12 +112,18 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
     
     const paddingLeft = `${depth * 16}px`;
     
+    // Handle click on the tree item
+    const handleItemClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onNavigate(item.id, level);
+    };
+    
     return (
       <div 
         key={item.id}
         className={`p-2 rounded-md ${isSelected ? 'bg-primary/10' : 'hover:bg-secondary/50'} cursor-pointer transition-colors`}
         style={{ paddingLeft }}
-        onClick={() => onNavigate(item.id, level)}
+        onClick={handleItemClick}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1">
@@ -229,8 +235,9 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
     <div className="space-y-2 border rounded-md p-3 bg-background shadow-sm">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-sm font-medium">Workflow Hierarchy</h3>
-        <Button variant="ghost" size="sm" onClick={onToggleVisibility}>
-          Hide
+        <Button variant="ghost" size="icon" onClick={onToggleVisibility}>
+          <ChevronLeft className="h-4 w-4" />
+          <span className="sr-only">Hide navigation</span>
         </Button>
       </div>
       
