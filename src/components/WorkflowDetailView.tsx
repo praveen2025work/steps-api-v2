@@ -488,6 +488,116 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         </div>
       </div>
 
+      {/* Options Toolbar */}
+      <div className="bg-accent/5 p-4 rounded-lg mb-4">
+        <div className="space-y-4">
+          {/* Workflow Control Options */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Workflow Controls</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('Toggle locked state')}
+              >
+                Locked
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('Add adhoc stage')}
+              >
+                Adhoc Stage
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('Reset adhoc')}
+              >
+                Reset Adhoc
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('Reopen toll gate')}
+              >
+                Reopen Toll Gate
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('Refresh data')}
+              >
+                Refresh
+              </Button>
+            </div>
+          </div>
+
+          {/* Information Options */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Information</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('View activity')}
+              >
+                Activity
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('View roles')}
+              >
+                Roles
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('View app parameters')}
+              >
+                App Parameters
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('View global parameters')}
+              >
+                Global Parameters
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('View dependencies')}
+              >
+                Dependency
+              </Button>
+            </div>
+          </div>
+
+          {/* View Options */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Views</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('View overview')}
+              >
+                Overview
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => console.log('View documents')}
+              >
+                Documents
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <WorkflowStagesBar 
         stages={stages} 
         activeStage={activeStage} 
