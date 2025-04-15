@@ -76,7 +76,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         </header>
         
         {/* Page content */}
-        <main className="flex-1 container py-6">
+        <main className="flex-1 container py-6 px-4 md:px-6">
           {title && (
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold hidden md:block">{title}</h1>

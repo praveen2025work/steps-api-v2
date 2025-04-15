@@ -14,7 +14,7 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <DashboardLayout title="Workflow Dashboard">
-        <div className="space-y-8">
+        <div className="space-y-8 px-1">
           {/* Applications Grid */}
           <ApplicationsGrid />
           
