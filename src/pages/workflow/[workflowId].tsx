@@ -412,16 +412,6 @@ const WorkflowDetailPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <DashboardLayout>
-        <div className="mb-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => router.back()}
-            className="mt-1"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
-        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-1">

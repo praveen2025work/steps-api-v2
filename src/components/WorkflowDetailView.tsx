@@ -422,7 +422,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Hierarchy Navigation Breadcrumb */}
       <WorkflowHierarchyBreadcrumb 
         nodes={hierarchyPath}
@@ -432,7 +432,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       
       <div className="flex justify-between items-start">
         <div>
-          {/* Removed redundant title as it's now displayed in the breadcrumb */}
+          {/* Only show progress indicator, no redundant title */}
           <WorkflowProgressIndicator steps={progressSteps} />
         </div>
         

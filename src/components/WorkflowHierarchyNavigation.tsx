@@ -30,20 +30,32 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
   onNavigate = () => {},
 }) => {
   // Determine which items to show based on the current path
+  // Modified to show one level backwards instead of the current level
   const getItemsToShow = () => {
     if (!currentPath || currentPath.length === 0) {
-      return { items: hierarchyData.applications || [], level: 'application' };
+      return { items: hierarchyData.applications || [], level: 'application', title: 'Categories' };
     }
     
-    const lastId = currentPath[currentPath.length - 1];
-    if (lastId && hierarchyData.categories && hierarchyData.categories[lastId]) {
-      return { items: hierarchyData.categories[lastId], level: 'category' };
+    // If we're at the first level, show applications
+    if (currentPath.length === 1) {
+      return { items: hierarchyData.applications || [], level: 'application', title: 'Categories' };
     }
     
-    return { items: [], level: 'workflow' };
+    // Otherwise, show the parent level's items
+    const parentId = currentPath[currentPath.length - 2];
+    if (parentId && hierarchyData.categories && hierarchyData.categories[parentId]) {
+      return { 
+        items: hierarchyData.categories[parentId], 
+        level: 'category', 
+        title: currentPath.length === 2 ? 'Apps' : 'Categories'
+      };
+    }
+    
+    // Fallback to showing applications if we can't determine the parent
+    return { items: hierarchyData.applications || [], level: 'application', title: 'Categories' };
   };
 
-  const { items, level } = getItemsToShow();
+  const { items, level, title } = getItemsToShow();
 
   // Generate breadcrumb from current path
   const generateBreadcrumb = () => {
@@ -106,8 +118,7 @@ const WorkflowHierarchyNavigation: React.FC<WorkflowHierarchyNavigationProps> = 
     <Card className="shadow-md">
       <CardHeader className="pb-1 pt-3 px-3">
         <CardTitle className="text-lg font-medium">
-          {level === 'application' ? 'Applications' : 
-           level === 'category' ? 'Categories' : 'Workflows'}
+          {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-3 py-2">

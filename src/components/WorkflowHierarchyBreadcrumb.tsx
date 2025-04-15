@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronRight, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,10 +28,19 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
   onNodeClick,
   onHomeClick = () => console.log('Navigate to home'),
 }) => {
-  if (!nodes || nodes.length === 0) return null;
+  const [cachedNodes, setCachedNodes] = useState<HierarchyNode[]>([]);
+  
+  // Store nodes in state to prevent issues when clicking breadcrumb
+  useEffect(() => {
+    if (nodes && nodes.length > 0) {
+      setCachedNodes(nodes);
+    }
+  }, [nodes]);
+  
+  if (!cachedNodes || cachedNodes.length === 0) return null;
 
   // Get the active node (last in the array)
-  const activeNode = nodes[nodes.length - 1];
+  const activeNode = cachedNodes[cachedNodes.length - 1];
   
   return (
     <div className="space-y-4">
@@ -54,7 +63,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
           <BreadcrumbSeparator />
           
           {/* Hierarchy Nodes */}
-          {nodes.map((node, index) => (
+          {cachedNodes.map((node, index) => (
             <React.Fragment key={node.id}>
               <BreadcrumbItem>
                 <Button
@@ -69,7 +78,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
               </BreadcrumbItem>
               
               {/* Add separator between nodes, but not after the last one */}
-              {index < nodes.length - 1 && <BreadcrumbSeparator />}
+              {index < cachedNodes.length - 1 && <BreadcrumbSeparator />}
             </React.Fragment>
           ))}
         </BreadcrumbList>
