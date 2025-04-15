@@ -102,6 +102,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
                   onClick={() => handleNodeClick(node)}
                 >
                   <span className="font-medium">{node.name}</span>
+                  <span className="text-xs text-muted-foreground">({node.progress}%)</span>
                 </Button>
               </BreadcrumbItem>
               

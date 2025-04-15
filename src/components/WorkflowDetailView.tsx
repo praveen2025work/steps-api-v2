@@ -420,10 +420,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       />
       
       <div className="flex justify-between items-start">
-        <div>
-          {/* Only show progress indicator, no redundant title */}
-          <WorkflowProgressIndicator steps={progressSteps} />
-        </div>
+        <div className="w-8"></div> {/* Empty div for spacing */}
         
         {/* Restored Workflow Controls with all requested buttons */}
         <div className="flex flex-col items-end gap-2">
