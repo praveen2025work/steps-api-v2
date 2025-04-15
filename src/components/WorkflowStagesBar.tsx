@@ -25,10 +25,10 @@ const WorkflowStagesBar: React.FC<WorkflowStagesBarProps> = ({
           key={stage.id}
           onClick={() => onStageClick(stage.id)}
           className={cn(
-            "px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors",
+            "px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors border",
             activeStage === stage.id
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted hover:bg-muted/80 text-foreground"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-muted hover:bg-muted/80 text-foreground border-muted-foreground/20"
           )}
         >
           {stage.name}

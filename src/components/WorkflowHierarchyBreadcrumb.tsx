@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { ChevronRight, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
   onNodeClick,
   onHomeClick = () => console.log('Navigate to home'),
 }) => {
+  const router = useRouter();
   const [cachedNodes, setCachedNodes] = useState<HierarchyNode[]>([]);
   
   // Store nodes in state to prevent issues when clicking breadcrumb
@@ -42,6 +44,33 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
   // Get the active node (last in the array)
   const activeNode = cachedNodes[cachedNodes.length - 1];
   
+  // Enhanced navigation handler for breadcrumb nodes
+  const handleNodeClick = (node: HierarchyNode) => {
+    // Call the original handler for state updates
+    onNodeClick(node);
+    
+    // Add actual navigation based on the node level
+    if (node.level === 'app') {
+      // Navigate to application view
+      router.push(`/application/${node.id}`);
+    } else if (node.level === 'workflow') {
+      // Navigate to workflow level
+      router.push(`/workflow/${node.id}`);
+    } else if (node.level === 'hierarchy') {
+      // Navigate to hierarchy level
+      router.push(`/workflow/${node.id}`);
+    }
+  };
+  
+  // Enhanced home button handler
+  const handleHomeClick = () => {
+    // Call the original handler
+    onHomeClick();
+    
+    // Navigate to dashboard
+    router.push('/');
+  };
+  
   return (
     <div className="space-y-4">
       {/* Breadcrumb Navigation */}
@@ -53,7 +82,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
               variant="ghost" 
               size="sm" 
               className="h-8 w-8 p-0 rounded-full"
-              onClick={onHomeClick}
+              onClick={handleHomeClick}
             >
               <Home className="h-4 w-4" />
               <span className="sr-only">Home</span>
@@ -70,7 +99,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
                   variant="ghost"
                   size="sm"
                   className="h-8 px-2 flex items-center gap-2 hover:bg-secondary/50"
-                  onClick={() => onNodeClick(node)}
+                  onClick={() => handleNodeClick(node)}
                 >
                   <span className="font-medium">{node.name}</span>
                   <Badge variant="secondary" className="ml-1">{node.progress}%</Badge>

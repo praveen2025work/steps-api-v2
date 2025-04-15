@@ -399,26 +399,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     if (nodeIndex >= 0) {
       // Truncate the path to this node to navigate to that level
       setHierarchyPath(hierarchyPath.slice(0, nodeIndex + 1));
-      
-      // In a real application, this would navigate to the appropriate level
-      if (node.level === 'app') {
-        // Navigate to dashboard view (show sibling apps)
-        console.log(`Loading dashboard view for ${node.name}`);
-        // router.push(`/application/${node.id}`);
-      } else if (node.level === 'workflow') {
-        // Load child workflows (eRates, Euro Bonds, BRIE, etc.)
-        console.log(`Loading child workflows for ${node.name}`);
-        // router.push(`/workflow/${node.id}`);
-      }
-      // If it's the current hierarchy level, we're already there
     }
+    
+    // Note: The actual navigation is now handled in the WorkflowHierarchyBreadcrumb component
   };
   
   // Handle home button click
   const handleHomeClick = () => {
     console.log('Navigate to home dashboard');
-    // In a real application, this would navigate to the home/dashboard page
-    // router.push('/');
+    // Note: The actual navigation is now handled in the WorkflowHierarchyBreadcrumb component
   };
 
   return (
