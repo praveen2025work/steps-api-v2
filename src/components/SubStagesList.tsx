@@ -187,8 +187,168 @@ const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
     // Implement actual download logic here
   };
 
+  // Options toolbar handlers
+  const handleLocked = () => {
+    console.log('Toggle locked state');
+  };
+
+  const handleAdhocStage = () => {
+    console.log('Add adhoc stage');
+  };
+
+  const handleResetAdhoc = () => {
+    console.log('Reset adhoc');
+  };
+
+  const handleReopenTollGate = () => {
+    console.log('Reopen toll gate');
+  };
+
+  const handleRefresh = () => {
+    console.log('Refresh data');
+  };
+
+  const handleActivity = () => {
+    console.log('View activity');
+  };
+
+  const handleRoles = () => {
+    console.log('View roles');
+  };
+
+  const handleAppParameters = () => {
+    console.log('View app parameters');
+  };
+
+  const handleGlobalParameters = () => {
+    console.log('View global parameters');
+  };
+
+  const handleDependency = () => {
+    console.log('View dependencies');
+  };
+
+  const handleOverview = () => {
+    console.log('View overview');
+  };
+
+  const handleDocuments = () => {
+    console.log('View documents');
+  };
+
   return (
     <div className="space-y-4">
+      {/* Options Toolbar */}
+      <div className="bg-accent/5 p-4 rounded-lg">
+        <div className="space-y-4">
+          {/* Workflow Control Options */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Workflow Controls</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLocked}
+              >
+                Locked
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleAdhocStage}
+              >
+                Adhoc Stage
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleResetAdhoc}
+              >
+                Reset Adhoc
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleReopenTollGate}
+              >
+                Reopen Toll Gate
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefresh}
+              >
+                Refresh
+              </Button>
+            </div>
+          </div>
+
+          {/* Information Options */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Information</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleActivity}
+              >
+                Activity
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRoles}
+              >
+                Roles
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleAppParameters}
+              >
+                App Parameters
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleGlobalParameters}
+              >
+                Global Parameters
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDependency}
+              >
+                Dependency
+              </Button>
+            </div>
+          </div>
+
+          {/* View Options */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Views</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleOverview}
+              >
+                Overview
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDocuments}
+              >
+                Documents
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub-stages List */}
       {subStages.map((subStage) => (
         <Collapsible 
           key={subStage.id} 
