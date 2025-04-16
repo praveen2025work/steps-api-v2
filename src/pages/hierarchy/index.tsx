@@ -1,8 +1,8 @@
 import React from 'react';
 import { NextPage } from 'next';
 import DashboardLayout from '@/components/DashboardLayout';
-import WorkflowHierarchicalView from '@/components/WorkflowHierarchicalView';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const HierarchyPage: NextPage = () => {
   return (
@@ -17,7 +17,12 @@ const HierarchyPage: NextPage = () => {
             <CardTitle>Workflow Hierarchy Navigation</CardTitle>
           </CardHeader>
           <CardContent>
-            <WorkflowHierarchicalView />
+            <Alert>
+              <AlertDescription>
+                The workflow hierarchy view is currently being updated. 
+                Please check back later or navigate to the main workflow view.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       </div>
