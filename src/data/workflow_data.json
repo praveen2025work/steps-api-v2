@@ -1,0 +1,274 @@
+{
+  "roles": [
+    {
+      "ROLEID": 201,
+      "DEPARTMENT": "Finance",
+      "ROLE": "Producer",
+      "USERTYPE": "Business",
+      "ISREADWRITE": "Y",
+      "ISACTIVE": 1
+    },
+    {
+      "ROLEID": 202,
+      "DEPARTMENT": "Finance",
+      "ROLE": "Approver",
+      "USERTYPE": "Business",
+      "ISREADWRITE": "Y",
+      "ISACTIVE": 1
+    },
+    {
+      "ROLEID": 203,
+      "DEPARTMENT": "Finance",
+      "ROLE": "Viewer",
+      "USERTYPE": "Business",
+      "ISREADWRITE": "N",
+      "ISACTIVE": 1
+    },
+    {
+      "ROLEID": 204,
+      "DEPARTMENT": "IT",
+      "ROLE": "Admin",
+      "USERTYPE": "System",
+      "ISREADWRITE": "Y",
+      "ISACTIVE": 1
+    },
+    {
+      "ROLEID": 205,
+      "DEPARTMENT": "Risk",
+      "ROLE": "Producer",
+      "USERTYPE": "Business",
+      "ISREADWRITE": "Y",
+      "ISACTIVE": 1
+    },
+    {
+      "ROLEID": 206,
+      "DEPARTMENT": "Risk",
+      "ROLE": "Approver",
+      "USERTYPE": "Business",
+      "ISREADWRITE": "Y",
+      "ISACTIVE": 1
+    },
+    {
+      "ROLEID": 207,
+      "DEPARTMENT": "Compliance",
+      "ROLE": "Producer",
+      "USERTYPE": "Business",
+      "ISREADWRITE": "Y",
+      "ISACTIVE": 1
+    },
+    {
+      "ROLEID": 208,
+      "DEPARTMENT": "Compliance",
+      "ROLE": "Approver",
+      "USERTYPE": "Business",
+      "ISREADWRITE": "Y",
+      "ISACTIVE": 1
+    }
+  ],
+  "users": [
+    { "USERNAME": "john.doe", "ISACTIVE": 1 },
+    { "USERNAME": "jane.smith", "ISACTIVE": 1 },
+    { "USERNAME": "mike.johnson", "ISACTIVE": 1 },
+    { "USERNAME": "sarah.williams", "ISACTIVE": 1 },
+    { "USERNAME": "admin.user", "ISACTIVE": 1 },
+    { "USERNAME": "system.user", "ISACTIVE": 1 },
+    { "USERNAME": "robert.chen", "ISACTIVE": 1 },
+    { "USERNAME": "lisa.garcia", "ISACTIVE": 1 },
+    { "USERNAME": "david.miller", "ISACTIVE": 1 },
+    { "USERNAME": "emily.patel", "ISACTIVE": 1 },
+    { "USERNAME": "james.wilson", "ISACTIVE": 1 },
+    { "USERNAME": "olivia.brown", "ISACTIVE": 1 }
+  ],
+  "userRoleMappings": [
+    { "APP_ID": 1001, "ROLEID": 201, "USERNAME": "john.doe" },
+    { "APP_ID": 1001, "ROLEID": 201, "USERNAME": "jane.smith" },
+    { "APP_ID": 1001, "ROLEID": 202, "USERNAME": "mike.johnson" },
+    { "APP_ID": 1001, "ROLEID": 203, "USERNAME": "sarah.williams" },
+    { "APP_ID": 1002, "ROLEID": 201, "USERNAME": "john.doe" },
+    { "APP_ID": 1002, "ROLEID": 202, "USERNAME": "sarah.williams" },
+    { "APP_ID": 1003, "ROLEID": 201, "USERNAME": "jane.smith" },
+    { "APP_ID": 1003, "ROLEID": 202, "USERNAME": "mike.johnson" },
+    { "APP_ID": 1004, "ROLEID": 205, "USERNAME": "robert.chen" },
+    { "APP_ID": 1004, "ROLEID": 206, "USERNAME": "lisa.garcia" },
+    { "APP_ID": 1005, "ROLEID": 207, "USERNAME": "david.miller" },
+    { "APP_ID": 1005, "ROLEID": 208, "USERNAME": "emily.patel" }
+  ],
+  "stages": [
+    {
+      "STAGE_ID": 301,
+      "NAME": "Pre WF",
+      "APP_ID": 1001,
+      "DESCRIPTION": "Preliminary workflow setup and initialization"
+    },
+    {
+      "STAGE_ID": 302,
+      "NAME": "Substantiation",
+      "APP_ID": 1001,
+      "DESCRIPTION": "Data validation and substantiation processes"
+    },
+    {
+      "STAGE_ID": 303,
+      "NAME": "Review",
+      "APP_ID": 1001,
+      "DESCRIPTION": "Review of data and adjustments"
+    },
+    {
+      "STAGE_ID": 304,
+      "NAME": "Publish",
+      "APP_ID": 1001,
+      "DESCRIPTION": "Publication and distribution of results"
+    },
+    {
+      "STAGE_ID": 305,
+      "NAME": "Sign Off",
+      "APP_ID": 1001,
+      "DESCRIPTION": "Final approval and sign-off"
+    },
+    {
+      "STAGE_ID": 306,
+      "NAME": "Rainy Day",
+      "APP_ID": 1001,
+      "DESCRIPTION": "Exception handling processes"
+    },
+    {
+      "STAGE_ID": 307,
+      "NAME": "Exception",
+      "APP_ID": 1001,
+      "DESCRIPTION": "Exception handling for specific cases"
+    }
+  ],
+  "substages": [
+    {
+      "SUBSTAGE_ID": 401,
+      "COMPONENTNAME": "SODRoll",
+      "SERVICELINE": "http://api.example.com/services/sod-roll",
+      "NAME": "SOD Roll",
+      "DEFAULTSTAGE": 301,
+      "SEND_EMAIL_AT_START": "N",
+      "FOLLOW_UP": "N",
+      "EXPECTEDTIME": "06:00:00",
+      "EXPECTEDDURATION": 15
+    },
+    {
+      "SUBSTAGE_ID": 402,
+      "COMPONENTNAME": "BooksOpen",
+      "SERVICELINE": "http://api.example.com/services/books-open",
+      "NAME": "Books Open For Correction",
+      "DEFAULTSTAGE": 301,
+      "SEND_EMAIL_AT_START": "Y",
+      "FOLLOW_UP": "Y",
+      "EXPECTEDTIME": "06:15:00",
+      "EXPECTEDDURATION": 30
+    },
+    {
+      "SUBSTAGE_ID": 403,
+      "COMPONENTNAME": "PollBook",
+      "SERVICELINE": "http://api.example.com/services/poll-book",
+      "NAME": "Poll Book OFC Rec Factory",
+      "DEFAULTSTAGE": 301,
+      "SEND_EMAIL_AT_START": "N",
+      "FOLLOW_UP": "N",
+      "EXPECTEDTIME": "06:45:00",
+      "EXPECTEDDURATION": 15
+    },
+    {
+      "SUBSTAGE_ID": 404,
+      "COMPONENTNAME": "CreateTrigger",
+      "SERVICELINE": "http://api.example.com/services/create-trigger",
+      "NAME": "Create Trigger File for Rec Factory",
+      "DEFAULTSTAGE": 301,
+      "SEND_EMAIL_AT_START": "N",
+      "FOLLOW_UP": "N",
+      "EXPECTEDTIME": "07:00:00",
+      "EXPECTEDDURATION": 10
+    },
+    {
+      "SUBSTAGE_ID": 405,
+      "COMPONENTNAME": "FileAvailability",
+      "SERVICELINE": "http://api.example.com/services/file-availability",
+      "NAME": "File Availability - Recurring Adjustment",
+      "DEFAULTSTAGE": 301,
+      "SEND_EMAIL_AT_START": "N",
+      "FOLLOW_UP": "Y",
+      "EXPECTEDTIME": "07:15:00",
+      "EXPECTEDDURATION": 20
+    },
+    {
+      "SUBSTAGE_ID": 406,
+      "COMPONENTNAME": "FileAvailabilityDOD",
+      "SERVICELINE": "http://api.example.com/services/file-availability-dod",
+      "NAME": "File Availability - DOD Rule",
+      "DEFAULTSTAGE": 301,
+      "SEND_EMAIL_AT_START": "N",
+      "FOLLOW_UP": "Y",
+      "EXPECTEDTIME": "07:35:00",
+      "EXPECTEDDURATION": 15
+    },
+    {
+      "SUBSTAGE_ID": 407,
+      "COMPONENTNAME": "SODFXRates",
+      "SERVICELINE": "http://api.example.com/services/sod-fx-rates",
+      "NAME": "SOD FX Rates",
+      "DEFAULTSTAGE": 301,
+      "SEND_EMAIL_AT_START": "N",
+      "FOLLOW_UP": "N",
+      "EXPECTEDTIME": "07:50:00",
+      "EXPECTEDDURATION": 10
+    },
+    {
+      "SUBSTAGE_ID": 408,
+      "COMPONENTNAME": "FXExposure",
+      "SERVICELINE": "http://api.example.com/services/fx-exposure",
+      "NAME": "FX Exposure",
+      "DEFAULTSTAGE": 301,
+      "SEND_EMAIL_AT_START": "N",
+      "FOLLOW_UP": "N",
+      "EXPECTEDTIME": "08:00:00",
+      "EXPECTEDDURATION": 20
+    },
+    {
+      "SUBSTAGE_ID": 409,
+      "COMPONENTNAME": "ReversingManualEntry",
+      "SERVICELINE": "http://api.example.com/services/reversing-manual-entry",
+      "NAME": "Reversing Manual Entry Extract",
+      "DEFAULTSTAGE": 301,
+      "SEND_EMAIL_AT_START": "N",
+      "FOLLOW_UP": "N",
+      "EXPECTEDTIME": "08:20:00",
+      "EXPECTEDDURATION": 15
+    },
+    {
+      "SUBSTAGE_ID": 410,
+      "COMPONENTNAME": "BalanceCheck",
+      "SERVICELINE": "http://api.example.com/services/balance-check",
+      "NAME": "Balance in Closed, Central, Default And Other Auto Excluded Books",
+      "DEFAULTSTAGE": 302,
+      "SEND_EMAIL_AT_START": "N",
+      "FOLLOW_UP": "Y",
+      "EXPECTEDTIME": "08:00:00",
+      "EXPECTEDDURATION": 25
+    },
+    {
+      "SUBSTAGE_ID": 411,
+      "COMPONENTNAME": "RecurringAdjustments",
+      "SERVICELINE": "http://api.example.com/services/recurring-adjustments",
+      "NAME": "Recurring Adjustments",
+      "DEFAULTSTAGE": 302,
+      "SEND_EMAIL_AT_START": "Y",
+      "FOLLOW_UP": "Y",
+      "EXPECTEDTIME": "08:30:00",
+      "EXPECTEDDURATION": 35
+    },
+    {
+      "SUBSTAGE_ID": 412,
+      "COMPONENTNAME": "NonRecurringAdjustments",
+      "SERVICELINE": "http://api.example.com/services/non-recurring-adjustments",
+      "NAME": "Post Non-recurring Adjustments",
+      "DEFAULTSTAGE": 302,
+      "SEND_EMAIL_AT_START": "Y",
+      "FOLLOW_UP": "Y",
+      "EXPECTEDTIME": "09:15:00",
+      "EXPECTEDDURATION": 45
+    }
+  ]
+} 

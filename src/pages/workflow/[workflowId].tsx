@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DashboardLayout from '@/components/DashboardLayout';
 import WorkflowDetailView from '@/components/WorkflowDetailView';
-import WorkflowHierarchyNavigation from '@/components/WorkflowHierarchyNavigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { WorkflowTask } from '@/components/WorkflowTaskItem';
@@ -412,16 +411,8 @@ const WorkflowDetailPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <DashboardLayout>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-1">
-            <WorkflowHierarchyNavigation 
-              hierarchyData={hierarchyData}
-              currentPath={currentPath}
-              onNavigate={handleNavigate}
-            />
-          </div>
-          <div className="md:col-span-3">
+        <div className="grid grid-cols-1 gap-4">
+          <div>
             <WorkflowDetailView 
               workflowTitle={workflowData.title}
               progressSteps={workflowData.progressSteps}

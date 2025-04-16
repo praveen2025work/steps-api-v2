@@ -1,0 +1,78 @@
+{
+  "hierarchies": [
+    {
+      "HIERARCHY_ID": 101,
+      "HIERARCHYNAME": "Business Division",
+      "HIERARCHYDESCRIPTION": "Business divisions and sub-divisions",
+      "HIERARCHYLEVEL": 1,
+      "COLNAME": "DIVISION",
+      "PARENTHIERARCHYLEVEL": 0,
+      "PARENTCOLNAME": "NONE",
+      "ISUSEDFORENTITLEMENTS": 1,
+      "ISUSEDFORWORKFLOWINSTANCE": 1
+    },
+    {
+      "HIERARCHY_ID": 102,
+      "HIERARCHYNAME": "Trading Desk",
+      "HIERARCHYDESCRIPTION": "Trading desks and sub-desks",
+      "HIERARCHYLEVEL": 2,
+      "COLNAME": "DESK",
+      "PARENTHIERARCHYLEVEL": 1,
+      "PARENTCOLNAME": "DIVISION",
+      "ISUSEDFORENTITLEMENTS": 1,
+      "ISUSEDFORWORKFLOWINSTANCE": 1
+    },
+    {
+      "HIERARCHY_ID": 103,
+      "HIERARCHYNAME": "Geography",
+      "HIERARCHYDESCRIPTION": "Geographical regions and countries",
+      "HIERARCHYLEVEL": 1,
+      "COLNAME": "REGION",
+      "PARENTHIERARCHYLEVEL": 0,
+      "PARENTCOLNAME": "NONE",
+      "ISUSEDFORENTITLEMENTS": 1,
+      "ISUSEDFORWORKFLOWINSTANCE": 1
+    }
+  ],
+  "hierarchyData": [
+    { "HIERARCHY_ID": 101, "HIERARCHYLEVEL": 1, "COLVALUE": "FICC", "COLNAME": "DIVISION", "PARENTHIERARCHYLEVEL": 0, "PARENTCOLVALUE": "ROOT", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 101, "HIERARCHYLEVEL": 1, "COLVALUE": "Equities", "COLNAME": "DIVISION", "PARENTHIERARCHYLEVEL": 0, "PARENTCOLVALUE": "ROOT", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 101, "HIERARCHYLEVEL": 1, "COLVALUE": "Investment Banking", "COLNAME": "DIVISION", "PARENTHIERARCHYLEVEL": 0, "PARENTCOLVALUE": "ROOT", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 102, "HIERARCHYLEVEL": 2, "COLVALUE": "Rates", "COLNAME": "DESK", "PARENTHIERARCHYLEVEL": 1, "PARENTCOLVALUE": "FICC", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 102, "HIERARCHYLEVEL": 2, "COLVALUE": "FX", "COLNAME": "DESK", "PARENTHIERARCHYLEVEL": 1, "PARENTCOLVALUE": "FICC", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 102, "HIERARCHYLEVEL": 2, "COLVALUE": "Credit", "COLNAME": "DESK", "PARENTHIERARCHYLEVEL": 1, "PARENTCOLVALUE": "FICC", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 102, "HIERARCHYLEVEL": 2, "COLVALUE": "Commodities", "COLNAME": "DESK", "PARENTHIERARCHYLEVEL": 1, "PARENTCOLVALUE": "FICC", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 102, "HIERARCHYLEVEL": 2, "COLVALUE": "Cash Equities", "COLNAME": "DESK", "PARENTHIERARCHYLEVEL": 1, "PARENTCOLVALUE": "Equities", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 102, "HIERARCHYLEVEL": 2, "COLVALUE": "Equity Derivatives", "COLNAME": "DESK", "PARENTHIERARCHYLEVEL": 1, "PARENTCOLVALUE": "Equities", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 103, "HIERARCHYLEVEL": 1, "COLVALUE": "Americas", "COLNAME": "REGION", "PARENTHIERARCHYLEVEL": 0, "PARENTCOLVALUE": "ROOT", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 103, "HIERARCHYLEVEL": 1, "COLVALUE": "EMEA", "COLNAME": "REGION", "PARENTHIERARCHYLEVEL": 0, "PARENTCOLVALUE": "ROOT", "ISACTIVE": 1 },
+    { "HIERARCHY_ID": 103, "HIERARCHYLEVEL": 1, "COLVALUE": "APAC", "COLNAME": "REGION", "PARENTHIERARCHYLEVEL": 0, "PARENTCOLVALUE": "ROOT", "ISACTIVE": 1 }
+  ],
+  "hierarchyMappings": {
+    "daily_pnl": [
+      { "id": "ficc", "name": "FICC", "completion": 60 },
+      { "id": "equities", "name": "Equities", "completion": 35 },
+      { "id": "investment_banking", "name": "Investment Banking", "completion": 42 }
+    ],
+    "ficc": [
+      { "id": "rates", "name": "Rates", "completion": 75 },
+      { "id": "fx", "name": "FX", "completion": 62 },
+      { "id": "credit", "name": "Credit", "completion": 48 },
+      { "id": "commodities", "name": "Commodities", "completion": 55 }
+    ],
+    "rates": [
+      { "id": "erates", "name": "eRates", "completion": 85 },
+      { "id": "government_bonds", "name": "Government Bonds", "completion": 72 },
+      { "id": "inflation", "name": "Inflation", "completion": 68 }
+    ],
+    "equities": [
+      { "id": "cash_equities", "name": "Cash Equities", "completion": 40 },
+      { "id": "equity_derivatives", "name": "Equity Derivatives", "completion": 30 }
+    ],
+    "workspace_pnl": [
+      { "id": "americas", "name": "Americas", "completion": 65 },
+      { "id": "emea", "name": "EMEA", "completion": 58 },
+      { "id": "apac", "name": "APAC", "completion": 42 }
+    ]
+  }
+} 

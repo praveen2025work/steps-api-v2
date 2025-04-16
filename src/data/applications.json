@@ -1,0 +1,72 @@
+[
+  {
+    "APP_ID": 1001,
+    "NAME": "Daily Named PNL",
+    "CATEGORY": "Finance",
+    "SERVICE_URI": "http://api.example.com/services/daily-pnl",
+    "DESCRIPTION": "Daily profit and loss reporting for named accounts",
+    "ISACTIVE": 1,
+    "CRONEXPRESSION": "0 0 6 * * ?",
+    "STARTDATE": "2025-01-01T00:00:00",
+    "EXPIRYDATE": "2099-12-31T00:00:00",
+    "USERUNCALENDAR": 0,
+    "RUNDATEOFFSET": 1,
+    "ISRUNONWEEKDAYONLY": 1
+  },
+  {
+    "APP_ID": 1002,
+    "NAME": "Workspace PNL",
+    "CATEGORY": "Finance",
+    "SERVICE_URI": "http://api.example.com/services/workspace-pnl",
+    "DESCRIPTION": "Workspace profit and loss management and reporting",
+    "ISACTIVE": 1,
+    "CRONEXPRESSION": "0 30 6 * * ?",
+    "STARTDATE": "2025-01-01T00:00:00",
+    "EXPIRYDATE": "2099-12-31T00:00:00",
+    "USERUNCALENDAR": 0,
+    "RUNDATEOFFSET": 1,
+    "ISRUNONWEEKDAYONLY": 1
+  },
+  {
+    "APP_ID": 1003,
+    "NAME": "Monthend PNL",
+    "CATEGORY": "Finance",
+    "SERVICE_URI": "http://api.example.com/services/monthend-pnl",
+    "DESCRIPTION": "Month-end profit and loss consolidation and reporting",
+    "ISACTIVE": 1,
+    "CRONEXPRESSION": "0 0 7 L * ?",
+    "STARTDATE": "2025-01-01T00:00:00",
+    "EXPIRYDATE": "2099-12-31T00:00:00",
+    "USERUNCALENDAR": 1,
+    "RUNDATEOFFSET": 0,
+    "ISRUNONWEEKDAYONLY": 0
+  },
+  {
+    "APP_ID": 1004,
+    "NAME": "Risk Analytics",
+    "CATEGORY": "Risk",
+    "SERVICE_URI": "http://api.example.com/services/risk-analytics",
+    "DESCRIPTION": "Risk management analytics and reporting",
+    "ISACTIVE": 1,
+    "CRONEXPRESSION": "0 0 8 * * ?",
+    "STARTDATE": "2025-01-01T00:00:00",
+    "EXPIRYDATE": "2099-12-31T00:00:00",
+    "USERUNCALENDAR": 0,
+    "RUNDATEOFFSET": 0,
+    "ISRUNONWEEKDAYONLY": 1
+  },
+  {
+    "APP_ID": 1005,
+    "NAME": "Regulatory Reporting",
+    "CATEGORY": "Compliance",
+    "SERVICE_URI": "http://api.example.com/services/regulatory-reporting",
+    "DESCRIPTION": "Regulatory compliance reporting",
+    "ISACTIVE": 1,
+    "CRONEXPRESSION": "0 0 7 * * ?",
+    "STARTDATE": "2025-01-01T00:00:00",
+    "EXPIRYDATE": "2099-12-31T00:00:00",
+    "USERUNCALENDAR": 0,
+    "RUNDATEOFFSET": 1,
+    "ISRUNONWEEKDAYONLY": 1
+  }
+] 

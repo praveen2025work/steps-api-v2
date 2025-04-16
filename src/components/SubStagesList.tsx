@@ -20,613 +20,181 @@ import {
   RotateCw,
   FastForward,
   SkipForward,
-  Mail
+  Mail,
+  ChevronUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getFileIcon } from './DocumentsList';
 import SubStageTaskItem, { Task } from './SubStageTaskItem';
-
-interface SubStage {
-  id: string;
-  name: string;
-  status: 'completed' | 'in-progress' | 'not-started' | 'skipped';
-  progress: number;
-  sequence?: number;
-  message?: string;
-  processId?: string;
-  updatedBy?: string;
-  lockedBy?: string;
-  duration?: number;
-  type?: 'manual' | 'auto';
-  avgDuration?: number;
-  avgStartTime?: string;
-  expectedUser?: string;
-  dependencies?: { name: string; status: string; id?: string }[];
-  fileInfo?: { name: string; type: string; size?: string }[];
-  config?: {
-    canTrigger?: boolean;
-    canRerun?: boolean;
-    canForceStart?: boolean;
-    canSkip?: boolean;
-    canSendEmail?: boolean;
-  };
-  timing?: {
-    start?: string;
-    duration?: string;
-    avgDuration?: string;
-    avgStart?: string;
-  };
-  stats?: {
-    success?: string;
-    lastRun?: string | null;
-  };
-  meta?: {
-    updatedBy?: string | null;
-    updatedOn?: string | null;
-    lockedBy?: string | null;
-    lockedOn?: string | null;
-    completedBy?: string | null;
-    completedOn?: string | null;
-  };
-  files?: {
-    name: string;
-    type: string;
-    size: string;
-  }[];
-  messages?: string[];
-  tasks?: Task[];
-}
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DocumentsList from './DocumentsList';
+import { Drawer } from '@/components/ui/drawer';
+import { SubStage, StageStatus } from '@/types/workflow';
 
 interface SubStagesListProps {
   subStages: SubStage[];
+  onSubStageClick?: (subStage: SubStage) => void;
+  selectedSubStage?: SubStage | null;
 }
 
-const SubStagesList: React.FC<SubStagesListProps> = ({ subStages }) => {
-  const [expandedStages, setExpandedStages] = useState<Record<string, boolean>>({});
+const MENU_ITEMS = [
+  { key: 'locked', label: 'Locked', group: 'Workflow Controls' },
+  { key: 'adhoc', label: 'Adhoc Stage', group: 'Workflow Controls' },
+  { key: 'reset', label: 'Reset Adhoc', group: 'Workflow Controls' },
+  { key: 'reopen', label: 'Reopen Toll Gate', group: 'Workflow Controls' },
+  { key: 'refresh', label: 'Refresh', group: 'Workflow Controls' },
+  { key: 'activity', label: 'Activity', group: 'Information' },
+  { key: 'roles', label: 'Roles', group: 'Information' },
+  { key: 'appParams', label: 'App Parameters', group: 'Information' },
+  { key: 'globalParams', label: 'Global Parameters', group: 'Information' },
+  { key: 'dependency', label: 'Dependency', group: 'Information' },
+  { key: 'overview', label: 'Overview', group: 'Views' },
+  { key: 'documents', label: 'Documents', group: 'Views' },
+];
+
+// Sample documents for demonstration
+const sampleDocuments = [
+  {
+    id: 'doc-1',
+    name: 'input_data.xlsx',
+    type: 'excel',
+    size: '2.4 MB',
+    updatedAt: '2025-04-14 02:30',
+    updatedBy: 'John Doe',
+    category: 'download' as 'download',
+    subStage: 'Data Collection',
+  },
+  {
+    id: 'doc-2',
+    name: 'validation_report.pdf',
+    type: 'pdf',
+    size: '1.2 MB',
+    updatedAt: '2025-04-14 02:45',
+    updatedBy: 'System',
+    category: 'download' as 'download',
+    subStage: 'Validation',
+  },
+];
+
+const getStatusVariant = (status: StageStatus) => {
+  switch (status) {
+    case 'completed':
+      return 'success';
+    case 'in-progress':
+      return 'info';
+    case 'failed':
+      return 'error';
+    case 'skipped':
+      return 'warning';
+    default:
+      return 'default';
+  }
+};
+
+const SubStagesList: React.FC<SubStagesListProps> = ({ 
+  subStages, 
+  onSubStageClick,
+  selectedSubStage 
+}) => {
+  const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set());
 
   const toggleExpand = (id: string) => {
-    setExpandedStages(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-  
-  // Action handlers
-  const handleTrigger = (id: string, name: string) => {
-    console.log(`Triggering sub-stage: ${name} (${id})`);
-    // Implement actual trigger logic here
-  };
-  
-  const handleRerun = (id: string, name: string) => {
-    console.log(`Rerunning sub-stage: ${name} (${id})`);
-    // Implement actual rerun logic here
-  };
-  
-  const handleForceStart = (id: string, name: string) => {
-    console.log(`Force starting sub-stage: ${name} (${id})`);
-    // Implement actual force start logic here
-  };
-  
-  const handleSkip = (id: string, name: string) => {
-    console.log(`Skipping sub-stage: ${name} (${id})`);
-    // Implement actual skip logic here
-  };
-  
-  const handleSendEmail = (id: string, name: string) => {
-    console.log(`Sending email for sub-stage: ${name} (${id})`);
-    // Implement actual email sending logic here
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'in-progress':
-        return <Clock className="h-5 w-5 text-blue-500" />;
-      case 'not-started':
-        return <Clock className="h-5 w-5 text-muted-foreground" />;
-      case 'skipped':
-        return <AlertCircle className="h-5 w-5 text-amber-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-muted-foreground" />;
+    const newExpanded = new Set(expandedStages);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
     }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">Completed</Badge>;
-      case 'in-progress':
-        return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">In Progress</Badge>;
-      case 'not-started':
-        return <Badge variant="outline">Not Started</Badge>;
-      case 'skipped':
-        return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20">Skipped</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  const getTypeIcon = (type?: string) => {
-    if (type === 'manual') {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <User className="h-4 w-4 text-amber-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Manual Step</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    }
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <Zap className="h-4 w-4 text-blue-500" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Automatic Step</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
-
-  // Preview and download handlers for file info
-  const handleFilePreview = (fileName: string, fileType: string) => {
-    console.log(`Previewing file: ${fileName} (${fileType})`);
-    // Implement actual preview logic here
-  };
-
-  const handleFileDownload = (fileName: string, fileType: string) => {
-    console.log(`Downloading file: ${fileName} (${fileType})`);
-    // Implement actual download logic here
-  };
-
-  // Options toolbar handlers
-  const handleLocked = () => {
-    console.log('Toggle locked state');
-  };
-
-  const handleAdhocStage = () => {
-    console.log('Add adhoc stage');
-  };
-
-  const handleResetAdhoc = () => {
-    console.log('Reset adhoc');
-  };
-
-  const handleReopenTollGate = () => {
-    console.log('Reopen toll gate');
-  };
-
-  const handleRefresh = () => {
-    console.log('Refresh data');
-  };
-
-  const handleActivity = () => {
-    console.log('View activity');
-  };
-
-  const handleRoles = () => {
-    console.log('View roles');
-  };
-
-  const handleAppParameters = () => {
-    console.log('View app parameters');
-  };
-
-  const handleGlobalParameters = () => {
-    console.log('View global parameters');
-  };
-
-  const handleDependency = () => {
-    console.log('View dependencies');
-  };
-
-  const handleOverview = () => {
-    console.log('View overview');
-  };
-
-  const handleDocuments = () => {
-    console.log('View documents');
+    setExpandedStages(newExpanded);
   };
 
   return (
     <div className="space-y-4">
-      {/* Sub-stages List */}
-      {subStages.map((subStage) => (
-        <Collapsible 
-          key={subStage.id} 
-          open={expandedStages[subStage.id]} 
-          onOpenChange={() => toggleExpand(subStage.id)}
-          className="border rounded-lg"
-        >
-          <div className="p-4">
-            <CollapsibleTrigger asChild>
-              <div className="flex items-start gap-3 cursor-pointer">
-                <div className="mt-1">{getStatusIcon(subStage.status)}</div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {expandedStages[subStage.id] ? 
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" /> : 
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      }
-                      <h3 className="font-medium">{subStage.name}</h3>
-                      {getTypeIcon(subStage.type)}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{subStage.progress}%</span>
-                      {getStatusBadge(subStage.status)}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-3">
-                    <Progress value={subStage.progress} className="h-2" />
-                  </div>
+      {subStages.map((stage) => {
+        const isExpanded = expandedStages.has(stage.id);
+        const isSelected = selectedSubStage?.id === stage.id;
 
-                  {/* Action Buttons for all sub-stages */}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTrigger(subStage.id, subStage.name);
-                            }}
-                          >
-                            <Play className="h-3.5 w-3.5" />
-                            <span>Trigger</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Trigger this step</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRerun(subStage.id, subStage.name);
-                            }}
-                          >
-                            <RotateCw className="h-3.5 w-3.5" />
-                            <span>Rerun</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Rerun this step</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleForceStart(subStage.id, subStage.name);
-                            }}
-                          >
-                            <FastForward className="h-3.5 w-3.5" />
-                            <span>Force Start</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Force start this step</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSkip(subStage.id, subStage.name);
-                            }}
-                          >
-                            <SkipForward className="h-3.5 w-3.5" />
-                            <span>Skip</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Skip this step</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSendEmail(subStage.id, subStage.name);
-                            }}
-                          >
-                            <Mail className="h-3.5 w-3.5" />
-                            <span>Send Email</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Send email notification</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
+        return (
+          <Card 
+            key={stage.id}
+            className={`p-4 cursor-pointer transition-all duration-200 ${
+              isSelected ? 'ring-2 ring-blue-500' : ''
+            }`}
+            onClick={() => onSubStageClick?.(stage)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold">{stage.name}</h3>
+                  <Badge variant={getStatusVariant(stage.status)}>
+                    {stage.status}
+                  </Badge>
                 </div>
-              </div>
-            </CollapsibleTrigger>
-          </div>
-          
-          <CollapsibleContent>
-            <Separator />
-            <div className="p-4 space-y-4 bg-accent/10">
-              {/* Tasks Section */}
-              {subStage.tasks && subStage.tasks.length > 0 && (
-                <div className="space-y-4">
-                  {subStage.tasks.map(task => (
-                    <SubStageTaskItem key={task.id} task={task} />
-                  ))}
-                </div>
-              )}
-              
-              {/* Performance Metrics */}
-              <div>
-                <h4 className="text-sm font-medium mb-2">Performance Metrics</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {(subStage.timing?.avgDuration || subStage.avgDuration) && (
-                    <div className="bg-background p-3 rounded-md">
-                      <div className="text-xs text-muted-foreground mb-1">Average Duration</div>
-                      <div className="font-medium">{subStage.timing?.avgDuration || `${subStage.avgDuration} min`}</div>
-                    </div>
+                <Progress value={stage.progress} className="mb-2" />
+                <div className="flex items-center text-sm text-gray-500">
+                  {stage.timing?.start && (
+                    <span>Started: {new Date(stage.timing.start).toLocaleString()}</span>
                   )}
-                  {(subStage.timing?.avgStart || subStage.avgStartTime) && (
-                    <div className="bg-background p-3 rounded-md">
-                      <div className="text-xs text-muted-foreground mb-1">Average Start Time</div>
-                      <div className="font-medium">{subStage.timing?.avgStart || subStage.avgStartTime}</div>
-                    </div>
-                  )}
-                  {subStage.stats?.success && (
-                    <div className="bg-background p-3 rounded-md">
-                      <div className="text-xs text-muted-foreground mb-1">Success Rate</div>
-                      <div className="font-medium">{subStage.stats.success}</div>
-                    </div>
-                  )}
-                  {subStage.type === 'manual' && subStage.expectedUser && (
-                    <div className="bg-background p-3 rounded-md">
-                      <div className="text-xs text-muted-foreground mb-1">Expected User</div>
-                      <div className="font-medium">{subStage.expectedUser}</div>
-                    </div>
-                  )}
-                  {subStage.stats?.lastRun && (
-                    <div className="bg-background p-3 rounded-md">
-                      <div className="text-xs text-muted-foreground mb-1">Last Run</div>
-                      <div className="font-medium">{subStage.stats.lastRun}</div>
-                    </div>
+                  {stage.duration && (
+                    <span className="ml-4">Duration: {stage.duration}s</span>
                   )}
                 </div>
               </div>
-              
-              {/* Dependencies */}
-              {subStage.dependencies && subStage.dependencies.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Dependencies</h4>
-                  <div className="space-y-2">
-                    {subStage.dependencies.map((dep, index) => (
-                      <div 
-                        key={index} 
-                        className="flex items-center justify-between bg-background p-2 rounded-md cursor-pointer hover:bg-accent/20"
-                        onClick={() => dep.id && console.log(`Navigate to dependency: ${dep.id}`)}
-                        title="Click to navigate to this step"
-                      >
-                        <div className="flex items-center gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <ArrowRightLeft className={
-                                  dep.status === 'completed' ? 'h-4 w-4 text-green-500' : 
-                                  dep.status === 'in-progress' ? 'h-4 w-4 text-blue-500' : 
-                                  'h-4 w-4 text-muted-foreground'
-                                } />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Click to navigate to this dependency</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <span>{dep.name}</span>
-                        </div>
-                        <Badge 
-                          className={
-                            dep.status === 'completed' ? 'bg-green-500/10 text-green-500' : 
-                            dep.status === 'in-progress' ? 'bg-blue-500/10 text-blue-500' : 
-                            'bg-muted text-muted-foreground'
-                          }
-                        >
-                          {dep.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* File Information */}
-              {(subStage.files || (subStage.fileInfo && subStage.fileInfo.length > 0)) && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Files</h4>
-                  <div className="space-y-2">
-                    {subStage.files && subStage.files.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-background p-2 rounded-md">
-                        <div className="flex items-center gap-2">
-                          {getFileIcon(file.type, file.name)}
-                          <span>{file.name}</span>
-                          {file.size && <span className="text-xs text-muted-foreground">({file.size})</span>}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{file.type}</Badge>
-                          {file.type === 'preview' && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button 
-                                    className="text-xs text-blue-500 hover:underline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleFilePreview(file.name, file.type);
-                                    }}
-                                  >
-                                    Preview
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Preview file</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                          {(file.type === 'download' || !file.type) && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button 
-                                    className="text-xs text-blue-500 hover:underline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleFileDownload(file.name, file.type);
-                                    }}
-                                  >
-                                    Download
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Download file</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                          {file.type === 'upload' && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button 
-                                    className="text-xs text-blue-500 hover:underline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      console.log(`Upload file: ${file.name}`);
-                                    }}
-                                  >
-                                    Upload
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Upload file</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {subStage.fileInfo && subStage.fileInfo.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-background p-2 rounded-md">
-                        <div className="flex items-center gap-2">
-                          {getFileIcon(file.type, file.name)}
-                          <span>{file.name}</span>
-                          {file.size && <span className="text-xs text-muted-foreground">({file.size})</span>}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{file.type}</Badge>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button 
-                                  className="text-xs text-blue-500 hover:underline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleFilePreview(file.name, file.type);
-                                  }}
-                                >
-                                  Preview
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Preview file</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button 
-                                  className="text-xs text-blue-500 hover:underline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleFileDownload(file.name, file.type);
-                                  }}
-                                >
-                                  Download
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Download file</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Messages */}
-              {subStage.messages && subStage.messages.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Messages</h4>
-                  <div className="space-y-2">
-                    {subStage.messages.map((message, index) => (
-                      <div key={index} className="bg-background p-2 rounded-md text-sm">
-                        {message}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpand(stage.id);
+                }}
+              >
+                {isExpanded ? (
+                  <ChevronUp className="h-5 w-5" />
+                ) : (
+                  <ChevronDown className="h-5 w-5" />
+                )}
+              </Button>
             </div>
-          </CollapsibleContent>
-        </Collapsible>
-      ))}
+
+            {isExpanded && (
+              <div className="mt-4 space-y-4">
+                {stage.message && (
+                  <div className="text-sm text-gray-600">{stage.message}</div>
+                )}
+                {stage.config && (
+                  <div className="flex gap-2">
+                    {stage.config.canTrigger && (
+                      <Button size="sm">Trigger</Button>
+                    )}
+                    {stage.config.canRerun && (
+                      <Button size="sm" variant="outline">Rerun</Button>
+                    )}
+                    {stage.config.canSkip && (
+                      <Button size="sm" variant="outline">Skip</Button>
+                    )}
+                  </div>
+                )}
+                {stage.dependencies && stage.dependencies.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Dependencies</h4>
+                    <div className="space-y-2">
+                      {stage.dependencies.map((dep, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm">
+                          <span>{dep.name}</span>
+                          <Badge variant={getStatusVariant(dep.status as StageStatus)}>
+                            {dep.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 };

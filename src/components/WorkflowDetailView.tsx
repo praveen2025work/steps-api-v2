@@ -22,7 +22,17 @@ import {
   RefreshCw,
   Plus,
   RotateCcw,
-  Unlock as UnlockIcon
+  Unlock as UnlockIcon,
+  Layers,
+  Settings,
+  PlayCircle,
+  SkipForward,
+  Mail,
+  Bot,
+  UserCircle,
+  ArrowRightCircle,
+  XCircle,
+  CircleDot
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
@@ -31,12 +41,39 @@ import DependencyTreeMap from './DependencyTreeMap';
 import RoleAssignments from './RoleAssignments';
 import ActivityLog from './ActivityLog';
 import WorkflowHierarchyBreadcrumb, { HierarchyNode } from './WorkflowHierarchyBreadcrumb';
+import { Progress } from '@/components/ui/progress';
+import { SubStage, StageStatus, Dependency } from '@/types/workflow';
 
 interface WorkflowDetailViewProps {
   workflowTitle: string;
   progressSteps: { name: string; progress: number }[];
   stages: { id: string; name: string }[];
   tasks: Record<string, WorkflowTask[]>; // Map of stageId to tasks
+}
+
+interface ActivityLogItem {
+  action: string;
+  timestamp: string;
+  user: string;
+  role: string;
+  substage: string;
+  status: 'completed' | 'in-progress' | 'not-started' | 'skipped';
+}
+
+interface UserActivity {
+  id: string;
+  name: string;
+  assignedTo: string;
+  email: string;
+  status: string;
+  lastActivity: string;
+  timestamp: string;
+}
+
+interface RoleAssignments {
+  roleAssignments: {
+    [key: string]: UserActivity[];
+  };
 }
 
 const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
@@ -53,6 +90,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [isLocked, setIsLocked] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [countdown, setCountdown] = useState<number>(15);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [rightPanelContent, setRightPanelContent] = useState<'overview' | 'stages' | 'documents' | 'parameters' | 'dependencies' | 'roles' | 'activity' | 'audit' | 'app-parameters' | 'global-parameters'>('overview');
+  const [selectedSubStage, setSelectedSubStage] = useState<string | null>(null);
+  const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false);
 
   // Mock hierarchy path for the breadcrumb navigation - removing percentages from display
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([
@@ -95,14 +136,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const activeStageTasks = tasks[activeStage] || [];
   const activeStageInfo = stages.find(stage => stage.id === activeStage);
 
-  // Enhanced mock data for the additional tabs with the new structure
-  const mockSubStages = [
+  // Updated mock data with different statuses
+  const mockSubStages: SubStage[] = [
     { 
       id: 'trigger_file',
       name: 'Create Trigger File for Rec Factory',
       type: 'auto',
-      status: 'not-started',
-      progress: 0,
+      status: 'completed',
+      progress: 100,
       processId: 'PROC-1237',
       timing: {
         start: '07:30:00',
@@ -115,27 +156,27 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         lastRun: null
       },
       meta: {
-        updatedBy: null,
-        updatedOn: null,
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T07:35:00',
         lockedBy: null,
         lockedOn: null,
-        completedBy: null,
-        completedOn: null
+        completedBy: 'System',
+        completedOn: '2025-04-12T07:35:00'
       },
       files: [
         { name: 'trigger.dat', type: 'download', size: '2 KB' }
       ],
-      messages: [],
+      messages: ['Successfully created trigger file'],
       dependencies: [
-        { name: 'Poll Book OFC Rec Factory', status: 'in_progress', id: 'poll_book' }
+        { name: 'Poll Book OFC Rec Factory', status: 'completed', id: 'poll_book' }
       ]
     },
     { 
       id: 'file_rec_adj',
       name: 'File Availability - Recurring Adjustment',
       type: 'manual',
-      status: 'not-started',
-      progress: 0,
+      status: 'in-progress',
+      progress: 45,
       processId: 'PROC-1238',
       timing: {
         start: '08:00:00',
@@ -361,18 +402,63 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     ],
   };
 
-  const mockDependencies = [
+  const mockDependencies: Dependency[] = [
     { name: 'SOD Roll', status: 'completed', completedAt: '2025-04-14 06:15', id: 'dep-1' },
     { name: 'Market Data Load', status: 'completed', completedAt: '2025-04-14 06:30', id: 'dep-2' },
     { name: 'Risk Calculation', status: 'in-progress', completedAt: null, id: 'dep-3' },
     { name: 'Compliance Check', status: 'not-started', completedAt: null, id: 'dep-4' },
   ];
 
-  const mockAuditInfo = [
-    { action: 'Process Started', timestamp: '2025-04-14 06:45', user: 'System' },
-    { action: 'Manual Intervention', timestamp: '2025-04-14 07:15', user: 'John Doe' },
-    { action: 'Process Resumed', timestamp: '2025-04-14 07:20', user: 'John Doe' },
+  const mockAuditInfo: ActivityLogItem[] = [
+    { 
+      action: 'Process Started',
+      timestamp: '2025-04-14 06:45',
+      user: 'System',
+      role: 'System',
+      substage: 'Initialization',
+      status: 'completed'
+    },
+    { 
+      action: 'Manual Intervention',
+      timestamp: '2025-04-14 07:15',
+      user: 'John Doe',
+      role: 'Supervisor',
+      substage: 'Review',
+      status: 'in-progress'
+    },
+    { 
+      action: 'Process Resumed',
+      timestamp: '2025-04-14 07:20',
+      user: 'John Doe',
+      role: 'Supervisor',
+      substage: 'Review',
+      status: 'completed'
+    }
   ];
+
+  const mockRoleAssignments = {
+    producer: [
+      {
+        name: 'John Doe',
+        lastActivity: 'Updated workflow parameters',
+        timestamp: '2025-04-14 06:15'
+      }
+    ],
+    approver: [
+      {
+        name: 'Jane Smith',
+        lastActivity: 'Approved stage completion',
+        timestamp: '2025-04-14 06:30'
+      }
+    ],
+    viewer: [
+      {
+        name: 'Mike Johnson',
+        lastActivity: 'Viewed workflow status',
+        timestamp: '2025-04-14 06:45'
+      }
+    ]
+  };
 
   // Set up auto-refresh effect
   React.useEffect(() => {
@@ -410,6 +496,85 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     // Note: The actual navigation is now handled in the WorkflowHierarchyBreadcrumb component
   };
 
+  const handleProcessIdClick = (processId: string) => {
+    setRightPanelContent('audit');
+    setRightPanelOpen(true);
+    setIsRightPanelExpanded(true);
+  };
+
+  const renderRightPanelContent = () => {
+    switch (rightPanelContent) {
+      case 'overview':
+        return <div>Overview Content</div>;
+      case 'stages':
+        return <SubStagesList subStages={mockSubStages} />;
+      case 'documents':
+        return <DocumentsList documents={mockDocuments} />;
+      case 'parameters':
+        return <div>Parameters Content</div>;
+      case 'dependencies':
+        return <DependencyTreeMap dependencies={mockDependencies} />;
+      case 'roles':
+        return <RoleAssignments roleAssignments={mockRoleAssignments} />;
+      case 'activity':
+        return <ActivityLog activities={mockAuditInfo} />;
+      case 'audit':
+        return <ActivityLog activities={mockAuditInfo} />;
+      case 'app-parameters':
+        return <div>App Parameters Content</div>;
+      case 'global-parameters':
+        return <div>Global Parameters Content</div>;
+      default:
+        return null;
+    }
+  };
+
+  const renderSubStageCard = (subStage: SubStage) => {
+    const isSelected = selectedSubStage === subStage.id;
+    
+    return (
+      <Card 
+        key={subStage.id}
+        className={`mb-4 transition-all duration-200 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+        onClick={() => setSelectedSubStage(subStage.id)}
+      >
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">{subStage.name}</div>
+            <div className={`px-2 py-1 rounded-full text-xs ${
+              subStage.status === 'completed' ? 'bg-green-100 text-green-800' :
+              subStage.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+              subStage.status === 'failed' ? 'bg-red-100 text-red-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {subStage.status}
+            </div>
+          </div>
+          <div className="space-y-2 mt-2">
+            <div className="flex items-center justify-between text-sm">
+              <span>Progress</span>
+              <span>{subStage.progress}%</span>
+            </div>
+            <Progress value={subStage.progress} className="h-2" />
+            <div className="flex items-center justify-between text-sm">
+              <span>Type</span>
+              <span className="capitalize">{subStage.type}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span>Process ID</span>
+              <span>{subStage.processId}</span>
+            </div>
+            {subStage.messages && subStage.messages.length > 0 && (
+              <div className="mt-2 text-sm text-gray-600">
+                {subStage.messages[0]}
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* Hierarchy Navigation Breadcrumb */}
@@ -419,183 +584,66 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         onHomeClick={handleHomeClick}
       />
       
-      <div className="flex justify-between items-start">
-        <div className="w-8"></div> {/* Empty div for spacing */}
-        
-        {/* Restored Workflow Controls with all requested buttons */}
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={toggleLock}
-            >
-              {isLocked ? (
-                <>
-                  <Lock className="h-3.5 w-3.5" />
-                  <span>Locked</span>
-                </>
-              ) : (
-                <>
-                  <Unlock className="h-3.5 w-3.5" />
-                  <span>Unlocked</span>
-                </>
-              )}
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add Adhoc Stage</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Reset Workflow</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-            >
-              <UnlockIcon className="h-3.5 w-3.5" />
-              <span>Reopen Toll Gate</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={handleRefresh}
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              <span>Refresh</span>
-            </Button>
-          </div>
-          
-          <div className="text-xs text-muted-foreground">
-            Last refreshed: {getSecondsSinceRefresh()} seconds ago | Auto-refresh in: {countdown}s
-          </div>
+      {/* Workflow Controls - Aligned with breadcrumb */}
+      <div className="flex justify-between items-center">
+        <div className="flex-1"></div>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={toggleLock}
+          >
+            {isLocked ? (
+              <>
+                <Lock className="h-3.5 w-3.5" />
+                <span>Locked</span>
+              </>
+            ) : (
+              <>
+                <Unlock className="h-3.5 w-3.5" />
+                <span>Unlocked</span>
+              </>
+            )}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Add Adhoc Stage</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset Workflow</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+          >
+            <UnlockIcon className="h-3.5 w-3.5" />
+            <span>Reopen Toll Gate</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={handleRefresh}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Refresh</span>
+          </Button>
         </div>
       </div>
 
-      {/* Options Toolbar */}
-      <div className="bg-accent/5 p-4 rounded-lg mb-4">
-        <div className="space-y-4">
-          {/* Workflow Control Options */}
-          <div>
-            <h3 className="text-sm font-medium mb-2">Workflow Controls</h3>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('Toggle locked state')}
-              >
-                Locked
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('Add adhoc stage')}
-              >
-                Adhoc Stage
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('Reset adhoc')}
-              >
-                Reset Adhoc
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('Reopen toll gate')}
-              >
-                Reopen Toll Gate
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('Refresh data')}
-              >
-                Refresh
-              </Button>
-            </div>
-          </div>
-
-          {/* Information Options */}
-          <div>
-            <h3 className="text-sm font-medium mb-2">Information</h3>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('View activity')}
-              >
-                Activity
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('View roles')}
-              >
-                Roles
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('View app parameters')}
-              >
-                App Parameters
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('View global parameters')}
-              >
-                Global Parameters
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('View dependencies')}
-              >
-                Dependency
-              </Button>
-            </div>
-          </div>
-
-          {/* View Options */}
-          <div>
-            <h3 className="text-sm font-medium mb-2">Views</h3>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('View overview')}
-              >
-                Overview
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => console.log('View documents')}
-              >
-                Documents
-              </Button>
-            </div>
-          </div>
-        </div>
+      <div className="text-xs text-muted-foreground text-right">
+        Last refreshed: {getSecondsSinceRefresh()} seconds ago | Auto-refresh in: {countdown}s
       </div>
 
       <WorkflowStagesBar 
@@ -604,429 +652,345 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         onStageClick={handleStageClick} 
       />
 
-      <div>
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
-              <CardTitle>{activeStageInfo?.name || 'Tasks'}</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="overview" onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="stages">Stages</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
-                <TabsTrigger value="parameters">Parameters</TabsTrigger>
-                <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
-                <TabsTrigger value="roles">Roles</TabsTrigger>
-                <TabsTrigger value="activity">Activity</TabsTrigger>
-                <TabsTrigger value="audit">Audit Info</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="overview">
-                <div className="space-y-4">
-                  <div className="border rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-4">Workflow Information</h3>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-accent/5 p-3 rounded-md">
-                          <div className="text-xs text-muted-foreground mb-1">Workflow ID</div>
-                          <div className="font-medium">WF-2025-04-14-001</div>
+      <div className="flex gap-4">
+        {/* Main Content - 60% width */}
+        <div className="flex-[0.6]">
+          <div className="space-y-4">
+            {mockSubStages.map((subStage, index) => (
+              <Collapsible key={subStage.id}>
+                <div 
+                  className={`${
+                    subStage.status === 'completed' ? 'border-l-[6px] border-l-green-500' :
+                    subStage.status === 'in-progress' ? 'border-l-[6px] border-l-blue-500' :
+                    subStage.status === 'failed' ? 'border-l-[6px] border-l-red-500' :
+                    'border-l-[6px] border-l-gray-300'
+                  } bg-background p-4`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm text-muted-foreground font-mono">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <h3 className="font-medium text-lg">{subStage.name}</h3>
+                        <div className="flex items-center gap-1">
+                          {subStage.status === 'completed' ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : subStage.status === 'in-progress' ? (
+                            <CircleDot className="h-4 w-4 text-blue-500" />
+                          ) : subStage.status === 'failed' ? (
+                            <XCircle className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-gray-500" />
+                          )}
                         </div>
-                        <div className="bg-accent/5 p-3 rounded-md">
-                          <div className="text-xs text-muted-foreground mb-1">Business Date</div>
-                          <div className="font-medium">2025-04-14</div>
-                        </div>
-                        <div className="bg-accent/5 p-3 rounded-md">
-                          <div className="text-xs text-muted-foreground mb-1">Expected Completion</div>
-                          <div className="font-medium">2025-04-14 11:30 AM</div>
-                        </div>
-                        <div className="bg-accent/5 p-3 rounded-md">
-                          <div className="text-xs text-muted-foreground mb-1">Priority</div>
-                          <div className="font-medium">High</div>
+                        <Button 
+                          variant="ghost" 
+                          className="p-0 h-auto font-mono"
+                          onClick={() => handleProcessIdClick(subStage.processId)}
+                        >
+                          {subStage.processId}
+                        </Button>
+                        {subStage.type === 'auto' ? (
+                          <Bot className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <UserCircle className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <div className="flex items-center gap-2 ml-auto">
+                          <span className="text-sm text-muted-foreground">
+                            {subStage.progress}%
+                          </span>
+                          <Progress 
+                            value={subStage.progress} 
+                            className="w-16 h-2"
+                            {...(subStage.status === 'failed' && { 
+                              className: "w-16 h-2 bg-destructive" 
+                            })}
+                          />
                         </div>
                       </div>
                       
-                      <div>
-                        <h4 className="text-sm font-medium mb-2">Pre-Execution Checks</h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between bg-accent/5 p-3 rounded-md">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span>System Availability</span>
-                            </div>
-                            <Badge className="bg-green-500/10 text-green-500">Passed</Badge>
-                          </div>
-                          <div className="flex items-center justify-between bg-accent/5 p-3 rounded-md">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span>Data Integrity</span>
-                            </div>
-                            <Badge className="bg-green-500/10 text-green-500">Passed</Badge>
-                          </div>
-                          <div className="flex items-center justify-between bg-accent/5 p-3 rounded-md">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span>Prerequisite Workflows</span>
-                            </div>
-                            <Badge className="bg-green-500/10 text-green-500">Passed</Badge>
-                          </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>Expected Start: {subStage.timing.start}</span>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>Duration: {subStage.timing.duration}</span>
+                        </div>
+                        {subStage.meta.updatedBy && (
+                          <div className="flex items-center gap-2">
+                            <UserCircle className="h-4 w-4" />
+                            <span>Updated by: {subStage.meta.updatedBy} {subStage.meta.updatedOn && `(${subStage.meta.updatedOn})`}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Dependencies */}
+                      {subStage.dependencies && subStage.dependencies.length > 0 && (
+                        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                          <Network className="h-4 w-4" />
+                          <span>Dependencies:</span>
+                          {subStage.dependencies.map((dep, depIndex) => (
+                            <span key={dep.id} className="flex items-center gap-1">
+                              {dep.name}
+                              {depIndex < subStage.dependencies.length - 1 && ", "}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Messages */}
+                      {subStage.messages && subStage.messages.length > 0 && (
+                        <div className="mt-2 text-sm">
+                          {subStage.messages.map((message, msgIndex) => (
+                            <p key={msgIndex} className="text-muted-foreground">{message}</p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 mt-4">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <PlayCircle className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <ArrowRightCircle className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <SkipForward className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Mail className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="stages">
-                <div className="space-y-4">
-                  <SubStagesList 
-                    subStages={[
-                      // SOD Roll with tasks
-                      {
-                        id: 'sod_roll',
-                        name: 'SOD Roll',
-                        status: 'completed',
-                        progress: 100,
-                        processId: 'PROC-1234',
-                        type: 'auto',
-                        timing: {
-                          start: '06:00',
-                          duration: '15m',
-                          avgDuration: '12m',
-                          avgStart: '06:00 AM'
-                        },
-                        message: 'Successfully rolled over positions',
-                        meta: {
-                          updatedBy: 'System',
-                          updatedOn: '2025-04-12T06:15:00',
-                        },
-                        files: [
-                          { name: 'sod_report.xlsx', type: 'download', size: '2.4 MB' },
-                          { name: 'validation.log', type: 'preview', size: '150 KB' }
-                        ],
-                        tasks: [
-                          {
-                            id: 'task-1',
-                            name: 'SOD Roll',
-                            processId: 'PROC-1234',
-                            status: 'completed',
-                            duration: '15m',
-                            expectedStart: '06:00',
-                            files: [
-                              { name: 'sod_report.xlsx', type: 'download', size: '2.4 MB' },
-                              { name: 'validation.log', type: 'preview', size: '150 KB' }
-                            ],
-                            messages: [
-                              'Successfully rolled over positions',
-                              'All 2,500 positions processed'
-                            ],
-                            updatedBy: 'System',
-                            updatedAt: '2025-04-12T06:15:00'
-                          }
-                        ]
-                      },
-                      // Books Open For Correction with tasks
-                      {
-                        id: 'books_open',
-                        name: 'Books Open For Correction',
-                        status: 'in-progress',
-                        progress: 50,
-                        processId: 'PROC-1235',
-                        type: 'manual',
-                        timing: {
-                          start: '06:30',
-                          duration: '30m',
-                          avgDuration: '25m',
-                          avgStart: '06:30 AM'
-                        },
-                        message: 'Books opened for correction',
-                        meta: {
-                          updatedBy: 'John Doe',
-                          updatedOn: '2025-04-12T06:30:00',
-                        },
-                        files: [
-                          { name: 'corrections.xlsx', type: 'download', size: '1.2 MB' }
-                        ],
-                        dependencies: [
-                          { name: 'SOD Roll', status: 'completed', id: 'sod_roll' }
-                        ],
-                        tasks: [
-                          {
-                            id: 'task-2',
-                            name: 'Books Open For Correction',
-                            processId: 'PROC-1235',
-                            status: 'in-progress',
-                            duration: '30m',
-                            expectedStart: '06:30',
-                            dependencies: [
-                              { name: 'SOD Roll', status: 'completed' }
-                            ],
-                            files: [
-                              { name: 'corrections.xlsx', type: 'download', size: '1.2 MB' }
-                            ],
-                            messages: [
-                              'Books opened for correction'
-                            ],
-                            updatedBy: 'John Doe',
-                            updatedAt: '2025-04-12T06:30:00'
-                          }
-                        ]
-                      },
-                      // Add remaining sub-stages
-                      ...mockSubStages.filter(s => 
-                        s.id !== 'sod_roll' && 
-                        s.id !== 'books_open'
-                      )
-                    ]} 
-                  />
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="documents">
-                <DocumentsList documents={mockDocuments} />
-              </TabsContent>
-              
-              <TabsContent value="parameters">
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Application Parameters</h3>
-                    <div className="border rounded-md">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left p-2">Name</th>
-                            <th className="text-left p-2">Value</th>
-                            <th className="text-left p-2">Description</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mockParameters.app.map((param, index) => (
-                            <tr key={index} className={index < mockParameters.app.length - 1 ? "border-b" : ""}>
-                              <td className="p-2 font-mono text-sm">{param.name}</td>
-                              <td className="p-2 font-mono text-sm">{param.value}</td>
-                              <td className="p-2 text-sm text-muted-foreground">{param.description}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+
+                  <CollapsibleTrigger className="w-full text-left mt-4">
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <ChevronDown className="h-4 w-4" />
+                      Show Details
+                    </Button>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent className="mt-4 space-y-4">
+                    {/* Files Section */}
+                    {subStage.files && subStage.files.length > 0 && (
+                      <div className="space-y-2">
+                        {subStage.files.map((file, fileIndex) => (
+                          <div key={fileIndex} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4" />
+                              <span>{file.name}</span>
+                              <span className="text-muted-foreground">({file.size})</span>
+                            </div>
+                            <div className="flex gap-2">
+                              {file.type !== 'upload' && (
+                                <>
+                                  <Button variant="ghost" size="sm">Preview</Button>
+                                  <Button variant="ghost" size="sm">Download</Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Performance Metrics */}
+                    <div className="pt-4 border-t">
+                      <h4 className="font-medium mb-3">Performance Metrics</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-sm text-muted-foreground">Average Duration</div>
+                          <div className="font-medium">{subStage.timing.avgDuration}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-muted-foreground">Average Start Time</div>
+                          <div className="font-medium">{subStage.timing.avgStart}</div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Global Parameters</h3>
-                    <div className="border rounded-md">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left p-2">Name</th>
-                            <th className="text-left p-2">Value</th>
-                            <th className="text-left p-2">Description</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mockParameters.global.map((param, index) => (
-                            <tr key={index} className={index < mockParameters.global.length - 1 ? "border-b" : ""}>
-                              <td className="p-2 font-mono text-sm">{param.name}</td>
-                              <td className="p-2 font-mono text-sm">{param.value}</td>
-                              <td className="p-2 text-sm text-muted-foreground">{param.description}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Process Parameters</h3>
-                    <div className="border rounded-md">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left p-2">Name</th>
-                            <th className="text-left p-2">Value</th>
-                            <th className="text-left p-2">Description</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mockParameters.process.map((param, index) => (
-                            <tr key={index} className={index < mockParameters.process.length - 1 ? "border-b" : ""}>
-                              <td className="p-2 font-mono text-sm">{param.name}</td>
-                              <td className="p-2 font-mono text-sm">{param.value}</td>
-                              <td className="p-2 text-sm text-muted-foreground">{param.description}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  </CollapsibleContent>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="dependencies">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium mb-2">Dependency Tree</h3>
-                  <div className="border rounded-lg p-4 bg-accent/5">
-                    {/* Using the new DependencyTreeMap component */}
-                    <DependencyTreeMap 
-                      dependencies={[
-                        {
-                          id: 'dep-1',
-                          name: 'SOD Roll',
-                          status: 'completed',
-                          completedAt: '2025-04-14 06:15',
-                          children: [
-                            {
-                              id: 'dep-2',
-                              name: 'Market Data Load',
-                              status: 'completed',
-                              completedAt: '2025-04-14 06:30',
-                              children: [
-                                {
-                                  id: 'dep-3',
-                                  name: 'Risk Calculation',
-                                  status: 'in-progress'
-                                }
-                              ]
-                            },
-                            {
-                              id: 'dep-4',
-                              name: 'Books Open For Correction',
-                              status: 'in-progress',
-                              children: [
-                                {
-                                  id: 'dep-5',
-                                  name: 'Compliance Check',
-                                  status: 'not-started'
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]}
-                      onDependencyClick={(id) => {
-                        console.log(`Navigate to dependency: ${id}`);
-                        // In a real application, this would navigate to the specific step
-                      }}
-                    />
-                  </div>
+              </Collapsible>
+            ))}
+          </div>
+        </div>
+
+        {/* Right Panel - 40% width */}
+        <div className={`bg-background border-l transition-all duration-200 ${rightPanelContent ? 'flex-[0.4]' : 'w-[240px]'}`}>
+          {/* Sticky Header and Menu */}
+          <div className="sticky top-0 bg-background border-b z-10">
+            {rightPanelContent ? (
+              // Horizontal Menu when expanded
+              <div className="p-2">
+                <div className="flex flex-wrap gap-1">
+                  <Button 
+                    variant={rightPanelContent === 'activity' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('activity')}
+                  >
+                    <Activity className="h-3.5 w-3.5 mr-1" />
+                    Activity
+                  </Button>
+                  <Button 
+                    variant={rightPanelContent === 'roles' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('roles')}
+                  >
+                    <Users className="h-3.5 w-3.5 mr-1" />
+                    Roles
+                  </Button>
+                  <Button 
+                    variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('app-parameters')}
+                  >
+                    <Settings className="h-3.5 w-3.5 mr-1" />
+                    App Parameters
+                  </Button>
+                  <Button 
+                    variant={rightPanelContent === 'global-parameters' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('global-parameters')}
+                  >
+                    <Settings className="h-3.5 w-3.5 mr-1" />
+                    Global Parameters
+                  </Button>
+                  <Button 
+                    variant={rightPanelContent === 'dependencies' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('dependencies')}
+                  >
+                    <Network className="h-3.5 w-3.5 mr-1" />
+                    Dependency
+                  </Button>
+                  <Button 
+                    variant={rightPanelContent === 'overview' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('overview')}
+                  >
+                    <FileText className="h-3.5 w-3.5 mr-1" />
+                    Overview
+                  </Button>
+                  <Button 
+                    variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('documents')}
+                  >
+                    <FileText className="h-3.5 w-3.5 mr-1" />
+                    Documents
+                  </Button>
+                  <Button 
+                    variant={rightPanelContent === 'parameters' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('parameters')}
+                  >
+                    <Settings className="h-3.5 w-3.5 mr-1" />
+                    Parameters
+                  </Button>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="roles">
-                <RoleAssignments roleAssignments={{
-                  "producer": [
-                    { name: "John Doe", lastActivity: "Completed Books Open For Correction", timestamp: "2025-04-14T07:00:00" },
-                    { name: "Jane Smith", lastActivity: "Uploaded corrections file", timestamp: "2025-04-14T06:45:00" },
-                    { name: "Robert Chen", lastActivity: "Preparing Non-recurring Adjustments", timestamp: "2025-04-14T07:30:00" }
-                  ],
-                  "approver": [
-                    { name: "Mike Johnson", lastActivity: "Reviewed Books Open For Correction", timestamp: "2025-04-14T07:20:00" },
-                    { name: "Sarah Williams", lastActivity: "Logged in", timestamp: "2025-04-14T07:15:00" }
-                  ],
-                  "viewer": [
-                    { name: "Tom Brown", lastActivity: "Viewed workflow status", timestamp: "2025-04-14T07:25:00" }
-                  ]
-                }} />
-              </TabsContent>
-              
-              <TabsContent value="activity">
-                <ActivityLog activities={[
-                  {
-                    user: 'System',
-                    action: 'SOD Roll completed successfully',
-                    timestamp: '2025-04-14T06:15:00',
-                    role: 'system',
-                    substage: 'SOD Roll',
-                    status: 'completed'
-                  },
-                  {
-                    user: 'John Doe',
-                    action: 'Started Books Open For Correction',
-                    timestamp: '2025-04-14T06:30:00',
-                    role: 'producer',
-                    substage: 'Books Open For Correction',
-                    status: 'in_progress'
-                  },
-                  {
-                    user: 'Jane Smith',
-                    action: 'Uploaded corrections file',
-                    timestamp: '2025-04-14T06:45:00',
-                    role: 'producer',
-                    substage: 'Books Open For Correction',
-                    status: 'in_progress'
-                  },
-                  {
-                    user: 'John Doe',
-                    action: 'Completed Books Open For Correction',
-                    timestamp: '2025-04-14T07:00:00',
-                    role: 'producer',
-                    substage: 'Books Open For Correction',
-                    status: 'completed'
-                  },
-                  {
-                    user: 'System',
-                    action: 'Started Poll Book OFC Rec Factory',
-                    timestamp: '2025-04-14T07:15:00',
-                    role: 'system',
-                    substage: 'Poll Book OFC Rec Factory',
-                    status: 'in_progress'
-                  },
-                  {
-                    user: 'Mike Johnson',
-                    action: 'Reviewed Books Open For Correction process',
-                    timestamp: '2025-04-14T07:20:00',
-                    role: 'approver',
-                    substage: 'Books Open For Correction',
-                    status: 'completed'
-                  }
-                ]} />
-              </TabsContent>
-              
-              <TabsContent value="audit">
-                <div className="border rounded-md">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Action</th>
-                        <th className="text-left p-2">Timestamp</th>
-                        <th className="text-left p-2">User</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mockAuditInfo.map((audit, index) => (
-                        <tr key={index} className={index < mockAuditInfo.length - 1 ? "border-b" : ""}>
-                          <td className="p-2">{audit.action}</td>
-                          <td className="p-2 text-sm">{audit.timestamp}</td>
-                          <td className="p-2 text-sm">{audit.user}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-          <CardFooter className="border-t pt-4 flex justify-between">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                Last Updated: 2025-04-14 07:20
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Lock className="h-3 w-3" />
-                Locked
-              </Badge>
+              </div>
+            ) : (
+              // Vertical Menu when collapsed
+              <div className="p-2 flex flex-col gap-1">
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('activity')}
+                >
+                  <Activity className="h-3.5 w-3.5 mr-2" />
+                  Activity
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('roles')}
+                >
+                  <Users className="h-3.5 w-3.5 mr-2" />
+                  Roles
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('app-parameters')}
+                >
+                  <Settings className="h-3.5 w-3.5 mr-2" />
+                  App Parameters
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('global-parameters')}
+                >
+                  <Settings className="h-3.5 w-3.5 mr-2" />
+                  Global Parameters
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('dependencies')}
+                >
+                  <Network className="h-3.5 w-3.5 mr-2" />
+                  Dependency
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('overview')}
+                >
+                  <FileText className="h-3.5 w-3.5 mr-2" />
+                  Overview
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('documents')}
+                >
+                  <FileText className="h-3.5 w-3.5 mr-2" />
+                  Documents
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('parameters')}
+                >
+                  <Settings className="h-3.5 w-3.5 mr-2" />
+                  Parameters
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Panel Content */}
+          {rightPanelContent && (
+            <div className="flex-1 overflow-y-auto p-4 bg-background">
+              {renderRightPanelContent()}
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                Sequence: 3/5
-              </Badge>
-            </div>
-          </CardFooter>
-        </Card>
+          )}
+        </div>
       </div>
     </div>
   );

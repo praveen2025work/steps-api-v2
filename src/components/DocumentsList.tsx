@@ -41,7 +41,7 @@ export const getFileIcon = (type: string, fileName: string) => {
     case 'csv':
       return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
     case 'pdf':
-      return <FilePdf className="h-5 w-5 text-red-600" />;
+      return <FileText className="h-5 w-5 text-red-600" />;
     case 'html':
     case 'css':
       return <FileCode className="h-5 w-5 text-purple-600" />;
@@ -116,7 +116,7 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
         </TabsList>
         
         <TabsContent value="all" className="mt-4">
-          <DocumentsGrid 
+          <DocumentsListGrid 
             documents={displayDocuments} 
             onDownload={handleDownload} 
             onUpload={handleUpload} 
@@ -125,7 +125,7 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
         </TabsContent>
         
         <TabsContent value="download" className="mt-4">
-          <DocumentsGrid 
+          <DocumentsListGrid 
             documents={displayDocuments} 
             onDownload={handleDownload} 
             onUpload={handleUpload} 
@@ -134,7 +134,7 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
         </TabsContent>
         
         <TabsContent value="upload" className="mt-4">
-          <DocumentsGrid 
+          <DocumentsListGrid 
             documents={displayDocuments} 
             onDownload={handleDownload} 
             onUpload={handleUpload} 
@@ -146,14 +146,14 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
   );
 };
 
-interface DocumentsGridProps {
+interface DocumentsListGridProps {
   documents: Document[];
   onDownload: (id: string) => void;
   onUpload: (id: string) => void;
   onPreview: (document: Document) => void;
 }
 
-const DocumentsGrid: React.FC<DocumentsGridProps> = ({ documents, onDownload, onUpload, onPreview }) => {
+export const DocumentsListGrid: React.FC<DocumentsListGridProps> = ({ documents, onDownload, onUpload, onPreview }) => {
   if (documents.length === 0) {
     return <p className="text-muted-foreground">No documents found.</p>;
   }
