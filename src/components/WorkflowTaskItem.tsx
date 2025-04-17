@@ -64,6 +64,22 @@ const WorkflowTaskItem: React.FC<WorkflowTaskItemProps> = ({ task }) => {
     }
   };
 
+  // Calculate completion percentage based on status
+  const getCompletionPercentage = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return '100%';
+      case 'in_progress':
+        return '50%';
+      case 'not_started':
+        return '0%';
+      case 'skipped':
+        return 'N/A';
+      default:
+        return '0%';
+    }
+  };
+
   return (
     <Card className={cn(
       "mb-4 overflow-hidden",
@@ -72,88 +88,98 @@ const WorkflowTaskItem: React.FC<WorkflowTaskItemProps> = ({ task }) => {
       task.status === 'skipped' && "border-l-4 border-l-amber-500"
     )}>
       <CardContent className="p-4">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          {/* Left column - Task info */}
-          <div className="flex-1">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="mt-1">{getStatusIcon(task.status)}</div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-medium">{task.name}</h3>
-                  {getStatusBadge(task.status)}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">{task.processId}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline" className="text-xs">
-                    {task.duration}m
-                  </Badge>
-                  {task.status === 'completed' && task.actualDuration && (
-                    <span className="text-xs text-muted-foreground">Actual: {task.actualDuration}</span>
-                  )}
-                </div>
-              </div>
+        {/* Task Header - Task number, name, ID, and completion status */}
+        <div className="grid grid-cols-12 gap-2 mb-3">
+          <div className="col-span-1 flex items-center justify-center bg-muted rounded-md p-1 font-medium text-sm">
+            {task.id.padStart(2, '0')}
+          </div>
+          <div className="col-span-11 md:col-span-8">
+            <h3 className="font-medium text-base">{task.name}</h3>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-sm text-muted-foreground">{task.processId}</span>
             </div>
+          </div>
+          <div className="col-span-12 md:col-span-3 flex md:justify-end items-center">
+            <Badge className={cn(
+              "px-2 py-1",
+              task.status === 'completed' && "bg-green-500/10 text-green-500 border-green-500/20",
+              task.status === 'in_progress' && "bg-blue-500/10 text-blue-500 border-blue-500/20"
+            )}>
+              {getCompletionPercentage(task.status)}
+            </Badge>
+          </div>
+        </div>
 
+        {/* Task Details - Timing, dependencies, and messages */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 mt-3">
+          {/* Left column */}
+          <div>
             {/* Timing information */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Expected Start: {task.expectedStart}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Duration: {task.duration}m</span>
-              </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span>Expected Start: {task.expectedStart}</span>
             </div>
-
-            {/* Dependencies */}
-            {task.dependencies && task.dependencies.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-medium mb-1">Dependencies:</p>
-                <div className="flex flex-wrap gap-2">
-                  {task.dependencies.map((dep, index) => (
-                    <div key={index} className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">
-                        {dep.name}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">{dep.status}</span>
-                    </div>
-                  ))}
-                </div>
+            <div className="flex items-center gap-2 text-sm mt-1">
+              <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span>Duration: {task.duration}m</span>
+            </div>
+            {task.updatedBy && task.updatedAt && (
+              <div className="flex items-start gap-2 text-sm mt-1">
+                <AlertCircle className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <span>Updated by: {task.updatedBy} ({task.updatedAt})</span>
               </div>
             )}
+          </div>
 
-            {/* Documents */}
-            {task.documents && task.documents.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {task.documents.map((doc, index) => (
-                  <div key={index} className="flex items-center gap-2 text-sm">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-primary hover:underline cursor-pointer">{doc.name}</span>
-                    <span className="text-xs text-muted-foreground">({doc.size})</span>
+          {/* Right column */}
+          <div>
+            {/* Dependencies */}
+            {task.dependencies && task.dependencies.length > 0 && (
+              <div>
+                <div className="flex items-start gap-2">
+                  <span className="text-sm font-medium flex-shrink-0">Dependencies:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {task.dependencies.map((dep, index) => (
+                      <Badge 
+                        key={index}
+                        variant="outline" 
+                        className={cn(
+                          "text-xs",
+                          dep.status === 'completed' && "bg-green-500/10 text-green-500 border-green-500/20",
+                          dep.status === 'in_progress' && "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                        )}
+                      >
+                        {dep.name}
+                      </Badge>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             )}
 
             {/* Messages */}
             {task.messages && task.messages.length > 0 && (
-              <div className="mt-4 space-y-1">
+              <div className="mt-2">
                 {task.messages.map((message, index) => (
-                  <p key={index} className="text-sm">{message}</p>
+                  <p key={index} className="text-sm text-green-500">{message}</p>
                 ))}
               </div>
             )}
           </div>
-
-          {/* Right column - Update info */}
-          {task.updatedBy && task.updatedAt && (
-            <div className="text-sm text-right text-muted-foreground mt-4 md:mt-0">
-              <p>Updated by: {task.updatedBy}</p>
-              <p>({task.updatedAt})</p>
-            </div>
-          )}
         </div>
+
+        {/* Documents */}
+        {task.documents && task.documents.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {task.documents.map((doc, index) => (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="text-primary hover:underline cursor-pointer">{doc.name}</span>
+                <span className="text-xs text-muted-foreground">({doc.size})</span>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
