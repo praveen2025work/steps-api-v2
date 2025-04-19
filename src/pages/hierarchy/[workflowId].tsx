@@ -2,8 +2,8 @@ import React from 'react';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/DashboardLayout';
-import WorkflowHierarchicalView from '@/components/WorkflowHierarchicalView';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const WorkflowHierarchyDetailPage: NextPage = () => {
   const router = useRouter();
@@ -22,10 +22,12 @@ const WorkflowHierarchyDetailPage: NextPage = () => {
           </CardHeader>
           <CardContent>
             {workflowId ? (
-              <WorkflowHierarchicalView 
-                initialLevel="workflowInstances" 
-                initialId={parseInt(workflowId as string)} 
-              />
+              <Alert>
+                <AlertDescription>
+                  The hierarchical view for workflow ID {workflowId} is currently being updated. 
+                  Please check back later or navigate to the main workflow view.
+                </AlertDescription>
+              </Alert>
             ) : (
               <div className="text-center py-8">Loading workflow details...</div>
             )}
