@@ -109,6 +109,22 @@ const SubStagesList: React.FC<SubStagesListProps> = ({
     setExpandedStages(newExpanded);
   };
 
+  // Function to render the appropriate status icon based on stage status
+  const renderStatusIcon = (status: StageStatus) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'in-progress':
+        return <RotateCw className="h-4 w-4 text-blue-500 animate-spin" />;
+      case 'failed':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'skipped':
+        return <SkipForward className="h-4 w-4 text-gray-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
   return (
     <div className="space-y-4">
       {subStages.map((stage) => {
@@ -121,6 +137,8 @@ const SubStagesList: React.FC<SubStagesListProps> = ({
             key={stage.id}
             className={`p-4 cursor-pointer transition-all duration-200 ${
               isSelected ? 'ring-2 ring-blue-500' : ''
+            } ${
+              isInProgress ? 'relative overflow-hidden before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-gradient-to-b before:from-blue-400 before:to-blue-600 before:animate-[pulse_1.5s_ease-in-out_infinite]' : ''
             }`}
             onClick={() => onSubStageClick?.(stage)}
           >
@@ -128,7 +146,8 @@ const SubStagesList: React.FC<SubStagesListProps> = ({
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-semibold">{stage.name}</h3>
-                  <Badge variant={getStatusVariant(stage.status)}>
+                  <Badge variant={getStatusVariant(stage.status)} className="flex items-center gap-1">
+                    {renderStatusIcon(stage.status)}
                     {stage.status}
                   </Badge>
                 </div>
