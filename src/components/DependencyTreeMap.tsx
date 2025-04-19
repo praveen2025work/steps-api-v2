@@ -2,21 +2,18 @@ import React from 'react';
 import { Network, CheckCircle, Clock, ArrowRightCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-interface Dependency {
-  id: string;
-  name: string;
-  status: 'completed' | 'in-progress' | 'not-started' | 'skipped';
-  completedAt?: string;
-  children?: Dependency[];
-}
+import { Card, CardContent } from '@/components/ui/card';
+import { SubStage } from '@/types/workflow';
 
 interface DependencyTreeMapProps {
-  dependencies: Dependency[];
-  onDependencyClick: (id: string) => void;
+  dependencies: SubStage[];
+  onDependencyClick?: (dependency: SubStage) => void;
 }
 
-const DependencyTreeMap: React.FC<DependencyTreeMapProps> = ({ dependencies, onDependencyClick }) => {
+const DependencyTreeMap: React.FC<DependencyTreeMapProps> = ({ 
+  dependencies,
+  onDependencyClick
+}) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -43,12 +40,12 @@ const DependencyTreeMap: React.FC<DependencyTreeMapProps> = ({ dependencies, onD
     }
   };
 
-  const renderDependency = (dependency: Dependency, level = 0) => {
+  const renderDependency = (dependency: SubStage, level = 0) => {
     return (
       <div key={dependency.id} className="mb-2">
         <div 
           className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-accent/10 ${level > 0 ? 'ml-6' : ''}`}
-          onClick={() => onDependencyClick(dependency.id)}
+          onClick={() => onDependencyClick?.(dependency)}
         >
           <div className="flex items-center gap-3">
             {getStatusIcon(dependency.status)}
@@ -80,15 +77,19 @@ const DependencyTreeMap: React.FC<DependencyTreeMapProps> = ({ dependencies, onD
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-center mb-4">
-        <Network className="h-6 w-6 text-primary" />
-        <span className="ml-2 font-medium">Workflow Dependencies</span>
-      </div>
-      <div className="space-y-2">
-        {dependencies.map(dep => renderDependency(dep))}
-      </div>
-    </div>
+    <Card>
+      <CardContent className="p-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-center mb-4">
+            <Network className="h-6 w-6 text-primary" />
+            <span className="ml-2 font-medium">Workflow Dependencies</span>
+          </div>
+          <div className="space-y-2">
+            {dependencies.map(dep => renderDependency(dep))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

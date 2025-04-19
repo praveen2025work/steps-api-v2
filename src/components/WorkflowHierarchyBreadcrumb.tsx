@@ -1,38 +1,79 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { ChevronRight, Home } from 'lucide-react';
+import { ChevronRight, Home, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface HierarchyNode {
   id: string;
   name: string;
-  progress: number;
-  level: 'app' | 'workflow' | 'hierarchy';
+  progress?: number;
+  level: string;
+  metadata?: Record<string, any>;
+  icon?: LucideIcon;
+  tooltip?: string;
+  onClick?: (node: HierarchyNode) => void;
+  href?: string;
+}
+
+export interface BreadcrumbConfig {
+  showHome?: boolean;
+  homeIcon?: LucideIcon;
+  homeTooltip?: string;
+  homeHref?: string;
+  separatorIcon?: LucideIcon;
+  showProgress?: boolean;
+  progressFormat?: (progress: number) => string;
+  idFormat?: (id: string) => string;
+  nodeFormat?: (node: HierarchyNode) => React.ReactNode;
+  onNodeClick?: (node: HierarchyNode) => void;
+  onHomeClick?: () => void;
 }
 
 interface WorkflowHierarchyBreadcrumbProps {
   nodes: HierarchyNode[];
-  onNodeClick: (node: HierarchyNode) => void;
-  onHomeClick?: () => void;
+  config?: BreadcrumbConfig;
 }
+
+const defaultConfig: BreadcrumbConfig = {
+  showHome: true,
+  homeIcon: Home,
+  homeTooltip: 'Go to Home',
+  homeHref: '/',
+  separatorIcon: ChevronRight,
+  showProgress: true,
+  progressFormat: (progress) => `${progress}%`,
+  idFormat: (id) => {
+    const match = id.match(/\d+$/);
+    return match ? match[0] : id;
+  },
+  nodeFormat: (node) => (
+    <>
+      <span className="font-medium">{node.name}</span>
+      <span className="text-xs text-muted-foreground">({node.id})</span>
+      {node.progress !== undefined && (
+        <span className="text-xs text-muted-foreground ml-1">
+          {node.progress}%
+        </span>
+      )}
+    </>
+  ),
+};
 
 const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = ({
   nodes,
-  onNodeClick,
-  onHomeClick = () => console.log('Navigate to home'),
+  config: customConfig,
 }) => {
   const router = useRouter();
   const [cachedNodes, setCachedNodes] = useState<HierarchyNode[]>([]);
+  const config = { ...defaultConfig, ...customConfig };
   
-  // Store nodes in state to prevent issues when clicking breadcrumb
   useEffect(() => {
     if (nodes && nodes.length > 0) {
       setCachedNodes(nodes);
@@ -41,73 +82,84 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
   
   if (!cachedNodes || cachedNodes.length === 0) return null;
 
-  // Get the active node (last in the array)
-  const activeNode = cachedNodes[cachedNodes.length - 1];
-  
-  // Enhanced navigation handler for breadcrumb nodes
   const handleNodeClick = (node: HierarchyNode) => {
-    // Call the original handler for state updates
-    onNodeClick(node);
-    
-    // Add actual navigation based on the node level
-    if (node.level === 'app') {
-      // Navigate to application view
-      router.push(`/application/${node.id}`);
-    } else if (node.level === 'workflow') {
-      // Navigate to workflow level
-      router.push(`/workflow/${node.id}`);
-    } else if (node.level === 'hierarchy') {
-      // Navigate to hierarchy level - this was the issue, we need to navigate to the correct view
-      router.push(`/stages/${node.id}`);
+    if (node.onClick) {
+      node.onClick(node);
+    } else if (config.onNodeClick) {
+      config.onNodeClick(node);
+    } else if (node.href) {
+      router.push(node.href);
     }
   };
   
-  // Enhanced home button handler
   const handleHomeClick = () => {
-    // Call the original handler
-    onHomeClick();
-    
-    // Navigate to dashboard
-    router.push('/');
+    if (config.onHomeClick) {
+      config.onHomeClick();
+    }
+    if (config.homeHref) {
+      router.push(config.homeHref);
+    }
   };
   
   return (
     <div>
-      {/* Breadcrumb Navigation */}
       <Breadcrumb>
         <BreadcrumbList>
-          {/* Home Icon */}
-          <BreadcrumbItem>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0 rounded-full"
-              onClick={handleHomeClick}
-            >
-              <Home className="h-4 w-4" />
-              <span className="sr-only">Home</span>
-            </Button>
-          </BreadcrumbItem>
+          {config.showHome && config.homeIcon && (
+            <>
+              <BreadcrumbItem>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 rounded-full"
+                        onClick={handleHomeClick}
+                      >
+                        <config.homeIcon className="h-4 w-4" />
+                        <span className="sr-only">Home</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{config.homeTooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+            </>
+          )}
           
-          <BreadcrumbSeparator />
-          
-          {/* Hierarchy Nodes */}
           {cachedNodes.map((node, index) => (
             <React.Fragment key={node.id}>
               <BreadcrumbItem>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 flex items-center gap-2 hover:bg-secondary/50"
+                  className="h-8 px-2 flex items-center gap-1 hover:bg-secondary/50"
                   onClick={() => handleNodeClick(node)}
                 >
-                  <span className="font-medium">{node.name}</span>
-                  <span className="text-xs text-muted-foreground">({node.progress}%)</span>
+                  {config.nodeFormat ? (
+                    config.nodeFormat(node)
+                  ) : (
+                    <>
+                      <span className="font-medium">{node.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({config.idFormat?.(node.id) || node.id})
+                      </span>
+                      {config.showProgress && node.progress !== undefined && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          {config.progressFormat?.(node.progress)}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {index < cachedNodes.length - 1 && config.separatorIcon && (
+                    <config.separatorIcon className="h-3 w-3 ml-1" />
+                  )}
                 </Button>
               </BreadcrumbItem>
-              
-              {/* Add separator between nodes, but not after the last one */}
-              {index < cachedNodes.length - 1 && <BreadcrumbSeparator />}
             </React.Fragment>
           ))}
         </BreadcrumbList>

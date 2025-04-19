@@ -76,6 +76,21 @@ interface RoleAssignments {
   };
 }
 
+const getStatusVariant = (status: StageStatus) => {
+  switch (status) {
+    case 'completed':
+      return 'default';
+    case 'in-progress':
+      return 'secondary';
+    case 'failed':
+      return 'destructive';
+    case 'skipped':
+      return 'outline';
+    default:
+      return 'default';
+  }
+};
+
 const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   workflowTitle,
   progressSteps,
@@ -513,7 +528,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       case 'parameters':
         return <div>Parameters Content</div>;
       case 'dependencies':
-        return <DependencyTreeMap dependencies={mockDependencies} />;
+        return <DependencyTreeMap dependencies={mockSubStages} />;
       case 'roles':
         return <RoleAssignments roleAssignments={mockRoleAssignments} />;
       case 'activity':
@@ -531,6 +546,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
   const renderSubStageCard = (subStage: SubStage) => {
     const isSelected = selectedSubStage === subStage.id;
+    const isInProgress = subStage.status === 'in-progress';
     
     return (
       <Card 
@@ -553,9 +569,12 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           <div className="space-y-2 mt-2">
             <div className="flex items-center justify-between text-sm">
               <span>Progress</span>
-              <span>{subStage.progress}%</span>
+              <span>{isInProgress ? '...' : `${subStage.progress}%`}</span>
             </div>
-            <Progress value={subStage.progress} className="h-2" />
+            <Progress 
+              value={subStage.progress} 
+              className={`h-2 ${isInProgress ? 'animate-pulse' : ''}`} 
+            />
             <div className="flex items-center justify-between text-sm">
               <span>Type</span>
               <span className="capitalize">{subStage.type}</span>
@@ -567,6 +586,39 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             {subStage.messages && subStage.messages.length > 0 && (
               <div className="mt-2 text-sm text-gray-600">
                 {subStage.messages[0]}
+              </div>
+            )}
+            {subStage.timing && (
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span>Expected Start: {subStage.timing.start || 'N/A'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span>Duration: {subStage.timing.duration || 'N/A'}</span>
+                </div>
+              </div>
+            )}
+            {subStage.meta && subStage.meta.updatedBy && (
+              <div className="flex items-center gap-2">
+                <UserCircle className="h-4 w-4" />
+                <span>Updated by: {subStage.meta.updatedBy} {subStage.meta.updatedOn && `(${subStage.meta.updatedOn})`}</span>
+              </div>
+            )}
+            {subStage.dependencies && subStage.dependencies.length > 0 && (
+              <div className="mt-2">
+                <h4 className="font-medium mb-2">Dependencies</h4>
+                <div className="space-y-2">
+                  {subStage.dependencies.map((dep, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <span>{dep.name}</span>
+                      <Badge variant={getStatusVariant(dep.status as StageStatus)}>
+                        {dep.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -587,57 +639,52 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       {/* Workflow Controls - Aligned with breadcrumb */}
       <div className="flex justify-between items-center">
         <div className="flex-1"></div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
             onClick={toggleLock}
+            title={isLocked ? "Locked" : "Unlocked"}
           >
             {isLocked ? (
-              <>
-                <Lock className="h-3.5 w-3.5" />
-                <span>Locked</span>
-              </>
+              <Lock className="h-4 w-4" />
             ) : (
-              <>
-                <Unlock className="h-3.5 w-3.5" />
-                <span>Unlocked</span>
-              </>
+              <Unlock className="h-4 w-4" />
             )}
           </Button>
           <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            title="Add Adhoc Stage"
           >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Add Adhoc Stage</span>
+            <Plus className="h-4 w-4" />
           </Button>
           <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            title="Reset Workflow"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
-            <span>Reset Workflow</span>
+            <RotateCcw className="h-4 w-4" />
           </Button>
           <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            title="Reopen Toll Gate"
           >
-            <UnlockIcon className="h-3.5 w-3.5" />
-            <span>Reopen Toll Gate</span>
+            <UnlockIcon className="h-4 w-4" />
           </Button>
           <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
             onClick={handleRefresh}
+            title="Refresh"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
-            <span>Refresh</span>
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>

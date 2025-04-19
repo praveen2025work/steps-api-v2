@@ -80,13 +80,13 @@ const sampleDocuments = [
 const getStatusVariant = (status: StageStatus) => {
   switch (status) {
     case 'completed':
-      return 'success';
+      return 'default';
     case 'in-progress':
-      return 'info';
+      return 'secondary';
     case 'failed':
-      return 'error';
+      return 'destructive';
     case 'skipped':
-      return 'warning';
+      return 'outline';
     default:
       return 'default';
   }
@@ -114,6 +114,7 @@ const SubStagesList: React.FC<SubStagesListProps> = ({
       {subStages.map((stage) => {
         const isExpanded = expandedStages.has(stage.id);
         const isSelected = selectedSubStage?.id === stage.id;
+        const isInProgress = stage.status === 'in-progress';
 
         return (
           <Card 
@@ -131,13 +132,29 @@ const SubStagesList: React.FC<SubStagesListProps> = ({
                     {stage.status}
                   </Badge>
                 </div>
-                <Progress value={stage.progress} className="mb-2" />
-                <div className="flex items-center text-sm text-gray-500">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 relative">
+                    <Progress 
+                      value={stage.progress} 
+                      className={isInProgress ? 'animate-pulse' : ''}
+                    />
+                  </div>
+                  <span className="text-sm text-muted-foreground min-w-[40px] text-right">
+                    {isInProgress ? '...' : `${stage.progress}%`}
+                  </span>
+                </div>
+                <div className="flex items-center text-sm text-gray-500 mt-2">
                   {stage.timing?.start && (
-                    <span>Started: {new Date(stage.timing.start).toLocaleString()}</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(stage.timing.start).toLocaleString()}
+                    </span>
                   )}
                   {stage.duration && (
-                    <span className="ml-4">Duration: {stage.duration}s</span>
+                    <span className="flex items-center gap-1 ml-4">
+                      <Clock className="h-3 w-3" />
+                      {stage.duration}s
+                    </span>
                   )}
                 </div>
               </div>
@@ -150,9 +167,9 @@ const SubStagesList: React.FC<SubStagesListProps> = ({
                 }}
               >
                 {isExpanded ? (
-                  <ChevronUp className="h-5 w-5" />
+                  <ChevronUp className="h-4 w-4" />
                 ) : (
-                  <ChevronDown className="h-5 w-5" />
+                  <ChevronDown className="h-4 w-4" />
                 )}
               </Button>
             </div>
