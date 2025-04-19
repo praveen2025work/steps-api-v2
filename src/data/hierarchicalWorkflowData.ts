@@ -43,9 +43,9 @@ export interface WorkflowLevel {
 // Mock data for hierarchical workflow structure
 export const mockHierarchicalWorkflows: WorkflowApplication[] = [
   {
-    id: "app-001",
+    id: "app-1001",
     name: "Daily Named PNL",
-    description: "Daily Profit and Loss calculation for named accounts",
+    description: "Daily profit and loss reporting for named accounts",
     progress: 45,
     status: "in-progress",
     createdAt: "2025-04-01",
@@ -136,9 +136,9 @@ export const mockHierarchicalWorkflows: WorkflowApplication[] = [
     ]
   },
   {
-    id: "app-002",
-    name: "Daily Workspace PNL",
-    description: "Daily Profit and Loss for workspace accounts",
+    id: "app-1002",
+    name: "Workspace PNL",
+    description: "Workspace profit and loss management and reporting",
     progress: 65,
     status: "in-progress",
     createdAt: "2025-04-01",
@@ -207,9 +207,9 @@ export const mockHierarchicalWorkflows: WorkflowApplication[] = [
     ]
   },
   {
-    id: "app-003",
+    id: "app-1003",
     name: "Monthend PNL",
-    description: "Month-end Profit and Loss consolidation",
+    description: "Month-end profit and loss consolidation and reporting",
     progress: 10,
     status: "in-progress",
     createdAt: "2025-04-01",
