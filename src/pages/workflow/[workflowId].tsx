@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { WorkflowTask } from '@/components/WorkflowTaskItem';
 import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
+import { getAllStages } from '@/data/stageSpecificData';
 
 // Find workflow by ID from hierarchical data
 const findWorkflowById = (id: string) => {
@@ -130,19 +131,14 @@ const getMockWorkflowData = (workflowId: string) => {
     return steps;
   };
   
+  // Get all available stages from our stage-specific data
+  const allStages = getAllStages();
+  
   return {
     id: workflow.id,
     title: workflow.name,
     progressSteps: buildProgressSteps(workflow),
-    stages: [
-      { id: 'stage-001', name: 'Pre WF' },
-      { id: 'stage-002', name: 'Substantiation' },
-      { id: 'stage-003', name: 'Review' },
-      { id: 'stage-004', name: 'Publish' },
-      { id: 'stage-005', name: 'Sign Off' },
-      { id: 'stage-006', name: 'Rainy Day' },
-      { id: 'stage-007', name: 'Exception' },
-    ],
+    stages: allStages,
     tasks: {
       'stage-001': [
         {

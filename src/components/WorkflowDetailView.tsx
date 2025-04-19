@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import WorkflowProgressIndicator from './WorkflowProgressIndicator';
 import WorkflowStagesBar from './WorkflowStagesBar';
 import WorkflowTaskItem, { WorkflowTask } from './WorkflowTaskItem';
@@ -43,6 +43,7 @@ import ActivityLog from './ActivityLog';
 import WorkflowHierarchyBreadcrumb, { HierarchyNode } from './WorkflowHierarchyBreadcrumb';
 import { Progress } from '@/components/ui/progress';
 import { SubStage, StageStatus, Dependency } from '@/types/workflow';
+import { getStageData, getStageTasksById, getStageDocumentsById, getStageMetricsById } from '@/data/stageSpecificData';
 
 interface WorkflowDetailViewProps {
   workflowTitle: string;
@@ -109,6 +110,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [rightPanelContent, setRightPanelContent] = useState<'overview' | 'stages' | 'documents' | 'parameters' | 'dependencies' | 'roles' | 'activity' | 'audit' | 'app-parameters' | 'global-parameters'>('overview');
   const [selectedSubStage, setSelectedSubStage] = useState<string | null>(null);
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false);
+  const [stageSpecificSubStages, setStageSpecificSubStages] = useState<SubStage[]>([]);
+  const [stageSpecificDocuments, setStageSpecificDocuments] = useState<any[]>([]);
 
   // Mock hierarchy path for the breadcrumb navigation - removing percentages from display
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([
@@ -475,6 +478,75 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     ]
   };
 
+  // Load stage-specific data when active stage changes
+  useEffect(() => {
+    if (activeStage) {
+      // Get stage data from our new utility
+      const stageData = getStageData(activeStage);
+      
+      if (stageData) {
+        // Convert stage tasks to SubStage format for our component
+        const stageTasks = stageData.tasks.map(task => ({
+          id: task.id,
+          name: task.name,
+          type: task.processId.includes('AUTO') ? 'auto' : 'manual',
+          status: task.status,
+          progress: task.status === 'completed' ? 100 : 
+                   task.status === 'in-progress' ? 50 : 
+                   task.status === 'failed' ? 0 : 0,
+          processId: task.processId,
+          timing: {
+            start: task.expectedStart,
+            duration: `${task.duration}m`,
+            avgDuration: `${task.duration}m`,
+            avgStart: task.expectedStart
+          },
+          stats: {
+            success: '95%',
+            lastRun: null
+          },
+          meta: {
+            updatedBy: task.updatedBy,
+            updatedOn: task.updatedAt,
+            lockedBy: null,
+            lockedOn: null,
+            completedBy: task.status === 'completed' ? task.updatedBy : null,
+            completedOn: task.status === 'completed' ? task.updatedAt : null
+          },
+          files: task.documents?.map(doc => ({
+            name: doc.name,
+            type: 'download',
+            size: doc.size
+          })) || [],
+          messages: task.messages || [],
+          dependencies: task.dependencies?.map(dep => ({
+            name: dep.name,
+            status: dep.status,
+            id: dep.name.toLowerCase().replace(/\s+/g, '_')
+          })) || []
+        }));
+        
+        setStageSpecificSubStages(stageTasks);
+        
+        // Convert stage documents to the format expected by DocumentsList
+        const stageDocuments = stageData.documents.map(doc => ({
+          id: doc.id,
+          name: doc.name,
+          type: doc.type.toLowerCase(),
+          size: doc.size,
+          updatedAt: doc.uploadedAt,
+          updatedBy: doc.uploadedBy
+        }));
+        
+        setStageSpecificDocuments(stageDocuments);
+      } else {
+        // If no stage-specific data found, use default tasks
+        setStageSpecificSubStages([]);
+        setStageSpecificDocuments([]);
+      }
+    }
+  }, [activeStage]);
+
   // Set up auto-refresh effect
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -522,13 +594,13 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       case 'overview':
         return <div>Overview Content</div>;
       case 'stages':
-        return <SubStagesList subStages={mockSubStages} />;
+        return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
-        return <DocumentsList documents={mockDocuments} />;
+        return <DocumentsList documents={stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments} />;
       case 'parameters':
         return <div>Parameters Content</div>;
       case 'dependencies':
-        return <DependencyTreeMap dependencies={mockSubStages} />;
+        return <DependencyTreeMap dependencies={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'roles':
         return <RoleAssignments roleAssignments={mockRoleAssignments} />;
       case 'activity':
@@ -703,7 +775,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         {/* Main Content - 60% width */}
         <div className="flex-[0.6]">
           <div className="space-y-4">
-            {mockSubStages.map((subStage, index) => (
+            {(stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages).map((subStage, index) => (
               <Collapsible key={subStage.id}>
                 <div 
                   className={`${
