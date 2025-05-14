@@ -14,7 +14,15 @@ import {
   FileCheck,
   HelpCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Database,
+  UserCog,
+  CalendarDays,
+  CalendarClock,
+  GitFork,
+  Tags,
+  Workflow,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -64,6 +72,52 @@ const navSections: NavSection[] = [
         title: 'Analytics',
         href: '/analytics',
         icon: <Activity className="h-5 w-5" />
+      }
+    ]
+  },
+  {
+    title: "Admin",
+    items: [
+      {
+        title: 'Admin Dashboard',
+        href: '/admin',
+        icon: <Shield className="h-5 w-5" />,
+        pattern: /^\/admin/
+      },
+      {
+        title: 'Applications',
+        href: '/admin?tab=applications',
+        icon: <Database className="h-5 w-5" />
+      },
+      {
+        title: 'Roles',
+        href: '/admin?tab=roles',
+        icon: <UserCog className="h-5 w-5" />
+      },
+      {
+        title: 'Holiday Calendar',
+        href: '/admin?tab=holidays',
+        icon: <CalendarDays className="h-5 w-5" />
+      },
+      {
+        title: 'Run Calendar',
+        href: '/admin?tab=runcalendar',
+        icon: <CalendarClock className="h-5 w-5" />
+      },
+      {
+        title: 'Hierarchy',
+        href: '/admin?tab=hierarchy',
+        icon: <GitFork className="h-5 w-5" />
+      },
+      {
+        title: 'Metadata',
+        href: '/admin?tab=metadata',
+        icon: <Tags className="h-5 w-5" />
+      },
+      {
+        title: 'Workflow Config',
+        href: '/admin?tab=workflow',
+        icon: <Workflow className="h-5 w-5" />
       }
     ]
   },

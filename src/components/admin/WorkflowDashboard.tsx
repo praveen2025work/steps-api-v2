@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ApplicationManagement from './ApplicationManagement';
@@ -10,8 +10,17 @@ import MetadataManagement from './MetadataManagement';
 import WorkflowInstanceConfig from './WorkflowInstanceConfig';
 import AdminDashboard from './AdminDashboard';
 
-const WorkflowDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('applications');
+interface WorkflowDashboardProps {
+  defaultTab?: string;
+}
+
+const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'applications' }) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  
+  // Update active tab when defaultTab prop changes
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
 
   return (
     <div className="container mx-auto py-6">
