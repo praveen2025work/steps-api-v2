@@ -189,17 +189,23 @@ interface StageForm {
 interface SubStageForm {
   id?: string;
   name: string;
-  description: string;
-  type: 'manual' | 'auto';
+  componentName: string;
+  serviceLink: string;
   expectedDuration: number;
-  order: number;
+  expectedTime: string;
+  selectedParameters: string[];
+  selectedAttestations: string[];
+  selectedTemplate: string;
+  emailConfig: 'NA' | 'start' | 'end';
+  readRole: string;
+  writeRole: string;
+  isActive: boolean;
   isAuto: boolean;
+  isAdhoc: boolean;
+  isAlteryx: boolean;
   requiresAttestation: boolean;
   requiresUpload: boolean;
   requiresApproval: boolean;
-  isActive: boolean;
-  isAdhoc: boolean;
-  isAlteryx: boolean;
 }
 
 interface ParameterForm {
@@ -265,17 +271,23 @@ const MetadataManagement: React.FC = () => {
   
   const [subStageForm, setSubStageForm] = useState<SubStageForm>({
     name: '',
-    description: '',
-    type: 'manual',
+    componentName: '',
+    serviceLink: '',
     expectedDuration: 24,
-    order: 1,
+    expectedTime: '',
+    selectedParameters: [],
+    selectedAttestations: [],
+    selectedTemplate: '',
+    emailConfig: 'NA',
+    readRole: '',
+    writeRole: '',
+    isActive: true,
     isAuto: false,
+    isAdhoc: false,
+    isAlteryx: false,
     requiresAttestation: false,
     requiresUpload: false,
-    requiresApproval: false,
-    isActive: true,
-    isAdhoc: false,
-    isAlteryx: false
+    requiresApproval: false
   });
   
   const [parameterForm, setParameterForm] = useState<ParameterForm>({
@@ -327,32 +339,44 @@ const MetadataManagement: React.FC = () => {
       setSubStageForm({
         id: selectedSubStage.id,
         name: selectedSubStage.name,
-        description: selectedSubStage.description || '',
-        type: selectedSubStage.type,
+        componentName: selectedSubStage.componentName || '',
+        serviceLink: selectedSubStage.serviceLink || '',
         expectedDuration: selectedSubStage.expectedDuration,
-        order: selectedSubStage.order,
+        expectedTime: selectedSubStage.expectedTime || '',
+        selectedParameters: selectedSubStage.parameters ? selectedSubStage.parameters.map(p => p.id) : [],
+        selectedAttestations: selectedSubStage.attestations ? selectedSubStage.attestations.map(a => a.id) : [],
+        selectedTemplate: selectedSubStage.emailTemplates && selectedSubStage.emailTemplates.length > 0 ? selectedSubStage.emailTemplates[0].id : '',
+        emailConfig: selectedSubStage.emailConfig || 'NA',
+        readRole: selectedSubStage.readRole || '',
+        writeRole: selectedSubStage.writeRole || '',
+        isActive: selectedSubStage.isActive !== undefined ? selectedSubStage.isActive : true,
         isAuto: selectedSubStage.isAuto !== undefined ? selectedSubStage.isAuto : false,
+        isAdhoc: selectedSubStage.isAdhoc !== undefined ? selectedSubStage.isAdhoc : false,
+        isAlteryx: selectedSubStage.isAlteryx !== undefined ? selectedSubStage.isAlteryx : false,
         requiresAttestation: selectedSubStage.requiresAttestation !== undefined ? selectedSubStage.requiresAttestation : false,
         requiresUpload: selectedSubStage.requiresUpload !== undefined ? selectedSubStage.requiresUpload : false,
-        requiresApproval: selectedSubStage.requiresApproval !== undefined ? selectedSubStage.requiresApproval : false,
-        isActive: selectedSubStage.isActive !== undefined ? selectedSubStage.isActive : true,
-        isAdhoc: selectedSubStage.isAdhoc !== undefined ? selectedSubStage.isAdhoc : false,
-        isAlteryx: selectedSubStage.isAlteryx !== undefined ? selectedSubStage.isAlteryx : false
+        requiresApproval: selectedSubStage.requiresApproval !== undefined ? selectedSubStage.requiresApproval : false
       });
     } else if (subStageDialogOpen && selectedStage) {
       setSubStageForm({
         name: '',
-        description: '',
-        type: 'manual',
+        componentName: '',
+        serviceLink: '',
         expectedDuration: 24,
-        order: selectedStage.subStages.length > 0 ? Math.max(...selectedStage.subStages.map(s => s.order)) + 1 : 1,
+        expectedTime: '',
+        selectedParameters: [],
+        selectedAttestations: [],
+        selectedTemplate: '',
+        emailConfig: 'NA',
+        readRole: '',
+        writeRole: '',
+        isActive: true,
         isAuto: false,
+        isAdhoc: false,
+        isAlteryx: false,
         requiresAttestation: false,
         requiresUpload: false,
-        requiresApproval: false,
-        isActive: true,
-        isAdhoc: false,
-        isAlteryx: false
+        requiresApproval: false
       });
     }
   }, [subStageDialogOpen, selectedSubStage, selectedStage]);
@@ -516,13 +540,25 @@ const MetadataManagement: React.FC = () => {
       return;
     }
     
+    // Get selected parameters, attestations, and email template
+    const selectedParams = parameters.filter(param => subStageForm.selectedParameters.includes(param.id));
+    const selectedAttests = attestations.filter(attest => subStageForm.selectedAttestations.includes(attest.id));
+    const selectedTemplate = subStageForm.selectedTemplate ? 
+      emailTemplates.find(template => template.id === subStageForm.selectedTemplate) : null;
+    
     const newSubStage: SubStageConfig = {
       id: subStageForm.id || `substage-${Date.now()}`,
       name: subStageForm.name,
-      description: subStageForm.description,
-      type: subStageForm.type,
+      description: '',
+      type: 'manual',
+      componentName: subStageForm.componentName,
+      serviceLink: subStageForm.serviceLink,
       expectedDuration: subStageForm.expectedDuration,
-      order: subStageForm.order,
+      expectedTime: subStageForm.expectedTime,
+      emailConfig: subStageForm.emailConfig,
+      readRole: subStageForm.readRole,
+      writeRole: subStageForm.writeRole,
+      order: selectedStage.subStages.length > 0 ? Math.max(...selectedStage.subStages.map(s => s.order)) + 1 : 1,
       isAuto: subStageForm.isAuto,
       requiresAttestation: subStageForm.requiresAttestation,
       requiresUpload: subStageForm.requiresUpload,
@@ -530,9 +566,9 @@ const MetadataManagement: React.FC = () => {
       isActive: subStageForm.isActive,
       isAdhoc: subStageForm.isAdhoc,
       isAlteryx: subStageForm.isAlteryx,
-      parameters: [],
-      emailTemplates: [],
-      attestations: []
+      parameters: selectedParams,
+      attestations: selectedAttests,
+      emailTemplates: selectedTemplate ? [selectedTemplate] : []
     };
     
     if (subStageForm.id) {
@@ -1043,32 +1079,27 @@ const MetadataManagement: React.FC = () => {
                                 />
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="subStageDescription" className="text-right">Description</Label>
-                                <Textarea 
-                                  id="subStageDescription" 
+                                <Label htmlFor="componentName" className="text-right">Component Name</Label>
+                                <Input 
+                                  id="componentName" 
                                   className="col-span-3" 
-                                  placeholder="Sub-stage description" 
-                                  value={subStageForm.description}
-                                  onChange={(e) => handleSubStageFormChange('description', e.target.value)}
+                                  placeholder="Component name or external link" 
+                                  value={subStageForm.componentName}
+                                  onChange={(e) => handleSubStageFormChange('componentName', e.target.value)}
                                 />
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="subStageType" className="text-right">Type</Label>
-                                <Select 
-                                  value={subStageForm.type} 
-                                  onValueChange={(value: 'manual' | 'auto') => handleSubStageFormChange('type', value)}
-                                >
-                                  <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select type" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="manual">Manual</SelectItem>
-                                    <SelectItem value="auto">Automatic</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                <Label htmlFor="serviceLink" className="text-right">Service Link</Label>
+                                <Input 
+                                  id="serviceLink" 
+                                  className="col-span-3" 
+                                  placeholder="Service link URL" 
+                                  value={subStageForm.serviceLink}
+                                  onChange={(e) => handleSubStageFormChange('serviceLink', e.target.value)}
+                                />
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="expectedDuration" className="text-right">Expected Duration (hours)</Label>
+                                <Label htmlFor="expectedDuration" className="text-right">Expected Duration</Label>
                                 <Input 
                                   id="expectedDuration" 
                                   type="number" 
@@ -1079,50 +1110,207 @@ const MetadataManagement: React.FC = () => {
                                 />
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="subStageOrder" className="text-right">Order</Label>
+                                <Label htmlFor="expectedTime" className="text-right">Expected Time</Label>
                                 <Input 
-                                  id="subStageOrder" 
-                                  type="number" 
+                                  id="expectedTime" 
                                   className="col-span-3" 
-                                  placeholder="Order" 
-                                  value={subStageForm.order}
-                                  onChange={(e) => handleSubStageFormChange('order', parseInt(e.target.value))}
+                                  placeholder="Expected time (e.g., '2 hours')" 
+                                  value={subStageForm.expectedTime}
+                                  onChange={(e) => handleSubStageFormChange('expectedTime', e.target.value)}
                                 />
                               </div>
+                              
                               <div className="grid grid-cols-4 items-start gap-4">
-                                <Label className="text-right pt-2">Properties</Label>
+                                <Label className="text-right pt-2">Parameters</Label>
+                                <div className="col-span-3">
+                                  <Select 
+                                    value="placeholder"
+                                    onValueChange={() => {}}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Select parameters" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <div className="p-2">
+                                        {parameters.map((param) => (
+                                          <div key={param.id} className="flex items-center space-x-2 mb-2">
+                                            <Checkbox 
+                                              id={`param-${param.id}`} 
+                                              checked={subStageForm.selectedParameters.includes(param.id)}
+                                              onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                  handleSubStageFormChange('selectedParameters', 
+                                                    [...subStageForm.selectedParameters, param.id]
+                                                  );
+                                                } else {
+                                                  handleSubStageFormChange('selectedParameters', 
+                                                    subStageForm.selectedParameters.filter(id => id !== param.id)
+                                                  );
+                                                }
+                                              }}
+                                            />
+                                            <Label htmlFor={`param-${param.id}`}>{param.name}</Label>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </SelectContent>
+                                  </Select>
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    {subStageForm.selectedParameters.map(paramId => {
+                                      const param = parameters.find(p => p.id === paramId);
+                                      return param ? (
+                                        <Badge key={param.id} variant="secondary" className="flex items-center gap-1">
+                                          {param.name}
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-4 w-4 p-0" 
+                                            onClick={() => handleSubStageFormChange('selectedParameters', 
+                                              subStageForm.selectedParameters.filter(id => id !== param.id)
+                                            )}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </Badge>
+                                      ) : null;
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-4 items-start gap-4">
+                                <Label className="text-right pt-2">Attestations</Label>
+                                <div className="col-span-3">
+                                  <Select 
+                                    value="placeholder"
+                                    onValueChange={() => {}}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Select attestations" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <div className="p-2">
+                                        {attestations.map((attest) => (
+                                          <div key={attest.id} className="flex items-center space-x-2 mb-2">
+                                            <Checkbox 
+                                              id={`attest-${attest.id}`} 
+                                              checked={subStageForm.selectedAttestations.includes(attest.id)}
+                                              onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                  handleSubStageFormChange('selectedAttestations', 
+                                                    [...subStageForm.selectedAttestations, attest.id]
+                                                  );
+                                                } else {
+                                                  handleSubStageFormChange('selectedAttestations', 
+                                                    subStageForm.selectedAttestations.filter(id => id !== attest.id)
+                                                  );
+                                                }
+                                              }}
+                                            />
+                                            <Label htmlFor={`attest-${attest.id}`}>{attest.name}</Label>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </SelectContent>
+                                  </Select>
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    {subStageForm.selectedAttestations.map(attestId => {
+                                      const attest = attestations.find(a => a.id === attestId);
+                                      return attest ? (
+                                        <Badge key={attest.id} variant="secondary" className="flex items-center gap-1">
+                                          {attest.name}
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-4 w-4 p-0" 
+                                            onClick={() => handleSubStageFormChange('selectedAttestations', 
+                                              subStageForm.selectedAttestations.filter(id => id !== attest.id)
+                                            )}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </Badge>
+                                      ) : null;
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="selectedTemplate" className="text-right">Template</Label>
+                                <Select 
+                                  value={subStageForm.selectedTemplate} 
+                                  onValueChange={(value) => handleSubStageFormChange('selectedTemplate', value)}
+                                >
+                                  <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select template" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="">None</SelectItem>
+                                    {emailTemplates.map(template => (
+                                      <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="emailConfig" className="text-right">Configure Email</Label>
+                                <Select 
+                                  value={subStageForm.emailConfig} 
+                                  onValueChange={(value: 'NA' | 'start' | 'end') => handleSubStageFormChange('emailConfig', value)}
+                                >
+                                  <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select email configuration" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="NA">Not Applicable</SelectItem>
+                                    <SelectItem value="start">Start of Process</SelectItem>
+                                    <SelectItem value="end">End of Process</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="readRole" className="text-right">Read Role</Label>
+                                <Input 
+                                  id="readRole" 
+                                  className="col-span-3" 
+                                  placeholder="Role with read access" 
+                                  value={subStageForm.readRole}
+                                  onChange={(e) => handleSubStageFormChange('readRole', e.target.value)}
+                                />
+                              </div>
+                              
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="writeRole" className="text-right">Write Role</Label>
+                                <Input 
+                                  id="writeRole" 
+                                  className="col-span-3" 
+                                  placeholder="Role with write access" 
+                                  value={subStageForm.writeRole}
+                                  onChange={(e) => handleSubStageFormChange('writeRole', e.target.value)}
+                                />
+                              </div>
+                              
+                              <div className="grid grid-cols-4 items-start gap-4">
+                                <Label className="text-right pt-2">Options</Label>
                                 <div className="col-span-3 space-y-2">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="isActive" 
+                                      checked={subStageForm.isActive}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('isActive', checked === true)}
+                                    />
+                                    <Label htmlFor="isActive">Active</Label>
+                                  </div>
                                   <div className="flex items-center space-x-2">
                                     <Checkbox 
                                       id="isAuto" 
                                       checked={subStageForm.isAuto}
                                       onCheckedChange={(checked) => handleSubStageFormChange('isAuto', checked === true)}
                                     />
-                                    <Label htmlFor="isAuto">Automatic Execution</Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Checkbox 
-                                      id="requiresAttestation" 
-                                      checked={subStageForm.requiresAttestation}
-                                      onCheckedChange={(checked) => handleSubStageFormChange('requiresAttestation', checked === true)}
-                                    />
-                                    <Label htmlFor="requiresAttestation">Requires Attestation</Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Checkbox 
-                                      id="requiresUpload" 
-                                      checked={subStageForm.requiresUpload}
-                                      onCheckedChange={(checked) => handleSubStageFormChange('requiresUpload', checked === true)}
-                                    />
-                                    <Label htmlFor="requiresUpload">Requires File Upload</Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Checkbox 
-                                      id="requiresApproval" 
-                                      checked={subStageForm.requiresApproval}
-                                      onCheckedChange={(checked) => handleSubStageFormChange('requiresApproval', checked === true)}
-                                    />
-                                    <Label htmlFor="requiresApproval">Requires Approval</Label>
+                                    <Label htmlFor="isAuto">Auto</Label>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <Checkbox 
@@ -1130,7 +1318,7 @@ const MetadataManagement: React.FC = () => {
                                       checked={subStageForm.isAdhoc}
                                       onCheckedChange={(checked) => handleSubStageFormChange('isAdhoc', checked === true)}
                                     />
-                                    <Label htmlFor="isAdhoc">Ad-hoc Execution</Label>
+                                    <Label htmlFor="isAdhoc">Adhoc</Label>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <Checkbox 
@@ -1138,19 +1326,32 @@ const MetadataManagement: React.FC = () => {
                                       checked={subStageForm.isAlteryx}
                                       onCheckedChange={(checked) => handleSubStageFormChange('isAlteryx', checked === true)}
                                     />
-                                    <Label htmlFor="isAlteryx">Alteryx Workflow</Label>
+                                    <Label htmlFor="isAlteryx">Alteryx</Label>
                                   </div>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="subStageActive" className="text-right">Active</Label>
-                                <div className="flex items-center space-x-2 col-span-3">
-                                  <Switch 
-                                    id="subStageActive" 
-                                    checked={subStageForm.isActive}
-                                    onCheckedChange={(checked) => handleSubStageFormChange('isActive', checked)}
-                                  />
-                                  <Label htmlFor="subStageActive">{subStageForm.isActive ? 'Active' : 'Inactive'}</Label>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="requiresAttestation" 
+                                      checked={subStageForm.requiresAttestation}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('requiresAttestation', checked === true)}
+                                    />
+                                    <Label htmlFor="requiresAttestation">Attest</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="requiresApproval" 
+                                      checked={subStageForm.requiresApproval}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('requiresApproval', checked === true)}
+                                    />
+                                    <Label htmlFor="requiresApproval">Approval</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="requiresUpload" 
+                                      checked={subStageForm.requiresUpload}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('requiresUpload', checked === true)}
+                                    />
+                                    <Label htmlFor="requiresUpload">Upload</Label>
+                                  </div>
                                 </div>
                               </div>
                             </div>

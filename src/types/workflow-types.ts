@@ -152,6 +152,12 @@ export interface SubStageConfig {
   emailTemplates: EmailTemplate[];
   attestations: Attestation[];
   expectedDuration: number;
+  expectedTime?: string;
+  componentName?: string;
+  serviceLink?: string;
+  emailConfig?: 'NA' | 'start' | 'end';
+  readRole?: string;
+  writeRole?: string;
   order: number;
   isAuto?: boolean;
   requiresAttestation?: boolean;
