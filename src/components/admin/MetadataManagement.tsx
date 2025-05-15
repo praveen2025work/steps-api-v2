@@ -229,6 +229,28 @@ interface EmailTemplateForm {
   selectedParameters: string[];
 }
 
+// Function to generate incremental numeric IDs for sub-stages
+const generateSubStageId = (stage: StageConfig): string => {
+  // Extract the stage number from the stage ID
+  const stageNumber = stage.id.replace(/\D/g, '');
+  
+  // Find the highest existing sub-stage number for this stage
+  let maxSubStageNumber = 0;
+  stage.subStages.forEach(subStage => {
+    // Extract numeric part after the dash
+    const match = subStage.id.match(/(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxSubStageNumber) {
+        maxSubStageNumber = num;
+      }
+    }
+  });
+  
+  // Generate new ID with incremented number
+  return `${stageNumber}-${maxSubStageNumber + 1}`;
+};
+
 const MetadataManagement: React.FC = () => {
   // State for data
   const [stages, setStages] = useState<StageConfig[]>(sampleStages);
@@ -554,7 +576,7 @@ const MetadataManagement: React.FC = () => {
       emailTemplates.find(template => template.id === subStageForm.selectedTemplate) : null;
     
     const newSubStage: SubStageConfig = {
-      id: subStageForm.id || `substage-${Date.now()}`,
+      id: subStageForm.id || generateSubStageId(selectedStage),
       name: subStageForm.name,
       description: '',
       type: 'manual',
@@ -1013,6 +1035,49 @@ const MetadataManagement: React.FC = () => {
                 </div>
               ) : (
                 stages.map((stage) => (
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
+=======
+                      <div className="flex items-center">
+                        <div>
+                          <CardTitle className="text-lg flex items-center">
+                            {stage.name}
+                            {!stage.isActive && (
+                              <Badge variant="outline" className="ml-2 text-xs">Inactive</Badge>
+                            )}
+                          </CardTitle>
+                          <CardDescription>
+                            {stage.description}
+                            {stage.applicationId && (
+                              <div className="mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  Application: {sampleApplications.find(app => app.id === stage.applicationId)?.name || stage.applicationId}
+                                </Badge>
+                              </div>
+                            )}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setSelectedStage(stage);
+                          setStageDialogOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
+=======
                   <Card key={stage.id} className="mb-4">
                     <CardHeader className="flex flex-row items-center justify-between py-3">
                       <div className="flex items-center">
@@ -1042,6 +1107,162 @@ const MetadataManagement: React.FC = () => {
                         }}>
                           <Edit className="h-4 w-4" />
                         </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
+=======
+                      <div className="flex items-center">
+                        <div>
+                          <CardTitle className="text-lg flex items-center">
+                            {stage.name}
+                            {!stage.isActive && (
+                              <Badge variant="outline" className="ml-2 text-xs">Inactive</Badge>
+                            )}
+                          </CardTitle>
+                          <CardDescription>
+                            {stage.description}
+                            {stage.applicationId && (
+                              <div className="mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  Application: {sampleApplications.find(app => app.id === stage.applicationId)?.name || stage.applicationId}
+                                </Badge>
+                              </div>
+                            )}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setSelectedStage(stage);
+                          setStageDialogOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
+=======
+                    <CardHeader className="flex flex-row items-center justify-between py-3">
+                      <div className="flex items-center">
+                        <div>
+                          <CardTitle className="text-lg flex items-center">
+                            {stage.name}
+                            {!stage.isActive && (
+                              <Badge variant="outline" className="ml-2 text-xs">Inactive</Badge>
+                            )}
+                          </CardTitle>
+                          <CardDescription>
+                            {stage.description}
+                            {stage.applicationId && (
+                              <div className="mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  Application: {sampleApplications.find(app => app.id === stage.applicationId)?.name || stage.applicationId}
+                                </Badge>
+                              </div>
+                            )}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setSelectedStage(stage);
+                          setStageDialogOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setSelectedStage(stage);
+                          setStageDialogOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
+=======
+                      <div className="flex items-center">
+                        <div>
+                          <CardTitle className="text-lg flex items-center">
+                            {stage.name}
+                            {!stage.isActive && (
+                              <Badge variant="outline" className="ml-2 text-xs">Inactive</Badge>
+                            )}
+                          </CardTitle>
+                          <CardDescription>
+                            {stage.description}
+                            {stage.applicationId && (
+                              <div className="mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  Application: {sampleApplications.find(app => app.id === stage.applicationId)?.name || stage.applicationId}
+                                </Badge>
+                              </div>
+                            )}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setSelectedStage(stage);
+                          setStageDialogOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
+=======
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setSelectedStage(stage);
+                          setStageDialogOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+=======
                         <Button variant="outline" size="sm" onClick={() => {
                           setItemToDelete({ type: 'stage', id: stage.id });
                           setDeleteDialogOpen(true);
@@ -1321,57 +1542,109 @@ const MetadataManagement: React.FC = () => {
                           </p>
                         </div>
                       ) : (
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>ID</TableHead>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Expected Duration</TableHead>
-                              <TableHead>Follow-up</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {stage.subStages.map((subStage) => (
-                              <TableRow key={subStage.id}>
-                                <TableCell>{subStage.id}</TableCell>
-                                <TableCell className="font-medium">
-                                  <div className="flex items-center">
-                                    {subStage.name}
-                                    {!subStage.isActive && (
-                                      <Badge variant="outline" className="ml-2 text-xs">Inactive</Badge>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell>{subStage.expectedDuration} hours</TableCell>
-                                <TableCell>{subStage.expectedTime || '-'}</TableCell>
-                                <TableCell>
-                                  <Badge variant={subStage.isActive ? "default" : "outline"}>
-                                    {subStage.isActive ? 'Active' : 'Inactive'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end space-x-2">
-                                    <Button variant="ghost" size="sm" onClick={() => {
-                                      setSelectedSubStage(subStage);
-                                      setSelectedStage(stage);
-                                      setSubStageDialogOpen(true);
-                                    }}>
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => {
-                                      setItemToDelete({ type: 'subStage', id: subStage.id, parentId: stage.id });
-                                      setDeleteDialogOpen(true);
-                                    }}>
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>ID</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Component Name</TableHead>
+                                <TableHead>Duration</TableHead>
+                                <TableHead>Follow-up</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Parameters</TableHead>
+                                <TableHead>Attestations</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                            </TableHeader>
+                            <TableBody>
+                              {stage.subStages.map((subStage) => {
+                                // Get role name from role ID
+                                const roleName = roles.find(r => r.id === subStage.readRole)?.name || subStage.readRole || '-';
+                                
+                                // Format email config
+                                let emailConfig = '-';
+                                if (subStage.emailConfig === 'start') emailConfig = 'Start';
+                                if (subStage.emailConfig === 'end') emailConfig = 'End';
+                                
+                                return (
+                                  <TableRow key={subStage.id}>
+                                    <TableCell>{subStage.id}</TableCell>
+                                    <TableCell className="font-medium">
+                                      <div className="flex items-center">
+                                        {subStage.name}
+                                        {!subStage.isActive && (
+                                          <Badge variant="outline" className="ml-2 text-xs">Inactive</Badge>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>{subStage.componentName || '-'}</TableCell>
+                                    <TableCell>{subStage.expectedDuration} hours</TableCell>
+                                    <TableCell>{subStage.expectedTime || '-'}</TableCell>
+                                    <TableCell>{roleName}</TableCell>
+                                    <TableCell>{emailConfig}</TableCell>
+                                    <TableCell>
+                                      {subStage.parameters && subStage.parameters.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1">
+                                          {subStage.parameters.slice(0, 2).map(param => (
+                                            <Badge key={param.id} variant="secondary" className="text-xs">
+                                              {param.name}
+                                            </Badge>
+                                          ))}
+                                          {subStage.parameters.length > 2 && (
+                                            <Badge variant="secondary" className="text-xs">
+                                              +{subStage.parameters.length - 2}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      ) : '-'}
+                                    </TableCell>
+                                    <TableCell>
+                                      {subStage.attestations && subStage.attestations.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1">
+                                          {subStage.attestations.slice(0, 2).map(attest => (
+                                            <Badge key={attest.id} variant="secondary" className="text-xs">
+                                              {attest.name}
+                                            </Badge>
+                                          ))}
+                                          {subStage.attestations.length > 2 && (
+                                            <Badge variant="secondary" className="text-xs">
+                                              +{subStage.attestations.length - 2}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      ) : '-'}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant={subStage.isActive ? "default" : "outline"}>
+                                        {subStage.isActive ? 'Active' : 'Inactive'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <div className="flex justify-end space-x-2">
+                                        <Button variant="ghost" size="sm" onClick={() => {
+                                          setSelectedSubStage(subStage);
+                                          setSelectedStage(stage);
+                                          setSubStageDialogOpen(true);
+                                        }}>
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => {
+                                          setItemToDelete({ type: 'subStage', id: subStage.id, parentId: stage.id });
+                                          setDeleteDialogOpen(true);
+                                        }}>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
