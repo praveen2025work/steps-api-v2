@@ -13,6 +13,7 @@ import { AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Edit, I
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { toast } from '@/components/ui/use-toast';
 import type { Application, StageConfig, SubStageConfig, Parameter, Attestation, EmailTemplate, WorkflowNodeConfig } from '@/types/workflow-types';
+import SubStageConfigDialog from './SubStageConfigDialog';
 
 // Sample applications
 const sampleApplications: Application[] = [
@@ -360,6 +361,16 @@ interface ConfigSubStage {
   parameters: ConfigParameter[];
   dependencies: ConfigDependency[];
   isActive: boolean;
+  isAuto: boolean;
+  isAdhoc: boolean;
+  isAlteryx: boolean;
+  requiresAttestation: boolean;
+  requiresApproval: boolean;
+  requiresUpload: boolean;
+  requiresDownload?: boolean;
+  attestations?: ConfigAttestation[];
+  uploadConfig?: FileConfig;
+  downloadConfig?: FileConfig;
 }
 
 interface ConfigParameter {
@@ -374,6 +385,27 @@ interface ConfigDependency {
   stageId: string;
   subStageId: string;
   name: string;
+}
+
+interface ConfigAttestation {
+  id: string;
+  name: string;
+  text: string;
+  isRequired: boolean;
+}
+
+interface FileConfig {
+  validationSettings?: {
+    allowedExtensions: string[];
+    maxFileSize: number;
+    requireValidation: boolean;
+  };
+  emailNotifications?: boolean;
+  parameters: ConfigParameter[];
+  fileNamingConvention?: string;
+  description?: string;
+  allowMultiple: boolean;
+  fileType: string;
 }
 
 const WorkflowInstanceConfig: React.FC = () => {
@@ -393,6 +425,13 @@ const WorkflowInstanceConfig: React.FC = () => {
   const [allSubStages, setAllSubStages] = useState<SubStageConfig[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [editingSubStage, setEditingSubStage] = useState<{
+    stageId: string;
+    subStageId: string;
+    subStage: ConfigSubStage | null;
+  } | null>(null);
+  const [showSubStageDialog, setShowSubStageDialog] = useState(false);
+  const [availableAttestations, setAvailableAttestations] = useState<Attestation[]>([]);
   
   // Effect to filter workflow instances based on selected application
   useEffect(() => {
@@ -421,8 +460,22 @@ const WorkflowInstanceConfig: React.FC = () => {
       // In a real application, you would fetch stages from the backend
       // For now, we'll use the sample stages
       setAvailableStages(sampleStages);
+      
+      // Also load available attestations
+      const allAttestations: Attestation[] = [];
+      sampleStages.forEach(stage => {
+        stage.subStages.forEach(subStage => {
+          subStage.attestations.forEach(attestation => {
+            if (!allAttestations.some(att => att.id === attestation.id)) {
+              allAttestations.push(attestation);
+            }
+          });
+        });
+      });
+      setAvailableAttestations(allAttestations);
     } else {
       setAvailableStages([]);
+      setAvailableAttestations([]);
     }
   }, [selectedApplication]);
   
@@ -465,43 +518,15 @@ const WorkflowInstanceConfig: React.FC = () => {
       // In a real application, you would fetch the workflow configuration from the backend
       // For now, we'll simulate loading with a timeout
       setTimeout(() => {
-        // For demo purposes, we'll create a sample configuration
+        // For demo purposes, we'll create a sample configuration with empty stages
         const sampleConfig: WorkflowConfig = {
           applicationId: selectedApplication,
           workflowInstanceId: selectedWorkflowInstance,
-          stages: availableStages.slice(0, 3).map(stage => ({
-            id: stage.id,
-            name: stage.name,
-            description: stage.description,
-            order: stage.order,
-            isActive: stage.isActive,
-            subStages: stage.subStages.map(subStage => ({
-              id: subStage.id,
-              name: subStage.name,
-              description: subStage.description,
-              type: subStage.type,
-              order: subStage.order,
-              parameters: subStage.parameters.map(param => ({
-                id: param.id,
-                name: param.name,
-                value: param.value,
-                dataType: param.dataType,
-                isRequired: param.isRequired || false
-              })),
-              dependencies: [],
-              isActive: subStage.isActive || true
-            }))
-          }))
+          stages: [] // Start with empty stages as per requirement
         };
         
-        // Update sequence numbers
-        const stagesWithSequence = updateSequenceNumbers(sampleConfig.stages);
-        
-        setWorkflowConfig({
-          ...sampleConfig,
-          stages: stagesWithSequence
-        });
-        setSelectedStages(stagesWithSequence);
+        setWorkflowConfig(sampleConfig);
+        setSelectedStages([]);
         setIsLoading(false);
       }, 1000);
     } else {
@@ -512,7 +537,7 @@ const WorkflowInstanceConfig: React.FC = () => {
       });
       setSelectedStages([]);
     }
-  }, [selectedWorkflowInstance, selectedApplication, availableStages]);
+  }, [selectedWorkflowInstance, selectedApplication]);
   
   // Handler for adding a stage to the workflow
   const handleAddStage = () => {
@@ -545,6 +570,7 @@ const WorkflowInstanceConfig: React.FC = () => {
       return;
     }
     
+    // Create a new stage with empty sub-stages (user will select them)
     const newStage: ConfigStage = {
       id: stageToAdd.id,
       name: stageToAdd.name,
@@ -553,30 +579,97 @@ const WorkflowInstanceConfig: React.FC = () => {
         ? Math.max(...selectedStages.map(s => s.order)) + 1 
         : 1,
       isActive: stageToAdd.isActive,
-      subStages: stageToAdd.subStages.map(subStage => ({
-        id: subStage.id,
-        name: subStage.name,
-        description: subStage.description,
-        type: subStage.type,
-        order: subStage.order,
-        parameters: subStage.parameters.map(param => ({
-          id: param.id,
-          name: param.name,
-          value: param.value,
-          dataType: param.dataType,
-          isRequired: param.isRequired || false
-        })),
-        dependencies: [],
-        isActive: subStage.isActive || true
-      }))
+      subStages: [] // Start with empty sub-stages as per requirement
     };
     
-    setSelectedStages([...selectedStages, newStage]);
+    const updatedStages = [...selectedStages, newStage];
+    setSelectedStages(updatedStages);
     setSelectedStageId('');
     
     toast({
       title: "Stage Added",
       description: `${stageToAdd.name} has been added to the workflow`
+    });
+  };
+  
+  // Handler for adding a sub-stage to a stage
+  const handleAddSubStage = (stageId: string, subStageId: string) => {
+    const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
+    if (stageIndex === -1) return;
+    
+    const stageToAddTo = availableStages.find(stage => stage.id === stageId);
+    if (!stageToAddTo) return;
+    
+    const subStageToAdd = stageToAddTo.subStages.find(subStage => subStage.id === subStageId);
+    if (!subStageToAdd) return;
+    
+    // Check if sub-stage is already added
+    if (selectedStages[stageIndex].subStages.some(subStage => subStage.id === subStageId)) {
+      toast({
+        title: "Error",
+        description: "This sub-stage is already added to the stage",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newSubStage: ConfigSubStage = {
+      id: subStageToAdd.id,
+      name: subStageToAdd.name,
+      description: subStageToAdd.description,
+      type: subStageToAdd.type,
+      order: selectedStages[stageIndex].subStages.length > 0 
+        ? Math.max(...selectedStages[stageIndex].subStages.map(s => s.order)) + 1 
+        : 1,
+      parameters: subStageToAdd.parameters.map(param => ({
+        id: param.id,
+        name: param.name,
+        value: param.value,
+        dataType: param.dataType,
+        isRequired: param.isRequired || false
+      })),
+      dependencies: [],
+      isActive: true,
+      isAuto: subStageToAdd.isAuto || false,
+      isAdhoc: subStageToAdd.isAdhoc || false,
+      isAlteryx: subStageToAdd.isAlteryx || false,
+      requiresAttestation: subStageToAdd.requiresAttestation || false,
+      requiresApproval: subStageToAdd.requiresApproval || false,
+      requiresUpload: subStageToAdd.requiresUpload || false,
+      requiresDownload: false,
+      attestations: subStageToAdd.attestations?.map(att => ({
+        id: att.id,
+        name: att.name,
+        text: att.text,
+        isRequired: true
+      })) || [],
+      uploadConfig: subStageToAdd.requiresUpload ? {
+        validationSettings: {
+          allowedExtensions: ['.xlsx', '.csv', '.pdf'],
+          maxFileSize: 10, // MB
+          requireValidation: true
+        },
+        emailNotifications: false,
+        parameters: [],
+        fileNamingConvention: '',
+        description: '',
+        allowMultiple: false,
+        fileType: 'upload'
+      } : undefined,
+      downloadConfig: undefined
+    };
+    
+    const newStages = [...selectedStages];
+    newStages[stageIndex].subStages.push(newSubStage);
+    
+    // Update sequence numbers
+    const updatedStages = updateSequenceNumbers(newStages);
+    
+    setSelectedStages(updatedStages);
+    
+    toast({
+      title: "Sub-Stage Added",
+      description: `${subStageToAdd.name} has been added to ${stageToAddTo.name}`
     });
   };
   
@@ -587,6 +680,74 @@ const WorkflowInstanceConfig: React.FC = () => {
     toast({
       title: "Stage Removed",
       description: "The stage has been removed from the workflow"
+    });
+  };
+  
+  // Handler for removing a sub-stage from a stage
+  const handleRemoveSubStage = (stageId: string, subStageId: string) => {
+    const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
+    if (stageIndex === -1) return;
+    
+    const newStages = [...selectedStages];
+    newStages[stageIndex].subStages = newStages[stageIndex].subStages.filter(
+      subStage => subStage.id !== subStageId
+    );
+    
+    // Update sequence numbers
+    const updatedStages = updateSequenceNumbers(newStages);
+    
+    setSelectedStages(updatedStages);
+    
+    toast({
+      title: "Sub-Stage Removed",
+      description: "The sub-stage has been removed from the stage"
+    });
+  };
+  
+  // Handler for editing a sub-stage
+  const handleEditSubStage = (stageId: string, subStageId: string) => {
+    const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
+    if (stageIndex === -1) return;
+    
+    const subStage = selectedStages[stageIndex].subStages.find(
+      subStage => subStage.id === subStageId
+    );
+    
+    if (!subStage) return;
+    
+    setEditingSubStage({
+      stageId,
+      subStageId,
+      subStage
+    });
+    
+    setShowSubStageDialog(true);
+  };
+  
+  // Handler for saving edited sub-stage
+  const handleSaveSubStage = (updatedSubStage: any) => {
+    if (!editingSubStage) return;
+    
+    const { stageId, subStageId } = editingSubStage;
+    
+    const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
+    if (stageIndex === -1) return;
+    
+    const subStageIndex = selectedStages[stageIndex].subStages.findIndex(
+      subStage => subStage.id === subStageId
+    );
+    
+    if (subStageIndex === -1) return;
+    
+    const newStages = [...selectedStages];
+    newStages[stageIndex].subStages[subStageIndex] = updatedSubStage;
+    
+    setSelectedStages(newStages);
+    setEditingSubStage(null);
+    
+    toast({
+      title: "Sub-Stage Updated",
+      description: "The sub-stage configuration has been updated"
     });
   };
   
@@ -864,6 +1025,15 @@ const WorkflowInstanceConfig: React.FC = () => {
   return (
     <div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
+        {/* Sub-Stage Configuration Dialog */}
+        <SubStageConfigDialog
+          open={showSubStageDialog}
+          onOpenChange={setShowSubStageDialog}
+          subStage={editingSubStage?.subStage || null}
+          onSave={handleSaveSubStage}
+          availableAttestations={availableAttestations}
+          availableParameters={sampleParameters}
+        />
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="workflow">Workflow Configuration</TabsTrigger>
           <TabsTrigger value="parameters">Parameter Values</TabsTrigger>
@@ -1005,104 +1175,160 @@ const WorkflowInstanceConfig: React.FC = () => {
                                   </div>
                                 </CardHeader>
                                 <CardContent className="py-2 px-4">
-                                  <h5 className="font-medium text-sm mb-2">Sub-Stages</h5>
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead className="w-[60px]">Seq #</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Dependencies</TableHead>
-                                        <TableHead className="w-[180px]">Actions</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {stage.subStages.map((subStage, subStageIndex) => (
-                                        <TableRow key={subStage.id}>
-                                          <TableCell className="font-medium text-center">
-                                            {subStage.sequence}
-                                          </TableCell>
-                                          <TableCell className="font-medium">{subStage.name}</TableCell>
-                                          <TableCell>
-                                            <Badge variant={subStage.type === 'manual' ? 'outline' : 'default'}>
-                                              {subStage.type === 'manual' ? 'Manual' : 'Automatic'}
-                                            </Badge>
-                                          </TableCell>
-                                          <TableCell>
-                                            {subStage.dependencies.length === 0 ? (
-                                              <span className="text-sm text-muted-foreground">None</span>
-                                            ) : (
-                                              <div className="flex flex-wrap gap-1">
-                                                {subStage.dependencies.map((dep, depIndex) => (
-                                                  <Badge key={depIndex} variant="secondary" className="flex items-center gap-1">
-                                                    {dep.name}
-                                                    <Button 
-                                                      variant="ghost" 
-                                                      size="sm" 
-                                                      className="h-4 w-4 p-0 ml-1"
-                                                      onClick={() => handleRemoveDependency(stage.id, subStage.id, depIndex)}
-                                                    >
-                                                      <X className="h-3 w-3" />
-                                                    </Button>
-                                                  </Badge>
-                                                ))}
-                                              </div>
-                                            )}
-                                          </TableCell>
-                                          <TableCell>
-                                            <div className="flex items-center space-x-2">
-                                              <div className="flex space-x-1">
-                                                <Button 
-                                                  variant="ghost" 
-                                                  size="sm" 
-                                                  onClick={() => handleMoveSubStageUp(stage.id, subStage.id)}
-                                                  disabled={subStageIndex === 0}
-                                                >
-                                                  <ChevronUp className="h-4 w-4" />
-                                                </Button>
-                                                <Button 
-                                                  variant="ghost" 
-                                                  size="sm" 
-                                                  onClick={() => handleMoveSubStageDown(stage.id, subStage.id)}
-                                                  disabled={subStageIndex === stage.subStages.length - 1}
-                                                >
-                                                  <ChevronDown className="h-4 w-4" />
-                                                </Button>
-                                              </div>
-                                              <Select
-                                                onValueChange={(value) => {
-                                                  const [depStageId, depSubStageId] = value.split('|');
-                                                  handleAddDependency(stage.id, subStage.id, depStageId, depSubStageId);
-                                                }}
-                                              >
-                                                <SelectTrigger className="w-[130px]">
-                                                  <span className="text-xs">Add Dependency</span>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  {getPreviousSubStages(index, subStageIndex).map(prevStage => (
-                                                    <React.Fragment key={prevStage.stageId}>
-                                                      <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                                                        {prevStage.stageName}
-                                                      </div>
-                                                      {prevStage.subStages.map(prevSubStage => (
-                                                        <SelectItem 
-                                                          key={`${prevStage.stageId}|${prevSubStage.id}`} 
-                                                          value={`${prevStage.stageId}|${prevSubStage.id}`}
-                                                          className="pl-6"
-                                                        >
-                                                          {prevSubStage.name}
-                                                        </SelectItem>
-                                                      ))}
-                                                    </React.Fragment>
-                                                  ))}
-                                                </SelectContent>
-                                              </Select>
-                                            </div>
-                                          </TableCell>
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h5 className="font-medium text-sm">Sub-Stages</h5>
+                                    <Select
+                                      onValueChange={(value) => handleAddSubStage(stage.id, value)}
+                                    >
+                                      <SelectTrigger className="w-[200px]">
+                                        <span className="text-xs">Add Sub-Stage</span>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {availableStages
+                                          .find(s => s.id === stage.id)?.subStages
+                                          .filter(subStage => !stage.subStages.some(ss => ss.id === subStage.id))
+                                          .map(subStage => (
+                                            <SelectItem key={subStage.id} value={subStage.id}>
+                                              {subStage.name}
+                                            </SelectItem>
+                                          ))
+                                        }
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  
+                                  {stage.subStages.length === 0 ? (
+                                    <div className="text-center py-4 border rounded-md">
+                                      <p className="text-sm text-muted-foreground">
+                                        No sub-stages selected. Use the dropdown above to add sub-stages to this stage.
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="w-[60px]">Seq #</TableHead>
+                                          <TableHead>Name</TableHead>
+                                          <TableHead>Type</TableHead>
+                                          <TableHead>Options</TableHead>
+                                          <TableHead>Dependencies</TableHead>
+                                          <TableHead className="w-[180px]">Actions</TableHead>
                                         </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {stage.subStages.map((subStage, subStageIndex) => (
+                                          <TableRow key={subStage.id}>
+                                            <TableCell className="font-medium text-center">
+                                              {subStage.sequence}
+                                            </TableCell>
+                                            <TableCell className="font-medium">{subStage.name}</TableCell>
+                                            <TableCell>
+                                              <Badge variant={subStage.type === 'manual' ? 'outline' : 'default'}>
+                                                {subStage.type === 'manual' ? 'Manual' : 'Automatic'}
+                                              </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                              <div className="flex flex-wrap gap-1">
+                                                {subStage.isActive && <Badge variant="outline">Active</Badge>}
+                                                {subStage.isAuto && <Badge variant="default">Auto</Badge>}
+                                                {subStage.isAdhoc && <Badge variant="secondary">Adhoc</Badge>}
+                                                {subStage.isAlteryx && <Badge variant="destructive">Alteryx</Badge>}
+                                                {subStage.requiresAttestation && <Badge variant="outline" className="border-amber-500 text-amber-500">Attest</Badge>}
+                                                {subStage.requiresApproval && <Badge variant="outline" className="border-green-500 text-green-500">Approval</Badge>}
+                                                {subStage.requiresUpload && <Badge variant="outline" className="border-blue-500 text-blue-500">Upload</Badge>}
+                                                {subStage.requiresDownload && <Badge variant="outline" className="border-purple-500 text-purple-500">Download</Badge>}
+                                              </div>
+                                            </TableCell>
+                                            <TableCell>
+                                              {subStage.dependencies.length === 0 ? (
+                                                <span className="text-sm text-muted-foreground">None</span>
+                                              ) : (
+                                                <div className="flex flex-wrap gap-1">
+                                                  {subStage.dependencies.map((dep, depIndex) => (
+                                                    <Badge key={depIndex} variant="secondary" className="flex items-center gap-1">
+                                                      {dep.name}
+                                                      <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        className="h-4 w-4 p-0 ml-1"
+                                                        onClick={() => handleRemoveDependency(stage.id, subStage.id, depIndex)}
+                                                      >
+                                                        <X className="h-3 w-3" />
+                                                      </Button>
+                                                    </Badge>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </TableCell>
+                                            <TableCell>
+                                              <div className="flex items-center space-x-2">
+                                                <div className="flex space-x-1">
+                                                  <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => handleMoveSubStageUp(stage.id, subStage.id)}
+                                                    disabled={subStageIndex === 0}
+                                                  >
+                                                    <ChevronUp className="h-4 w-4" />
+                                                  </Button>
+                                                  <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => handleMoveSubStageDown(stage.id, subStage.id)}
+                                                    disabled={subStageIndex === stage.subStages.length - 1}
+                                                  >
+                                                    <ChevronDown className="h-4 w-4" />
+                                                  </Button>
+                                                  <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => handleEditSubStage(stage.id, subStage.id)}
+                                                  >
+                                                    <Edit className="h-4 w-4" />
+                                                  </Button>
+                                                  <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => handleRemoveSubStage(stage.id, subStage.id)}
+                                                  >
+                                                    <Trash2 className="h-4 w-4" />
+                                                  </Button>
+                                                </div>
+                                                <Select
+                                                  onValueChange={(value) => {
+                                                    const [depStageId, depSubStageId] = value.split('|');
+                                                    handleAddDependency(stage.id, subStage.id, depStageId, depSubStageId);
+                                                  }}
+                                                >
+                                                  <SelectTrigger className="w-[130px]">
+                                                    <span className="text-xs">Add Dependency</span>
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    {getPreviousSubStages(index, subStageIndex).map(prevStage => (
+                                                      <React.Fragment key={prevStage.stageId}>
+                                                        <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                                                          {prevStage.stageName}
+                                                        </div>
+                                                        {prevStage.subStages.map(prevSubStage => (
+                                                          <SelectItem 
+                                                            key={`${prevStage.stageId}|${prevSubStage.id}`} 
+                                                            value={`${prevStage.stageId}|${prevSubStage.id}`}
+                                                            className="pl-6"
+                                                          >
+                                                            {prevSubStage.name}
+                                                          </SelectItem>
+                                                        ))}
+                                                      </React.Fragment>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  )}
                                 </CardContent>
                               </Card>
                             ))}
