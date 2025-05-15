@@ -34,11 +34,32 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Search, Plus, Edit, Trash2, Calendar as CalendarIcon, Download, Upload, X, CalendarDays, Check } from 'lucide-react';
-import { RunCalendar, RunCalendarEntry } from '@/types/workflow-types';
+import { Search, Plus, Edit, Trash2, Calendar as CalendarIcon, Download, Upload, X, Check } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+// Define the interface for the Run Calendar
+interface RunCalendar {
+  id: string;
+  name: string;
+  description: string;
+  entries: string; // Comma-separated dates
+  runStatus: string; // Comma-separated run statuses (true/false)
+  additionalInfo?: string; // Comma-separated additional information
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  updatedBy: string;
+  isActive: boolean;
+}
+
+// Interface for parsed entry data
+interface ParsedEntry {
+  date: string;
+  isRunDay: boolean;
+  info?: string;
+}
 
 // Sample run calendars
 const sampleRunCalendars: RunCalendar[] = [
@@ -46,17 +67,9 @@ const sampleRunCalendars: RunCalendar[] = [
     id: 'runcal1',
     name: 'Daily Weekday Runs',
     description: 'Runs every weekday (Monday to Friday)',
-    entries: [
-      { id: 'r1', date: '2025-05-01', isRunDay: true, description: 'Regular run day' },
-      { id: 'r2', date: '2025-05-02', isRunDay: true, description: 'Regular run day' },
-      { id: 'r3', date: '2025-05-03', isRunDay: false, description: 'Weekend' },
-      { id: 'r4', date: '2025-05-04', isRunDay: false, description: 'Weekend' },
-      { id: 'r5', date: '2025-05-05', isRunDay: true, description: 'Regular run day' },
-      { id: 'r6', date: '2025-05-06', isRunDay: true, description: 'Regular run day' },
-      { id: 'r7', date: '2025-05-07', isRunDay: true, description: 'Regular run day' },
-      { id: 'r8', date: '2025-05-08', isRunDay: true, description: 'Regular run day' },
-      { id: 'r9', date: '2025-05-09', isRunDay: true, description: 'Regular run day' }
-    ],
+    entries: '2025-05-01,2025-05-02,2025-05-03,2025-05-04,2025-05-05,2025-05-06,2025-05-07,2025-05-08,2025-05-09',
+    runStatus: 'true,true,false,false,true,true,true,true,true',
+    additionalInfo: 'Regular run day,Regular run day,Weekend,Weekend,Regular run day,Regular run day,Regular run day,Regular run day,Regular run day',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
     createdBy: 'System',
@@ -67,16 +80,9 @@ const sampleRunCalendars: RunCalendar[] = [
     id: 'runcal2',
     name: 'Weekly Runs',
     description: 'Runs every Monday',
-    entries: [
-      { id: 'r10', date: '2025-05-05', isRunDay: true, description: 'Monday run' },
-      { id: 'r11', date: '2025-05-06', isRunDay: false, description: 'Non-run day' },
-      { id: 'r12', date: '2025-05-07', isRunDay: false, description: 'Non-run day' },
-      { id: 'r13', date: '2025-05-08', isRunDay: false, description: 'Non-run day' },
-      { id: 'r14', date: '2025-05-09', isRunDay: false, description: 'Non-run day' },
-      { id: 'r15', date: '2025-05-10', isRunDay: false, description: 'Weekend' },
-      { id: 'r16', date: '2025-05-11', isRunDay: false, description: 'Weekend' },
-      { id: 'r17', date: '2025-05-12', isRunDay: true, description: 'Monday run' }
-    ],
+    entries: '2025-05-05,2025-05-06,2025-05-07,2025-05-08,2025-05-09,2025-05-10,2025-05-11,2025-05-12',
+    runStatus: 'true,false,false,false,false,false,false,true',
+    additionalInfo: 'Monday run,Non-run day,Non-run day,Non-run day,Non-run day,Weekend,Weekend,Monday run',
     createdAt: '2025-01-02T00:00:00Z',
     updatedAt: '2025-01-02T00:00:00Z',
     createdBy: 'System',
@@ -87,14 +93,9 @@ const sampleRunCalendars: RunCalendar[] = [
     id: 'runcal3',
     name: 'Month-End Runs',
     description: 'Runs on the last business day of each month',
-    entries: [
-      { id: 'r18', date: '2025-01-31', isRunDay: true, description: 'January month-end' },
-      { id: 'r19', date: '2025-02-28', isRunDay: true, description: 'February month-end' },
-      { id: 'r20', date: '2025-03-31', isRunDay: true, description: 'March month-end' },
-      { id: 'r21', date: '2025-04-30', isRunDay: true, description: 'April month-end' },
-      { id: 'r22', date: '2025-05-30', isRunDay: true, description: 'May month-end (last business day)' },
-      { id: 'r23', date: '2025-06-30', isRunDay: true, description: 'June month-end' }
-    ],
+    entries: '2025-01-31,2025-02-28,2025-03-31,2025-04-30,2025-05-30,2025-06-30',
+    runStatus: 'true,true,true,true,true,true',
+    additionalInfo: 'January month-end,February month-end,March month-end,April month-end,May month-end (last business day),June month-end',
     createdAt: '2025-01-03T00:00:00Z',
     updatedAt: '2025-01-03T00:00:00Z',
     createdBy: 'System',
@@ -108,27 +109,19 @@ interface CalendarForm {
   id?: string;
   name: string;
   description: string;
+  entries: string;
+  runStatus: string;
+  additionalInfo: string;
   isActive: boolean;
-}
-
-interface EntryForm {
-  id?: string;
-  date: Date;
-  isRunDay: boolean;
-  description: string;
 }
 
 const RunCalendarManagement: React.FC = () => {
   const [calendars, setCalendars] = useState<RunCalendar[]>(sampleRunCalendars);
   const [searchTerm, setSearchTerm] = useState('');
   const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
-  const [entryDialogOpen, setEntryDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteEntryDialogOpen, setDeleteEntryDialogOpen] = useState(false);
   const [selectedCalendar, setSelectedCalendar] = useState<RunCalendar | null>(null);
-  const [selectedEntry, setSelectedEntry] = useState<RunCalendarEntry | null>(null);
   const [calendarToDelete, setCalendarToDelete] = useState<string>('');
-  const [entryToDelete, setEntryToDelete] = useState<{calendarId: string, entryId: string}>({calendarId: '', entryId: ''});
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importText, setImportText] = useState('');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
@@ -138,13 +131,10 @@ const RunCalendarManagement: React.FC = () => {
   const [calendarForm, setCalendarForm] = useState<CalendarForm>({
     name: '',
     description: '',
+    entries: '',
+    runStatus: '',
+    additionalInfo: '',
     isActive: true
-  });
-  
-  const [entryForm, setEntryForm] = useState<EntryForm>({
-    date: new Date(),
-    isRunDay: true,
-    description: ''
   });
   
   // Filter calendars based on search term
@@ -160,41 +150,39 @@ const RunCalendarManagement: React.FC = () => {
         id: selectedCalendar.id,
         name: selectedCalendar.name,
         description: selectedCalendar.description,
+        entries: selectedCalendar.entries,
+        runStatus: selectedCalendar.runStatus,
+        additionalInfo: selectedCalendar.additionalInfo || '',
         isActive: selectedCalendar.isActive
       });
     } else if (calendarDialogOpen) {
       setCalendarForm({
         name: '',
         description: '',
+        entries: '',
+        runStatus: '',
+        additionalInfo: '',
         isActive: true
       });
     }
   }, [calendarDialogOpen, selectedCalendar]);
   
-  React.useEffect(() => {
-    if (entryDialogOpen && selectedEntry) {
-      setEntryForm({
-        id: selectedEntry.id,
-        date: new Date(selectedEntry.date),
-        isRunDay: selectedEntry.isRunDay,
-        description: selectedEntry.description || ''
-      });
-    } else if (entryDialogOpen) {
-      setEntryForm({
-        date: new Date(),
-        isRunDay: true,
-        description: ''
-      });
-    }
-  }, [entryDialogOpen, selectedEntry]);
+  // Helper function to parse entries string into an array of objects
+  const parseEntries = (calendar: RunCalendar): ParsedEntry[] => {
+    const dates = calendar.entries.split(',').map(date => date.trim()).filter(Boolean);
+    const statuses = calendar.runStatus.split(',').map(status => status.trim() === 'true').filter((_, i) => i < dates.length);
+    const infos = calendar.additionalInfo ? calendar.additionalInfo.split(',').map(info => info.trim()) : [];
+    
+    return dates.map((date, index) => ({
+      date,
+      isRunDay: statuses[index] || false,
+      info: infos[index] || undefined
+    }));
+  };
   
   // Form handlers
   const handleCalendarFormChange = (field: keyof CalendarForm, value: any) => {
     setCalendarForm(prev => ({ ...prev, [field]: value }));
-  };
-  
-  const handleEntryFormChange = (field: keyof EntryForm, value: any) => {
-    setEntryForm(prev => ({ ...prev, [field]: value }));
   };
   
   // Save calendar
@@ -208,6 +196,15 @@ const RunCalendarManagement: React.FC = () => {
       return;
     }
     
+    if (!calendarForm.description.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Calendar description is required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (calendarForm.id) {
       // Update existing calendar
       setCalendars(prev => prev.map(calendar => 
@@ -215,7 +212,10 @@ const RunCalendarManagement: React.FC = () => {
           ? { 
               ...calendar, 
               name: calendarForm.name, 
-              description: calendarForm.description, 
+              description: calendarForm.description,
+              entries: calendarForm.entries,
+              runStatus: calendarForm.runStatus,
+              additionalInfo: calendarForm.additionalInfo,
               isActive: calendarForm.isActive,
               updatedAt: new Date().toISOString(),
               updatedBy: 'Current User'
@@ -232,7 +232,9 @@ const RunCalendarManagement: React.FC = () => {
         id: `runcal-${Date.now()}`,
         name: calendarForm.name,
         description: calendarForm.description,
-        entries: [],
+        entries: calendarForm.entries,
+        runStatus: calendarForm.runStatus,
+        additionalInfo: calendarForm.additionalInfo,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'Current User',
@@ -250,75 +252,6 @@ const RunCalendarManagement: React.FC = () => {
     setCalendarDialogOpen(false);
   };
   
-  // Save entry
-  const saveEntry = () => {
-    if (!selectedCalendar) {
-      toast({
-        title: "Validation Error",
-        description: "A calendar must be selected",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const newEntry: RunCalendarEntry = {
-      id: entryForm.id || `entry-${Date.now()}`,
-      date: format(entryForm.date, 'yyyy-MM-dd'),
-      isRunDay: entryForm.isRunDay,
-      description: entryForm.description
-    };
-    
-    if (entryForm.id) {
-      // Update existing entry
-      setCalendars(prev => prev.map(calendar => 
-        calendar.id === selectedCalendar.id 
-          ? { 
-              ...calendar, 
-              entries: calendar.entries.map(entry => 
-                entry.id === entryForm.id ? newEntry : entry
-              ),
-              updatedAt: new Date().toISOString(),
-              updatedBy: 'Current User'
-            } 
-          : calendar
-      ));
-      toast({
-        title: "Entry Updated",
-        description: `Calendar entry for ${format(entryForm.date, 'PPP')} has been updated successfully.`
-      });
-    } else {
-      // Check if entry for this date already exists
-      const existingEntry = selectedCalendar.entries.find(entry => entry.date === newEntry.date);
-      
-      if (existingEntry) {
-        toast({
-          title: "Entry Already Exists",
-          description: `An entry for ${format(entryForm.date, 'PPP')} already exists. Please edit the existing entry instead.`,
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Add new entry
-      setCalendars(prev => prev.map(calendar => 
-        calendar.id === selectedCalendar.id 
-          ? { 
-              ...calendar, 
-              entries: [...calendar.entries, newEntry].sort((a, b) => a.date.localeCompare(b.date)),
-              updatedAt: new Date().toISOString(),
-              updatedBy: 'Current User'
-            } 
-          : calendar
-      ));
-      toast({
-        title: "Entry Added",
-        description: `Calendar entry for ${format(entryForm.date, 'PPP')} has been added successfully.`
-      });
-    }
-    
-    setEntryDialogOpen(false);
-  };
-  
   // Delete calendar
   const confirmDeleteCalendar = () => {
     setCalendars(prev => prev.filter(calendar => calendar.id !== calendarToDelete));
@@ -329,35 +262,14 @@ const RunCalendarManagement: React.FC = () => {
     });
   };
   
-  // Delete entry
-  const confirmDeleteEntry = () => {
-    setCalendars(prev => prev.map(calendar => 
-      calendar.id === entryToDelete.calendarId 
-        ? { 
-            ...calendar, 
-            entries: calendar.entries.filter(entry => entry.id !== entryToDelete.entryId),
-            updatedAt: new Date().toISOString(),
-            updatedBy: 'Current User'
-          } 
-        : calendar
-    ));
-    setDeleteEntryDialogOpen(false);
-    toast({
-      title: "Entry Deleted",
-      description: "The calendar entry has been deleted successfully."
-    });
-  };
-  
   // Export calendar
   const exportCalendar = (calendar: RunCalendar) => {
     const data = {
       name: calendar.name,
       description: calendar.description,
-      entries: calendar.entries.map(entry => ({
-        date: entry.date,
-        isRunDay: entry.isRunDay,
-        description: entry.description
-      }))
+      entries: calendar.entries,
+      runStatus: calendar.runStatus,
+      additionalInfo: calendar.additionalInfo
     };
     
     const jsonString = JSON.stringify(data, null, 2);
@@ -383,7 +295,7 @@ const RunCalendarManagement: React.FC = () => {
     try {
       const data = JSON.parse(importText);
       
-      if (!data.name || !Array.isArray(data.entries)) {
+      if (!data.name || !data.entries || !data.runStatus) {
         throw new Error('Invalid format');
       }
       
@@ -391,12 +303,9 @@ const RunCalendarManagement: React.FC = () => {
         id: `runcal-${Date.now()}`,
         name: data.name,
         description: data.description || '',
-        entries: data.entries.map((entry: any, index: number) => ({
-          id: `imported-entry-${index}`,
-          date: entry.date,
-          isRunDay: entry.isRunDay,
-          description: entry.description || ''
-        })),
+        entries: data.entries,
+        runStatus: data.runStatus,
+        additionalInfo: data.additionalInfo || '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'Current User',
@@ -410,7 +319,7 @@ const RunCalendarManagement: React.FC = () => {
       
       toast({
         title: "Calendar Imported",
-        description: `Run calendar "${data.name}" with ${data.entries.length} entries has been imported successfully.`
+        description: `Run calendar "${data.name}" has been imported successfully.`
       });
     } catch (error) {
       toast({
@@ -427,15 +336,35 @@ const RunCalendarManagement: React.FC = () => {
     const end = endOfMonth(month);
     const days = eachDayOfInterval({ start, end });
     
-    let newEntries: RunCalendarEntry[] = [];
+    // Parse existing entries
+    const existingEntries = parseEntries(calendar);
+    const existingDates = existingEntries.map(entry => entry.date);
     
+    // New arrays to hold the updated data
+    let newDates: string[] = [];
+    let newStatuses: boolean[] = [];
+    let newInfos: string[] = [];
+    
+    // Add existing entries that are not in the current month
+    existingEntries.forEach(entry => {
+      const entryDate = new Date(entry.date);
+      if (entryDate.getMonth() !== month.getMonth() || entryDate.getFullYear() !== month.getFullYear()) {
+        newDates.push(entry.date);
+        newStatuses.push(entry.isRunDay);
+        newInfos.push(entry.info || '');
+      }
+    });
+    
+    // Generate new entries for the month
     days.forEach(day => {
       const dateStr = format(day, 'yyyy-MM-dd');
-      const existingEntry = calendar.entries.find(entry => entry.date === dateStr);
+      const existingIndex = existingDates.indexOf(dateStr);
       
-      if (existingEntry) {
+      if (existingIndex >= 0) {
         // Keep existing entry
-        newEntries.push(existingEntry);
+        newDates.push(existingEntries[existingIndex].date);
+        newStatuses.push(existingEntries[existingIndex].isRunDay);
+        newInfos.push(existingEntries[existingIndex].info || '');
       } else {
         // Create new entry based on pattern
         let isRunDay = false;
@@ -456,7 +385,6 @@ const RunCalendarManagement: React.FC = () => {
             break;
           case 'month-end':
             // For simplicity, we'll consider the last day of the month as month-end
-            // In a real application, you might want to find the last business day
             isRunDay = isLastDayOfMonth;
             description = isLastDayOfMonth ? `${format(day, 'MMMM')} month-end` : 'Non-run day';
             break;
@@ -466,27 +394,27 @@ const RunCalendarManagement: React.FC = () => {
             break;
         }
         
-        newEntries.push({
-          id: `generated-${Date.now()}-${dateStr}`,
-          date: dateStr,
-          isRunDay,
-          description
-        });
+        newDates.push(dateStr);
+        newStatuses.push(isRunDay);
+        newInfos.push(description);
       }
     });
     
     // Sort entries by date
-    newEntries.sort((a, b) => a.date.localeCompare(b.date));
+    const sortedEntries = newDates.map((date, i) => ({
+      date,
+      isRunDay: newStatuses[i],
+      info: newInfos[i]
+    })).sort((a, b) => a.date.localeCompare(b.date));
     
     // Update calendar with new entries
     setCalendars(prev => prev.map(cal => 
       cal.id === calendar.id 
         ? { 
             ...cal, 
-            entries: [
-              ...cal.entries.filter(entry => !newEntries.some(newEntry => newEntry.date === entry.date)),
-              ...newEntries
-            ].sort((a, b) => a.date.localeCompare(b.date)),
+            entries: sortedEntries.map(e => e.date).join(','),
+            runStatus: sortedEntries.map(e => e.isRunDay.toString()).join(','),
+            additionalInfo: sortedEntries.map(e => e.info).join(','),
             updatedAt: new Date().toISOString(),
             updatedBy: 'Current User'
           } 
@@ -499,36 +427,37 @@ const RunCalendarManagement: React.FC = () => {
     });
   };
   
-  // Toggle run day status for a specific date
-  const toggleRunDay = (calendar: RunCalendar, entryId: string) => {
-    setCalendars(prev => prev.map(cal => 
-      cal.id === calendar.id 
-        ? { 
-            ...cal, 
-            entries: cal.entries.map(entry => 
-              entry.id === entryId 
-                ? { 
-                    ...entry, 
-                    isRunDay: !entry.isRunDay,
-                    description: entry.isRunDay 
-                      ? `Non-run day (changed on ${format(new Date(), 'PPP')})` 
-                      : `Run day (changed on ${format(new Date(), 'PPP')})`
-                  } 
-                : entry
-            ),
-            updatedAt: new Date().toISOString(),
-            updatedBy: 'Current User'
-          } 
-        : cal
-    ));
+  // Toggle run day status for a specific entry
+  const toggleRunDay = (calendar: RunCalendar, index: number) => {
+    const entries = parseEntries(calendar);
+    
+    if (index >= 0 && index < entries.length) {
+      entries[index].isRunDay = !entries[index].isRunDay;
+      entries[index].info = entries[index].isRunDay 
+        ? `Run day (changed on ${format(new Date(), 'PPP')})` 
+        : `Non-run day (changed on ${format(new Date(), 'PPP')})`;
+      
+      setCalendars(prev => prev.map(cal => 
+        cal.id === calendar.id 
+          ? { 
+              ...cal, 
+              runStatus: entries.map(e => e.isRunDay.toString()).join(','),
+              additionalInfo: entries.map(e => e.info || '').join(','),
+              updatedAt: new Date().toISOString(),
+              updatedBy: 'Current User'
+            } 
+          : cal
+      ));
+    }
   };
   
   // Get entries for the selected month
-  const getMonthEntries = (calendar: RunCalendar) => {
+  const getMonthEntries = (calendar: RunCalendar): ParsedEntry[] => {
+    const allEntries = parseEntries(calendar);
     const start = startOfMonth(selectedMonth);
     const end = endOfMonth(selectedMonth);
     
-    return calendar.entries.filter(entry => {
+    return allEntries.filter(entry => {
       const entryDate = new Date(entry.date);
       return entryDate >= start && entryDate <= end;
     }).sort((a, b) => a.date.localeCompare(b.date));
@@ -568,7 +497,7 @@ const RunCalendarManagement: React.FC = () => {
                   <Label htmlFor="importJson">Paste JSON data</Label>
                   <Textarea 
                     id="importJson" 
-                    placeholder='{"name": "Calendar Name", "description": "Description", "entries": [{"date": "2025-01-01", "isRunDay": true, "description": "Run day"}]}' 
+                    placeholder='{"name": "Calendar Name", "description": "Description", "entries": "2025-01-01,2025-01-02", "runStatus": "true,false", "additionalInfo": "Run day,Non-run day"}' 
                     rows={10} 
                     value={importText}
                     onChange={(e) => setImportText(e.target.value)}
@@ -604,23 +533,58 @@ const RunCalendarManagement: React.FC = () => {
               
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Calendar Name</Label>
+                  <Label htmlFor="name">Calendar Name <span className="text-red-500">*</span></Label>
                   <Input 
                     id="name" 
                     placeholder="Enter calendar name" 
                     value={calendarForm.name}
                     onChange={(e) => handleCalendarFormChange('name', e.target.value)}
+                    required
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
                   <Textarea 
                     id="description" 
                     placeholder="Enter calendar description" 
                     value={calendarForm.description}
                     onChange={(e) => handleCalendarFormChange('description', e.target.value)}
+                    required
                   />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="entries">Entries (comma-separated dates)</Label>
+                  <Textarea 
+                    id="entries" 
+                    placeholder="2025-01-01,2025-01-02,2025-01-03" 
+                    value={calendarForm.entries}
+                    onChange={(e) => handleCalendarFormChange('entries', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Enter dates in YYYY-MM-DD format, separated by commas</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="runStatus">Run Status (comma-separated true/false)</Label>
+                  <Textarea 
+                    id="runStatus" 
+                    placeholder="true,false,true" 
+                    value={calendarForm.runStatus}
+                    onChange={(e) => handleCalendarFormChange('runStatus', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Enter true for run days, false for non-run days, in the same order as dates</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="additionalInfo">Additional Info (comma-separated)</Label>
+                  <Textarea 
+                    id="additionalInfo" 
+                    placeholder="Run day,Non-run day,Special run" 
+                    value={calendarForm.additionalInfo}
+                    onChange={(e) => handleCalendarFormChange('additionalInfo', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Optional: Enter additional information for each date, in the same order</p>
                 </div>
                 
                 <div className="flex items-center space-x-2">
@@ -670,7 +634,7 @@ const RunCalendarManagement: React.FC = () => {
                   <TableRow>
                     <TableCell className="font-medium">{calendar.name}</TableCell>
                     <TableCell className="max-w-xs truncate">{calendar.description}</TableCell>
-                    <TableCell>{calendar.entries.length} entries</TableCell>
+                    <TableCell>{calendar.entries.split(',').filter(Boolean).length} entries</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         calendar.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -736,84 +700,13 @@ const RunCalendarManagement: React.FC = () => {
                             <Button variant="outline" size="sm" onClick={() => setBulkEditMode(!bulkEditMode)}>
                               {bulkEditMode ? 'Exit Bulk Edit' : 'Bulk Edit'}
                             </Button>
-                            <Dialog open={entryDialogOpen} onOpenChange={setEntryDialogOpen}>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" size="sm" onClick={() => {
-                                  setSelectedCalendar(calendar);
-                                  setSelectedEntry(null);
-                                }}>
-                                  <Plus className="mr-2 h-4 w-4" /> Add Entry
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-[500px]">
-                                <DialogHeader>
-                                  <DialogTitle>{selectedEntry ? 'Edit Entry' : 'Add New Entry'}</DialogTitle>
-                                  <DialogDescription>
-                                    {selectedEntry ? 'Update the calendar entry details' : 'Add a new entry to the run calendar'}
-                                  </DialogDescription>
-                                </DialogHeader>
-                                
-                                <div className="grid gap-4 py-4">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="entryDate">Date</Label>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          className="w-full justify-start text-left font-normal"
-                                        >
-                                          <CalendarIcon className="mr-2 h-4 w-4" />
-                                          {entryForm.date ? format(entryForm.date, 'PPP') : <span>Pick a date</span>}
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                          mode="single"
-                                          selected={entryForm.date}
-                                          onSelect={(date) => handleEntryFormChange('date', date || new Date())}
-                                          initialFocus
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
-                                  </div>
-                                  
-                                  <div className="flex items-center space-x-2">
-                                    <Switch 
-                                      id="isRunDay" 
-                                      checked={entryForm.isRunDay}
-                                      onCheckedChange={(checked) => handleEntryFormChange('isRunDay', checked)}
-                                    />
-                                    <Label htmlFor="isRunDay">{entryForm.isRunDay ? 'This is a run day' : 'This is not a run day'}</Label>
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="entryDescription">Description (Optional)</Label>
-                                    <Textarea 
-                                      id="entryDescription" 
-                                      placeholder="Enter description" 
-                                      value={entryForm.description}
-                                      onChange={(e) => handleEntryFormChange('description', e.target.value)}
-                                    />
-                                  </div>
-                                </div>
-                                
-                                <DialogFooter>
-                                  <Button variant="outline" onClick={() => setEntryDialogOpen(false)}>
-                                    Cancel
-                                  </Button>
-                                  <Button onClick={saveEntry}>
-                                    {selectedEntry ? 'Update Entry' : 'Add Entry'}
-                                  </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
                           </div>
                         </div>
                         
                         {getMonthEntries(calendar).length === 0 ? (
                           <div className="text-center py-4 border rounded-md">
                             <p className="text-sm text-muted-foreground">
-                              No entries defined for {format(selectedMonth, 'MMMM yyyy')}. Use the buttons above to generate entries or click "Add Entry" to create one manually.
+                              No entries defined for {format(selectedMonth, 'MMMM yyyy')}. Use the buttons above to generate entries.
                             </p>
                           </div>
                         ) : (
@@ -824,13 +717,12 @@ const RunCalendarManagement: React.FC = () => {
                                   <TableHead>Date</TableHead>
                                   <TableHead>Day</TableHead>
                                   <TableHead>Run Status</TableHead>
-                                  <TableHead>Description</TableHead>
-                                  <TableHead className="text-right">Actions</TableHead>
+                                  <TableHead>Additional Info</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {getMonthEntries(calendar).map((entry) => (
-                                  <TableRow key={entry.id}>
+                                {getMonthEntries(calendar).map((entry, index) => (
+                                  <TableRow key={index}>
                                     <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
                                     <TableCell>{format(new Date(entry.date), 'EEEE')}</TableCell>
                                     <TableCell>
@@ -838,7 +730,7 @@ const RunCalendarManagement: React.FC = () => {
                                         <Button 
                                           variant={entry.isRunDay ? "default" : "outline"} 
                                           size="sm"
-                                          onClick={() => toggleRunDay(calendar, entry.id)}
+                                          onClick={() => toggleRunDay(calendar, index)}
                                         >
                                           {entry.isRunDay ? (
                                             <Check className="mr-2 h-4 w-4" />
@@ -853,24 +745,7 @@ const RunCalendarManagement: React.FC = () => {
                                         </Badge>
                                       )}
                                     </TableCell>
-                                    <TableCell className="max-w-xs truncate">{entry.description || '-'}</TableCell>
-                                    <TableCell className="text-right">
-                                      <div className="flex justify-end space-x-2">
-                                        <Button variant="ghost" size="sm" onClick={() => {
-                                          setSelectedCalendar(calendar);
-                                          setSelectedEntry(entry);
-                                          setEntryDialogOpen(true);
-                                        }}>
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="sm" onClick={() => {
-                                          setEntryToDelete({ calendarId: calendar.id, entryId: entry.id });
-                                          setDeleteEntryDialogOpen(true);
-                                        }}>
-                                          <X className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                    </TableCell>
+                                    <TableCell className="max-w-xs truncate">{entry.info || '-'}</TableCell>
                                   </TableRow>
                                 ))}
                               </TableBody>
@@ -899,22 +774,6 @@ const RunCalendarManagement: React.FC = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteCalendar}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {/* Delete Entry Confirmation Dialog */}
-      <AlertDialog open={deleteEntryDialogOpen} onOpenChange={setDeleteEntryDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Entry</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this calendar entry? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteEntry}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

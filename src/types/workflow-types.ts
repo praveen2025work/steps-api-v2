@@ -53,19 +53,12 @@ export interface Role {
 }
 
 // Holiday Calendar Types
-export interface Holiday {
-  id: string;
-  name: string;
-  date: string;
-  description?: string;
-  isRecurring: boolean;
-}
-
 export interface HolidayCalendar {
   id: string;
   name: string;
   description: string;
-  holidays: Holiday[];
+  holidays: string; // Comma-separated dates
+  additionalInfo?: string; // Comma-separated additional information
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -74,18 +67,13 @@ export interface HolidayCalendar {
 }
 
 // Run Calendar Types
-export interface RunCalendarEntry {
-  id: string;
-  date: string;
-  isRunDay: boolean;
-  description?: string;
-}
-
 export interface RunCalendar {
   id: string;
   name: string;
   description: string;
-  entries: RunCalendarEntry[];
+  entries: string; // Comma-separated dates
+  runStatus: string; // Comma-separated run statuses (true/false)
+  additionalInfo?: string; // Comma-separated additional information
   createdAt: string;
   updatedAt: string;
   createdBy: string;
