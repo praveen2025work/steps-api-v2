@@ -12,7 +12,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, MoveUp, MoveDown, Download, Upload, FileJson, Check, X, Info, AlertCircle } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Plus, Edit, Trash2, MoveUp, MoveDown, Download, Upload, FileJson, Check, X, Info, AlertCircle, ChevronDown } from 'lucide-react';
 import { StageConfig, SubStageConfig, Parameter, Attestation, EmailTemplate, DBStage, DBSubStage, DBParameter, DBAttestation, DBEmailTemplate } from '@/types/workflow-types';
 import { toast } from '@/components/ui/use-toast';
 
@@ -1123,38 +1124,40 @@ const MetadataManagement: React.FC = () => {
                               <div className="grid grid-cols-4 items-start gap-4">
                                 <Label className="text-right pt-2">Parameters</Label>
                                 <div className="col-span-3">
-                                  <Select 
-                                    value=""
-                                    onValueChange={() => {}}
-                                  >
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Select parameters" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <div className="p-2">
-                                        {parameters.map((param) => (
-                                          <div key={param.id} className="flex items-center space-x-2 mb-2">
-                                            <Checkbox 
-                                              id={`param-${param.id}`} 
-                                              checked={subStageForm.selectedParameters.includes(param.id)}
-                                              onCheckedChange={(checked) => {
-                                                if (checked) {
-                                                  handleSubStageFormChange('selectedParameters', 
-                                                    [...subStageForm.selectedParameters, param.id]
-                                                  );
-                                                } else {
-                                                  handleSubStageFormChange('selectedParameters', 
-                                                    subStageForm.selectedParameters.filter(id => id !== param.id)
-                                                  );
-                                                }
-                                              }}
-                                            />
-                                            <Label htmlFor={`param-${param.id}`}>{param.name}</Label>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </SelectContent>
-                                  </Select>
+                                  <div className="relative">
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button variant="outline" className="w-full justify-between">
+                                          Select parameters
+                                          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-full p-0" align="start">
+                                        <div className="p-2">
+                                          {parameters.map((param) => (
+                                            <div key={param.id} className="flex items-center space-x-2 mb-2">
+                                              <Checkbox 
+                                                id={`param-${param.id}`} 
+                                                checked={subStageForm.selectedParameters.includes(param.id)}
+                                                onCheckedChange={(checked) => {
+                                                  if (checked) {
+                                                    handleSubStageFormChange('selectedParameters', 
+                                                      [...subStageForm.selectedParameters, param.id]
+                                                    );
+                                                  } else {
+                                                    handleSubStageFormChange('selectedParameters', 
+                                                      subStageForm.selectedParameters.filter(id => id !== param.id)
+                                                    );
+                                                  }
+                                                }}
+                                              />
+                                              <Label htmlFor={`param-${param.id}`}>{param.name}</Label>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  </div>
                                   <div className="mt-2 flex flex-wrap gap-1">
                                     {subStageForm.selectedParameters.map(paramId => {
                                       const param = parameters.find(p => p.id === paramId);
@@ -1181,38 +1184,40 @@ const MetadataManagement: React.FC = () => {
                               <div className="grid grid-cols-4 items-start gap-4">
                                 <Label className="text-right pt-2">Attestations</Label>
                                 <div className="col-span-3">
-                                  <Select 
-                                    value=""
-                                    onValueChange={() => {}}
-                                  >
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Select attestations" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <div className="p-2">
-                                        {attestations.map((attest) => (
-                                          <div key={attest.id} className="flex items-center space-x-2 mb-2">
-                                            <Checkbox 
-                                              id={`attest-${attest.id}`} 
-                                              checked={subStageForm.selectedAttestations.includes(attest.id)}
-                                              onCheckedChange={(checked) => {
-                                                if (checked) {
-                                                  handleSubStageFormChange('selectedAttestations', 
-                                                    [...subStageForm.selectedAttestations, attest.id]
-                                                  );
-                                                } else {
-                                                  handleSubStageFormChange('selectedAttestations', 
-                                                    subStageForm.selectedAttestations.filter(id => id !== attest.id)
-                                                  );
-                                                }
-                                              }}
-                                            />
-                                            <Label htmlFor={`attest-${attest.id}`}>{attest.name}</Label>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </SelectContent>
-                                  </Select>
+                                  <div className="relative">
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button variant="outline" className="w-full justify-between">
+                                          Select attestations
+                                          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-full p-0" align="start">
+                                        <div className="p-2">
+                                          {attestations.map((attest) => (
+                                            <div key={attest.id} className="flex items-center space-x-2 mb-2">
+                                              <Checkbox 
+                                                id={`attest-${attest.id}`} 
+                                                checked={subStageForm.selectedAttestations.includes(attest.id)}
+                                                onCheckedChange={(checked) => {
+                                                  if (checked) {
+                                                    handleSubStageFormChange('selectedAttestations', 
+                                                      [...subStageForm.selectedAttestations, attest.id]
+                                                    );
+                                                  } else {
+                                                    handleSubStageFormChange('selectedAttestations', 
+                                                      subStageForm.selectedAttestations.filter(id => id !== attest.id)
+                                                    );
+                                                  }
+                                                }}
+                                              />
+                                              <Label htmlFor={`attest-${attest.id}`}>{attest.name}</Label>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  </div>
                                   <div className="mt-2 flex flex-wrap gap-1">
                                     {subStageForm.selectedAttestations.map(attestId => {
                                       const attest = attestations.find(a => a.id === attestId);
@@ -1239,14 +1244,14 @@ const MetadataManagement: React.FC = () => {
                               <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="selectedTemplate" className="text-right">Template</Label>
                                 <Select 
-                                  value={subStageForm.selectedTemplate} 
-                                  onValueChange={(value) => handleSubStageFormChange('selectedTemplate', value)}
+                                  value={subStageForm.selectedTemplate || "none"} 
+                                  onValueChange={(value) => handleSubStageFormChange('selectedTemplate', value === "none" ? "" : value)}
                                 >
                                   <SelectTrigger className="col-span-3">
                                     <SelectValue placeholder="Select template" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="">None</SelectItem>
+                                    <SelectItem value="none">None</SelectItem>
                                     {emailTemplates.map(template => (
                                       <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>
                                     ))}
