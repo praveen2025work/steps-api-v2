@@ -16,12 +16,21 @@ import { Plus, Edit, Trash2, MoveUp, MoveDown, Download, Upload, FileJson, Check
 import { StageConfig, SubStageConfig, Parameter, Attestation, EmailTemplate, DBStage, DBSubStage, DBParameter, DBAttestation, DBEmailTemplate } from '@/types/workflow-types';
 import { toast } from '@/components/ui/use-toast';
 
+// Sample applications
+const sampleApplications = [
+  { id: 'app1', name: 'Credit Risk Assessment' },
+  { id: 'app2', name: 'Loan Approval' },
+  { id: 'app3', name: 'Regulatory Reporting' },
+  { id: 'app4', name: 'Customer Onboarding' },
+];
+
 // Sample data based on the database schema
 const sampleStages: StageConfig[] = [
   {
     id: '1',
     name: 'Data Collection',
     description: 'Collect all required data for the workflow',
+    applicationId: 'app2', // Linked to Loan Approval application
     subStages: [
       {
         id: '1-1',
@@ -173,7 +182,7 @@ interface StageForm {
   id?: string;
   name: string;
   description: string;
-  order: number;
+  applicationId: string;
   isActive: boolean;
 }
 
@@ -300,14 +309,14 @@ const MetadataManagement: React.FC = () => {
         id: selectedStage.id,
         name: selectedStage.name,
         description: selectedStage.description || '',
-        order: selectedStage.order,
+        applicationId: selectedStage.applicationId || sampleApplications[0].id,
         isActive: selectedStage.isActive !== undefined ? selectedStage.isActive : true
       });
     } else if (stageDialogOpen) {
       setStageForm({
         name: '',
         description: '',
-        order: stages.length > 0 ? Math.max(...stages.map(s => s.order)) + 1 : 1,
+        applicationId: sampleApplications[0].id,
         isActive: true
       });
     }
@@ -466,7 +475,7 @@ const MetadataManagement: React.FC = () => {
               ...stage, 
               name: stageForm.name, 
               description: stageForm.description, 
-              order: stageForm.order,
+              applicationId: stageForm.applicationId,
               isActive: stageForm.isActive
             } 
           : stage
@@ -481,9 +490,10 @@ const MetadataManagement: React.FC = () => {
         id: `stage-${Date.now()}`,
         name: stageForm.name,
         description: stageForm.description,
-        order: stageForm.order,
+        applicationId: stageForm.applicationId,
         isActive: stageForm.isActive,
-        subStages: []
+        subStages: [],
+        order: stages.length > 0 ? Math.max(...stages.map(s => s.order || 0)) + 1 : 1
       };
       
       setStages(prev => [...prev, newStage]);
@@ -914,15 +924,20 @@ const MetadataManagement: React.FC = () => {
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="stageOrder" className="text-right">Order</Label>
-                      <Input 
-                        id="stageOrder" 
-                        type="number" 
-                        className="col-span-3" 
-                        placeholder="Order" 
-                        value={stageForm.order}
-                        onChange={(e) => handleStageFormChange('order', parseInt(e.target.value))}
-                      />
+                      <Label htmlFor="applicationId" className="text-right">Application</Label>
+                      <Select 
+                        value={stageForm.applicationId} 
+                        onValueChange={(value) => handleStageFormChange('applicationId', value)}
+                      >
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue placeholder="Select application" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sampleApplications.map(app => (
+                            <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="stageActive" className="text-right">Active</Label>
@@ -964,7 +979,16 @@ const MetadataManagement: React.FC = () => {
                               <Badge variant="outline" className="ml-2 text-xs">Inactive</Badge>
                             )}
                           </CardTitle>
-                          <CardDescription>{stage.description}</CardDescription>
+                          <CardDescription>
+                            {stage.description}
+                            {stage.applicationId && (
+                              <div className="mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  Application: {sampleApplications.find(app => app.id === stage.applicationId)?.name || stage.applicationId}
+                                </Badge>
+                              </div>
+                            )}
+                          </CardDescription>
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -1568,7 +1592,7 @@ const MetadataManagement: React.FC = () => {
                       <Label className="text-right pt-2">Parameters</Label>
                       <div className="col-span-3">
                         <p className="text-sm text-muted-foreground mb-2">
-                          Select parameters to use in this template. Use {'{{'}<span>parameter</span>{'}}'}  syntax in the body.
+                          Select parameters to use in this template. Use {{'{{'}}parameterName{{'}}'}} syntax in the body.
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {parameters.map((param) => (
