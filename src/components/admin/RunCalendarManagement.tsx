@@ -34,7 +34,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Search, Plus, Edit, Trash2, Calendar as CalendarIcon, Download, Upload, X, Check } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Calendar as CalendarIcon, Download, Upload } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -45,8 +45,6 @@ interface RunCalendar {
   name: string;
   description: string;
   entries: string; // Comma-separated dates
-  runStatus: string; // Comma-separated run statuses (true/false)
-  additionalInfo?: string; // Comma-separated additional information
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -57,8 +55,6 @@ interface RunCalendar {
 // Interface for parsed entry data
 interface ParsedEntry {
   date: string;
-  isRunDay: boolean;
-  info?: string;
 }
 
 // Sample run calendars
@@ -67,9 +63,7 @@ const sampleRunCalendars: RunCalendar[] = [
     id: 'runcal1',
     name: 'Daily Weekday Runs',
     description: 'Runs every weekday (Monday to Friday)',
-    entries: '2025-05-01,2025-05-02,2025-05-03,2025-05-04,2025-05-05,2025-05-06,2025-05-07,2025-05-08,2025-05-09',
-    runStatus: 'true,true,false,false,true,true,true,true,true',
-    additionalInfo: 'Regular run day,Regular run day,Weekend,Weekend,Regular run day,Regular run day,Regular run day,Regular run day,Regular run day',
+    entries: '2025-05-01,2025-05-02,2025-05-05,2025-05-06,2025-05-07,2025-05-08,2025-05-09',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
     createdBy: 'System',
@@ -80,9 +74,7 @@ const sampleRunCalendars: RunCalendar[] = [
     id: 'runcal2',
     name: 'Weekly Runs',
     description: 'Runs every Monday',
-    entries: '2025-05-05,2025-05-06,2025-05-07,2025-05-08,2025-05-09,2025-05-10,2025-05-11,2025-05-12',
-    runStatus: 'true,false,false,false,false,false,false,true',
-    additionalInfo: 'Monday run,Non-run day,Non-run day,Non-run day,Non-run day,Weekend,Weekend,Monday run',
+    entries: '2025-05-05,2025-05-12,2025-05-19,2025-05-26',
     createdAt: '2025-01-02T00:00:00Z',
     updatedAt: '2025-01-02T00:00:00Z',
     createdBy: 'System',
@@ -94,8 +86,6 @@ const sampleRunCalendars: RunCalendar[] = [
     name: 'Month-End Runs',
     description: 'Runs on the last business day of each month',
     entries: '2025-01-31,2025-02-28,2025-03-31,2025-04-30,2025-05-30,2025-06-30',
-    runStatus: 'true,true,true,true,true,true',
-    additionalInfo: 'January month-end,February month-end,March month-end,April month-end,May month-end (last business day),June month-end',
     createdAt: '2025-01-03T00:00:00Z',
     updatedAt: '2025-01-03T00:00:00Z',
     createdBy: 'System',
@@ -110,8 +100,6 @@ interface CalendarForm {
   name: string;
   description: string;
   entries: string;
-  runStatus: string;
-  additionalInfo: string;
   isActive: boolean;
 }
 
@@ -125,15 +113,12 @@ const RunCalendarManagement: React.FC = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importText, setImportText] = useState('');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
-  const [bulkEditMode, setBulkEditMode] = useState(false);
   
   // Form states
   const [calendarForm, setCalendarForm] = useState<CalendarForm>({
     name: '',
     description: '',
     entries: '',
-    runStatus: '',
-    additionalInfo: '',
     isActive: true
   });
   
@@ -151,8 +136,6 @@ const RunCalendarManagement: React.FC = () => {
         name: selectedCalendar.name,
         description: selectedCalendar.description,
         entries: selectedCalendar.entries,
-        runStatus: selectedCalendar.runStatus,
-        additionalInfo: selectedCalendar.additionalInfo || '',
         isActive: selectedCalendar.isActive
       });
     } else if (calendarDialogOpen) {
@@ -160,8 +143,6 @@ const RunCalendarManagement: React.FC = () => {
         name: '',
         description: '',
         entries: '',
-        runStatus: '',
-        additionalInfo: '',
         isActive: true
       });
     }
@@ -170,13 +151,9 @@ const RunCalendarManagement: React.FC = () => {
   // Helper function to parse entries string into an array of objects
   const parseEntries = (calendar: RunCalendar): ParsedEntry[] => {
     const dates = calendar.entries.split(',').map(date => date.trim()).filter(Boolean);
-    const statuses = calendar.runStatus.split(',').map(status => status.trim() === 'true').filter((_, i) => i < dates.length);
-    const infos = calendar.additionalInfo ? calendar.additionalInfo.split(',').map(info => info.trim()) : [];
     
-    return dates.map((date, index) => ({
-      date,
-      isRunDay: statuses[index] || false,
-      info: infos[index] || undefined
+    return dates.map((date) => ({
+      date
     }));
   };
   
@@ -214,8 +191,6 @@ const RunCalendarManagement: React.FC = () => {
               name: calendarForm.name, 
               description: calendarForm.description,
               entries: calendarForm.entries,
-              runStatus: calendarForm.runStatus,
-              additionalInfo: calendarForm.additionalInfo,
               isActive: calendarForm.isActive,
               updatedAt: new Date().toISOString(),
               updatedBy: 'Current User'
@@ -233,8 +208,6 @@ const RunCalendarManagement: React.FC = () => {
         name: calendarForm.name,
         description: calendarForm.description,
         entries: calendarForm.entries,
-        runStatus: calendarForm.runStatus,
-        additionalInfo: calendarForm.additionalInfo,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'Current User',
@@ -267,9 +240,7 @@ const RunCalendarManagement: React.FC = () => {
     const data = {
       name: calendar.name,
       description: calendar.description,
-      entries: calendar.entries,
-      runStatus: calendar.runStatus,
-      additionalInfo: calendar.additionalInfo
+      entries: calendar.entries
     };
     
     const jsonString = JSON.stringify(data, null, 2);
@@ -295,7 +266,7 @@ const RunCalendarManagement: React.FC = () => {
     try {
       const data = JSON.parse(importText);
       
-      if (!data.name || !data.entries || !data.runStatus) {
+      if (!data.name || !data.description || !data.entries) {
         throw new Error('Invalid format');
       }
       
@@ -304,8 +275,6 @@ const RunCalendarManagement: React.FC = () => {
         name: data.name,
         description: data.description || '',
         entries: data.entries,
-        runStatus: data.runStatus,
-        additionalInfo: data.additionalInfo || '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'Current User',
@@ -342,16 +311,12 @@ const RunCalendarManagement: React.FC = () => {
     
     // New arrays to hold the updated data
     let newDates: string[] = [];
-    let newStatuses: boolean[] = [];
-    let newInfos: string[] = [];
     
     // Add existing entries that are not in the current month
     existingEntries.forEach(entry => {
       const entryDate = new Date(entry.date);
       if (entryDate.getMonth() !== month.getMonth() || entryDate.getFullYear() !== month.getFullYear()) {
         newDates.push(entry.date);
-        newStatuses.push(entry.isRunDay);
-        newInfos.push(entry.info || '');
       }
     });
     
@@ -363,58 +328,45 @@ const RunCalendarManagement: React.FC = () => {
       if (existingIndex >= 0) {
         // Keep existing entry
         newDates.push(existingEntries[existingIndex].date);
-        newStatuses.push(existingEntries[existingIndex].isRunDay);
-        newInfos.push(existingEntries[existingIndex].info || '');
       } else {
         // Create new entry based on pattern
-        let isRunDay = false;
-        let description = '';
-        
         const dayOfWeek = day.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
         const isLastDayOfMonth = day.getDate() === end.getDate();
         const isWeekday = dayOfWeek > 0 && dayOfWeek < 6;
         
+        let shouldAdd = false;
+        
         switch (pattern) {
           case 'weekdays':
-            isRunDay = isWeekday;
-            description = isWeekday ? 'Regular weekday run' : 'Weekend - no run';
+            shouldAdd = isWeekday;
             break;
           case 'mondays':
-            isRunDay = dayOfWeek === 1;
-            description = dayOfWeek === 1 ? 'Monday run' : 'Non-run day';
+            shouldAdd = dayOfWeek === 1;
             break;
           case 'month-end':
             // For simplicity, we'll consider the last day of the month as month-end
-            isRunDay = isLastDayOfMonth;
-            description = isLastDayOfMonth ? `${format(day, 'MMMM')} month-end` : 'Non-run day';
+            shouldAdd = isLastDayOfMonth;
             break;
           case 'all':
-            isRunDay = true;
-            description = 'Run day';
+            shouldAdd = true;
             break;
         }
         
-        newDates.push(dateStr);
-        newStatuses.push(isRunDay);
-        newInfos.push(description);
+        if (shouldAdd) {
+          newDates.push(dateStr);
+        }
       }
     });
     
     // Sort entries by date
-    const sortedEntries = newDates.map((date, i) => ({
-      date,
-      isRunDay: newStatuses[i],
-      info: newInfos[i]
-    })).sort((a, b) => a.date.localeCompare(b.date));
+    newDates.sort();
     
     // Update calendar with new entries
     setCalendars(prev => prev.map(cal => 
       cal.id === calendar.id 
         ? { 
             ...cal, 
-            entries: sortedEntries.map(e => e.date).join(','),
-            runStatus: sortedEntries.map(e => e.isRunDay.toString()).join(','),
-            additionalInfo: sortedEntries.map(e => e.info).join(','),
+            entries: newDates.join(','),
             updatedAt: new Date().toISOString(),
             updatedBy: 'Current User'
           } 
@@ -425,30 +377,6 @@ const RunCalendarManagement: React.FC = () => {
       title: "Calendar Generated",
       description: `Run calendar entries for ${format(month, 'MMMM yyyy')} have been generated successfully.`
     });
-  };
-  
-  // Toggle run day status for a specific entry
-  const toggleRunDay = (calendar: RunCalendar, index: number) => {
-    const entries = parseEntries(calendar);
-    
-    if (index >= 0 && index < entries.length) {
-      entries[index].isRunDay = !entries[index].isRunDay;
-      entries[index].info = entries[index].isRunDay 
-        ? `Run day (changed on ${format(new Date(), 'PPP')})` 
-        : `Non-run day (changed on ${format(new Date(), 'PPP')})`;
-      
-      setCalendars(prev => prev.map(cal => 
-        cal.id === calendar.id 
-          ? { 
-              ...cal, 
-              runStatus: entries.map(e => e.isRunDay.toString()).join(','),
-              additionalInfo: entries.map(e => e.info || '').join(','),
-              updatedAt: new Date().toISOString(),
-              updatedBy: 'Current User'
-            } 
-          : cal
-      ));
-    }
   };
   
   // Get entries for the selected month
@@ -497,7 +425,7 @@ const RunCalendarManagement: React.FC = () => {
                   <Label htmlFor="importJson">Paste JSON data</Label>
                   <Textarea 
                     id="importJson" 
-                    placeholder='{"name": "Calendar Name", "description": "Description", "entries": "2025-01-01,2025-01-02", "runStatus": "true,false", "additionalInfo": "Run day,Non-run day"}' 
+                    placeholder='{"name": "Calendar Name", "description": "Description", "entries": "2025-01-01,2025-01-02"}' 
                     rows={10} 
                     value={importText}
                     onChange={(e) => setImportText(e.target.value)}
@@ -563,28 +491,6 @@ const RunCalendarManagement: React.FC = () => {
                     onChange={(e) => handleCalendarFormChange('entries', e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">Enter dates in YYYY-MM-DD format, separated by commas</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="runStatus">Run Status (comma-separated true/false)</Label>
-                  <Textarea 
-                    id="runStatus" 
-                    placeholder="true,false,true" 
-                    value={calendarForm.runStatus}
-                    onChange={(e) => handleCalendarFormChange('runStatus', e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">Enter true for run days, false for non-run days, in the same order as dates</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="additionalInfo">Additional Info (comma-separated)</Label>
-                  <Textarea 
-                    id="additionalInfo" 
-                    placeholder="Run day,Non-run day,Special run" 
-                    value={calendarForm.additionalInfo}
-                    onChange={(e) => handleCalendarFormChange('additionalInfo', e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">Optional: Enter additional information for each date, in the same order</p>
                 </div>
                 
                 <div className="flex items-center space-x-2">
@@ -696,11 +602,6 @@ const RunCalendarManagement: React.FC = () => {
                               </Button>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm" onClick={() => setBulkEditMode(!bulkEditMode)}>
-                              {bulkEditMode ? 'Exit Bulk Edit' : 'Bulk Edit'}
-                            </Button>
-                          </div>
                         </div>
                         
                         {getMonthEntries(calendar).length === 0 ? (
@@ -716,8 +617,6 @@ const RunCalendarManagement: React.FC = () => {
                                 <TableRow>
                                   <TableHead>Date</TableHead>
                                   <TableHead>Day</TableHead>
-                                  <TableHead>Run Status</TableHead>
-                                  <TableHead>Additional Info</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -725,27 +624,6 @@ const RunCalendarManagement: React.FC = () => {
                                   <TableRow key={index}>
                                     <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
                                     <TableCell>{format(new Date(entry.date), 'EEEE')}</TableCell>
-                                    <TableCell>
-                                      {bulkEditMode ? (
-                                        <Button 
-                                          variant={entry.isRunDay ? "default" : "outline"} 
-                                          size="sm"
-                                          onClick={() => toggleRunDay(calendar, index)}
-                                        >
-                                          {entry.isRunDay ? (
-                                            <Check className="mr-2 h-4 w-4" />
-                                          ) : (
-                                            <X className="mr-2 h-4 w-4" />
-                                          )}
-                                          {entry.isRunDay ? 'Run Day' : 'Non-Run Day'}
-                                        </Button>
-                                      ) : (
-                                        <Badge variant={entry.isRunDay ? "default" : "outline"}>
-                                          {entry.isRunDay ? 'Run Day' : 'Non-Run Day'}
-                                        </Badge>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="max-w-xs truncate">{entry.info || '-'}</TableCell>
                                   </TableRow>
                                 ))}
                               </TableBody>

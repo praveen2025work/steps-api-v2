@@ -31,7 +31,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Edit, Trash2, Download, Upload } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -42,7 +41,6 @@ interface HolidayCalendar {
   name: string;
   description: string;
   holidays: string; // Comma-separated dates
-  additionalInfo?: string; // Comma-separated additional information
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -53,7 +51,6 @@ interface HolidayCalendar {
 // Interface for parsed holiday data
 interface ParsedHoliday {
   date: string;
-  info?: string;
 }
 
 // Sample holiday calendars
@@ -63,7 +60,6 @@ const sampleHolidayCalendars: HolidayCalendar[] = [
     name: 'US Holidays 2025',
     description: 'Standard US holidays for 2025',
     holidays: '2025-01-01,2025-01-20,2025-02-17,2025-05-26,2025-07-04,2025-09-01,2025-10-13,2025-11-11,2025-11-27,2025-12-25',
-    additionalInfo: 'New Year\'s Day,Martin Luther King Jr. Day,Presidents\' Day,Memorial Day,Independence Day,Labor Day,Columbus Day,Veterans Day,Thanksgiving Day,Christmas Day',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
     createdBy: 'System',
@@ -75,7 +71,6 @@ const sampleHolidayCalendars: HolidayCalendar[] = [
     name: 'UK Holidays 2025',
     description: 'Standard UK bank holidays for 2025',
     holidays: '2025-01-01,2025-04-18,2025-04-21,2025-05-05,2025-05-26,2025-08-25,2025-12-25,2025-12-26',
-    additionalInfo: 'New Year\'s Day,Good Friday,Easter Monday,Early May Bank Holiday,Spring Bank Holiday,Summer Bank Holiday,Christmas Day,Boxing Day',
     createdAt: '2025-01-02T00:00:00Z',
     updatedAt: '2025-01-02T00:00:00Z',
     createdBy: 'System',
@@ -87,7 +82,6 @@ const sampleHolidayCalendars: HolidayCalendar[] = [
     name: 'EU Holidays 2025',
     description: 'Common European holidays for 2025',
     holidays: '2025-01-01,2025-04-18,2025-04-21,2025-05-01,2025-05-09,2025-12-25,2025-12-26',
-    additionalInfo: 'New Year\'s Day,Good Friday,Easter Monday,Labor Day,Europe Day,Christmas Day,St. Stephen\'s Day',
     createdAt: '2025-01-03T00:00:00Z',
     updatedAt: '2025-01-03T00:00:00Z',
     createdBy: 'System',
@@ -102,7 +96,6 @@ interface CalendarForm {
   name: string;
   description: string;
   holidays: string;
-  additionalInfo: string;
   isActive: boolean;
 }
 
@@ -121,7 +114,6 @@ const HolidayCalendarManagement: React.FC = () => {
     name: '',
     description: '',
     holidays: '',
-    additionalInfo: '',
     isActive: true
   });
   
@@ -139,7 +131,6 @@ const HolidayCalendarManagement: React.FC = () => {
         name: selectedCalendar.name,
         description: selectedCalendar.description,
         holidays: selectedCalendar.holidays,
-        additionalInfo: selectedCalendar.additionalInfo || '',
         isActive: selectedCalendar.isActive
       });
     } else if (calendarDialogOpen) {
@@ -147,7 +138,6 @@ const HolidayCalendarManagement: React.FC = () => {
         name: '',
         description: '',
         holidays: '',
-        additionalInfo: '',
         isActive: true
       });
     }
@@ -156,11 +146,9 @@ const HolidayCalendarManagement: React.FC = () => {
   // Helper function to parse holidays string into an array of objects
   const parseHolidays = (calendar: HolidayCalendar): ParsedHoliday[] => {
     const dates = calendar.holidays.split(',').map(date => date.trim()).filter(Boolean);
-    const infos = calendar.additionalInfo ? calendar.additionalInfo.split(',').map(info => info.trim()) : [];
     
-    return dates.map((date, index) => ({
-      date,
-      info: infos[index] || undefined
+    return dates.map((date) => ({
+      date
     }));
   };
   
@@ -198,7 +186,6 @@ const HolidayCalendarManagement: React.FC = () => {
               name: calendarForm.name, 
               description: calendarForm.description,
               holidays: calendarForm.holidays,
-              additionalInfo: calendarForm.additionalInfo,
               isActive: calendarForm.isActive,
               updatedAt: new Date().toISOString(),
               updatedBy: 'Current User'
@@ -216,7 +203,6 @@ const HolidayCalendarManagement: React.FC = () => {
         name: calendarForm.name,
         description: calendarForm.description,
         holidays: calendarForm.holidays,
-        additionalInfo: calendarForm.additionalInfo,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'Current User',
@@ -249,8 +235,7 @@ const HolidayCalendarManagement: React.FC = () => {
     const data = {
       name: calendar.name,
       description: calendar.description,
-      holidays: calendar.holidays,
-      additionalInfo: calendar.additionalInfo
+      holidays: calendar.holidays
     };
     
     const jsonString = JSON.stringify(data, null, 2);
@@ -276,7 +261,7 @@ const HolidayCalendarManagement: React.FC = () => {
     try {
       const data = JSON.parse(importText);
       
-      if (!data.name || !data.holidays) {
+      if (!data.name || !data.description || !data.holidays) {
         throw new Error('Invalid format');
       }
       
@@ -285,7 +270,6 @@ const HolidayCalendarManagement: React.FC = () => {
         name: data.name,
         description: data.description || '',
         holidays: data.holidays,
-        additionalInfo: data.additionalInfo || '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'Current User',
@@ -323,13 +307,11 @@ const HolidayCalendarManagement: React.FC = () => {
         
         // Skip header row
         const dates: string[] = [];
-        const infos: string[] = [];
         
         lines.slice(1).filter(line => line.trim()).forEach(line => {
-          const [date, info] = line.split(',').map(item => item.trim());
+          const date = line.split(',')[0].trim();
           if (date) {
             dates.push(date);
-            if (info) infos.push(info);
           }
         });
         
@@ -340,8 +322,7 @@ const HolidayCalendarManagement: React.FC = () => {
         setImportText(JSON.stringify({
           name: file.name.replace('.csv', ''),
           description: `Imported from ${file.name}`,
-          holidays: dates.join(','),
-          additionalInfo: infos.join(',')
+          holidays: dates.join(',')
         }, null, 2));
         
       } catch (error) {
@@ -387,7 +368,7 @@ const HolidayCalendarManagement: React.FC = () => {
               
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="importFile">Upload CSV File (Date, AdditionalInfo)</Label>
+                  <Label htmlFor="importFile">Upload CSV File (Date)</Label>
                   <Input id="importFile" type="file" accept=".csv" onChange={handleFileUpload} />
                 </div>
                 
@@ -395,7 +376,7 @@ const HolidayCalendarManagement: React.FC = () => {
                   <Label htmlFor="importJson">Or paste JSON data</Label>
                   <Textarea 
                     id="importJson" 
-                    placeholder='{"name": "Calendar Name", "description": "Description", "holidays": "2025-01-01,2025-12-25", "additionalInfo": "New Year,Christmas"}' 
+                    placeholder='{"name": "Calendar Name", "description": "Description", "holidays": "2025-01-01,2025-12-25"}' 
                     rows={10} 
                     value={importText}
                     onChange={(e) => setImportText(e.target.value)}
@@ -462,17 +443,6 @@ const HolidayCalendarManagement: React.FC = () => {
                     required
                   />
                   <p className="text-xs text-muted-foreground">Enter dates in YYYY-MM-DD format, separated by commas</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="additionalInfo">Additional Info (comma-separated)</Label>
-                  <Textarea 
-                    id="additionalInfo" 
-                    placeholder="New Year's Day,Christmas Day,Boxing Day" 
-                    value={calendarForm.additionalInfo}
-                    onChange={(e) => handleCalendarFormChange('additionalInfo', e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">Optional: Enter additional information for each date, in the same order</p>
                 </div>
                 
                 <div className="flex items-center space-x-2">
@@ -569,14 +539,12 @@ const HolidayCalendarManagement: React.FC = () => {
                               <TableHeader>
                                 <TableRow>
                                   <TableHead>Date</TableHead>
-                                  <TableHead>Additional Info</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {parseHolidays(calendar).map((holiday, index) => (
                                   <TableRow key={index}>
                                     <TableCell>{new Date(holiday.date).toLocaleDateString()}</TableCell>
-                                    <TableCell>{holiday.info || '-'}</TableCell>
                                   </TableRow>
                                 ))}
                               </TableBody>

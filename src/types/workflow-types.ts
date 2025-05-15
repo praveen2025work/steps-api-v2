@@ -58,7 +58,6 @@ export interface HolidayCalendar {
   name: string;
   description: string;
   holidays: string; // Comma-separated dates
-  additionalInfo?: string; // Comma-separated additional information
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -72,8 +71,6 @@ export interface RunCalendar {
   name: string;
   description: string;
   entries: string; // Comma-separated dates
-  runStatus: string; // Comma-separated run statuses (true/false)
-  additionalInfo?: string; // Comma-separated additional information
   createdAt: string;
   updatedAt: string;
   createdBy: string;
