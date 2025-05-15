@@ -1048,12 +1048,7 @@ const MetadataManagement: React.FC = () => {
                         }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => moveStage(stage.id, 'up')}>
-                          <MoveUp className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => moveStage(stage.id, 'down')}>
-                          <MoveDown className="h-4 w-4" />
-                        </Button>
+=======
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -1329,17 +1324,18 @@ const MetadataManagement: React.FC = () => {
                         <Table>
                           <TableHeader>
                             <TableRow>
+                              <TableHead>ID</TableHead>
                               <TableHead>Name</TableHead>
-                              <TableHead>Type</TableHead>
-                              <TableHead>Properties</TableHead>
                               <TableHead>Expected Duration</TableHead>
-                              <TableHead>Order</TableHead>
+                              <TableHead>Follow-up</TableHead>
+                              <TableHead>Status</TableHead>
                               <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {stage.subStages.map((subStage) => (
                               <TableRow key={subStage.id}>
+                                <TableCell>{subStage.id}</TableCell>
                                 <TableCell className="font-medium">
                                   <div className="flex items-center">
                                     {subStage.name}
@@ -1348,28 +1344,13 @@ const MetadataManagement: React.FC = () => {
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell>{subStage.type === 'manual' ? 'Manual' : 'Automatic'}</TableCell>
-                                <TableCell>
-                                  <div className="flex flex-wrap gap-1">
-                                    {subStage.requiresAttestation && (
-                                      <Badge variant="secondary" className="text-xs">Attestation</Badge>
-                                    )}
-                                    {subStage.requiresUpload && (
-                                      <Badge variant="secondary" className="text-xs">Upload</Badge>
-                                    )}
-                                    {subStage.requiresApproval && (
-                                      <Badge variant="secondary" className="text-xs">Approval</Badge>
-                                    )}
-                                    {subStage.isAdhoc && (
-                                      <Badge variant="secondary" className="text-xs">Ad-hoc</Badge>
-                                    )}
-                                    {subStage.isAlteryx && (
-                                      <Badge variant="secondary" className="text-xs">Alteryx</Badge>
-                                    )}
-                                  </div>
-                                </TableCell>
                                 <TableCell>{subStage.expectedDuration} hours</TableCell>
-                                <TableCell>{subStage.order}</TableCell>
+                                <TableCell>{subStage.expectedTime || '-'}</TableCell>
+                                <TableCell>
+                                  <Badge variant={subStage.isActive ? "default" : "outline"}>
+                                    {subStage.isActive ? 'Active' : 'Inactive'}
+                                  </Badge>
+                                </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end space-x-2">
                                     <Button variant="ghost" size="sm" onClick={() => {
@@ -1384,12 +1365,6 @@ const MetadataManagement: React.FC = () => {
                                       setDeleteDialogOpen(true);
                                     }}>
                                       <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => moveSubStage(stage.id, subStage.id, 'up')}>
-                                      <MoveUp className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => moveSubStage(stage.id, subStage.id, 'down')}>
-                                      <MoveDown className="h-4 w-4" />
                                     </Button>
                                   </div>
                                 </TableCell>
