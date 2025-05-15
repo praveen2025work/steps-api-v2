@@ -245,7 +245,7 @@ const Sidebar = () => {
       >
         <div className="p-4 border-b border-border flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold">Workflow Tool</h2>
+            <h2 className="text-xl font-bold">STEPS</h2>
             <p className="text-xs text-muted-foreground mt-1">Financial Workflow Management</p>
           </div>
           <Button variant="ghost" size="icon" onClick={toggleSidebar} className="ml-auto">

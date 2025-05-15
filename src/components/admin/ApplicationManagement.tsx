@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Role } from '@/types/workflow-types';
 import { 
   Table, 
   TableBody, 
@@ -141,6 +142,70 @@ const sampleApplications: Application[] = [
   }
 ];
 
+// Sample roles data
+const sampleRoles: Role[] = [
+  {
+    id: 'role1',
+    name: 'Administrator',
+    description: 'Full system access',
+    permissions: [],
+    applications: ['1', '2', '3'],
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-01T00:00:00Z',
+    createdBy: 'System',
+    updatedBy: 'System',
+    isActive: true
+  },
+  {
+    id: 'role2',
+    name: 'Finance Manager',
+    description: 'Manages financial workflows',
+    permissions: [],
+    applications: ['1'],
+    createdAt: '2025-01-02T00:00:00Z',
+    updatedAt: '2025-01-02T00:00:00Z',
+    createdBy: 'System',
+    updatedBy: 'System',
+    isActive: true
+  },
+  {
+    id: 'role3',
+    name: 'Risk Analyst',
+    description: 'Analyzes risk data',
+    permissions: [],
+    applications: ['2'],
+    createdAt: '2025-01-03T00:00:00Z',
+    updatedAt: '2025-01-03T00:00:00Z',
+    createdBy: 'System',
+    updatedBy: 'System',
+    isActive: true
+  },
+  {
+    id: 'role4',
+    name: 'Compliance Officer',
+    description: 'Ensures regulatory compliance',
+    permissions: [],
+    applications: ['3'],
+    createdAt: '2025-01-04T00:00:00Z',
+    updatedAt: '2025-01-04T00:00:00Z',
+    createdBy: 'System',
+    updatedBy: 'System',
+    isActive: true
+  },
+  {
+    id: 'role5',
+    name: 'Read Only User',
+    description: 'View-only access to all applications',
+    permissions: [],
+    applications: ['1', '2', '3'],
+    createdAt: '2025-01-05T00:00:00Z',
+    updatedAt: '2025-01-05T00:00:00Z',
+    createdBy: 'System',
+    updatedBy: 'System',
+    isActive: true
+  }
+];
+
 const ApplicationManagement: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>(sampleApplications);
   const [searchTerm, setSearchTerm] = useState('');
@@ -150,6 +215,8 @@ const ApplicationManagement: React.FC = () => {
   const [applicationToDelete, setApplicationToDelete] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [roles, setRoles] = useState<Role[]>(sampleRoles);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(false);
   
   // Form state
   const [applicationForm, setApplicationForm] = useState<ApplicationForm>({
@@ -197,10 +264,35 @@ const ApplicationManagement: React.FC = () => {
     }
   };
   
-  // Load applications on component mount
+  // Fetch roles from API
+  const fetchRoles = useCallback(async () => {
+    setIsLoadingRoles(true);
+    try {
+      // This would be a real API call in production
+      // const response = await fetch('http://portal-workflowcore-api-uat.com/api/WF/GetRoles');
+      // const data: Role[] = await response.json();
+      
+      // For now, we'll simulate the API response with our sample data
+      setTimeout(() => {
+        setRoles(sampleRoles);
+        setIsLoadingRoles(false);
+      }, 500);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch roles. Please try again later.',
+        variant: 'destructive'
+      });
+      setIsLoadingRoles(false);
+    }
+  }, []);
+
+  // Load applications and roles on component mount
   useEffect(() => {
     fetchApplications();
-  }, []);
+    fetchRoles();
+  }, [fetchRoles]);
   
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -465,23 +557,43 @@ const ApplicationManagement: React.FC = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="lockingRole">Locking Role</Label>
-                  <Input 
-                    id="lockingRole" 
-                    placeholder="Enter locking role" 
+                  <Select
                     value={applicationForm.lockingRole}
-                    onChange={(e) => handleApplicationFormChange('lockingRole', e.target.value)}
-                  />
+                    onValueChange={(value) => handleApplicationFormChange('lockingRole', value)}
+                  >
+                    <SelectTrigger id="lockingRole" className="w-full">
+                      <SelectValue placeholder="Select a locking role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {roles.map((role) => (
+                        <SelectItem key={role.id} value={role.name}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="rtbRole">RTB Role</Label>
-                <Input 
-                  id="rtbRole" 
-                  placeholder="Enter RTB role" 
+                <Select
                   value={applicationForm.rtbRole}
-                  onChange={(e) => handleApplicationFormChange('rtbRole', e.target.value)}
-                />
+                  onValueChange={(value) => handleApplicationFormChange('rtbRole', value)}
+                >
+                  <SelectTrigger id="rtbRole" className="w-full">
+                    <SelectValue placeholder="Select an RTB role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.name}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
