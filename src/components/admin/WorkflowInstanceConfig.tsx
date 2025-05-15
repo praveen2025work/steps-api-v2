@@ -830,9 +830,19 @@ const WorkflowInstanceConfig: React.FC = () => {
     
     if (subStageIndex === -1) return;
     
+    // Process parameters - only validate non-empty values
+    const processedParameters = updatedSubStage.parameters.map(param => {
+      // If value is empty and parameter is not required, don't validate
+      if (param.value === '' && !param.isRequired) {
+        return param;
+      }
+      return param;
+    });
+    
     // If upload is not required, remove the upload config
     const finalSubStage = {
       ...updatedSubStage,
+      parameters: processedParameters,
       uploadConfig: updatedSubStage.requiresUpload ? updatedSubStage.uploadConfig : undefined,
       downloadConfig: updatedSubStage.requiresDownload ? updatedSubStage.downloadConfig : undefined
     };
@@ -1627,7 +1637,7 @@ const WorkflowInstanceConfig: React.FC = () => {
           {/* Parameters Tab */}
           <TabsContent value="parameters">
             <Card>
-              <CardHeader>
+              <CardHeader className="py-3">
                 <CardTitle>Sub-Stage Parameters</CardTitle>
                 <CardDescription>Configure parameters specific to this sub-stage</CardDescription>
               </CardHeader>
@@ -1650,8 +1660,11 @@ const WorkflowInstanceConfig: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {subStage.parameters.map(param => (
-                        <TableRow key={param.id}>
-                          <TableCell className="font-medium">{param.name}</TableCell>
+                        <TableRow key={param.id} className={param.isRequired ? "" : "text-muted-foreground"}>
+                          <TableCell className="font-medium">
+                            {param.name}
+                            {!param.isRequired && <span className="ml-1 text-xs">(Optional)</span>}
+                          </TableCell>
                           <TableCell>{param.dataType}</TableCell>
                           <TableCell>
                             {param.isRequired ? (
@@ -1663,7 +1676,7 @@ const WorkflowInstanceConfig: React.FC = () => {
                           <TableCell>
                             <Input 
                               type={param.dataType === 'date' ? 'date' : 'text'} 
-                              placeholder="Enter default value"
+                              placeholder={param.isRequired ? "Required" : "Optional"}
                               value={param.value}
                               onChange={(e) => {
                                 const updatedParams = subStage.parameters.map(p => {
@@ -1680,7 +1693,7 @@ const WorkflowInstanceConfig: React.FC = () => {
                                 
                                 handleUpdateSubStage(updatedSubStage);
                               }}
-                              className="w-full"
+                              className={`w-full ${!param.isRequired ? "border-dashed" : ""}`}
                             />
                           </TableCell>
                         </TableRow>
@@ -1695,12 +1708,12 @@ const WorkflowInstanceConfig: React.FC = () => {
           {/* Upload Config Tab */}
           <TabsContent value="upload">
             <Card>
-              <CardHeader>
+              <CardHeader className="py-3">
                 <CardTitle>Upload Configuration</CardTitle>
                 <CardDescription>Configure file upload settings for this sub-stage</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="requiresUpload"
@@ -1712,7 +1725,7 @@ const WorkflowInstanceConfig: React.FC = () => {
                   
                   {subStage.requiresUpload && subStage.uploadConfig && (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label htmlFor="uploadDescription">Description</Label>
                           <Input
@@ -1735,28 +1748,17 @@ const WorkflowInstanceConfig: React.FC = () => {
                       
                       <div className="space-y-2">
                         <h4 className="font-medium">Validation Settings</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="uploadAllowedExtensions">Allowed Extensions</Label>
-                            <Input
-                              id="uploadAllowedExtensions"
-                              value={subStage.uploadConfig.validationSettings?.allowedExtensions.join(', ') || ''}
-                              onChange={(e) => {
-                                const extensions = e.target.value.split(',').map(ext => ext.trim());
-                                handleUpdateFileConfig('upload', 'allowedExtensions', extensions, true);
-                              }}
-                              placeholder=".xlsx, .csv, .pdf"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="uploadMaxFileSize">Max File Size (MB)</Label>
-                            <Input
-                              id="uploadMaxFileSize"
-                              type="number"
-                              value={subStage.uploadConfig.validationSettings?.maxFileSize || 10}
-                              onChange={(e) => handleUpdateFileConfig('upload', 'maxFileSize', Number(e.target.value), true)}
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="uploadAllowedExtensions">Allowed Extensions</Label>
+                          <Input
+                            id="uploadAllowedExtensions"
+                            value={subStage.uploadConfig.validationSettings?.allowedExtensions.join(', ') || ''}
+                            onChange={(e) => {
+                              const extensions = e.target.value.split(',').map(ext => ext.trim());
+                              handleUpdateFileConfig('upload', 'allowedExtensions', extensions, true);
+                            }}
+                            placeholder=".xlsx, .csv, .pdf"
+                          />
                         </div>
                         <div className="flex items-center space-x-2 mt-2">
                           <Checkbox
@@ -1785,90 +1787,6 @@ const WorkflowInstanceConfig: React.FC = () => {
                         />
                         <Label htmlFor="uploadEmailNotifications">Send email notifications</Label>
                       </div>
-                      
-                      <Separator />
-                      
-                      <div className="space-y-2">
-                        <h4 className="font-medium">Upload Parameters</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="md:col-span-2 space-y-2">
-                            <Label htmlFor="uploadParameterSelect">Available Parameters</Label>
-                            <Select
-                              value={selectedParameterId}
-                              onValueChange={setSelectedParameterId}
-                            >
-                              <SelectTrigger id="uploadParameterSelect">
-                                <SelectValue placeholder="Select a parameter to add" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {sampleParameters
-                                  .filter(param => !subStage.uploadConfig?.parameters.some(p => p.id === param.id))
-                                  .map(param => (
-                                    <SelectItem key={param.id} value={param.id}>{param.name}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex items-end">
-                            <Button
-                              onClick={() => handleAddFileParameter('upload')}
-                              disabled={!selectedParameterId}
-                            >
-                              <Plus className="mr-2 h-4 w-4" /> Add
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        {subStage.uploadConfig.parameters.length === 0 ? (
-                          <div className="text-center py-4 border rounded-md">
-                            <p className="text-sm text-muted-foreground">
-                              No parameters added. Use the dropdown above to add parameters.
-                            </p>
-                          </div>
-                        ) : (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Data Type</TableHead>
-                                <TableHead>Required</TableHead>
-                                <TableHead className="w-[80px]">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {subStage.uploadConfig.parameters.map(param => (
-                                <TableRow key={param.id}>
-                                  <TableCell className="font-medium">{param.name}</TableCell>
-                                  <TableCell>{param.dataType}</TableCell>
-                                  <TableCell>
-                                    <Checkbox
-                                      checked={param.isRequired}
-                                      onCheckedChange={(checked) => {
-                                        const updatedParams = subStage.uploadConfig?.parameters.map(p => {
-                                          if (p.id === param.id) {
-                                            return { ...p, isRequired: !!checked };
-                                          }
-                                          return p;
-                                        }) || [];
-                                        handleUpdateFileConfig('upload', 'parameters', updatedParams);
-                                      }}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleRemoveFileParameter('upload', param.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        )}
-                      </div>
                     </>
                   )}
                 </div>
@@ -1879,12 +1797,12 @@ const WorkflowInstanceConfig: React.FC = () => {
           {/* Download Config Tab */}
           <TabsContent value="download">
             <Card>
-              <CardHeader>
+              <CardHeader className="py-3">
                 <CardTitle>Download Configuration</CardTitle>
                 <CardDescription>Configure file download settings for this sub-stage</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="requiresDownload"
@@ -1896,7 +1814,7 @@ const WorkflowInstanceConfig: React.FC = () => {
                   
                   {subStage.requiresDownload && subStage.downloadConfig && (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label htmlFor="downloadDescription">Description</Label>
                           <Input
@@ -1919,19 +1837,17 @@ const WorkflowInstanceConfig: React.FC = () => {
                       
                       <div className="space-y-2">
                         <h4 className="font-medium">File Settings</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="downloadAllowedExtensions">File Extensions</Label>
-                            <Input
-                              id="downloadAllowedExtensions"
-                              value={subStage.downloadConfig.validationSettings?.allowedExtensions.join(', ') || ''}
-                              onChange={(e) => {
-                                const extensions = e.target.value.split(',').map(ext => ext.trim());
-                                handleUpdateFileConfig('download', 'allowedExtensions', extensions, true);
-                              }}
-                              placeholder=".xlsx, .csv, .pdf"
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="downloadAllowedExtensions">File Extensions</Label>
+                          <Input
+                            id="downloadAllowedExtensions"
+                            value={subStage.downloadConfig.validationSettings?.allowedExtensions.join(', ') || ''}
+                            onChange={(e) => {
+                              const extensions = e.target.value.split(',').map(ext => ext.trim());
+                              handleUpdateFileConfig('download', 'allowedExtensions', extensions, true);
+                            }}
+                            placeholder=".xlsx, .csv, .pdf"
+                          />
                         </div>
                       </div>
                       
@@ -1952,90 +1868,6 @@ const WorkflowInstanceConfig: React.FC = () => {
                         />
                         <Label htmlFor="downloadEmailNotifications">Send email notifications</Label>
                       </div>
-                      
-                      <Separator />
-                      
-                      <div className="space-y-2">
-                        <h4 className="font-medium">Download Parameters</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="md:col-span-2 space-y-2">
-                            <Label htmlFor="downloadParameterSelect">Available Parameters</Label>
-                            <Select
-                              value={selectedParameterId}
-                              onValueChange={setSelectedParameterId}
-                            >
-                              <SelectTrigger id="downloadParameterSelect">
-                                <SelectValue placeholder="Select a parameter to add" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {sampleParameters
-                                  .filter(param => !subStage.downloadConfig?.parameters.some(p => p.id === param.id))
-                                  .map(param => (
-                                    <SelectItem key={param.id} value={param.id}>{param.name}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex items-end">
-                            <Button
-                              onClick={() => handleAddFileParameter('download')}
-                              disabled={!selectedParameterId}
-                            >
-                              <Plus className="mr-2 h-4 w-4" /> Add
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        {subStage.downloadConfig.parameters.length === 0 ? (
-                          <div className="text-center py-4 border rounded-md">
-                            <p className="text-sm text-muted-foreground">
-                              No parameters added. Use the dropdown above to add parameters.
-                            </p>
-                          </div>
-                        ) : (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Data Type</TableHead>
-                                <TableHead>Required</TableHead>
-                                <TableHead className="w-[80px]">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {subStage.downloadConfig.parameters.map(param => (
-                                <TableRow key={param.id}>
-                                  <TableCell className="font-medium">{param.name}</TableCell>
-                                  <TableCell>{param.dataType}</TableCell>
-                                  <TableCell>
-                                    <Checkbox
-                                      checked={param.isRequired}
-                                      onCheckedChange={(checked) => {
-                                        const updatedParams = subStage.downloadConfig?.parameters.map(p => {
-                                          if (p.id === param.id) {
-                                            return { ...p, isRequired: !!checked };
-                                          }
-                                          return p;
-                                        }) || [];
-                                        handleUpdateFileConfig('download', 'parameters', updatedParams);
-                                      }}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleRemoveFileParameter('download', param.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        )}
-                      </div>
                     </>
                   )}
                 </div>
@@ -2049,6 +1881,19 @@ const WorkflowInstanceConfig: React.FC = () => {
   
   return (
     <div>
+      {/* Top Action Bar */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Workflow Instance Configuration</h2>
+        <div className="flex space-x-2">
+          <Button 
+            onClick={handleSaveWorkflowConfig}
+            disabled={!selectedApplication || !selectedWorkflowInstance || selectedStages.length === 0}
+          >
+            <Save className="mr-2 h-4 w-4" /> Save Configuration
+          </Button>
+        </div>
+      </div>
+      
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="workflow">Workflow Configuration</TabsTrigger>
@@ -2059,14 +1904,10 @@ const WorkflowInstanceConfig: React.FC = () => {
         {/* Workflow Configuration Tab */}
         <TabsContent value="workflow">
           <Card>
-            <CardHeader>
-              <CardTitle>Workflow Instance Configuration</CardTitle>
-              <CardDescription>Configure workflow instances for hierarchy nodes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
+            <CardContent className="p-4">
+              <div className="space-y-4">
                 {/* Application and Workflow Instance Selection */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="application">Application</Label>
                     <Select 
@@ -2117,12 +1958,20 @@ const WorkflowInstanceConfig: React.FC = () => {
                 ) : selectedApplication && selectedWorkflowInstance ? (
                   <>
                     {/* Split View Layout */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {/* Left Panel: Stage Selection and List */}
-                      <div className="space-y-4">
-                        <div className="border rounded-md p-4">
-                          <h3 className="text-lg font-medium mb-4">Stage Selection</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="space-y-3">
+                        <div className="border rounded-md p-3">
+                          <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-md font-medium">Stage Selection</h3>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="flex items-center">⚙️ Auto</span>
+                              <span className="flex items-center">👤 Manual</span>
+                              <span className="flex items-center">✓ Approval</span>
+                              <span className="flex items-center">🔍 Attest</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                             <div className="space-y-2">
                               <Label htmlFor="stageSelect">Available Stages</Label>
                               <Select 
@@ -2243,9 +2092,37 @@ const WorkflowInstanceConfig: React.FC = () => {
                                                 </TableCell>
                                                 <TableCell className="font-medium">{subStage.name}</TableCell>
                                                 <TableCell>
-                                                  <Badge variant={subStage.type === 'manual' ? 'outline' : 'default'}>
-                                                    {subStage.type === 'manual' ? 'Manual' : 'Automatic'}
-                                                  </Badge>
+                                                  <div className="flex flex-wrap gap-1">
+                                                    <Badge variant={subStage.type === 'manual' ? 'outline' : 'default'} 
+                                                      className="flex items-center gap-1">
+                                                      {subStage.isAuto ? '⚙️' : '👤'} 
+                                                      {subStage.type === 'manual' ? 'Manual' : 'Auto'}
+                                                    </Badge>
+                                                    
+                                                    {subStage.requiresApproval && (
+                                                      <Badge variant="secondary" className="flex items-center gap-1">
+                                                        ✓ Approval
+                                                      </Badge>
+                                                    )}
+                                                    
+                                                    {subStage.requiresAttestation && (
+                                                      <Badge variant="secondary" className="flex items-center gap-1">
+                                                        🔍 Attest
+                                                      </Badge>
+                                                    )}
+                                                    
+                                                    {subStage.isAlteryx && (
+                                                      <Badge variant="outline" className="flex items-center gap-1 border-blue-500 text-blue-500">
+                                                        🔄 Alteryx
+                                                      </Badge>
+                                                    )}
+                                                    
+                                                    {subStage.isAdhoc && (
+                                                      <Badge variant="outline" className="flex items-center gap-1 border-amber-500 text-amber-500">
+                                                        ⚡ Adhoc
+                                                      </Badge>
+                                                    )}
+                                                  </div>
                                                 </TableCell>
                                                 <TableCell>
                                                   <div className="flex items-center space-x-1">
@@ -2324,8 +2201,8 @@ const WorkflowInstanceConfig: React.FC = () => {
                       </div>
                       
                       {/* Right Panel: Sub-Stage Configuration */}
-                      <div className="border rounded-md p-4">
-                        <h3 className="text-lg font-medium mb-4">Sub-Stage Configuration</h3>
+                      <div className="border rounded-md p-3">
+                        <h3 className="text-md font-medium mb-3">Sub-Stage Configuration</h3>
                         {renderSubStageConfig()}
                       </div>
                     </div>
@@ -2341,15 +2218,7 @@ const WorkflowInstanceConfig: React.FC = () => {
                 )}
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline">Cancel</Button>
-              <Button 
-                onClick={handleSaveWorkflowConfig}
-                disabled={!selectedApplication || !selectedWorkflowInstance || selectedStages.length === 0}
-              >
-                <Save className="mr-2 h-4 w-4" /> Save Configuration
-              </Button>
-            </CardFooter>
+            {/* No footer needed since save button is at the top */}
           </Card>
         </TabsContent>
         
