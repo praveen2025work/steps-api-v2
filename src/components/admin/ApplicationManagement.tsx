@@ -306,8 +306,8 @@ const ApplicationManagement: React.FC = () => {
         cronExpression: selectedApplication.cronExpression,
         runDateOffSet: selectedApplication.runDateOffSet,
         isLockingEnabled: selectedApplication.isLockingEnabled,
-        lockingRole: selectedApplication.lockingRole,
-        rtbRole: selectedApplication.rtbRole || '',
+        lockingRole: selectedApplication.lockingRole || 'none',
+        rtbRole: selectedApplication.rtbRole || 'none',
         isRunOnWeekDayOnly: selectedApplication.isRunOnWeekDayOnly,
         useRunCalendar: selectedApplication.useRunCalendar,
         isActive: selectedApplication.isActive
@@ -321,8 +321,8 @@ const ApplicationManagement: React.FC = () => {
         cronExpression: '',
         runDateOffSet: 0,
         isLockingEnabled: false,
-        lockingRole: '',
-        rtbRole: '',
+        lockingRole: 'none',
+        rtbRole: 'none',
         isRunOnWeekDayOnly: true,
         useRunCalendar: false,
         isActive: true
@@ -349,50 +349,57 @@ const ApplicationManagement: React.FC = () => {
     setIsLoading(true);
     
     try {
+      // Process form data - convert 'none' to empty string for roles
+      const processedForm = {
+        ...applicationForm,
+        lockingRole: applicationForm.lockingRole === 'none' ? '' : applicationForm.lockingRole,
+        rtbRole: applicationForm.rtbRole === 'none' ? '' : applicationForm.rtbRole
+      };
+      
       // Simulate API response
       setTimeout(() => {
-        if (applicationForm.id) {
+        if (processedForm.id) {
           // Update existing application
           setApplications(prev => prev.map(app => 
-            app.id === applicationForm.id 
+            app.id === processedForm.id 
               ? { 
                   ...app, 
-                  name: applicationForm.name,
-                  category: applicationForm.category,
-                  serviceUrl: applicationForm.serviceUrl,
-                  description: applicationForm.description,
-                  cronExpression: applicationForm.cronExpression,
-                  runDateOffSet: applicationForm.runDateOffSet,
-                  isLockingEnabled: applicationForm.isLockingEnabled,
-                  lockingRole: applicationForm.lockingRole,
-                  rtbRole: applicationForm.rtbRole,
-                  isRunOnWeekDayOnly: applicationForm.isRunOnWeekDayOnly,
-                  useRunCalendar: applicationForm.useRunCalendar,
-                  isActive: applicationForm.isActive
+                  name: processedForm.name,
+                  category: processedForm.category,
+                  serviceUrl: processedForm.serviceUrl,
+                  description: processedForm.description,
+                  cronExpression: processedForm.cronExpression,
+                  runDateOffSet: processedForm.runDateOffSet,
+                  isLockingEnabled: processedForm.isLockingEnabled,
+                  lockingRole: processedForm.lockingRole,
+                  rtbRole: processedForm.rtbRole,
+                  isRunOnWeekDayOnly: processedForm.isRunOnWeekDayOnly,
+                  useRunCalendar: processedForm.useRunCalendar,
+                  isActive: processedForm.isActive
                 } 
               : app
           ));
           
           toast({
             title: "Application Updated",
-            description: `Application "${applicationForm.name}" has been updated successfully.`
+            description: `Application "${processedForm.name}" has been updated successfully.`
           });
         } else {
           // Add new application
           const newApplication: Application = {
             id: `app-${Date.now()}`,
-            name: applicationForm.name,
-            category: applicationForm.category,
-            serviceUrl: applicationForm.serviceUrl,
-            description: applicationForm.description,
-            cronExpression: applicationForm.cronExpression,
-            runDateOffSet: applicationForm.runDateOffSet,
-            isLockingEnabled: applicationForm.isLockingEnabled,
-            lockingRole: applicationForm.lockingRole,
-            rtbRole: applicationForm.rtbRole,
-            isRunOnWeekDayOnly: applicationForm.isRunOnWeekDayOnly,
-            useRunCalendar: applicationForm.useRunCalendar,
-            isActive: applicationForm.isActive,
+            name: processedForm.name,
+            category: processedForm.category,
+            serviceUrl: processedForm.serviceUrl,
+            description: processedForm.description,
+            cronExpression: processedForm.cronExpression,
+            runDateOffSet: processedForm.runDateOffSet,
+            isLockingEnabled: processedForm.isLockingEnabled,
+            lockingRole: processedForm.lockingRole,
+            rtbRole: processedForm.rtbRole,
+            isRunOnWeekDayOnly: processedForm.isRunOnWeekDayOnly,
+            useRunCalendar: processedForm.useRunCalendar,
+            isActive: processedForm.isActive,
             createdOn: new Date().toLocaleDateString()
           };
           
@@ -565,7 +572,7 @@ const ApplicationManagement: React.FC = () => {
                       <SelectValue placeholder="Select a locking role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {roles.map((role) => (
                         <SelectItem key={role.id} value={role.name}>
                           {role.name}
@@ -586,7 +593,7 @@ const ApplicationManagement: React.FC = () => {
                     <SelectValue placeholder="Select an RTB role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {roles.map((role) => (
                       <SelectItem key={role.id} value={role.name}>
                         {role.name}
