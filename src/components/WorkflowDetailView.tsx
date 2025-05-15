@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { toast, showSuccessToast, showErrorToast, showInfoToast } from '@/lib/toast';
 import { 
   FileText, 
   Lock, 
@@ -127,11 +128,18 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     setLastRefreshed(new Date());
     setCountdown(15);
     // In a real application, this would fetch fresh data
+    showSuccessToast("Workflow data refreshed successfully");
   };
 
   // Toggle workflow lock state
   const toggleLock = () => {
-    setIsLocked(prev => !prev);
+    const newLockState = !isLocked;
+    setIsLocked(newLockState);
+    if (newLockState) {
+      showInfoToast("Workflow locked");
+    } else {
+      showWarningToast("Workflow unlocked - changes can now be made");
+    }
   };
 
   // Format seconds since last refresh
@@ -871,19 +879,59 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
                       {/* Action Buttons */}
                       <div className="flex gap-2 mt-4">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            showSuccessToast(`Started ${subStage.name}`);
+                          }}
+                          title="Start"
+                        >
                           <PlayCircle className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            showInfoToast(`Refreshing ${subStage.name}`);
+                          }}
+                          title="Refresh"
+                        >
                           <RefreshCw className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            showSuccessToast(`Completed ${subStage.name}`);
+                          }}
+                          title="Complete"
+                        >
                           <ArrowRightCircle className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            showWarningToast(`Skipped ${subStage.name}`);
+                          }}
+                          title="Skip"
+                        >
                           <SkipForward className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            showInfoToast(`Notification sent for ${subStage.name}`);
+                          }}
+                          title="Send Notification"
+                        >
                           <Mail className="h-4 w-4" />
                         </Button>
                       </div>
