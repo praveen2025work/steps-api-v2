@@ -1592,7 +1592,7 @@ const MetadataManagement: React.FC = () => {
                       <Label className="text-right pt-2">Parameters</Label>
                       <div className="col-span-3">
                         <p className="text-sm text-muted-foreground mb-2">
-                          Select parameters to use in this template. Use {{'{{'}}parameterName{{'}}'}} syntax in the body.
+                          Select parameters to use in this template. Use &#123;&#123;parameterName&#125;&#125; syntax in the body.
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {parameters.map((param) => (
