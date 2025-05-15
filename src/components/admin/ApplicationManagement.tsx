@@ -184,25 +184,6 @@ const ApplicationManagement: React.FC = () => {
       
       // For now, we'll simulate the API response with our sample data
       setTimeout(() => {
-        // Transform API response to our application model
-        // const transformedData: Application[] = data.map(app => ({
-        //   id: app.applicationId.toString(),
-        //   name: app.name,
-        //   category: app.category || '',
-        //   serviceUrl: app.serviceUrl || '',
-        //   description: app.description || '',
-        //   cronExpression: app.cronExpression || '',
-        //   runDateOffSet: app.runDateOffSet || 0,
-        //   isLockingEnabled: app.isLockingEnabled || false,
-        //   lockingRole: app.lockingRole || 0,
-        //   isRunOnWeekDayOnly: app.isRunOnWeekDayOnly || false,
-        //   entitlementMapping: app.entitlementMapping || 0,
-        //   useRunCalendar: app.useRunCalendar || false,
-        //   isActive: app.isActive || false,
-        //   createdOn: app.createdOn || new Date().toLocaleDateString()
-        // }));
-        
-        // setApplications(transformedData);
         setIsLoading(false);
       }, 500);
     } catch (error) {
@@ -234,8 +215,8 @@ const ApplicationManagement: React.FC = () => {
         runDateOffSet: selectedApplication.runDateOffSet,
         isLockingEnabled: selectedApplication.isLockingEnabled,
         lockingRole: selectedApplication.lockingRole,
+        rtbRole: selectedApplication.rtbRole || '',
         isRunOnWeekDayOnly: selectedApplication.isRunOnWeekDayOnly,
-        entitlementMapping: selectedApplication.entitlementMapping,
         useRunCalendar: selectedApplication.useRunCalendar,
         isActive: selectedApplication.isActive
       });
@@ -248,9 +229,9 @@ const ApplicationManagement: React.FC = () => {
         cronExpression: '',
         runDateOffSet: 0,
         isLockingEnabled: false,
-        lockingRole: 0,
+        lockingRole: '',
+        rtbRole: '',
         isRunOnWeekDayOnly: true,
-        entitlementMapping: 0,
         useRunCalendar: false,
         isActive: true
       });
@@ -276,37 +257,6 @@ const ApplicationManagement: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // This is a mock API call - in a real implementation, this would be a fetch call
-      // const url = applicationForm.id 
-      //   ? `http://portal-workflowcore-api-uat.com/api/WF/UpdateApplication`
-      //   : `http://portal-workflowcore-api-uat.com/api/WF/AddApplication`;
-      
-      // const response = await fetch(url, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     applicationId: applicationForm.id ? parseInt(applicationForm.id) : 0,
-      //     name: applicationForm.name,
-      //     category: applicationForm.category,
-      //     serviceUrl: applicationForm.serviceUrl,
-      //     description: applicationForm.description,
-      //     cronExpression: applicationForm.cronExpression,
-      //     runDateOffSet: applicationForm.runDateOffSet,
-      //     isLockingEnabled: applicationForm.isLockingEnabled,
-      //     lockingRole: applicationForm.lockingRole,
-      //     isRunOnWeekDayOnly: applicationForm.isRunOnWeekDayOnly,
-      //     entitlementMapping: applicationForm.entitlementMapping,
-      //     useRunCalendar: applicationForm.useRunCalendar,
-      //     isActive: applicationForm.isActive
-      //   }),
-      // });
-      
-      // if (!response.ok) {
-      //   throw new Error('Failed to save application');
-      // }
-      
       // Simulate API response
       setTimeout(() => {
         if (applicationForm.id) {
@@ -323,8 +273,8 @@ const ApplicationManagement: React.FC = () => {
                   runDateOffSet: applicationForm.runDateOffSet,
                   isLockingEnabled: applicationForm.isLockingEnabled,
                   lockingRole: applicationForm.lockingRole,
+                  rtbRole: applicationForm.rtbRole,
                   isRunOnWeekDayOnly: applicationForm.isRunOnWeekDayOnly,
-                  entitlementMapping: applicationForm.entitlementMapping,
                   useRunCalendar: applicationForm.useRunCalendar,
                   isActive: applicationForm.isActive
                 } 
@@ -347,8 +297,8 @@ const ApplicationManagement: React.FC = () => {
             runDateOffSet: applicationForm.runDateOffSet,
             isLockingEnabled: applicationForm.isLockingEnabled,
             lockingRole: applicationForm.lockingRole,
+            rtbRole: applicationForm.rtbRole,
             isRunOnWeekDayOnly: applicationForm.isRunOnWeekDayOnly,
-            entitlementMapping: applicationForm.entitlementMapping,
             useRunCalendar: applicationForm.useRunCalendar,
             isActive: applicationForm.isActive,
             createdOn: new Date().toLocaleDateString()
@@ -381,15 +331,6 @@ const ApplicationManagement: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // This is a mock API call - in a real implementation, this would be a fetch call
-      // const response = await fetch(`http://portal-workflowcore-api-uat.com/api/WF/DeleteApplication/${applicationToDelete}`, {
-      //   method: 'DELETE',
-      // });
-      
-      // if (!response.ok) {
-      //   throw new Error('Failed to delete application');
-      // }
-      
       // Simulate API response
       setTimeout(() => {
         setApplications(prev => prev.filter(app => app.id !== applicationToDelete));
@@ -753,24 +694,18 @@ const ApplicationManagement: React.FC = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Run on Weekdays Only</h3>
-                  <p>{selectedApplication.isRunOnWeekDayOnly ? 'Yes' : 'No'}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Use Run Calendar</h3>
-                  <p>{selectedApplication.useRunCalendar ? 'Yes' : 'No'}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Locking Role</h3>
-                  <p>{selectedApplication.lockingRole || 'N/A'}</p>
-                </div>
-                <div>
                   <h3 className="text-sm font-medium text-muted-foreground">RTB Role</h3>
                   <p>{selectedApplication.rtbRole || 'N/A'}</p>
                 </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Run on Weekdays Only</h3>
+                  <p>{selectedApplication.isRunOnWeekDayOnly ? 'Yes' : 'No'}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Use Run Calendar</h3>
+                <p>{selectedApplication.useRunCalendar ? 'Yes' : 'No'}</p>
               </div>
             </div>
           )}
