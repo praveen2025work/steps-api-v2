@@ -187,6 +187,19 @@ export interface StageConfig {
   updatedOn?: string;
 }
 
+import {
+  WorkflowStage,
+  WorkflowSubstage,
+  WorkflowParam,
+  WorkflowAttest,
+  WorkflowEmail,
+  WorkflowProcess,
+  WorkflowProcessAttest,
+  WorkflowProcessDep,
+  WorkflowProcessFile,
+  WorkflowProcessParam
+} from './db-types';
+
 // Database-aligned types for metadata management
 export interface DBStage {
   stageId: number;
@@ -196,6 +209,7 @@ export interface DBStage {
   isActive: boolean;
   updatedBy?: string;
   updatedOn?: string;
+  appId?: number;
 }
 
 export interface DBSubStage {
@@ -214,6 +228,15 @@ export interface DBSubStage {
   order: number;
   updatedBy?: string;
   updatedOn?: string;
+  componentName?: string;
+  serviceLine?: string;
+  defaultStage?: number;
+  paramMapping?: string;
+  attestationMapping?: string;
+  entitlementMapping?: number;
+  templateId?: number;
+  sendEmailAtStart?: boolean;
+  followUp?: boolean;
 }
 
 export interface DBParameter {
@@ -228,6 +251,7 @@ export interface DBParameter {
   updatedBy?: string;
   updatedOn?: string;
   ignore?: boolean;
+  paramType?: string;
 }
 
 export interface DBAttestation {
@@ -238,6 +262,7 @@ export interface DBAttestation {
   isActive: boolean;
   updatedBy?: string;
   updatedOn?: string;
+  type?: string;
 }
 
 export interface DBEmailTemplate {
@@ -250,6 +275,60 @@ export interface DBEmailTemplate {
   updatedBy?: string;
   updatedOn?: string;
   parameters?: DBParameter[];
+  isHtml?: boolean;
+  fromEmailList?: string;
+}
+
+// Process-related types
+export interface DBWorkflowProcess {
+  workflowProcessId: number;
+  workflowId: number;
+  substageId: number;
+  status: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  updatedBy?: string;
+  updatedOn?: Date | string;
+  expectedEndDate?: Date | string;
+  comments?: string;
+  dependencies?: DBWorkflowProcessDep[];
+  parameters?: DBWorkflowProcessParam[];
+  attestations?: DBWorkflowProcessAttest[];
+  files?: DBWorkflowProcessFile[];
+}
+
+export interface DBWorkflowProcessDep {
+  workflowProcessId: number;
+  dependencySubstageId: number;
+  status: string;
+  updatedBy?: string;
+  updatedOn?: Date | string;
+}
+
+export interface DBWorkflowProcessParam {
+  workflowProcessId: number;
+  name: string;
+  value?: string;
+}
+
+export interface DBWorkflowProcessAttest {
+  workflowProcessId: number;
+  attestationId: number;
+  status: string;
+  attestedBy?: string;
+  attestedOn?: Date | string;
+}
+
+export interface DBWorkflowProcessFile {
+  workflowProcessId: number;
+  name: string;
+  paramType: string;
+  value?: string;
+  required?: string;
+  status: string;
+  description?: string;
+  expectedValue?: string;
+  createdOn?: Date | string;
 }
 
 // Workflow Instance Config Types

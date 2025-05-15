@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Edit, Trash2, ArrowRight, ArrowDown, Link, LinkOff, Save, FileUp, FileDown } from 'lucide-react';
-import { StageConfig, SubStageConfig, Parameter, WorkflowNodeConfig } from '@/types/workflow-types';
+import { Plus, Edit, Trash2, ArrowRight, ArrowDown, Link, LinkOff, Save, FileUp, FileDown, AlertCircle } from 'lucide-react';
+import { 
+  StageConfig, 
+  SubStageConfig, 
+  Parameter, 
+  WorkflowNodeConfig,
+  DBWorkflowProcess,
+  DBWorkflowProcessDep,
+  DBWorkflowProcessParam
+} from '@/types/workflow-types';
 
 // Sample data for hierarchy nodes
 const sampleHierarchyNodes = [
@@ -108,6 +116,7 @@ const sampleWorkflowConfig: WorkflowNodeConfig = {
 interface ProcessDependency {
   sourceId: string;
   targetId: string;
+  status?: string;
 }
 
 // Extended SubStageConfig with dependencies
@@ -124,6 +133,8 @@ const WorkflowInstanceConfig: React.FC = () => {
   
   // Process dependencies
   const [dependencies, setDependencies] = useState<ProcessDependency[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Dialog states
   const [addProcessDialogOpen, setAddProcessDialogOpen] = useState(false);
@@ -135,17 +146,50 @@ const WorkflowInstanceConfig: React.FC = () => {
   const [selectedProcess, setSelectedProcess] = useState<SubStageConfig | null>(null);
   const [selectedDependency, setSelectedDependency] = useState<{source: SubStageConfig, availableTargets: SubStageConfig[]} | null>(null);
   
+  // Parameter values state
+  const [parameterValues, setParameterValues] = useState<{[processId: string]: {[paramId: string]: string}}>({});
+  
   // Load workflow configuration
   const loadWorkflowConfig = () => {
-    // In a real application, this would fetch from an API
-    setWorkflowConfig(sampleWorkflowConfig);
-    
-    // Set up some sample dependencies
-    setDependencies([
-      { sourceId: '1-2', targetId: '1-1' }, // Document Upload depends on Initial Data Entry
-      { sourceId: '2-1', targetId: '1-2' }  // Manager Review depends on Document Upload
-    ]);
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // In a real application, this would fetch from an API
+      setWorkflowConfig(sampleWorkflowConfig);
+      
+      // Set up some sample dependencies
+      setDependencies([
+        { sourceId: '1-2', targetId: '1-1', status: 'ACTIVE' }, // Document Upload depends on Initial Data Entry
+        { sourceId: '2-1', targetId: '1-2', status: 'ACTIVE' }  // Manager Review depends on Document Upload
+      ]);
+      
+      // Initialize parameter values
+      const initialValues: {[processId: string]: {[paramId: string]: string}} = {};
+      sampleStages.forEach(stage => {
+        stage.subStages.forEach(subStage => {
+          initialValues[subStage.id] = {};
+          subStage.parameters.forEach(param => {
+            initialValues[subStage.id][param.id] = param.value || '';
+          });
+        });
+      });
+      setParameterValues(initialValues);
+    } catch (err) {
+      setError("Failed to load workflow configuration");
+      console.error("Error loading workflow configuration:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
+  
+  // Initialize with sample data
+  useEffect(() => {
+    // Only load sample data if no configuration is loaded yet
+    if (!workflowConfig && !isLoading) {
+      loadWorkflowConfig();
+    }
+  }, []);
   
   // Check if a process has dependencies
   const hasDependendencies = (processId: string) => {
@@ -196,7 +240,11 @@ const WorkflowInstanceConfig: React.FC = () => {
   
   // Add a new dependency
   const addDependency = (sourceId: string, targetId: string) => {
-    setDependencies([...dependencies, { sourceId, targetId }]);
+    // Check if dependency already exists
+    if (dependencies.some(dep => dep.sourceId === sourceId && dep.targetId === targetId)) {
+      return;
+    }
+    setDependencies([...dependencies, { sourceId, targetId, status: 'ACTIVE' }]);
   };
   
   // Remove a dependency
@@ -204,6 +252,32 @@ const WorkflowInstanceConfig: React.FC = () => {
     setDependencies(dependencies.filter(
       dep => !(dep.sourceId === sourceId && dep.targetId === targetId)
     ));
+  };
+  
+  // Update parameter value
+  const updateParameterValue = (processId: string, paramId: string, value: string) => {
+    setParameterValues(prev => ({
+      ...prev,
+      [processId]: {
+        ...prev[processId],
+        [paramId]: value
+      }
+    }));
+  };
+  
+  // Save all parameter values
+  const saveAllParameterValues = () => {
+    // In a real application, this would send the values to an API
+    console.log("Saving parameter values:", parameterValues);
+    // Show success message
+    setError(null);
+    alert("Parameter values saved successfully");
+  };
+  
+  // Handle errors safely
+  const handleError = (error: any) => {
+    console.error("An error occurred:", error);
+    setError(error?.message || "An unexpected error occurred");
   };
   
   return (
@@ -267,7 +341,18 @@ const WorkflowInstanceConfig: React.FC = () => {
                 </div>
               </div>
               
-              {workflowConfig ? (
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-4">
+                  <p className="font-medium">Error</p>
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+              
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading workflow configuration...</p>
+                </div>
+              ) : workflowConfig ? (
                 <div className="space-y-6">
                   <h3 className="text-lg font-medium">
                     Workflow for {workflowConfig.nodeName} - {sampleApplications.find(a => a.id === workflowConfig.applicationId)?.name}
@@ -380,6 +465,7 @@ const WorkflowInstanceConfig: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-center py-8">
+                  <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
                   <p className="text-muted-foreground mb-4">No workflow configuration loaded</p>
                   <Button onClick={loadWorkflowConfig}>Load Sample Configuration</Button>
                 </div>
@@ -484,6 +570,8 @@ const WorkflowInstanceConfig: React.FC = () => {
                                 id={`param-${param.id}`} 
                                 placeholder={`Enter value for ${param.name}`}
                                 type={param.dataType === 'number' ? 'number' : 'text'}
+                                value={parameterValues[selectedProcess.id]?.[param.id] || ''}
+                                onChange={(e) => updateParameterValue(selectedProcess.id, param.id, e.target.value)}
                               />
                               <p className="text-xs text-muted-foreground mt-1">
                                 Type: {param.dataType}
@@ -500,7 +588,7 @@ const WorkflowInstanceConfig: React.FC = () => {
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setParameterValueDialogOpen(false)}>Cancel</Button>
-                    <Button>Save Values</Button>
+                    <Button onClick={() => setParameterValueDialogOpen(false)}>Save Values</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -520,7 +608,18 @@ const WorkflowInstanceConfig: React.FC = () => {
                 This tab allows you to configure parameter values for all processes in the workflow at once.
               </p>
               
-              {workflowConfig ? (
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-4">
+                  <p className="font-medium">Error</p>
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+              
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading workflow configuration...</p>
+                </div>
+              ) : workflowConfig ? (
                 <div className="space-y-6">
                   {workflowConfig.stages.map(stage => (
                     <Card key={stage.id} className="mb-4">
@@ -541,6 +640,8 @@ const WorkflowInstanceConfig: React.FC = () => {
                                         id={`param-${process.id}-${param.id}`} 
                                         placeholder={`Enter value for ${param.name}`}
                                         type={param.dataType === 'number' ? 'number' : 'text'}
+                                        value={parameterValues[process.id]?.[param.id] || ''}
+                                        onChange={(e) => updateParameterValue(process.id, param.id, e.target.value)}
                                       />
                                       <p className="text-xs text-muted-foreground mt-1">
                                         Type: {param.dataType}
@@ -561,11 +662,12 @@ const WorkflowInstanceConfig: React.FC = () => {
                   ))}
                   
                   <div className="flex justify-end">
-                    <Button>Save All Parameter Values</Button>
+                    <Button onClick={saveAllParameterValues}>Save All Parameter Values</Button>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-8">
+                  <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
                   <p className="text-muted-foreground mb-4">No workflow configuration loaded</p>
                   <Button onClick={loadWorkflowConfig}>Load Sample Configuration</Button>
                 </div>
@@ -582,6 +684,13 @@ const WorkflowInstanceConfig: React.FC = () => {
               <CardDescription>Save and load workflow templates</CardDescription>
             </CardHeader>
             <CardContent>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-4">
+                  <p className="font-medium">Error</p>
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+              
               <div className="flex justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-medium mb-2">Save Current Configuration as Template</h3>
