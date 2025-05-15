@@ -1600,49 +1600,123 @@ const WorkflowInstanceConfig: React.FC = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="font-medium">Dependencies</h4>
-                      {subStage.dependencies.length > 0 && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <ArrowRight className="h-3 w-3" />
-                          {subStage.dependencies.length} {subStage.dependencies.length === 1 ? 'dependency' : 'dependencies'}
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {subStage.dependencies.length > 0 && (
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <ArrowRight className="h-3 w-3" />
+                            {subStage.dependencies.length} {subStage.dependencies.length === 1 ? 'dependency' : 'dependencies'}
+                          </Badge>
+                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={() => {
+                            const dependenciesPanel = document.getElementById('dependencies-panel');
+                            if (dependenciesPanel) {
+                              dependenciesPanel.classList.toggle('hidden');
+                            }
+                          }}
+                        >
+                          <Info className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Show Dependencies</span>
+                        </Button>
+                      </div>
                     </div>
                     
-                    {subStage.dependencies.length === 0 ? (
-                      <div className="text-center py-4 border rounded-md">
-                        <p className="text-sm text-muted-foreground">
-                          No dependencies configured. Use the dropdown in the stages list to add dependencies.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="border rounded-md overflow-hidden">
-                        <div className="bg-gray-50 p-2 border-b">
-                          <div className="text-xs font-medium text-muted-foreground">This sub-stage depends on:</div>
+                    <div id="dependencies-panel" className="hidden">
+                      {subStage.dependencies.length === 0 ? (
+                        <div className="text-center py-4 border rounded-md">
+                          <p className="text-sm text-muted-foreground">
+                            No dependencies configured. Select dependencies from the list below.
+                          </p>
                         </div>
-                        <div className="divide-y">
-                          {subStage.dependencies.map((dep, index) => (
-                            <div key={index} className="p-2 flex items-center justify-between hover:bg-gray-50">
-                              <div className="flex items-center gap-2">
-                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <div className="font-medium text-sm">{dep.name}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Stage: {selectedStages.find(s => s.id === dep.stageId)?.name}
+                      ) : (
+                        <div className="border rounded-md overflow-hidden mb-4">
+                          <div className="bg-gray-50 p-2 border-b">
+                            <div className="text-xs font-medium text-muted-foreground">This sub-stage depends on:</div>
+                          </div>
+                          <div className="divide-y">
+                            {subStage.dependencies.map((dep, index) => (
+                              <div key={index} className="p-2 flex items-center justify-between hover:bg-gray-50">
+                                <div className="flex items-center gap-2">
+                                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <div className="font-medium text-sm">{dep.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Stage: {selectedStages.find(s => s.id === dep.stageId)?.name}
+                                    </div>
                                   </div>
                                 </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveDependency(selectedSubStage.stageId, selectedSubStage.subStageId, index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveDependency(selectedSubStage.stageId, selectedSubStage.subStageId, index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="border rounded-md p-3">
+                        <h5 className="text-sm font-medium mb-2">Select Dependencies</h5>
+                        <div className="space-y-3">
+                          {getPreviousSubStages(
+                            selectedStages.findIndex(s => s.id === selectedSubStage.stageId),
+                            selectedStages.find(s => s.id === selectedSubStage.stageId)?.subStages.findIndex(ss => ss.id === selectedSubStage.subStageId) || 0
+                          ).map(prevStage => (
+                            <div key={prevStage.stageId} className="space-y-2">
+                              <div className="text-sm font-medium">{prevStage.stageName}</div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {prevStage.subStages.map(prevSubStage => {
+                                  const isSelected = subStage.dependencies.some(
+                                    dep => dep.stageId === prevStage.stageId && dep.subStageId === prevSubStage.id
+                                  );
+                                  return (
+                                    <div key={prevSubStage.id} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`dep-${prevStage.stageId}-${prevSubStage.id}`}
+                                        checked={isSelected}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            handleAddDependency(
+                                              selectedSubStage.stageId,
+                                              selectedSubStage.subStageId,
+                                              prevStage.stageId,
+                                              prevSubStage.id
+                                            );
+                                          } else {
+                                            const depIndex = subStage.dependencies.findIndex(
+                                              dep => dep.stageId === prevStage.stageId && dep.subStageId === prevSubStage.id
+                                            );
+                                            if (depIndex !== -1) {
+                                              handleRemoveDependency(
+                                                selectedSubStage.stageId,
+                                                selectedSubStage.subStageId,
+                                                depIndex
+                                              );
+                                            }
+                                          }
+                                        }}
+                                      />
+                                      <Label 
+                                        htmlFor={`dep-${prevStage.stageId}-${prevSubStage.id}`}
+                                        className="text-sm"
+                                      >
+                                        {prevSubStage.name}
+                                      </Label>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                           ))}
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -1746,13 +1820,10 @@ const WorkflowInstanceConfig: React.FC = () => {
                   
                   {subStage.requiresUpload && subStage.uploadConfig && (
                     <>
-                      {/* Sample file cards */}
+                      {/* File cards */}
                       <div className="border rounded-md p-3 bg-sky-50/30">
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="font-medium text-sm">Configured Files</h4>
-                          <Button variant="outline" size="sm" className="h-7">
-                            <Plus className="h-3.5 w-3.5 mr-1" /> Add File
-                          </Button>
                         </div>
                         
                         <FileConfigGrid 
@@ -1763,7 +1834,12 @@ const WorkflowInstanceConfig: React.FC = () => {
                               fileType: '.xlsx',
                               isValid: true,
                               description: 'Monthly financial report with all transactions',
-                              onEdit: () => {},
+                              onEdit: () => {
+                                toast({
+                                  title: "Edit File",
+                                  description: "Editing Monthly Report file configuration"
+                                });
+                              },
                               onRemove: () => {}
                             },
                             {
@@ -1772,7 +1848,12 @@ const WorkflowInstanceConfig: React.FC = () => {
                               fileType: '.pdf',
                               isValid: true,
                               description: 'Any supporting documentation for the report',
-                              onEdit: () => {},
+                              onEdit: () => {
+                                toast({
+                                  title: "Edit File",
+                                  description: "Editing Supporting Documentation file configuration"
+                                });
+                              },
                               onRemove: () => {}
                             }
                           ]}
@@ -1802,25 +1883,13 @@ const WorkflowInstanceConfig: React.FC = () => {
                       
                       <div className="space-y-2">
                         <h4 className="font-medium">Validation Settings</h4>
-                        <div className="space-y-2">
-                          <Label htmlFor="uploadAllowedExtensions">Allowed Extensions</Label>
-                          <Input
-                            id="uploadAllowedExtensions"
-                            value={subStage.uploadConfig.validationSettings?.allowedExtensions.join(', ') || ''}
-                            onChange={(e) => {
-                              const extensions = e.target.value.split(',').map(ext => ext.trim());
-                              handleUpdateFileConfig('upload', 'allowedExtensions', extensions, true);
-                            }}
-                            placeholder=".xlsx, .csv, .pdf"
-                          />
-                        </div>
                         <div className="flex items-center space-x-2 mt-2">
                           <Checkbox
                             id="uploadRequireValidation"
                             checked={subStage.uploadConfig.validationSettings?.requireValidation || false}
                             onCheckedChange={(checked) => handleUpdateFileConfig('upload', 'requireValidation', !!checked, true)}
                           />
-                          <Label htmlFor="uploadRequireValidation">Require validation</Label>
+                          <Label htmlFor="uploadRequireValidation">Validate</Label>
                         </div>
                       </div>
                       
@@ -1874,13 +1943,10 @@ const WorkflowInstanceConfig: React.FC = () => {
                   
                   {subStage.requiresDownload && subStage.downloadConfig && (
                     <>
-                      {/* Sample file cards */}
+                      {/* File cards */}
                       <div className="border rounded-md p-3 bg-emerald-50/30">
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="font-medium text-sm">Available Downloads</h4>
-                          <Button variant="outline" size="sm" className="h-7">
-                            <Plus className="h-3.5 w-3.5 mr-1" /> Add File
-                          </Button>
                         </div>
                         
                         <FileConfigGrid 
@@ -1890,7 +1956,12 @@ const WorkflowInstanceConfig: React.FC = () => {
                               fileName: 'Generated Report',
                               fileType: '.xlsx',
                               description: 'System generated financial report',
-                              onEdit: () => {},
+                              onEdit: () => {
+                                toast({
+                                  title: "Edit File",
+                                  description: "Editing Generated Report file configuration"
+                                });
+                              },
                               onRemove: () => {}
                             },
                             {
@@ -1898,7 +1969,12 @@ const WorkflowInstanceConfig: React.FC = () => {
                               fileName: 'Compliance Certificate',
                               fileType: '.pdf',
                               description: 'Certificate of compliance with regulations',
-                              onEdit: () => {},
+                              onEdit: () => {
+                                toast({
+                                  title: "Edit File",
+                                  description: "Editing Compliance Certificate file configuration"
+                                });
+                              },
                               onRemove: () => {}
                             }
                           ]}
@@ -1922,22 +1998,6 @@ const WorkflowInstanceConfig: React.FC = () => {
                             value={subStage.downloadConfig.fileNamingConvention || ''}
                             onChange={(e) => handleUpdateFileConfig('download', 'fileNamingConvention', e.target.value)}
                             placeholder="e.g., {date}_{name}_{id}"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <h4 className="font-medium">File Settings</h4>
-                        <div className="space-y-2">
-                          <Label htmlFor="downloadAllowedExtensions">File Extensions</Label>
-                          <Input
-                            id="downloadAllowedExtensions"
-                            value={subStage.downloadConfig.validationSettings?.allowedExtensions.join(', ') || ''}
-                            onChange={(e) => {
-                              const extensions = e.target.value.split(',').map(ext => ext.trim());
-                              handleUpdateFileConfig('download', 'allowedExtensions', extensions, true);
-                            }}
-                            placeholder=".xlsx, .csv, .pdf"
                           />
                         </div>
                       </div>
@@ -1986,10 +2046,9 @@ const WorkflowInstanceConfig: React.FC = () => {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="workflow">Workflow Configuration</TabsTrigger>
           <TabsTrigger value="parameters">Parameter Values</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
         </TabsList>
         
         {/* Workflow Configuration Tab */}
@@ -2321,11 +2380,13 @@ const WorkflowInstanceConfig: React.FC = () => {
                       </div>
                       
                       {/* Right Panel: Sub-Stage Configuration */}
-                      <div className="border rounded-md p-3 relative">
-                        <h3 className="text-md font-medium mb-3">Sub-Stage Configuration</h3>
-                        <ScrollArea className="h-[calc(100vh-300px)]">
-                          {renderSubStageConfig()}
-                        </ScrollArea>
+                      <div className="relative">
+                        <div className="border rounded-md p-3 sticky top-4">
+                          <h3 className="text-md font-medium mb-3">Sub-Stage Configuration</h3>
+                          <ScrollArea className="h-[calc(100vh-300px)]">
+                            {renderSubStageConfig()}
+                          </ScrollArea>
+                        </div>
                       </div>
                     </div>
                   </>
@@ -2372,9 +2433,19 @@ const WorkflowInstanceConfig: React.FC = () => {
                     </div>
                     
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Global Parameters</CardTitle>
-                        <CardDescription>Parameters defined at the application level</CardDescription>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div>
+                          <CardTitle className="text-base">Global Parameters</CardTitle>
+                          <CardDescription>Parameters defined at the application level</CardDescription>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button size="sm" variant="outline">
+                            <Plus className="h-4 w-4 mr-1" /> Add Parameter
+                          </Button>
+                          <Button size="sm">
+                            <Save className="h-4 w-4 mr-1" /> Save Parameters
+                          </Button>
+                        </div>
                       </CardHeader>
                       <CardContent>
                         {globalParameterValues.length === 0 ? (
@@ -2391,6 +2462,7 @@ const WorkflowInstanceConfig: React.FC = () => {
                                 <TableHead>Data Type</TableHead>
                                 <TableHead>Required</TableHead>
                                 <TableHead>Value</TableHead>
+                                <TableHead className="w-[100px]">Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -2413,6 +2485,11 @@ const WorkflowInstanceConfig: React.FC = () => {
                                       onChange={(e) => handleUpdateGlobalParameter(param.id, e.target.value)}
                                       className="w-full"
                                     />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button size="sm" variant="ghost">
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -2521,123 +2598,7 @@ const WorkflowInstanceConfig: React.FC = () => {
           </Card>
         </TabsContent>
         
-        {/* Templates Tab */}
-        <TabsContent value="templates">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workflow Templates</CardTitle>
-              <CardDescription>Save and load workflow templates</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="flex items-center space-x-2">
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Save your current workflow configuration as a template or load an existing template.
-                  </p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Save as Template</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="templateName">Template Name</Label>
-                          <Input id="templateName" placeholder="Enter template name" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="templateDescription">Description</Label>
-                          <Input id="templateDescription" placeholder="Enter template description" />
-                        </div>
-                        <Button className="w-full">
-                          <Save className="mr-2 h-4 w-4" /> Save Template
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Load Template</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="templateSelect">Select Template</Label>
-                          <Select>
-                            <SelectTrigger id="templateSelect">
-                              <SelectValue placeholder="Select a template" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="template1">Credit Risk Assessment Template</SelectItem>
-                              <SelectItem value="template2">Loan Approval Template</SelectItem>
-                              <SelectItem value="template3">Regulatory Reporting Template</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button className="w-full">
-                          Load Template
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                <div className="border rounded-md p-4">
-                  <h3 className="text-lg font-medium mb-4">Saved Templates</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Application</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium">Credit Risk Assessment Template</TableCell>
-                        <TableCell>Standard template for credit risk assessment</TableCell>
-                        <TableCell>2025-04-01</TableCell>
-                        <TableCell>Credit Risk Assessment</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Loan Approval Template</TableCell>
-                        <TableCell>Standard template for loan approval process</TableCell>
-                        <TableCell>2025-03-15</TableCell>
-                        <TableCell>Loan Approval</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
       </Tabs>
     </div>
   );
