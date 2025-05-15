@@ -356,6 +356,7 @@ interface ConfigSubStage {
   description?: string;
   type: 'manual' | 'auto';
   order: number;
+  sequence?: number; // Global sequence number across all stages
   parameters: ConfigParameter[];
   dependencies: ConfigDependency[];
   isActive: boolean;
@@ -436,6 +437,27 @@ const WorkflowInstanceConfig: React.FC = () => {
     setAllSubStages(allSubStages);
   }, [availableStages]);
   
+  // Function to update sequence numbers for all sub-stages across all stages
+  const updateSequenceNumbers = (stages: ConfigStage[]) => {
+    let sequenceCounter = 1;
+    
+    const updatedStages = stages.map(stage => {
+      const updatedSubStages = stage.subStages.map(subStage => {
+        return {
+          ...subStage,
+          sequence: sequenceCounter++
+        };
+      });
+      
+      return {
+        ...stage,
+        subStages: updatedSubStages
+      };
+    });
+    
+    return updatedStages;
+  };
+  
   // Effect to load workflow configuration when workflow instance is selected
   useEffect(() => {
     if (selectedWorkflowInstance) {
@@ -472,8 +494,14 @@ const WorkflowInstanceConfig: React.FC = () => {
           }))
         };
         
-        setWorkflowConfig(sampleConfig);
-        setSelectedStages(sampleConfig.stages);
+        // Update sequence numbers
+        const stagesWithSequence = updateSequenceNumbers(sampleConfig.stages);
+        
+        setWorkflowConfig({
+          ...sampleConfig,
+          stages: stagesWithSequence
+        });
+        setSelectedStages(stagesWithSequence);
         setIsLoading(false);
       }, 1000);
     } else {
@@ -577,7 +605,10 @@ const WorkflowInstanceConfig: React.FC = () => {
       stage.order = index + 1;
     });
     
-    setSelectedStages(newStages);
+    // Update sequence numbers
+    const updatedStages = updateSequenceNumbers(newStages);
+    
+    setSelectedStages(updatedStages);
   };
   
   // Handler for moving a stage down in the order
@@ -595,7 +626,77 @@ const WorkflowInstanceConfig: React.FC = () => {
       stage.order = index + 1;
     });
     
-    setSelectedStages(newStages);
+    // Update sequence numbers
+    const updatedStages = updateSequenceNumbers(newStages);
+    
+    setSelectedStages(updatedStages);
+  };
+  
+  // Handler for moving a sub-stage up in the order
+  const handleMoveSubStageUp = (stageId: string, subStageId: string) => {
+    const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
+    const subStageIndex = selectedStages[stageIndex].subStages.findIndex(subStage => subStage.id === subStageId);
+    
+    if (subStageIndex <= 0) return;
+    
+    const newStages = [...selectedStages];
+    const subStages = [...newStages[stageIndex].subStages];
+    
+    // Swap sub-stages
+    const temp = subStages[subStageIndex];
+    subStages[subStageIndex] = subStages[subStageIndex - 1];
+    subStages[subStageIndex - 1] = temp;
+    
+    // Update order property
+    subStages.forEach((subStage, index) => {
+      subStage.order = index + 1;
+    });
+    
+    newStages[stageIndex].subStages = subStages;
+    
+    // Update sequence numbers
+    const updatedStages = updateSequenceNumbers(newStages);
+    
+    setSelectedStages(updatedStages);
+    
+    toast({
+      title: "Sub-Stage Moved",
+      description: "The sub-stage has been moved up in the sequence"
+    });
+  };
+  
+  // Handler for moving a sub-stage down in the order
+  const handleMoveSubStageDown = (stageId: string, subStageId: string) => {
+    const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
+    const subStages = selectedStages[stageIndex].subStages;
+    const subStageIndex = subStages.findIndex(subStage => subStage.id === subStageId);
+    
+    if (subStageIndex >= subStages.length - 1) return;
+    
+    const newStages = [...selectedStages];
+    const newSubStages = [...newStages[stageIndex].subStages];
+    
+    // Swap sub-stages
+    const temp = newSubStages[subStageIndex];
+    newSubStages[subStageIndex] = newSubStages[subStageIndex + 1];
+    newSubStages[subStageIndex + 1] = temp;
+    
+    // Update order property
+    newSubStages.forEach((subStage, index) => {
+      subStage.order = index + 1;
+    });
+    
+    newStages[stageIndex].subStages = newSubStages;
+    
+    // Update sequence numbers
+    const updatedStages = updateSequenceNumbers(newStages);
+    
+    setSelectedStages(updatedStages);
+    
+    toast({
+      title: "Sub-Stage Moved",
+      description: "The sub-stage has been moved down in the sequence"
+    });
   };
   
   // Handler for adding a dependency to a substage
@@ -908,15 +1009,19 @@ const WorkflowInstanceConfig: React.FC = () => {
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
+                                        <TableHead className="w-[60px]">Seq #</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead>Dependencies</TableHead>
-                                        <TableHead className="w-[100px]">Actions</TableHead>
+                                        <TableHead className="w-[180px]">Actions</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                       {stage.subStages.map((subStage, subStageIndex) => (
                                         <TableRow key={subStage.id}>
+                                          <TableCell className="font-medium text-center">
+                                            {subStage.sequence}
+                                          </TableCell>
                                           <TableCell className="font-medium">{subStage.name}</TableCell>
                                           <TableCell>
                                             <Badge variant={subStage.type === 'manual' ? 'outline' : 'default'}>
@@ -945,7 +1050,25 @@ const WorkflowInstanceConfig: React.FC = () => {
                                             )}
                                           </TableCell>
                                           <TableCell>
-                                            <div className="flex justify-end">
+                                            <div className="flex items-center space-x-2">
+                                              <div className="flex space-x-1">
+                                                <Button 
+                                                  variant="ghost" 
+                                                  size="sm" 
+                                                  onClick={() => handleMoveSubStageUp(stage.id, subStage.id)}
+                                                  disabled={subStageIndex === 0}
+                                                >
+                                                  <ChevronUp className="h-4 w-4" />
+                                                </Button>
+                                                <Button 
+                                                  variant="ghost" 
+                                                  size="sm" 
+                                                  onClick={() => handleMoveSubStageDown(stage.id, subStage.id)}
+                                                  disabled={subStageIndex === stage.subStages.length - 1}
+                                                >
+                                                  <ChevronDown className="h-4 w-4" />
+                                                </Button>
+                                              </div>
                                               <Select
                                                 onValueChange={(value) => {
                                                   const [depStageId, depSubStageId] = value.split('|');
