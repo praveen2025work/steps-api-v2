@@ -29,15 +29,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Edit, Trash2, Eye, Users, UserCheck } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { Role, Permission, Application } from '@/types/workflow-types';
 import { toast } from '@/components/ui/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Sample applications
 const sampleApplications: Application[] = [
@@ -457,7 +455,7 @@ const RoleManagement: React.FC = () => {
                 <TableRow key={role.id}>
                   <TableCell>{role.department || '-'}</TableCell>
                   <TableCell className="font-medium">{role.name}</TableCell>
-                  <TableCell>{role.userType || 'Standard'}</TableCell>
+                  <TableCell>{role.userType || 'User'}</TableCell>
                   <TableCell>
                     <Badge variant={role.accessLevel === 'RW' ? 'default' : 'secondary'}>
                       {role.accessLevel === 'RW' ? 'Read Write' : 'Read Only'}
