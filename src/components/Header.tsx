@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import Logo from './Logo';
 import { Button } from '@/components/ui/button';
 import { Bell, User } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,14 @@ import {
 
 const Header = () => {
   const router = useRouter();
+  const { toast } = useToast();
+  
+  const showNotifications = () => {
+    toast({
+      title: "Notifications",
+      description: "You have no new notifications at this time.",
+    });
+  };
 
   return (
     <div className="w-full border-b">
@@ -22,7 +31,7 @@ const Header = () => {
         </div>
         
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={showNotifications}>
             <Bell className="h-5 w-5" />
           </Button>
           
