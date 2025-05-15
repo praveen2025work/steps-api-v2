@@ -152,6 +152,35 @@
     --chart-5: 220 70% 60%;
     --radius: 0.75rem
   }
+  
+  /* Dark Blue theme */
+  .dark-blue {
+    --background: 210 50% 10%;
+    --foreground: 0 0% 98%;
+    --card: 210 50% 13%;
+    --card-foreground: 0 0% 98%;
+    --popover: 210 50% 13%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 195 100% 47%;  /* #00aeef */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 211 100% 50%;  /* #007bff */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 40% 20%;
+    --muted-foreground: 210 40% 80%;
+    --accent: 195 100% 47%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 50% 20%;
+    --input: 210 50% 20%;
+    --ring: 195 100% 47%;
+    --chart-1: 195 100% 47%;  /* #00aeef */
+    --chart-2: 211 100% 50%;  /* #007bff */
+    --chart-3: 200 90% 45%;
+    --chart-4: 190 80% 55%;
+    --chart-5: 220 70% 60%;
+    --radius: 0.75rem
+  }
 }
 
 @layer base {

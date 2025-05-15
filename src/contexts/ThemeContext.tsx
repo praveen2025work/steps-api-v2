@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'dark' | 'light' | 'banking-blue' | 'regulatory-green' | 'blue';
+type Theme = 'dark' | 'light' | 'banking-blue' | 'regulatory-green' | 'blue' | 'dark-blue';
 
 interface ThemeContextType {
   theme: Theme;
@@ -25,7 +25,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('theme', theme);
     
     // Remove all theme classes
-    document.documentElement.classList.remove('dark', 'light', 'banking-blue', 'regulatory-green', 'blue');
+    document.documentElement.classList.remove('dark', 'light', 'banking-blue', 'regulatory-green', 'blue', 'dark-blue');
     
     // Add the current theme class
     document.documentElement.classList.add(theme);
