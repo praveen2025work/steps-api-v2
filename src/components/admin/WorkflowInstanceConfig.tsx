@@ -13,10 +13,14 @@ import {
   StageConfig, 
   SubStageConfig, 
   Parameter, 
-  WorkflowNodeConfig,
+  WorkflowNodeConfig
+} from '@/types/workflow-types';
+
+// Import these separately to avoid potential circular reference issues
+import type { 
   DBWorkflowProcess,
   DBWorkflowProcessDep,
-  DBWorkflowProcessParam
+  DBWorkflowProcessParam 
 } from '@/types/workflow-types';
 
 // Sample data for hierarchy nodes
@@ -192,7 +196,7 @@ const WorkflowInstanceConfig: React.FC = () => {
   }, []);
   
   // Check if a process has dependencies
-  const hasDependendencies = (processId: string) => {
+  const hasDependencies = (processId: string) => {
     return dependencies.some(dep => dep.sourceId === processId);
   };
   
@@ -386,7 +390,7 @@ const WorkflowInstanceConfig: React.FC = () => {
                                 <TableCell className="font-medium">{process.name}</TableCell>
                                 <TableCell>{process.type === 'manual' ? 'Manual' : 'Automatic'}</TableCell>
                                 <TableCell>
-                                  {hasDependendencies(process.id) ? (
+                                  {hasDependencies(process.id) ? (
                                     <div className="flex flex-col space-y-1">
                                       {getDependenciesForProcess(process.id).map(depId => {
                                         const depProcess = findProcessById(depId);
