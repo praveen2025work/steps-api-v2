@@ -2,7 +2,7 @@ import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Moon, Sun, Palette, Shield } from 'lucide-react';
+import { Moon, Sun, Palette, Shield, Droplet } from 'lucide-react';
 
 const ThemeSwitcher = () => {
   const { theme, setTheme } = useTheme();
@@ -15,6 +15,7 @@ const ThemeSwitcher = () => {
           {theme === 'light' && <Sun className="h-5 w-5" />}
           {theme === 'banking-blue' && <Palette className="h-5 w-5 text-blue-500" />}
           {theme === 'regulatory-green' && <Shield className="h-5 w-5 text-green-500" />}
+          {theme === 'blue' && <Droplet className="h-5 w-5 text-[#00aeef]" />}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -33,6 +34,10 @@ const ThemeSwitcher = () => {
         <DropdownMenuItem onClick={() => setTheme('regulatory-green')} className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-green-500" />
           <span>Regulatory Green</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('blue')} className="flex items-center gap-2">
+          <Droplet className="h-4 w-4 text-[#00aeef]" />
+          <span>Blue</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
