@@ -10,10 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Edit, Info, Plus, Save, Trash2, X } from 'lucide-react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { toast } from '@/components/ui/use-toast';
 import type { Application, StageConfig, SubStageConfig, Parameter, Attestation, EmailTemplate, WorkflowNodeConfig } from '@/types/workflow-types';
-import SubStageConfigDialog from './SubStageConfigDialog';
 
 // Sample applications
 const sampleApplications: Application[] = [
@@ -29,7 +27,11 @@ const sampleApplications: Application[] = [
     lockingRequired: true,
     lockingRole: 'Risk Manager',
     runOnWeekdays: true,
-    parameters: [],
+    parameters: [
+      { id: 'gp1', name: 'riskThreshold', value: '0.75', dataType: 'number', isRequired: true, isActive: true },
+      { id: 'gp2', name: 'reportingCurrency', value: 'USD', dataType: 'string', isRequired: true, isActive: true },
+      { id: 'gp3', name: 'includeHistoricalData', value: 'true', dataType: 'boolean', isRequired: false, isActive: true }
+    ],
     createdAt: '2025-01-01',
     updatedAt: '2025-01-01',
     createdBy: 'System',
@@ -48,7 +50,10 @@ const sampleApplications: Application[] = [
     lockingRequired: true,
     lockingRole: 'Loan Manager',
     runOnWeekdays: true,
-    parameters: [],
+    parameters: [
+      { id: 'gp4', name: 'maxLoanAmount', value: '500000', dataType: 'number', isRequired: true, isActive: true },
+      { id: 'gp5', name: 'interestRateModel', value: 'standard', dataType: 'string', isRequired: true, isActive: true }
+    ],
     createdAt: '2025-01-01',
     updatedAt: '2025-01-01',
     createdBy: 'System',
@@ -67,7 +72,10 @@ const sampleApplications: Application[] = [
     lockingRequired: true,
     lockingRole: 'Compliance Manager',
     runOnWeekdays: true,
-    parameters: [],
+    parameters: [
+      { id: 'gp6', name: 'regulatoryFramework', value: 'Basel III', dataType: 'string', isRequired: true, isActive: true },
+      { id: 'gp7', name: 'reportingPeriod', value: 'quarterly', dataType: 'string', isRequired: true, isActive: true }
+    ],
     createdAt: '2025-01-01',
     updatedAt: '2025-01-01',
     createdBy: 'System',
@@ -335,11 +343,40 @@ const sampleParameters: Parameter[] = [
   { id: 'p15', name: 'notificationType', value: '', dataType: 'string', isRequired: true, isActive: true }
 ];
 
+// Sample attestations
+const sampleAttestations: Attestation[] = [
+  {
+    id: 'a1',
+    name: 'Review Attestation',
+    description: 'Attestation for completing the review',
+    text: 'I confirm that I have reviewed all the documents and the information provided is accurate.'
+  },
+  {
+    id: 'a2',
+    name: 'Approval Attestation',
+    description: 'Attestation for approving the workflow',
+    text: 'I confirm that I approve this workflow and take responsibility for this decision.'
+  },
+  {
+    id: 'a3',
+    name: 'Compliance Attestation',
+    description: 'Attestation for compliance verification',
+    text: 'I confirm that this workflow complies with all regulatory requirements and internal policies.'
+  },
+  {
+    id: 'a4',
+    name: 'Data Quality Attestation',
+    description: 'Attestation for data quality',
+    text: 'I confirm that the data used in this workflow is accurate, complete, and reliable.'
+  }
+];
+
 // Interface for workflow configuration
 interface WorkflowConfig {
   applicationId: string;
   workflowInstanceId: string;
   stages: ConfigStage[];
+  globalParameters: ConfigParameter[];
 }
 
 interface ConfigStage {
@@ -416,7 +453,8 @@ const WorkflowInstanceConfig: React.FC = () => {
   const [workflowConfig, setWorkflowConfig] = useState<WorkflowConfig>({
     applicationId: '',
     workflowInstanceId: '',
-    stages: []
+    stages: [],
+    globalParameters: []
   });
   const [availableStages, setAvailableStages] = useState<StageConfig[]>([]);
   const [selectedStages, setSelectedStages] = useState<ConfigStage[]>([]);
@@ -425,13 +463,18 @@ const WorkflowInstanceConfig: React.FC = () => {
   const [allSubStages, setAllSubStages] = useState<SubStageConfig[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [editingSubStage, setEditingSubStage] = useState<{
+  
+  // New state for the split view and unified editing interface
+  const [selectedSubStage, setSelectedSubStage] = useState<{
     stageId: string;
     subStageId: string;
     subStage: ConfigSubStage | null;
   } | null>(null);
-  const [showSubStageDialog, setShowSubStageDialog] = useState(false);
+  const [subStageConfigTab, setSubStageConfigTab] = useState('general');
   const [availableAttestations, setAvailableAttestations] = useState<Attestation[]>([]);
+  const [selectedAttestationId, setSelectedAttestationId] = useState<string>('');
+  const [selectedParameterId, setSelectedParameterId] = useState<string>('');
+  const [globalParameterValues, setGlobalParameterValues] = useState<ConfigParameter[]>([]);
   
   // Effect to filter workflow instances based on selected application
   useEffect(() => {
@@ -444,13 +487,30 @@ const WorkflowInstanceConfig: React.FC = () => {
       setWorkflowConfig({
         applicationId: selectedApplication,
         workflowInstanceId: '',
-        stages: []
+        stages: [],
+        globalParameters: []
       });
       setSelectedStages([]);
       setSelectedStageId('');
       setSelectedSubStages([]);
+      setSelectedSubStage(null);
+      
+      // Load global parameters for the selected application
+      const app = sampleApplications.find(app => app.id === selectedApplication);
+      if (app && app.parameters) {
+        setGlobalParameterValues(app.parameters.map(param => ({
+          id: param.id,
+          name: param.name,
+          value: param.value,
+          dataType: param.dataType,
+          isRequired: param.isRequired || false
+        })));
+      } else {
+        setGlobalParameterValues([]);
+      }
     } else {
       setAvailableWorkflowInstances([]);
+      setGlobalParameterValues([]);
     }
   }, [selectedApplication]);
   
@@ -462,17 +522,7 @@ const WorkflowInstanceConfig: React.FC = () => {
       setAvailableStages(sampleStages);
       
       // Also load available attestations
-      const allAttestations: Attestation[] = [];
-      sampleStages.forEach(stage => {
-        stage.subStages.forEach(subStage => {
-          subStage.attestations.forEach(attestation => {
-            if (!allAttestations.some(att => att.id === attestation.id)) {
-              allAttestations.push(attestation);
-            }
-          });
-        });
-      });
-      setAvailableAttestations(allAttestations);
+      setAvailableAttestations(sampleAttestations);
     } else {
       setAvailableStages([]);
       setAvailableAttestations([]);
@@ -522,7 +572,8 @@ const WorkflowInstanceConfig: React.FC = () => {
         const sampleConfig: WorkflowConfig = {
           applicationId: selectedApplication,
           workflowInstanceId: selectedWorkflowInstance,
-          stages: [] // Start with empty stages as per requirement
+          stages: [], // Start with empty stages as per requirement
+          globalParameters: globalParameterValues
         };
         
         setWorkflowConfig(sampleConfig);
@@ -533,11 +584,12 @@ const WorkflowInstanceConfig: React.FC = () => {
       setWorkflowConfig({
         applicationId: selectedApplication,
         workflowInstanceId: '',
-        stages: []
+        stages: [],
+        globalParameters: globalParameterValues
       });
       setSelectedStages([]);
     }
-  }, [selectedWorkflowInstance, selectedApplication]);
+  }, [selectedWorkflowInstance, selectedApplication, globalParameterValues]);
   
   // Handler for adding a stage to the workflow
   const handleAddStage = () => {
@@ -675,6 +727,11 @@ const WorkflowInstanceConfig: React.FC = () => {
   
   // Handler for removing a stage from the workflow
   const handleRemoveStage = (stageId: string) => {
+    // If the selected sub-stage is from this stage, clear it
+    if (selectedSubStage && selectedSubStage.stageId === stageId) {
+      setSelectedSubStage(null);
+    }
+    
     setSelectedStages(selectedStages.filter(stage => stage.id !== stageId));
     
     toast({
@@ -685,6 +742,11 @@ const WorkflowInstanceConfig: React.FC = () => {
   
   // Handler for removing a sub-stage from a stage
   const handleRemoveSubStage = (stageId: string, subStageId: string) => {
+    // If this is the currently selected sub-stage, clear it
+    if (selectedSubStage && selectedSubStage.stageId === stageId && selectedSubStage.subStageId === subStageId) {
+      setSelectedSubStage(null);
+    }
+    
     const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
     if (stageIndex === -1) return;
     
@@ -704,8 +766,8 @@ const WorkflowInstanceConfig: React.FC = () => {
     });
   };
   
-  // Handler for editing a sub-stage
-  const handleEditSubStage = (stageId: string, subStageId: string) => {
+  // Handler for selecting a sub-stage to edit (for the split view)
+  const handleSelectSubStage = (stageId: string, subStageId: string) => {
     const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
     if (stageIndex === -1) return;
     
@@ -715,20 +777,49 @@ const WorkflowInstanceConfig: React.FC = () => {
     
     if (!subStage) return;
     
-    setEditingSubStage({
+    setSelectedSubStage({
       stageId,
       subStageId,
-      subStage
+      subStage: {
+        ...subStage,
+        uploadConfig: subStage.uploadConfig || {
+          validationSettings: {
+            allowedExtensions: ['.xlsx', '.csv', '.pdf'],
+            maxFileSize: 10,
+            requireValidation: true
+          },
+          emailNotifications: false,
+          parameters: [],
+          fileNamingConvention: '',
+          description: '',
+          allowMultiple: false,
+          fileType: 'upload'
+        },
+        downloadConfig: subStage.downloadConfig || {
+          validationSettings: {
+            allowedExtensions: ['.xlsx', '.csv', '.pdf'],
+            maxFileSize: 10,
+            requireValidation: true
+          },
+          emailNotifications: false,
+          parameters: [],
+          fileNamingConvention: '',
+          description: '',
+          allowMultiple: false,
+          fileType: 'download'
+        },
+        attestations: subStage.attestations || []
+      }
     });
     
-    setShowSubStageDialog(true);
+    setSubStageConfigTab('general');
   };
   
-  // Handler for saving edited sub-stage
-  const handleSaveSubStage = (updatedSubStage: any) => {
-    if (!editingSubStage) return;
+  // Handler for updating the selected sub-stage
+  const handleUpdateSubStage = (updatedSubStage: ConfigSubStage) => {
+    if (!selectedSubStage) return;
     
-    const { stageId, subStageId } = editingSubStage;
+    const { stageId, subStageId } = selectedSubStage;
     
     const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
     if (stageIndex === -1) return;
@@ -739,16 +830,184 @@ const WorkflowInstanceConfig: React.FC = () => {
     
     if (subStageIndex === -1) return;
     
+    // If upload is not required, remove the upload config
+    const finalSubStage = {
+      ...updatedSubStage,
+      uploadConfig: updatedSubStage.requiresUpload ? updatedSubStage.uploadConfig : undefined,
+      downloadConfig: updatedSubStage.requiresDownload ? updatedSubStage.downloadConfig : undefined
+    };
+    
     const newStages = [...selectedStages];
-    newStages[stageIndex].subStages[subStageIndex] = updatedSubStage;
+    newStages[stageIndex].subStages[subStageIndex] = finalSubStage;
     
     setSelectedStages(newStages);
-    setEditingSubStage(null);
+    setSelectedSubStage({
+      ...selectedSubStage,
+      subStage: finalSubStage
+    });
     
     toast({
       title: "Sub-Stage Updated",
       description: "The sub-stage configuration has been updated"
     });
+  };
+  
+  // Handler for toggling boolean properties in the selected sub-stage
+  const handleToggleSubStageProperty = (property: keyof ConfigSubStage) => {
+    if (!selectedSubStage || !selectedSubStage.subStage) return;
+    
+    const updatedSubStage = {
+      ...selectedSubStage.subStage,
+      [property]: !selectedSubStage.subStage[property as keyof ConfigSubStage]
+    };
+    
+    handleUpdateSubStage(updatedSubStage);
+  };
+  
+  // Handler for adding an attestation to the selected sub-stage
+  const handleAddAttestation = () => {
+    if (!selectedSubStage || !selectedSubStage.subStage || !selectedAttestationId) return;
+    
+    const attestationToAdd = availableAttestations.find(att => att.id === selectedAttestationId);
+    if (!attestationToAdd) return;
+    
+    // Check if attestation is already added
+    if (selectedSubStage.subStage.attestations?.some(att => att.id === attestationToAdd.id)) {
+      toast({
+        title: "Error",
+        description: "This attestation is already added",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newAttestation: ConfigAttestation = {
+      id: attestationToAdd.id,
+      name: attestationToAdd.name,
+      text: attestationToAdd.text,
+      isRequired: true
+    };
+    
+    const updatedSubStage = {
+      ...selectedSubStage.subStage,
+      attestations: [...(selectedSubStage.subStage.attestations || []), newAttestation]
+    };
+    
+    handleUpdateSubStage(updatedSubStage);
+    setSelectedAttestationId('');
+  };
+  
+  // Handler for removing an attestation from the selected sub-stage
+  const handleRemoveAttestation = (attestationId: string) => {
+    if (!selectedSubStage || !selectedSubStage.subStage || !selectedSubStage.subStage.attestations) return;
+    
+    const updatedSubStage = {
+      ...selectedSubStage.subStage,
+      attestations: selectedSubStage.subStage.attestations.filter(att => att.id !== attestationId)
+    };
+    
+    handleUpdateSubStage(updatedSubStage);
+  };
+  
+  // Handler for adding a parameter to file config in the selected sub-stage
+  const handleAddFileParameter = (fileType: 'upload' | 'download') => {
+    if (!selectedSubStage || !selectedSubStage.subStage || !selectedParameterId) return;
+    
+    const parameterToAdd = sampleParameters.find(param => param.id === selectedParameterId);
+    if (!parameterToAdd) return;
+    
+    const configKey = fileType === 'upload' ? 'uploadConfig' : 'downloadConfig';
+    const fileConfig = selectedSubStage.subStage[configKey as keyof ConfigSubStage] as FileConfig;
+    
+    if (!fileConfig) return;
+    
+    // Check if parameter is already added
+    if (fileConfig.parameters.some(param => param.id === parameterToAdd.id)) {
+      toast({
+        title: "Error",
+        description: "This parameter is already added",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newParameter: ConfigParameter = {
+      id: parameterToAdd.id,
+      name: parameterToAdd.name,
+      value: '',
+      dataType: parameterToAdd.dataType,
+      isRequired: parameterToAdd.isRequired || false
+    };
+    
+    const updatedSubStage = {
+      ...selectedSubStage.subStage,
+      [configKey]: {
+        ...fileConfig,
+        parameters: [...fileConfig.parameters, newParameter]
+      }
+    };
+    
+    handleUpdateSubStage(updatedSubStage);
+    setSelectedParameterId('');
+  };
+  
+  // Handler for removing a parameter from file config in the selected sub-stage
+  const handleRemoveFileParameter = (fileType: 'upload' | 'download', parameterId: string) => {
+    if (!selectedSubStage || !selectedSubStage.subStage) return;
+    
+    const configKey = fileType === 'upload' ? 'uploadConfig' : 'downloadConfig';
+    const fileConfig = selectedSubStage.subStage[configKey as keyof ConfigSubStage] as FileConfig;
+    
+    if (!fileConfig) return;
+    
+    const updatedSubStage = {
+      ...selectedSubStage.subStage,
+      [configKey]: {
+        ...fileConfig,
+        parameters: fileConfig.parameters.filter(param => param.id !== parameterId)
+      }
+    };
+    
+    handleUpdateSubStage(updatedSubStage);
+  };
+  
+  // Handler for updating file config properties in the selected sub-stage
+  const handleUpdateFileConfig = (
+    fileType: 'upload' | 'download',
+    property: keyof FileConfig | keyof FileConfig['validationSettings'],
+    value: any,
+    isValidationSetting: boolean = false
+  ) => {
+    if (!selectedSubStage || !selectedSubStage.subStage) return;
+    
+    const configKey = fileType === 'upload' ? 'uploadConfig' : 'downloadConfig';
+    const fileConfig = selectedSubStage.subStage[configKey as keyof ConfigSubStage] as FileConfig;
+    
+    if (!fileConfig) return;
+    
+    let updatedFileConfig;
+    
+    if (isValidationSetting && fileConfig.validationSettings) {
+      updatedFileConfig = {
+        ...fileConfig,
+        validationSettings: {
+          ...fileConfig.validationSettings,
+          [property]: value
+        }
+      };
+    } else {
+      updatedFileConfig = {
+        ...fileConfig,
+        [property]: value
+      };
+    }
+    
+    const updatedSubStage = {
+      ...selectedSubStage.subStage,
+      [configKey]: updatedFileConfig
+    };
+    
+    handleUpdateSubStage(updatedSubStage);
   };
   
   // Handler for moving a stage up in the order
@@ -820,6 +1079,17 @@ const WorkflowInstanceConfig: React.FC = () => {
     
     setSelectedStages(updatedStages);
     
+    // If this is the selected sub-stage, update the selection
+    if (selectedSubStage && selectedSubStage.stageId === stageId && selectedSubStage.subStageId === subStageId) {
+      const updatedSubStage = updatedStages[stageIndex].subStages.find(ss => ss.id === subStageId);
+      if (updatedSubStage) {
+        setSelectedSubStage({
+          ...selectedSubStage,
+          subStage: updatedSubStage
+        });
+      }
+    }
+    
     toast({
       title: "Sub-Stage Moved",
       description: "The sub-stage has been moved up in the sequence"
@@ -854,6 +1124,17 @@ const WorkflowInstanceConfig: React.FC = () => {
     
     setSelectedStages(updatedStages);
     
+    // If this is the selected sub-stage, update the selection
+    if (selectedSubStage && selectedSubStage.stageId === stageId && selectedSubStage.subStageId === subStageId) {
+      const updatedSubStage = updatedStages[stageIndex].subStages.find(ss => ss.id === subStageId);
+      if (updatedSubStage) {
+        setSelectedSubStage({
+          ...selectedSubStage,
+          subStage: updatedSubStage
+        });
+      }
+    }
+    
     toast({
       title: "Sub-Stage Moved",
       description: "The sub-stage has been moved down in the sequence"
@@ -884,12 +1165,19 @@ const WorkflowInstanceConfig: React.FC = () => {
       return;
     }
     
-    const newStages = [...selectedStages];
-    const stageIndex = newStages.findIndex(stage => stage.id === stageId);
-    const subStageIndex = newStages[stageIndex].subStages.findIndex(subStage => subStage.id === subStageId);
+    const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
+    if (stageIndex === -1) return;
+    
+    const subStageIndex = selectedStages[stageIndex].subStages.findIndex(
+      subStage => subStage.id === subStageId
+    );
+    
+    if (subStageIndex === -1) return;
+    
+    const subStage = selectedStages[stageIndex].subStages[subStageIndex];
     
     // Check if dependency already exists
-    if (newStages[stageIndex].subStages[subStageIndex].dependencies.some(
+    if (subStage.dependencies.some(
       dep => dep.stageId === dependencyStageId && dep.subStageId === dependencySubStageId
     )) {
       toast({
@@ -900,13 +1188,30 @@ const WorkflowInstanceConfig: React.FC = () => {
       return;
     }
     
-    newStages[stageIndex].subStages[subStageIndex].dependencies.push({
-      stageId: dependencyStageId,
-      subStageId: dependencySubStageId,
-      name: `${dependencyStage.name} - ${dependencySubStage.name}`
-    });
+    const updatedSubStage = {
+      ...subStage,
+      dependencies: [
+        ...subStage.dependencies,
+        {
+          stageId: dependencyStageId,
+          subStageId: dependencySubStageId,
+          name: `${dependencyStage.name} - ${dependencySubStage.name}`
+        }
+      ]
+    };
+    
+    const newStages = [...selectedStages];
+    newStages[stageIndex].subStages[subStageIndex] = updatedSubStage;
     
     setSelectedStages(newStages);
+    
+    // If this is the selected sub-stage, update the selection
+    if (selectedSubStage && selectedSubStage.stageId === stageId && selectedSubStage.subStageId === subStageId) {
+      setSelectedSubStage({
+        ...selectedSubStage,
+        subStage: updatedSubStage
+      });
+    }
     
     toast({
       title: "Dependency Added",
@@ -942,17 +1247,59 @@ const WorkflowInstanceConfig: React.FC = () => {
   
   // Handler for removing a dependency from a substage
   const handleRemoveDependency = (stageId: string, subStageId: string, dependencyIndex: number) => {
-    const newStages = [...selectedStages];
-    const stageIndex = newStages.findIndex(stage => stage.id === stageId);
-    const subStageIndex = newStages[stageIndex].subStages.findIndex(subStage => subStage.id === subStageId);
+    const stageIndex = selectedStages.findIndex(stage => stage.id === stageId);
+    if (stageIndex === -1) return;
     
-    newStages[stageIndex].subStages[subStageIndex].dependencies.splice(dependencyIndex, 1);
+    const subStageIndex = selectedStages[stageIndex].subStages.findIndex(
+      subStage => subStage.id === subStageId
+    );
+    
+    if (subStageIndex === -1) return;
+    
+    const subStage = selectedStages[stageIndex].subStages[subStageIndex];
+    
+    const updatedSubStage = {
+      ...subStage,
+      dependencies: [
+        ...subStage.dependencies.slice(0, dependencyIndex),
+        ...subStage.dependencies.slice(dependencyIndex + 1)
+      ]
+    };
+    
+    const newStages = [...selectedStages];
+    newStages[stageIndex].subStages[subStageIndex] = updatedSubStage;
     
     setSelectedStages(newStages);
+    
+    // If this is the selected sub-stage, update the selection
+    if (selectedSubStage && selectedSubStage.stageId === stageId && selectedSubStage.subStageId === subStageId) {
+      setSelectedSubStage({
+        ...selectedSubStage,
+        subStage: updatedSubStage
+      });
+    }
     
     toast({
       title: "Dependency Removed",
       description: "The dependency has been removed from the substage"
+    });
+  };
+  
+  // Handler for updating global parameter values
+  const handleUpdateGlobalParameter = (parameterId: string, value: string) => {
+    const updatedParams = globalParameterValues.map(param => {
+      if (param.id === parameterId) {
+        return { ...param, value };
+      }
+      return param;
+    });
+    
+    setGlobalParameterValues(updatedParams);
+    
+    // Also update in the workflow config
+    setWorkflowConfig({
+      ...workflowConfig,
+      globalParameters: updatedParams
     });
   };
   
@@ -980,7 +1327,8 @@ const WorkflowInstanceConfig: React.FC = () => {
     const configToSave: WorkflowConfig = {
       applicationId: selectedApplication,
       workflowInstanceId: selectedWorkflowInstance,
-      stages: selectedStages
+      stages: selectedStages,
+      globalParameters: globalParameterValues
     };
     
     console.log('Saving workflow configuration:', configToSave);
@@ -1022,18 +1370,686 @@ const WorkflowInstanceConfig: React.FC = () => {
     return result;
   };
   
+  // Render the sub-stage configuration panel
+  const renderSubStageConfig = () => {
+    if (!selectedSubStage || !selectedSubStage.subStage) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium mb-2">No Sub-Stage Selected</h3>
+          <p className="text-sm text-muted-foreground">
+            Select a sub-stage from the list on the left to configure it.
+          </p>
+        </div>
+      );
+    }
+    
+    const subStage = selectedSubStage.subStage;
+    
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">
+            Configuring: {subStage.name}
+          </h3>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSelectedSubStage(null)}
+          >
+            Close
+          </Button>
+        </div>
+        
+        <Tabs value={subStageConfigTab} onValueChange={setSubStageConfigTab}>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="general">Options</TabsTrigger>
+            <TabsTrigger value="parameters">Parameters</TabsTrigger>
+            <TabsTrigger value="upload">Upload</TabsTrigger>
+            <TabsTrigger value="download">Download</TabsTrigger>
+          </TabsList>
+          
+          {/* General/Options Tab */}
+          <TabsContent value="general">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sub-Stage Options</CardTitle>
+                <CardDescription>Configure the basic options for this sub-stage</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="isActive"
+                        checked={subStage.isActive}
+                        onCheckedChange={() => handleToggleSubStageProperty('isActive')}
+                      />
+                      <Label htmlFor="isActive">Active</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="isAuto"
+                        checked={subStage.isAuto}
+                        onCheckedChange={() => handleToggleSubStageProperty('isAuto')}
+                      />
+                      <Label htmlFor="isAuto">Auto</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="isAdhoc"
+                        checked={subStage.isAdhoc}
+                        onCheckedChange={() => handleToggleSubStageProperty('isAdhoc')}
+                      />
+                      <Label htmlFor="isAdhoc">Adhoc</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="isAlteryx"
+                        checked={subStage.isAlteryx}
+                        onCheckedChange={() => handleToggleSubStageProperty('isAlteryx')}
+                      />
+                      <Label htmlFor="isAlteryx">Alteryx</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="requiresAttestation"
+                        checked={subStage.requiresAttestation}
+                        onCheckedChange={() => handleToggleSubStageProperty('requiresAttestation')}
+                      />
+                      <Label htmlFor="requiresAttestation">Requires Attestation</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="requiresApproval"
+                        checked={subStage.requiresApproval}
+                        onCheckedChange={() => handleToggleSubStageProperty('requiresApproval')}
+                      />
+                      <Label htmlFor="requiresApproval">Requires Approval</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="requiresUpload"
+                        checked={subStage.requiresUpload}
+                        onCheckedChange={() => handleToggleSubStageProperty('requiresUpload')}
+                      />
+                      <Label htmlFor="requiresUpload">Requires Upload</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="requiresDownload"
+                        checked={subStage.requiresDownload || false}
+                        onCheckedChange={() => handleToggleSubStageProperty('requiresDownload')}
+                      />
+                      <Label htmlFor="requiresDownload">Requires Download</Label>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Attestations Section */}
+                  {subStage.requiresAttestation && (
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Required Attestations</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2 space-y-2">
+                          <Label htmlFor="attestationSelect">Available Attestations</Label>
+                          <Select
+                            value={selectedAttestationId}
+                            onValueChange={setSelectedAttestationId}
+                          >
+                            <SelectTrigger id="attestationSelect">
+                              <SelectValue placeholder="Select an attestation to add" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableAttestations
+                                .filter(att => !subStage.attestations?.some(a => a.id === att.id))
+                                .map(att => (
+                                  <SelectItem key={att.id} value={att.id}>{att.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-end">
+                          <Button
+                            onClick={handleAddAttestation}
+                            disabled={!selectedAttestationId}
+                          >
+                            <Plus className="mr-2 h-4 w-4" /> Add
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {!subStage.attestations || subStage.attestations.length === 0 ? (
+                        <div className="text-center py-4 border rounded-md">
+                          <p className="text-sm text-muted-foreground">
+                            No attestations selected. Use the dropdown above to add attestations.
+                          </p>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Text</TableHead>
+                              <TableHead className="w-[100px]">Required</TableHead>
+                              <TableHead className="w-[80px]">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {subStage.attestations.map(att => (
+                              <TableRow key={att.id}>
+                                <TableCell className="font-medium">{att.name}</TableCell>
+                                <TableCell className="text-sm">{att.text}</TableCell>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={att.isRequired}
+                                    onCheckedChange={(checked) => {
+                                      if (!subStage.attestations) return;
+                                      const updatedAttestations = subStage.attestations.map(a => {
+                                        if (a.id === att.id) {
+                                          return { ...a, isRequired: !!checked };
+                                        }
+                                        return a;
+                                      });
+                                      
+                                      const updatedSubStage = {
+                                        ...subStage,
+                                        attestations: updatedAttestations
+                                      };
+                                      
+                                      handleUpdateSubStage(updatedSubStage);
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveAttestation(att.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+                  )}
+                  
+                  <Separator />
+                  
+                  {/* Dependencies Section */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Dependencies</h4>
+                    
+                    {subStage.dependencies.length === 0 ? (
+                      <div className="text-center py-4 border rounded-md">
+                        <p className="text-sm text-muted-foreground">
+                          No dependencies configured. Use the dropdown in the stages list to add dependencies.
+                        </p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Dependency</TableHead>
+                            <TableHead className="w-[80px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {subStage.dependencies.map((dep, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{dep.name}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveDependency(selectedSubStage.stageId, selectedSubStage.subStageId, index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Parameters Tab */}
+          <TabsContent value="parameters">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sub-Stage Parameters</CardTitle>
+                <CardDescription>Configure parameters specific to this sub-stage</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {subStage.parameters.length === 0 ? (
+                  <div className="text-center py-4 border rounded-md">
+                    <p className="text-sm text-muted-foreground">
+                      No parameters for this sub-stage.
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Data Type</TableHead>
+                        <TableHead>Required</TableHead>
+                        <TableHead>Default Value</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subStage.parameters.map(param => (
+                        <TableRow key={param.id}>
+                          <TableCell className="font-medium">{param.name}</TableCell>
+                          <TableCell>{param.dataType}</TableCell>
+                          <TableCell>
+                            {param.isRequired ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <X className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Input 
+                              type={param.dataType === 'date' ? 'date' : 'text'} 
+                              placeholder="Enter default value"
+                              value={param.value}
+                              onChange={(e) => {
+                                const updatedParams = subStage.parameters.map(p => {
+                                  if (p.id === param.id) {
+                                    return { ...p, value: e.target.value };
+                                  }
+                                  return p;
+                                });
+                                
+                                const updatedSubStage = {
+                                  ...subStage,
+                                  parameters: updatedParams
+                                };
+                                
+                                handleUpdateSubStage(updatedSubStage);
+                              }}
+                              className="w-full"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Upload Config Tab */}
+          <TabsContent value="upload">
+            <Card>
+              <CardHeader>
+                <CardTitle>Upload Configuration</CardTitle>
+                <CardDescription>Configure file upload settings for this sub-stage</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="requiresUpload"
+                      checked={subStage.requiresUpload}
+                      onCheckedChange={() => handleToggleSubStageProperty('requiresUpload')}
+                    />
+                    <Label htmlFor="requiresUpload">This sub-stage requires file upload</Label>
+                  </div>
+                  
+                  {subStage.requiresUpload && subStage.uploadConfig && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="uploadDescription">Description</Label>
+                          <Input
+                            id="uploadDescription"
+                            value={subStage.uploadConfig.description || ''}
+                            onChange={(e) => handleUpdateFileConfig('upload', 'description', e.target.value)}
+                            placeholder="Enter a description for the upload"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="uploadFileNamingConvention">File Naming Convention</Label>
+                          <Input
+                            id="uploadFileNamingConvention"
+                            value={subStage.uploadConfig.fileNamingConvention || ''}
+                            onChange={(e) => handleUpdateFileConfig('upload', 'fileNamingConvention', e.target.value)}
+                            placeholder="e.g., {date}_{name}_{id}"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Validation Settings</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="uploadAllowedExtensions">Allowed Extensions</Label>
+                            <Input
+                              id="uploadAllowedExtensions"
+                              value={subStage.uploadConfig.validationSettings?.allowedExtensions.join(', ') || ''}
+                              onChange={(e) => {
+                                const extensions = e.target.value.split(',').map(ext => ext.trim());
+                                handleUpdateFileConfig('upload', 'allowedExtensions', extensions, true);
+                              }}
+                              placeholder=".xlsx, .csv, .pdf"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="uploadMaxFileSize">Max File Size (MB)</Label>
+                            <Input
+                              id="uploadMaxFileSize"
+                              type="number"
+                              value={subStage.uploadConfig.validationSettings?.maxFileSize || 10}
+                              onChange={(e) => handleUpdateFileConfig('upload', 'maxFileSize', Number(e.target.value), true)}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 mt-2">
+                          <Checkbox
+                            id="uploadRequireValidation"
+                            checked={subStage.uploadConfig.validationSettings?.requireValidation || false}
+                            onCheckedChange={(checked) => handleUpdateFileConfig('upload', 'requireValidation', !!checked, true)}
+                          />
+                          <Label htmlFor="uploadRequireValidation">Require validation</Label>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="uploadAllowMultiple"
+                          checked={subStage.uploadConfig.allowMultiple}
+                          onCheckedChange={(checked) => handleUpdateFileConfig('upload', 'allowMultiple', !!checked)}
+                        />
+                        <Label htmlFor="uploadAllowMultiple">Allow multiple file uploads</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="uploadEmailNotifications"
+                          checked={subStage.uploadConfig.emailNotifications || false}
+                          onCheckedChange={(checked) => handleUpdateFileConfig('upload', 'emailNotifications', !!checked)}
+                        />
+                        <Label htmlFor="uploadEmailNotifications">Send email notifications</Label>
+                      </div>
+                      
+                      <Separator />
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Upload Parameters</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="uploadParameterSelect">Available Parameters</Label>
+                            <Select
+                              value={selectedParameterId}
+                              onValueChange={setSelectedParameterId}
+                            >
+                              <SelectTrigger id="uploadParameterSelect">
+                                <SelectValue placeholder="Select a parameter to add" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {sampleParameters
+                                  .filter(param => !subStage.uploadConfig?.parameters.some(p => p.id === param.id))
+                                  .map(param => (
+                                    <SelectItem key={param.id} value={param.id}>{param.name}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              onClick={() => handleAddFileParameter('upload')}
+                              disabled={!selectedParameterId}
+                            >
+                              <Plus className="mr-2 h-4 w-4" /> Add
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {subStage.uploadConfig.parameters.length === 0 ? (
+                          <div className="text-center py-4 border rounded-md">
+                            <p className="text-sm text-muted-foreground">
+                              No parameters added. Use the dropdown above to add parameters.
+                            </p>
+                          </div>
+                        ) : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Data Type</TableHead>
+                                <TableHead>Required</TableHead>
+                                <TableHead className="w-[80px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {subStage.uploadConfig.parameters.map(param => (
+                                <TableRow key={param.id}>
+                                  <TableCell className="font-medium">{param.name}</TableCell>
+                                  <TableCell>{param.dataType}</TableCell>
+                                  <TableCell>
+                                    <Checkbox
+                                      checked={param.isRequired}
+                                      onCheckedChange={(checked) => {
+                                        const updatedParams = subStage.uploadConfig?.parameters.map(p => {
+                                          if (p.id === param.id) {
+                                            return { ...p, isRequired: !!checked };
+                                          }
+                                          return p;
+                                        }) || [];
+                                        handleUpdateFileConfig('upload', 'parameters', updatedParams);
+                                      }}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleRemoveFileParameter('upload', param.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Download Config Tab */}
+          <TabsContent value="download">
+            <Card>
+              <CardHeader>
+                <CardTitle>Download Configuration</CardTitle>
+                <CardDescription>Configure file download settings for this sub-stage</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="requiresDownload"
+                      checked={subStage.requiresDownload || false}
+                      onCheckedChange={() => handleToggleSubStageProperty('requiresDownload')}
+                    />
+                    <Label htmlFor="requiresDownload">This sub-stage requires file download</Label>
+                  </div>
+                  
+                  {subStage.requiresDownload && subStage.downloadConfig && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="downloadDescription">Description</Label>
+                          <Input
+                            id="downloadDescription"
+                            value={subStage.downloadConfig.description || ''}
+                            onChange={(e) => handleUpdateFileConfig('download', 'description', e.target.value)}
+                            placeholder="Enter a description for the download"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="downloadFileNamingConvention">File Naming Convention</Label>
+                          <Input
+                            id="downloadFileNamingConvention"
+                            value={subStage.downloadConfig.fileNamingConvention || ''}
+                            onChange={(e) => handleUpdateFileConfig('download', 'fileNamingConvention', e.target.value)}
+                            placeholder="e.g., {date}_{name}_{id}"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-medium">File Settings</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="downloadAllowedExtensions">File Extensions</Label>
+                            <Input
+                              id="downloadAllowedExtensions"
+                              value={subStage.downloadConfig.validationSettings?.allowedExtensions.join(', ') || ''}
+                              onChange={(e) => {
+                                const extensions = e.target.value.split(',').map(ext => ext.trim());
+                                handleUpdateFileConfig('download', 'allowedExtensions', extensions, true);
+                              }}
+                              placeholder=".xlsx, .csv, .pdf"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="downloadAllowMultiple"
+                          checked={subStage.downloadConfig.allowMultiple}
+                          onCheckedChange={(checked) => handleUpdateFileConfig('download', 'allowMultiple', !!checked)}
+                        />
+                        <Label htmlFor="downloadAllowMultiple">Allow multiple file downloads</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="downloadEmailNotifications"
+                          checked={subStage.downloadConfig.emailNotifications || false}
+                          onCheckedChange={(checked) => handleUpdateFileConfig('download', 'emailNotifications', !!checked)}
+                        />
+                        <Label htmlFor="downloadEmailNotifications">Send email notifications</Label>
+                      </div>
+                      
+                      <Separator />
+                      
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Download Parameters</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="downloadParameterSelect">Available Parameters</Label>
+                            <Select
+                              value={selectedParameterId}
+                              onValueChange={setSelectedParameterId}
+                            >
+                              <SelectTrigger id="downloadParameterSelect">
+                                <SelectValue placeholder="Select a parameter to add" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {sampleParameters
+                                  .filter(param => !subStage.downloadConfig?.parameters.some(p => p.id === param.id))
+                                  .map(param => (
+                                    <SelectItem key={param.id} value={param.id}>{param.name}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              onClick={() => handleAddFileParameter('download')}
+                              disabled={!selectedParameterId}
+                            >
+                              <Plus className="mr-2 h-4 w-4" /> Add
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {subStage.downloadConfig.parameters.length === 0 ? (
+                          <div className="text-center py-4 border rounded-md">
+                            <p className="text-sm text-muted-foreground">
+                              No parameters added. Use the dropdown above to add parameters.
+                            </p>
+                          </div>
+                        ) : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Data Type</TableHead>
+                                <TableHead>Required</TableHead>
+                                <TableHead className="w-[80px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {subStage.downloadConfig.parameters.map(param => (
+                                <TableRow key={param.id}>
+                                  <TableCell className="font-medium">{param.name}</TableCell>
+                                  <TableCell>{param.dataType}</TableCell>
+                                  <TableCell>
+                                    <Checkbox
+                                      checked={param.isRequired}
+                                      onCheckedChange={(checked) => {
+                                        const updatedParams = subStage.downloadConfig?.parameters.map(p => {
+                                          if (p.id === param.id) {
+                                            return { ...p, isRequired: !!checked };
+                                          }
+                                          return p;
+                                        }) || [];
+                                        handleUpdateFileConfig('download', 'parameters', updatedParams);
+                                      }}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleRemoveFileParameter('download', param.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  };
+  
   return (
     <div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        {/* Sub-Stage Configuration Dialog */}
-        <SubStageConfigDialog
-          open={showSubStageDialog}
-          onOpenChange={setShowSubStageDialog}
-          subStage={editingSubStage?.subStage || null}
-          onSave={handleSaveSubStage}
-          availableAttestations={availableAttestations}
-          availableParameters={sampleParameters}
-        />
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="workflow">Workflow Configuration</TabsTrigger>
           <TabsTrigger value="parameters">Parameter Values</TabsTrigger>
@@ -1100,240 +2116,217 @@ const WorkflowInstanceConfig: React.FC = () => {
                   </div>
                 ) : selectedApplication && selectedWorkflowInstance ? (
                   <>
-                    {/* Stage Selection */}
-                    <div className="border rounded-md p-4">
-                      <h3 className="text-lg font-medium mb-4">Stage Selection</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="stageSelect">Available Stages</Label>
-                          <Select 
-                            value={selectedStageId} 
-                            onValueChange={setSelectedStageId}
-                          >
-                            <SelectTrigger id="stageSelect">
-                              <SelectValue placeholder="Select a stage to add" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableStages
-                                .filter(stage => !selectedStages.some(s => s.id === stage.id))
-                                .map(stage => (
-                                  <SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>
-                                ))
-                              }
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex items-end">
-                          <Button onClick={handleAddStage} disabled={!selectedStageId}>
-                            <Plus className="mr-2 h-4 w-4" /> Add Stage
-                          </Button>
+                    {/* Split View Layout */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Left Panel: Stage Selection and List */}
+                      <div className="space-y-4">
+                        <div className="border rounded-md p-4">
+                          <h3 className="text-lg font-medium mb-4">Stage Selection</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="stageSelect">Available Stages</Label>
+                              <Select 
+                                value={selectedStageId} 
+                                onValueChange={setSelectedStageId}
+                              >
+                                <SelectTrigger id="stageSelect">
+                                  <SelectValue placeholder="Select a stage to add" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableStages
+                                    .filter(stage => !selectedStages.some(s => s.id === stage.id))
+                                    .map(stage => (
+                                      <SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>
+                                    ))
+                                  }
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex items-end">
+                              <Button onClick={handleAddStage} disabled={!selectedStageId}>
+                                <Plus className="mr-2 h-4 w-4" /> Add Stage
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Selected Stages */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium">Selected Stages</h4>
+                            {selectedStages.length === 0 ? (
+                              <div className="text-center py-4 border rounded-md">
+                                <p className="text-sm text-muted-foreground">
+                                  No stages selected. Use the dropdown above to add stages to the workflow.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {selectedStages.map((stage, index) => (
+                                  <Card key={stage.id} className={`overflow-hidden ${selectedSubStage && selectedSubStage.stageId === stage.id ? 'border-primary' : ''}`}>
+                                    <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+                                      <div>
+                                        <CardTitle className="text-base">{stage.name}</CardTitle>
+                                        <CardDescription>{stage.description}</CardDescription>
+                                      </div>
+                                      <div className="flex space-x-1">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          onClick={() => handleMoveStageUp(stage.id)}
+                                          disabled={index === 0}
+                                        >
+                                          <ChevronUp className="h-4 w-4" />
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          onClick={() => handleMoveStageDown(stage.id)}
+                                          disabled={index === selectedStages.length - 1}
+                                        >
+                                          <ChevronDown className="h-4 w-4" />
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          onClick={() => handleRemoveStage(stage.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </CardHeader>
+                                    <CardContent className="py-2 px-4">
+                                      <div className="flex justify-between items-center mb-4">
+                                        <h5 className="font-medium text-sm">Sub-Stages</h5>
+                                        <Select
+                                          onValueChange={(value) => handleAddSubStage(stage.id, value)}
+                                        >
+                                          <SelectTrigger className="w-[200px]">
+                                            <span className="text-xs">Add Sub-Stage</span>
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {availableStages
+                                              .find(s => s.id === stage.id)?.subStages
+                                              .filter(subStage => !stage.subStages.some(ss => ss.id === subStage.id))
+                                              .map(subStage => (
+                                                <SelectItem key={subStage.id} value={subStage.id}>
+                                                  {subStage.name}
+                                                </SelectItem>
+                                              ))
+                                            }
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      
+                                      {stage.subStages.length === 0 ? (
+                                        <div className="text-center py-4 border rounded-md">
+                                          <p className="text-sm text-muted-foreground">
+                                            No sub-stages selected. Use the dropdown above to add sub-stages to this stage.
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow>
+                                              <TableHead className="w-[60px]">Seq #</TableHead>
+                                              <TableHead>Name</TableHead>
+                                              <TableHead>Type</TableHead>
+                                              <TableHead className="w-[180px]">Actions</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {stage.subStages.map((subStage, subStageIndex) => (
+                                              <TableRow 
+                                                key={subStage.id}
+                                                className={selectedSubStage && selectedSubStage.stageId === stage.id && selectedSubStage.subStageId === subStage.id ? 'bg-muted' : ''}
+                                              >
+                                                <TableCell className="font-medium text-center">
+                                                  {subStage.sequence}
+                                                </TableCell>
+                                                <TableCell className="font-medium">{subStage.name}</TableCell>
+                                                <TableCell>
+                                                  <Badge variant={subStage.type === 'manual' ? 'outline' : 'default'}>
+                                                    {subStage.type === 'manual' ? 'Manual' : 'Automatic'}
+                                                  </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <div className="flex items-center space-x-1">
+                                                    <Button 
+                                                      variant="ghost" 
+                                                      size="sm" 
+                                                      onClick={() => handleMoveSubStageUp(stage.id, subStage.id)}
+                                                      disabled={subStageIndex === 0}
+                                                    >
+                                                      <ChevronUp className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button 
+                                                      variant="ghost" 
+                                                      size="sm" 
+                                                      onClick={() => handleMoveSubStageDown(stage.id, subStage.id)}
+                                                      disabled={subStageIndex === stage.subStages.length - 1}
+                                                    >
+                                                      <ChevronDown className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button 
+                                                      variant="ghost" 
+                                                      size="sm"
+                                                      onClick={() => handleSelectSubStage(stage.id, subStage.id)}
+                                                    >
+                                                      <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button 
+                                                      variant="ghost" 
+                                                      size="sm"
+                                                      onClick={() => handleRemoveSubStage(stage.id, subStage.id)}
+                                                    >
+                                                      <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                    <Select
+                                                      onValueChange={(value) => {
+                                                        const [depStageId, depSubStageId] = value.split('|');
+                                                        handleAddDependency(stage.id, subStage.id, depStageId, depSubStageId);
+                                                      }}
+                                                    >
+                                                      <SelectTrigger className="w-[80px]">
+                                                        <span className="text-xs">Deps</span>
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                        {getPreviousSubStages(index, subStageIndex).map(prevStage => (
+                                                          <React.Fragment key={prevStage.stageId}>
+                                                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                                                              {prevStage.stageName}
+                                                            </div>
+                                                            {prevStage.subStages.map(prevSubStage => (
+                                                              <SelectItem 
+                                                                key={`${prevStage.stageId}|${prevSubStage.id}`} 
+                                                                value={`${prevStage.stageId}|${prevSubStage.id}`}
+                                                                className="pl-6"
+                                                              >
+                                                                {prevSubStage.name}
+                                                              </SelectItem>
+                                                            ))}
+                                                          </React.Fragment>
+                                                        ))}
+                                                      </SelectContent>
+                                                    </Select>
+                                                  </div>
+                                                </TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      )}
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       
-                      {/* Selected Stages */}
-                      <div className="space-y-2">
-                        <h4 className="font-medium">Selected Stages</h4>
-                        {selectedStages.length === 0 ? (
-                          <div className="text-center py-4 border rounded-md">
-                            <p className="text-sm text-muted-foreground">
-                              No stages selected. Use the dropdown above to add stages to the workflow.
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            {selectedStages.map((stage, index) => (
-                              <Card key={stage.id} className="overflow-hidden">
-                                <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-                                  <div>
-                                    <CardTitle className="text-base">{stage.name}</CardTitle>
-                                    <CardDescription>{stage.description}</CardDescription>
-                                  </div>
-                                  <div className="flex space-x-1">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      onClick={() => handleMoveStageUp(stage.id)}
-                                      disabled={index === 0}
-                                    >
-                                      <ChevronUp className="h-4 w-4" />
-                                    </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      onClick={() => handleMoveStageDown(stage.id)}
-                                      disabled={index === selectedStages.length - 1}
-                                    >
-                                      <ChevronDown className="h-4 w-4" />
-                                    </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      onClick={() => handleRemoveStage(stage.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </CardHeader>
-                                <CardContent className="py-2 px-4">
-                                  <div className="flex justify-between items-center mb-4">
-                                    <h5 className="font-medium text-sm">Sub-Stages</h5>
-                                    <Select
-                                      onValueChange={(value) => handleAddSubStage(stage.id, value)}
-                                    >
-                                      <SelectTrigger className="w-[200px]">
-                                        <span className="text-xs">Add Sub-Stage</span>
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {availableStages
-                                          .find(s => s.id === stage.id)?.subStages
-                                          .filter(subStage => !stage.subStages.some(ss => ss.id === subStage.id))
-                                          .map(subStage => (
-                                            <SelectItem key={subStage.id} value={subStage.id}>
-                                              {subStage.name}
-                                            </SelectItem>
-                                          ))
-                                        }
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  
-                                  {stage.subStages.length === 0 ? (
-                                    <div className="text-center py-4 border rounded-md">
-                                      <p className="text-sm text-muted-foreground">
-                                        No sub-stages selected. Use the dropdown above to add sub-stages to this stage.
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead className="w-[60px]">Seq #</TableHead>
-                                          <TableHead>Name</TableHead>
-                                          <TableHead>Type</TableHead>
-                                          <TableHead>Options</TableHead>
-                                          <TableHead>Dependencies</TableHead>
-                                          <TableHead className="w-[180px]">Actions</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {stage.subStages.map((subStage, subStageIndex) => (
-                                          <TableRow key={subStage.id}>
-                                            <TableCell className="font-medium text-center">
-                                              {subStage.sequence}
-                                            </TableCell>
-                                            <TableCell className="font-medium">{subStage.name}</TableCell>
-                                            <TableCell>
-                                              <Badge variant={subStage.type === 'manual' ? 'outline' : 'default'}>
-                                                {subStage.type === 'manual' ? 'Manual' : 'Automatic'}
-                                              </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                              <div className="flex flex-wrap gap-1">
-                                                {subStage.isActive && <Badge variant="outline">Active</Badge>}
-                                                {subStage.isAuto && <Badge variant="default">Auto</Badge>}
-                                                {subStage.isAdhoc && <Badge variant="secondary">Adhoc</Badge>}
-                                                {subStage.isAlteryx && <Badge variant="destructive">Alteryx</Badge>}
-                                                {subStage.requiresAttestation && <Badge variant="outline" className="border-amber-500 text-amber-500">Attest</Badge>}
-                                                {subStage.requiresApproval && <Badge variant="outline" className="border-green-500 text-green-500">Approval</Badge>}
-                                                {subStage.requiresUpload && <Badge variant="outline" className="border-blue-500 text-blue-500">Upload</Badge>}
-                                                {subStage.requiresDownload && <Badge variant="outline" className="border-purple-500 text-purple-500">Download</Badge>}
-                                              </div>
-                                            </TableCell>
-                                            <TableCell>
-                                              {subStage.dependencies.length === 0 ? (
-                                                <span className="text-sm text-muted-foreground">None</span>
-                                              ) : (
-                                                <div className="flex flex-wrap gap-1">
-                                                  {subStage.dependencies.map((dep, depIndex) => (
-                                                    <Badge key={depIndex} variant="secondary" className="flex items-center gap-1">
-                                                      {dep.name}
-                                                      <Button 
-                                                        variant="ghost" 
-                                                        size="sm" 
-                                                        className="h-4 w-4 p-0 ml-1"
-                                                        onClick={() => handleRemoveDependency(stage.id, subStage.id, depIndex)}
-                                                      >
-                                                        <X className="h-3 w-3" />
-                                                      </Button>
-                                                    </Badge>
-                                                  ))}
-                                                </div>
-                                              )}
-                                            </TableCell>
-                                            <TableCell>
-                                              <div className="flex items-center space-x-2">
-                                                <div className="flex space-x-1">
-                                                  <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
-                                                    onClick={() => handleMoveSubStageUp(stage.id, subStage.id)}
-                                                    disabled={subStageIndex === 0}
-                                                  >
-                                                    <ChevronUp className="h-4 w-4" />
-                                                  </Button>
-                                                  <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
-                                                    onClick={() => handleMoveSubStageDown(stage.id, subStage.id)}
-                                                    disabled={subStageIndex === stage.subStages.length - 1}
-                                                  >
-                                                    <ChevronDown className="h-4 w-4" />
-                                                  </Button>
-                                                  <Button 
-                                                    variant="ghost" 
-                                                    size="sm"
-                                                    onClick={() => handleEditSubStage(stage.id, subStage.id)}
-                                                  >
-                                                    <Edit className="h-4 w-4" />
-                                                  </Button>
-                                                  <Button 
-                                                    variant="ghost" 
-                                                    size="sm"
-                                                    onClick={() => handleRemoveSubStage(stage.id, subStage.id)}
-                                                  >
-                                                    <Trash2 className="h-4 w-4" />
-                                                  </Button>
-                                                </div>
-                                                <Select
-                                                  onValueChange={(value) => {
-                                                    const [depStageId, depSubStageId] = value.split('|');
-                                                    handleAddDependency(stage.id, subStage.id, depStageId, depSubStageId);
-                                                  }}
-                                                >
-                                                  <SelectTrigger className="w-[130px]">
-                                                    <span className="text-xs">Add Dependency</span>
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    {getPreviousSubStages(index, subStageIndex).map(prevStage => (
-                                                      <React.Fragment key={prevStage.stageId}>
-                                                        <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                                                          {prevStage.stageName}
-                                                        </div>
-                                                        {prevStage.subStages.map(prevSubStage => (
-                                                          <SelectItem 
-                                                            key={`${prevStage.stageId}|${prevSubStage.id}`} 
-                                                            value={`${prevStage.stageId}|${prevSubStage.id}`}
-                                                            className="pl-6"
-                                                          >
-                                                            {prevSubStage.name}
-                                                          </SelectItem>
-                                                        ))}
-                                                      </React.Fragment>
-                                                    ))}
-                                                  </SelectContent>
-                                                </Select>
-                                              </div>
-                                            </TableCell>
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        )}
+                      {/* Right Panel: Sub-Stage Configuration */}
+                      <div className="border rounded-md p-4">
+                        <h3 className="text-lg font-medium mb-4">Sub-Stage Configuration</h3>
+                        {renderSubStageConfig()}
                       </div>
                     </div>
                   </>
@@ -1376,79 +2369,158 @@ const WorkflowInstanceConfig: React.FC = () => {
                     Please go to the Workflow Configuration tab and select an application and workflow instance first.
                   </p>
                 </div>
-              ) : selectedStages.length === 0 ? (
-                <div className="text-center py-8">
-                  <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-lg font-semibold">No Stages Configured</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Please configure stages in the Workflow Configuration tab first.
-                  </p>
-                </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="flex items-center space-x-2">
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Configure default parameter values for all processes in the workflow. These values can be overridden at runtime.
-                    </p>
+                  {/* Global Parameters Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Configure global parameter values for the workflow instance. These values can be accessed by all processes.
+                      </p>
+                    </div>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Global Parameters</CardTitle>
+                        <CardDescription>Parameters defined at the application level</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {globalParameterValues.length === 0 ? (
+                          <div className="text-center py-4 border rounded-md">
+                            <p className="text-sm text-muted-foreground">
+                              No global parameters defined for this application.
+                            </p>
+                          </div>
+                        ) : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Parameter</TableHead>
+                                <TableHead>Data Type</TableHead>
+                                <TableHead>Required</TableHead>
+                                <TableHead>Value</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {globalParameterValues.map(param => (
+                                <TableRow key={param.id}>
+                                  <TableCell className="font-medium">{param.name}</TableCell>
+                                  <TableCell>{param.dataType}</TableCell>
+                                  <TableCell>
+                                    {param.isRequired ? (
+                                      <Check className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                      <X className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input 
+                                      type={param.dataType === 'date' ? 'date' : 'text'} 
+                                      placeholder="Enter value"
+                                      value={param.value}
+                                      onChange={(e) => handleUpdateGlobalParameter(param.id, e.target.value)}
+                                      className="w-full"
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
                   
-                  {selectedStages.map(stage => (
-                    <div key={stage.id} className="space-y-4">
-                      <h3 className="text-lg font-medium">{stage.name}</h3>
-                      
-                      {stage.subStages.map(subStage => (
-                        <Card key={subStage.id} className="overflow-hidden">
-                          <CardHeader className="py-3 px-4">
-                            <CardTitle className="text-base">{subStage.name}</CardTitle>
-                          </CardHeader>
-                          <CardContent className="py-2 px-4">
-                            {subStage.parameters.length === 0 ? (
-                              <p className="text-sm text-muted-foreground">No parameters for this sub-stage.</p>
-                            ) : (
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Parameter</TableHead>
-                                    <TableHead>Data Type</TableHead>
-                                    <TableHead>Required</TableHead>
-                                    <TableHead>Default Value</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {subStage.parameters.map(param => (
-                                    <TableRow key={param.id}>
-                                      <TableCell className="font-medium">{param.name}</TableCell>
-                                      <TableCell>{param.dataType}</TableCell>
-                                      <TableCell>
-                                        {param.isRequired ? (
-                                          <Check className="h-4 w-4 text-green-500" />
-                                        ) : (
-                                          <X className="h-4 w-4 text-muted-foreground" />
-                                        )}
-                                      </TableCell>
-                                      <TableCell>
-                                        <Input 
-                                          type={param.dataType === 'date' ? 'date' : 'text'} 
-                                          placeholder="Enter default value"
-                                          className="w-full"
-                                        />
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                      
-                      <Separator />
+                  <Separator />
+                  
+                  {/* Sub-Stage Parameters Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Configure default parameter values for all sub-stages in the workflow. These values can be overridden at runtime.
+                      </p>
                     </div>
-                  ))}
+                    
+                    {selectedStages.length === 0 ? (
+                      <div className="text-center py-8">
+                        <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-2 text-lg font-semibold">No Stages Configured</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Please configure stages in the Workflow Configuration tab first.
+                        </p>
+                      </div>
+                    ) : (
+                      selectedStages.map(stage => (
+                        <div key={stage.id} className="space-y-4">
+                          <h3 className="text-lg font-medium">{stage.name}</h3>
+                          
+                          {stage.subStages.map(subStage => (
+                            <Card key={subStage.id} className="overflow-hidden">
+                              <CardHeader className="py-3 px-4">
+                                <CardTitle className="text-base">{subStage.name}</CardTitle>
+                              </CardHeader>
+                              <CardContent className="py-2 px-4">
+                                {subStage.parameters.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">No parameters for this sub-stage.</p>
+                                ) : (
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Parameter</TableHead>
+                                        <TableHead>Data Type</TableHead>
+                                        <TableHead>Required</TableHead>
+                                        <TableHead>Default Value</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {subStage.parameters.map(param => (
+                                        <TableRow key={param.id}>
+                                          <TableCell className="font-medium">{param.name}</TableCell>
+                                          <TableCell>{param.dataType}</TableCell>
+                                          <TableCell>
+                                            {param.isRequired ? (
+                                              <Check className="h-4 w-4 text-green-500" />
+                                            ) : (
+                                              <X className="h-4 w-4 text-muted-foreground" />
+                                            )}
+                                          </TableCell>
+                                          <TableCell>
+                                            <Input 
+                                              type={param.dataType === 'date' ? 'date' : 'text'} 
+                                              placeholder="Enter default value"
+                                              value={param.value}
+                                              onChange={(e) => {
+                                                const stageIndex = selectedStages.findIndex(s => s.id === stage.id);
+                                                const subStageIndex = selectedStages[stageIndex].subStages.findIndex(ss => ss.id === subStage.id);
+                                                const paramIndex = selectedStages[stageIndex].subStages[subStageIndex].parameters.findIndex(p => p.id === param.id);
+                                                
+                                                const newStages = [...selectedStages];
+                                                newStages[stageIndex].subStages[subStageIndex].parameters[paramIndex].value = e.target.value;
+                                                
+                                                setSelectedStages(newStages);
+                                              }}
+                                              className="w-full"
+                                            />
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                          
+                          <Separator />
+                        </div>
+                      ))
+                    )}
+                  </div>
                   
                   <div className="flex justify-end">
-                    <Button>
+                    <Button onClick={handleSaveWorkflowConfig}>
                       <Save className="mr-2 h-4 w-4" /> Save Parameter Values
                     </Button>
                   </div>
