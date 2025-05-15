@@ -1124,7 +1124,7 @@ const MetadataManagement: React.FC = () => {
                                 <Label className="text-right pt-2">Parameters</Label>
                                 <div className="col-span-3">
                                   <Select 
-                                    value="placeholder"
+                                    value=""
                                     onValueChange={() => {}}
                                   >
                                     <SelectTrigger className="w-full">
@@ -1182,7 +1182,7 @@ const MetadataManagement: React.FC = () => {
                                 <Label className="text-right pt-2">Attestations</Label>
                                 <div className="col-span-3">
                                   <Select 
-                                    value="placeholder"
+                                    value=""
                                     onValueChange={() => {}}
                                   >
                                     <SelectTrigger className="w-full">
