@@ -182,11 +182,9 @@ const sampleRoles: Role[] = [
 interface RoleForm {
   id?: string;
   name: string;
-  description: string;
   department: string;
   userType: string;
   accessLevel: 'RO' | 'RW';
-  selectedPermissions: string[];
   selectedApplications: string[];
   isActive: boolean;
 }
@@ -203,11 +201,9 @@ const RoleManagement: React.FC = () => {
   // Form state
   const [roleForm, setRoleForm] = useState<RoleForm>({
     name: '',
-    description: '',
     department: '',
-    userType: 'Standard',
+    userType: 'User',
     accessLevel: 'RO',
-    selectedPermissions: [],
     selectedApplications: [],
     isActive: true
   });
@@ -215,7 +211,8 @@ const RoleManagement: React.FC = () => {
   // Filter roles based on search term
   const filteredRoles = roles.filter(role => 
     role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    role.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (role.department && role.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (role.userType && role.userType.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
   // Reset form when dialog opens/closes
@@ -224,22 +221,18 @@ const RoleManagement: React.FC = () => {
       setRoleForm({
         id: selectedRole.id,
         name: selectedRole.name,
-        description: selectedRole.description,
         department: selectedRole.department || '',
-        userType: selectedRole.userType || 'Standard',
+        userType: selectedRole.userType || 'User',
         accessLevel: selectedRole.accessLevel || 'RO',
-        selectedPermissions: selectedRole.permissions.map(p => p.id),
         selectedApplications: selectedRole.applications,
         isActive: selectedRole.isActive
       });
     } else if (roleDialogOpen) {
       setRoleForm({
         name: '',
-        description: '',
         department: '',
-        userType: 'Standard',
+        userType: 'User',
         accessLevel: 'RO',
-        selectedPermissions: [],
         selectedApplications: [],
         isActive: true
       });
@@ -249,21 +242,6 @@ const RoleManagement: React.FC = () => {
   // Form handlers
   const handleRoleFormChange = (field: keyof RoleForm, value: any) => {
     setRoleForm(prev => ({ ...prev, [field]: value }));
-  };
-  
-  const togglePermission = (permissionId: string) => {
-    setRoleForm(prev => {
-      const selectedPermissions = [...prev.selectedPermissions];
-      const index = selectedPermissions.indexOf(permissionId);
-      
-      if (index === -1) {
-        selectedPermissions.push(permissionId);
-      } else {
-        selectedPermissions.splice(index, 1);
-      }
-      
-      return { ...prev, selectedPermissions };
-    });
   };
   
   const toggleApplication = (applicationId: string) => {
@@ -292,16 +270,14 @@ const RoleManagement: React.FC = () => {
       return;
     }
     
-    const selectedPermissionObjects = samplePermissions.filter(p => roleForm.selectedPermissions.includes(p.id));
-    
     const newRole: Role = {
       id: roleForm.id || `role-${Date.now()}`,
       name: roleForm.name,
-      description: roleForm.description,
+      description: '', // Empty description as it's not needed
       department: roleForm.department,
       userType: roleForm.userType,
       accessLevel: roleForm.accessLevel,
-      permissions: selectedPermissionObjects,
+      permissions: [], // Empty permissions as they're not needed
       applications: roleForm.selectedApplications,
       createdAt: roleForm.id ? roles.find(r => r.id === roleForm.id)?.createdAt || new Date().toISOString() : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -363,7 +339,7 @@ const RoleManagement: React.FC = () => {
             <DialogHeader>
               <DialogTitle>{selectedRole ? 'Edit Role' : 'Add New Role'}</DialogTitle>
               <DialogDescription>
-                {selectedRole ? 'Update the role details and permissions' : 'Create a new role with specific permissions'}
+                {selectedRole ? 'Update the role details' : 'Create a new role'}
               </DialogDescription>
             </DialogHeader>
             
@@ -390,75 +366,28 @@ const RoleManagement: React.FC = () => {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Enter role description" 
-                  value={roleForm.description}
-                  onChange={(e) => handleRoleFormChange('description', e.target.value)}
-                />
-              </div>
-              
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="userType">User Type</Label>
-                  <Select 
-                    value={roleForm.userType} 
-                    onValueChange={(value) => handleRoleFormChange('userType', value)}
-                  >
-                    <SelectTrigger id="userType">
-                      <SelectValue placeholder="Select user type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Standard">Standard</SelectItem>
-                      <SelectItem value="Power User">Power User</SelectItem>
-                      <SelectItem value="Administrator">Administrator</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input 
+                    id="userType" 
+                    placeholder="User or SME" 
+                    value={roleForm.userType}
+                    onChange={(e) => handleRoleFormChange('userType', e.target.value)}
+                  />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="accessLevel">Access Level</Label>
-                  <Select 
-                    value={roleForm.accessLevel} 
-                    onValueChange={(value: 'RO' | 'RW') => handleRoleFormChange('accessLevel', value)}
-                  >
-                    <SelectTrigger id="accessLevel">
-                      <SelectValue placeholder="Select access level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="RO">Read Only (RO)</SelectItem>
-                      <SelectItem value="RW">Read Write (RW)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Permissions</Label>
-                <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-2">
-                    {samplePermissions.map((permission) => (
-                      <div key={permission.id} className="flex items-start space-x-2">
-                        <Checkbox 
-                          id={`permission-${permission.id}`} 
-                          checked={roleForm.selectedPermissions.includes(permission.id)}
-                          onCheckedChange={() => togglePermission(permission.id)}
-                        />
-                        <div className="grid gap-1.5 leading-none">
-                          <label
-                            htmlFor={`permission-${permission.id}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            {permission.name}
-                          </label>
-                          <p className="text-xs text-muted-foreground">
-                            {permission.description}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                  <Label htmlFor="accessLevel">Access Level (RO/RW)</Label>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Switch 
+                      id="accessLevel" 
+                      checked={roleForm.accessLevel === 'RW'}
+                      onCheckedChange={(checked) => handleRoleFormChange('accessLevel', checked ? 'RW' : 'RO')}
+                    />
+                    <Label htmlFor="accessLevel" className="cursor-pointer">
+                      {roleForm.accessLevel === 'RW' ? 'Read Write' : 'Read Only'}
+                    </Label>
                   </div>
                 </div>
               </div>
@@ -607,15 +536,10 @@ const RoleManagement: React.FC = () => {
                 </div>
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
-                <p className="text-base">{selectedRole.description}</p>
-              </div>
-              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">User Type</h3>
-                  <p className="text-base">{selectedRole.userType || 'Standard'}</p>
+                  <p className="text-base">{selectedRole.userType || 'User'}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Access Level</h3>
@@ -623,25 +547,6 @@ const RoleManagement: React.FC = () => {
                     {selectedRole.accessLevel === 'RW' ? 'Read Write' : 'Read Only'}
                   </Badge>
                 </div>
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Permissions</h3>
-                <ScrollArea className="h-[200px] border rounded-md p-4 mt-2">
-                  <div className="grid grid-cols-2 gap-4">
-                    {selectedRole.permissions.map((permission) => (
-                      <div key={permission.id} className="flex items-start space-x-2">
-                        <div className="h-5 w-5 flex items-center justify-center">
-                          <UserCheck className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{permission.name}</p>
-                          <p className="text-xs text-muted-foreground">{permission.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
               </div>
               
               <div>
