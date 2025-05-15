@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Logo from './Logo';
 import { Button } from '@/components/ui/button';
-import { Bell, User } from 'lucide-react';
+import { Bell, User, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +14,28 @@ import {
 
 const Header = () => {
   const router = useRouter();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
-  const handleNotificationClick = () => {
-    alert("You have no new notifications at this time.");
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+    if (!showNotifications) {
+      setHasUnreadNotifications(false);
+    }
   };
 
   return (
@@ -27,14 +46,72 @@ const Header = () => {
         </div>
         
         <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={handleNotificationClick}
-          >
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </Button>
+          <div className="relative" ref={notificationRef}>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={toggleNotifications}
+              className={showNotifications ? "bg-accent" : ""}
+            >
+              <Bell className="h-5 w-5" />
+              {hasUnreadNotifications && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
+            </Button>
+            
+            {showNotifications && (
+              <div 
+                className="absolute right-0 mt-2 w-80 bg-background rounded-md shadow-lg border z-50"
+                style={{ 
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                }}
+              >
+
+                
+                <div className="flex justify-between items-center p-4 border-b">
+                  <h3 className="font-medium">Notifications</h3>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6" 
+                    onClick={() => setShowNotifications(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="max-h-[400px] overflow-y-auto">
+                  <div className="p-4 border-b hover:bg-accent/50 cursor-pointer">
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm font-medium">Workflow Update</p>
+                      <span className="text-xs text-muted-foreground">2h ago</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">Stage 2 of "Q2 Financial Review" has been completed.</p>
+                  </div>
+                  
+                  <div className="p-4 border-b hover:bg-accent/50 cursor-pointer">
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm font-medium">New Assignment</p>
+                      <span className="text-xs text-muted-foreground">Yesterday</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">You have been assigned to review "Annual Compliance Report".</p>
+                  </div>
+                  
+                  <div className="p-4 border-b hover:bg-accent/50 cursor-pointer">
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm font-medium">System Notification</p>
+                      <span className="text-xs text-muted-foreground">3 days ago</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">STEPS system will undergo maintenance on Saturday, 10:00 PM - 2:00 AM.</p>
+                  </div>
+                  
+                  <div className="p-4">
+                    <Button variant="outline" className="w-full text-sm h-9">View all notifications</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
