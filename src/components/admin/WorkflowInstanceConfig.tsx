@@ -958,9 +958,9 @@ const WorkflowInstanceConfig: React.FC = () => {
                                                 <SelectContent>
                                                   {getPreviousSubStages(index, subStageIndex).map(prevStage => (
                                                     <React.Fragment key={prevStage.stageId}>
-                                                      <SelectItem value="" disabled className="font-semibold">
+                                                      <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
                                                         {prevStage.stageName}
-                                                      </SelectItem>
+                                                      </div>
                                                       {prevStage.subStages.map(prevSubStage => (
                                                         <SelectItem 
                                                           key={`${prevStage.stageId}|${prevSubStage.id}`} 
