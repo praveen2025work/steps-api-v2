@@ -2,7 +2,7 @@ import { useRouter } from 'next/router';
 import Logo from './Logo';
 import { Button } from '@/components/ui/button';
 import { Bell, User } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +14,8 @@ import {
 
 const Header = () => {
   const router = useRouter();
-  const { toast } = useToast();
-  
   const showNotifications = () => {
-    toast({
-      title: "Notifications",
+    toast("Notifications", {
       description: "You have no new notifications at this time.",
     });
   };
