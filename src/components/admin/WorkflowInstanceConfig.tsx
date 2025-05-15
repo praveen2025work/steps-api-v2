@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +9,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Edit, Info, Plus, Save, Trash2, X } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, ChevronUp, Edit, Info, Plus, Save, Trash2, X, FileText, ArrowRight } from 'lucide-react';
+import { StatusIcon, StatusLegend, DependencyBadge, StatusType } from './WorkflowStatusIcons';
+import { FileConfigCard, FileConfigGrid } from './FileConfigCard';
 import { toast } from '@/components/ui/use-toast';
 import type { Application, StageConfig, SubStageConfig, Parameter, Attestation, EmailTemplate, WorkflowNodeConfig } from '@/types/workflow-types';
 
@@ -1594,7 +1598,15 @@ const WorkflowInstanceConfig: React.FC = () => {
                   
                   {/* Dependencies Section */}
                   <div className="space-y-4">
-                    <h4 className="font-medium">Dependencies</h4>
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium">Dependencies</h4>
+                      {subStage.dependencies.length > 0 && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <ArrowRight className="h-3 w-3" />
+                          {subStage.dependencies.length} {subStage.dependencies.length === 1 ? 'dependency' : 'dependencies'}
+                        </Badge>
+                      )}
+                    </div>
                     
                     {subStage.dependencies.length === 0 ? (
                       <div className="text-center py-4 border rounded-md">
@@ -1603,30 +1615,33 @@ const WorkflowInstanceConfig: React.FC = () => {
                         </p>
                       </div>
                     ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Dependency</TableHead>
-                            <TableHead className="w-[80px]">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                      <div className="border rounded-md overflow-hidden">
+                        <div className="bg-gray-50 p-2 border-b">
+                          <div className="text-xs font-medium text-muted-foreground">This sub-stage depends on:</div>
+                        </div>
+                        <div className="divide-y">
                           {subStage.dependencies.map((dep, index) => (
-                            <TableRow key={index}>
-                              <TableCell>{dep.name}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveDependency(selectedSubStage.stageId, selectedSubStage.subStageId, index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
+                            <div key={index} className="p-2 flex items-center justify-between hover:bg-gray-50">
+                              <div className="flex items-center gap-2">
+                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <div className="font-medium text-sm">{dep.name}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Stage: {selectedStages.find(s => s.id === dep.stageId)?.name}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveDependency(selectedSubStage.stageId, selectedSubStage.subStageId, index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           ))}
-                        </TableBody>
-                      </Table>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1709,11 +1724,17 @@ const WorkflowInstanceConfig: React.FC = () => {
           <TabsContent value="upload">
             <Card>
               <CardHeader className="py-3">
-                <CardTitle>Upload Configuration</CardTitle>
-                <CardDescription>Configure file upload settings for this sub-stage</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center">
+                      <StatusIcon type="upload" className="mr-2" /> Upload Configuration
+                    </CardTitle>
+                    <CardDescription>Configure file upload settings for this sub-stage</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="requiresUpload"
@@ -1725,6 +1746,39 @@ const WorkflowInstanceConfig: React.FC = () => {
                   
                   {subStage.requiresUpload && subStage.uploadConfig && (
                     <>
+                      {/* Sample file cards */}
+                      <div className="border rounded-md p-3 bg-sky-50/30">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium text-sm">Configured Files</h4>
+                          <Button variant="outline" size="sm" className="h-7">
+                            <Plus className="h-3.5 w-3.5 mr-1" /> Add File
+                          </Button>
+                        </div>
+                        
+                        <FileConfigGrid 
+                          files={[
+                            {
+                              type: 'upload',
+                              fileName: 'Monthly Report',
+                              fileType: '.xlsx',
+                              isValid: true,
+                              description: 'Monthly financial report with all transactions',
+                              onEdit: () => {},
+                              onRemove: () => {}
+                            },
+                            {
+                              type: 'upload',
+                              fileName: 'Supporting Documentation',
+                              fileType: '.pdf',
+                              isValid: true,
+                              description: 'Any supporting documentation for the report',
+                              onEdit: () => {},
+                              onRemove: () => {}
+                            }
+                          ]}
+                        />
+                      </div>
+                      
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label htmlFor="uploadDescription">Description</Label>
@@ -1798,11 +1852,17 @@ const WorkflowInstanceConfig: React.FC = () => {
           <TabsContent value="download">
             <Card>
               <CardHeader className="py-3">
-                <CardTitle>Download Configuration</CardTitle>
-                <CardDescription>Configure file download settings for this sub-stage</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center">
+                      <StatusIcon type="download" className="mr-2" /> Download Configuration
+                    </CardTitle>
+                    <CardDescription>Configure file download settings for this sub-stage</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="requiresDownload"
@@ -1814,6 +1874,37 @@ const WorkflowInstanceConfig: React.FC = () => {
                   
                   {subStage.requiresDownload && subStage.downloadConfig && (
                     <>
+                      {/* Sample file cards */}
+                      <div className="border rounded-md p-3 bg-emerald-50/30">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium text-sm">Available Downloads</h4>
+                          <Button variant="outline" size="sm" className="h-7">
+                            <Plus className="h-3.5 w-3.5 mr-1" /> Add File
+                          </Button>
+                        </div>
+                        
+                        <FileConfigGrid 
+                          files={[
+                            {
+                              type: 'download',
+                              fileName: 'Generated Report',
+                              fileType: '.xlsx',
+                              description: 'System generated financial report',
+                              onEdit: () => {},
+                              onRemove: () => {}
+                            },
+                            {
+                              type: 'download',
+                              fileName: 'Compliance Certificate',
+                              fileType: '.pdf',
+                              description: 'Certificate of compliance with regulations',
+                              onEdit: () => {},
+                              onRemove: () => {}
+                            }
+                          ]}
+                        />
+                      </div>
+                      
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label htmlFor="downloadDescription">Description</Label>
@@ -1964,12 +2055,19 @@ const WorkflowInstanceConfig: React.FC = () => {
                         <div className="border rounded-md p-3">
                           <div className="flex justify-between items-center mb-3">
                             <h3 className="text-md font-medium">Stage Selection</h3>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span className="flex items-center">⚙️ Auto</span>
-                              <span className="flex items-center">👤 Manual</span>
-                              <span className="flex items-center">✓ Approval</span>
-                              <span className="flex items-center">🔍 Attest</span>
-                            </div>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 px-2">
+                                    <Info className="h-4 w-4" />
+                                    <span className="ml-1 text-xs">Legend</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" align="end" className="p-3 w-auto">
+                                  <StatusLegend />
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                             <div className="space-y-2">
@@ -2092,35 +2190,57 @@ const WorkflowInstanceConfig: React.FC = () => {
                                                 </TableCell>
                                                 <TableCell className="font-medium">{subStage.name}</TableCell>
                                                 <TableCell>
-                                                  <div className="flex flex-wrap gap-1">
-                                                    <Badge variant={subStage.type === 'manual' ? 'outline' : 'default'} 
-                                                      className="flex items-center gap-1">
-                                                      {subStage.isAuto ? '⚙️' : '👤'} 
-                                                      {subStage.type === 'manual' ? 'Manual' : 'Auto'}
-                                                    </Badge>
+                                                  <div className="flex flex-wrap gap-1.5">
+                                                    <StatusIcon 
+                                                      type={subStage.isAuto ? 'auto' : 'manual'} 
+                                                      size="sm" 
+                                                    />
                                                     
                                                     {subStage.requiresApproval && (
-                                                      <Badge variant="secondary" className="flex items-center gap-1">
-                                                        ✓ Approval
-                                                      </Badge>
+                                                      <StatusIcon type="approval" size="sm" />
                                                     )}
                                                     
                                                     {subStage.requiresAttestation && (
-                                                      <Badge variant="secondary" className="flex items-center gap-1">
-                                                        🔍 Attest
-                                                      </Badge>
+                                                      <StatusIcon type="attest" size="sm" />
                                                     )}
                                                     
                                                     {subStage.isAlteryx && (
-                                                      <Badge variant="outline" className="flex items-center gap-1 border-blue-500 text-blue-500">
-                                                        🔄 Alteryx
-                                                      </Badge>
+                                                      <StatusIcon type="alteryx" size="sm" />
                                                     )}
                                                     
                                                     {subStage.isAdhoc && (
-                                                      <Badge variant="outline" className="flex items-center gap-1 border-amber-500 text-amber-500">
-                                                        ⚡ Adhoc
-                                                      </Badge>
+                                                      <StatusIcon type="adhoc" size="sm" />
+                                                    )}
+                                                    
+                                                    {subStage.requiresUpload && (
+                                                      <StatusIcon type="upload" size="sm" />
+                                                    )}
+                                                    
+                                                    {subStage.requiresDownload && (
+                                                      <StatusIcon type="download" size="sm" />
+                                                    )}
+                                                    
+                                                    {subStage.dependencies.length > 0 && (
+                                                      <TooltipProvider>
+                                                        <Tooltip>
+                                                          <TooltipTrigger asChild>
+                                                            <div className="inline-flex items-center justify-center rounded-full bg-gray-100 text-gray-800 w-5 h-5 text-xs font-medium">
+                                                              {subStage.dependencies.length}
+                                                            </div>
+                                                          </TooltipTrigger>
+                                                          <TooltipContent side="right" className="p-2 w-auto">
+                                                            <div className="text-xs font-medium mb-1">Dependencies:</div>
+                                                            <div className="space-y-1">
+                                                              {subStage.dependencies.map((dep, idx) => (
+                                                                <div key={idx} className="flex items-center gap-1 text-xs">
+                                                                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                                                  <span>{dep.name}</span>
+                                                                </div>
+                                                              ))}
+                                                            </div>
+                                                          </TooltipContent>
+                                                        </Tooltip>
+                                                      </TooltipProvider>
                                                     )}
                                                   </div>
                                                 </TableCell>
@@ -2201,9 +2321,11 @@ const WorkflowInstanceConfig: React.FC = () => {
                       </div>
                       
                       {/* Right Panel: Sub-Stage Configuration */}
-                      <div className="border rounded-md p-3">
+                      <div className="border rounded-md p-3 relative">
                         <h3 className="text-md font-medium mb-3">Sub-Stage Configuration</h3>
-                        {renderSubStageConfig()}
+                        <ScrollArea className="h-[calc(100vh-300px)]">
+                          {renderSubStageConfig()}
+                        </ScrollArea>
                       </div>
                     </div>
                   </>
