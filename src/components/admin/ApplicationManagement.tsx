@@ -45,11 +45,11 @@ interface ApplicationResponse {
   description?: string;
   createdOn?: string;
   cronExpression?: string;
-  entitlementMapping?: number;
   isActive?: boolean;
   isLockingEnabled?: boolean;
   isRunOnWeekDayOnly?: boolean;
-  lockingRole?: number;
+  lockingRole?: string;
+  rtbRole?: string;
   runDateOffSet?: number;
   useRunCalendar?: boolean;
 }
@@ -64,9 +64,9 @@ interface Application {
   cronExpression: string;
   runDateOffSet: number;
   isLockingEnabled: boolean;
-  lockingRole: number;
+  lockingRole: string;
+  rtbRole: string;
   isRunOnWeekDayOnly: boolean;
-  entitlementMapping: number;
   useRunCalendar: boolean;
   isActive: boolean;
   createdOn: string;
@@ -82,9 +82,9 @@ interface ApplicationForm {
   cronExpression: string;
   runDateOffSet: number;
   isLockingEnabled: boolean;
-  lockingRole: number;
+  lockingRole: string;
+  rtbRole: string;
   isRunOnWeekDayOnly: boolean;
-  entitlementMapping: number;
   useRunCalendar: boolean;
   isActive: boolean;
 }
@@ -100,9 +100,9 @@ const sampleApplications: Application[] = [
     cronExpression: '0 55 18 ? * MON-FRI *',
     runDateOffSet: 0,
     isLockingEnabled: false,
-    lockingRole: 0,
+    lockingRole: 'Finance Manager',
+    rtbRole: 'Risk Analyst',
     isRunOnWeekDayOnly: true,
-    entitlementMapping: 12,
     useRunCalendar: false,
     isActive: true,
     createdOn: '03/07/2023 04:30:46'
@@ -116,9 +116,9 @@ const sampleApplications: Application[] = [
     cronExpression: '',
     runDateOffSet: 0,
     isLockingEnabled: false,
-    lockingRole: 0,
+    lockingRole: 'Finance Manager',
+    rtbRole: '',
     isRunOnWeekDayOnly: false,
-    entitlementMapping: 0,
     useRunCalendar: false,
     isActive: true,
     createdOn: '01/01/2023 00:00:00'
@@ -132,9 +132,9 @@ const sampleApplications: Application[] = [
     cronExpression: '',
     runDateOffSet: 0,
     isLockingEnabled: false,
-    lockingRole: 0,
+    lockingRole: '',
+    rtbRole: 'Compliance Officer',
     isRunOnWeekDayOnly: false,
-    entitlementMapping: 0,
     useRunCalendar: false,
     isActive: true,
     createdOn: '01/01/2023 00:00:00'
@@ -160,9 +160,9 @@ const ApplicationManagement: React.FC = () => {
     cronExpression: '',
     runDateOffSet: 0,
     isLockingEnabled: false,
-    lockingRole: 0,
+    lockingRole: '',
+    rtbRole: '',
     isRunOnWeekDayOnly: false,
-    entitlementMapping: 0,
     useRunCalendar: false,
     isActive: true
   });
@@ -499,28 +499,15 @@ const ApplicationManagement: React.FC = () => {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cronExpression">Cron Schedule</Label>
-                  <Input 
-                    id="cronExpression" 
-                    placeholder="0 18 * * 1-5" 
-                    value={applicationForm.cronExpression}
-                    onChange={(e) => handleApplicationFormChange('cronExpression', e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">Format: second minute hour day month weekday</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="entitlementMapping">Entitlement Mapping</Label>
-                  <Input 
-                    id="entitlementMapping" 
-                    type="number" 
-                    placeholder="0" 
-                    value={applicationForm.entitlementMapping}
-                    onChange={(e) => handleApplicationFormChange('entitlementMapping', parseInt(e.target.value) || 0)}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="cronExpression">Cron Schedule</Label>
+                <Input 
+                  id="cronExpression" 
+                  placeholder="0 18 * * 1-5" 
+                  value={applicationForm.cronExpression}
+                  onChange={(e) => handleApplicationFormChange('cronExpression', e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Format: second minute hour day month weekday</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -539,12 +526,21 @@ const ApplicationManagement: React.FC = () => {
                   <Label htmlFor="lockingRole">Locking Role</Label>
                   <Input 
                     id="lockingRole" 
-                    type="number"
-                    placeholder="0" 
+                    placeholder="Enter locking role" 
                     value={applicationForm.lockingRole}
-                    onChange={(e) => handleApplicationFormChange('lockingRole', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleApplicationFormChange('lockingRole', e.target.value)}
                   />
                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="rtbRole">RTB Role</Label>
+                <Input 
+                  id="rtbRole" 
+                  placeholder="Enter RTB role" 
+                  value={applicationForm.rtbRole}
+                  onChange={(e) => handleApplicationFormChange('rtbRole', e.target.value)}
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -766,9 +762,15 @@ const ApplicationManagement: React.FC = () => {
                 </div>
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Entitlement Mapping</h3>
-                <p>{selectedApplication.entitlementMapping || 'N/A'}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Locking Role</h3>
+                  <p>{selectedApplication.lockingRole || 'N/A'}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">RTB Role</h3>
+                  <p>{selectedApplication.rtbRole || 'N/A'}</p>
+                </div>
               </div>
             </div>
           )}

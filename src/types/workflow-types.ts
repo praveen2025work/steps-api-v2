@@ -14,20 +14,21 @@ export interface Application {
   category: string;
   serviceUrl: string;
   description: string;
-  superUserRole: string;
-  cronSchedule: string;
-  offset: number;
-  lockingRequired: boolean;
-  lockingRole: string;
-  runOnWeekdays: boolean;
-  parameters: ApplicationParameter[];
+  superUserRole?: string;
+  cronSchedule?: string;
+  offset?: number;
+  lockingRequired?: boolean;
+  lockingRole?: string;
+  rtbRole?: string;
+  runOnWeekdays?: boolean;
+  parameters?: ApplicationParameter[];
   hierarchyId?: string;
   holidayCalendarId?: string;
   runCalendarId?: string;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  updatedBy: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
   isActive: boolean;
 }
 
@@ -43,6 +44,9 @@ export interface Role {
   id: string;
   name: string;
   description: string;
+  department?: string;
+  userType?: string;
+  accessLevel?: 'RO' | 'RW';
   permissions: Permission[];
   applications: string[]; // Application IDs
   createdAt: string;

@@ -507,9 +507,9 @@ const RoleManagement: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
               <TableHead>Department</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Role Name</TableHead>
+              <TableHead>User Type</TableHead>
               <TableHead>Access Level</TableHead>
               <TableHead>Applications</TableHead>
               <TableHead>Status</TableHead>
@@ -526,9 +526,9 @@ const RoleManagement: React.FC = () => {
             ) : (
               filteredRoles.map((role) => (
                 <TableRow key={role.id}>
-                  <TableCell className="font-medium">{role.name}</TableCell>
                   <TableCell>{role.department || '-'}</TableCell>
-                  <TableCell className="max-w-xs truncate">{role.description}</TableCell>
+                  <TableCell className="font-medium">{role.name}</TableCell>
+                  <TableCell>{role.userType || 'Standard'}</TableCell>
                   <TableCell>
                     <Badge variant={role.accessLevel === 'RW' ? 'default' : 'secondary'}>
                       {role.accessLevel === 'RW' ? 'Read Write' : 'Read Only'}
