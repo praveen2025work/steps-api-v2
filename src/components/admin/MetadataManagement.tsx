@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, MoveUp, MoveDown } from 'lucide-react';
-import { StageConfig, SubStageConfig, Parameter, Attestation, EmailTemplate } from '@/types/workflow-types';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Edit, Trash2, MoveUp, MoveDown, Download, Upload, FileJson, Check, X, Info, AlertCircle } from 'lucide-react';
+import { StageConfig, SubStageConfig, Parameter, Attestation, EmailTemplate, DBStage, DBSubStage, DBParameter, DBAttestation, DBEmailTemplate } from '@/types/workflow-types';
+import { toast } from '@/components/ui/use-toast';
 
-// Sample data
+// Sample data based on the database schema
 const sampleStages: StageConfig[] = [
   {
     id: '1',
@@ -30,7 +35,14 @@ const sampleStages: StageConfig[] = [
         emailTemplates: [],
         attestations: [],
         expectedDuration: 24,
-        order: 1
+        order: 1,
+        isAuto: false,
+        requiresAttestation: false,
+        requiresUpload: true,
+        requiresApproval: false,
+        isActive: true,
+        isAdhoc: false,
+        isAlteryx: false
       },
       {
         id: '1-2',
@@ -43,10 +55,18 @@ const sampleStages: StageConfig[] = [
         emailTemplates: [],
         attestations: [],
         expectedDuration: 48,
-        order: 2
+        order: 2,
+        isAuto: false,
+        requiresAttestation: false,
+        requiresUpload: true,
+        requiresApproval: false,
+        isActive: true,
+        isAdhoc: false,
+        isAlteryx: false
       }
     ],
-    order: 1
+    order: 1,
+    isActive: true
   },
   {
     id: '2',
@@ -83,19 +103,27 @@ const sampleStages: StageConfig[] = [
           }
         ],
         expectedDuration: 72,
-        order: 1
+        order: 1,
+        isAuto: false,
+        requiresAttestation: true,
+        requiresUpload: false,
+        requiresApproval: true,
+        isActive: true,
+        isAdhoc: false,
+        isAlteryx: false
       }
     ],
-    order: 2
+    order: 2,
+    isActive: true
   }
 ];
 
 const sampleParameters: Parameter[] = [
-  { id: 'p1', name: 'requesterName', value: '', dataType: 'string' },
-  { id: 'p2', name: 'requestDate', value: '', dataType: 'date' },
-  { id: 'p3', name: 'documentType', value: '', dataType: 'string' },
-  { id: 'p4', name: 'reviewerName', value: '', dataType: 'string' },
-  { id: 'p5', name: 'approved', value: '', dataType: 'boolean' }
+  { id: 'p1', name: 'requesterName', value: '', dataType: 'string', isRequired: true, isActive: true },
+  { id: 'p2', name: 'requestDate', value: '', dataType: 'date', isRequired: true, isActive: true },
+  { id: 'p3', name: 'documentType', value: '', dataType: 'string', isRequired: false, isActive: true },
+  { id: 'p4', name: 'reviewerName', value: '', dataType: 'string', isRequired: true, isActive: true },
+  { id: 'p5', name: 'approved', value: '', dataType: 'boolean', isRequired: true, isActive: true }
 ];
 
 const sampleAttestations: Attestation[] = [
@@ -103,13 +131,15 @@ const sampleAttestations: Attestation[] = [
     id: 'a1',
     name: 'Review Attestation',
     description: 'Attestation for completing the review',
-    text: 'I confirm that I have reviewed all the documents and the information provided is accurate.'
+    text: 'I confirm that I have reviewed all the documents and the information provided is accurate.',
+    isActive: true
   },
   {
     id: 'a2',
     name: 'Approval Attestation',
     description: 'Attestation for approving the workflow',
-    text: 'I confirm that I approve this workflow and take responsibility for this decision.'
+    text: 'I confirm that I approve this workflow and take responsibility for this decision.',
+    isActive: true
   }
 ];
 
@@ -122,7 +152,8 @@ const sampleEmailTemplates: EmailTemplate[] = [
     parameters: [
       { id: 'ep1', name: 'reviewerName', value: '', dataType: 'string' },
       { id: 'ep2', name: 'requesterName', value: '', dataType: 'string' }
-    ]
+    ],
+    isActive: true
   },
   {
     id: 'e2',
@@ -132,11 +163,65 @@ const sampleEmailTemplates: EmailTemplate[] = [
     parameters: [
       { id: 'ep3', name: 'requesterName', value: '', dataType: 'string' },
       { id: 'ep4', name: 'approverName', value: '', dataType: 'string' }
-    ]
+    ],
+    isActive: true
   }
 ];
 
+// Form interfaces
+interface StageForm {
+  id?: string;
+  name: string;
+  description: string;
+  order: number;
+  isActive: boolean;
+}
+
+interface SubStageForm {
+  id?: string;
+  name: string;
+  description: string;
+  type: 'manual' | 'auto';
+  expectedDuration: number;
+  order: number;
+  isAuto: boolean;
+  requiresAttestation: boolean;
+  requiresUpload: boolean;
+  requiresApproval: boolean;
+  isActive: boolean;
+  isAdhoc: boolean;
+  isAlteryx: boolean;
+}
+
+interface ParameterForm {
+  id?: string;
+  name: string;
+  description: string;
+  dataType: 'string' | 'number' | 'boolean' | 'date';
+  isRequired: boolean;
+  isActive: boolean;
+}
+
+interface AttestationForm {
+  id?: string;
+  name: string;
+  description: string;
+  text: string;
+  isActive: boolean;
+}
+
+interface EmailTemplateForm {
+  id?: string;
+  name: string;
+  subject: string;
+  body: string;
+  description: string;
+  isActive: boolean;
+  selectedParameters: string[];
+}
+
 const MetadataManagement: React.FC = () => {
+  // State for data
   const [stages, setStages] = useState<StageConfig[]>(sampleStages);
   const [parameters, setParameters] = useState<Parameter[]>(sampleParameters);
   const [attestations, setAttestations] = useState<Attestation[]>(sampleAttestations);
@@ -150,12 +235,630 @@ const MetadataManagement: React.FC = () => {
   const [attestationDialogOpen, setAttestationDialogOpen] = useState(false);
   const [emailTemplateDialogOpen, setEmailTemplateDialogOpen] = useState(false);
   
+  // Delete confirmation dialog states
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{type: string, id: string, parentId?: string}>({type: '', id: ''});
+  
   // Form states
   const [selectedStage, setSelectedStage] = useState<StageConfig | null>(null);
   const [selectedSubStage, setSelectedSubStage] = useState<SubStageConfig | null>(null);
   const [selectedParameter, setSelectedParameter] = useState<Parameter | null>(null);
   const [selectedAttestation, setSelectedAttestation] = useState<Attestation | null>(null);
   const [selectedEmailTemplate, setSelectedEmailTemplate] = useState<EmailTemplate | null>(null);
+  
+  // Form data states
+  const [stageForm, setStageForm] = useState<StageForm>({
+    name: '',
+    description: '',
+    order: 1,
+    isActive: true
+  });
+  
+  const [subStageForm, setSubStageForm] = useState<SubStageForm>({
+    name: '',
+    description: '',
+    type: 'manual',
+    expectedDuration: 24,
+    order: 1,
+    isAuto: false,
+    requiresAttestation: false,
+    requiresUpload: false,
+    requiresApproval: false,
+    isActive: true,
+    isAdhoc: false,
+    isAlteryx: false
+  });
+  
+  const [parameterForm, setParameterForm] = useState<ParameterForm>({
+    name: '',
+    description: '',
+    dataType: 'string',
+    isRequired: false,
+    isActive: true
+  });
+  
+  const [attestationForm, setAttestationForm] = useState<AttestationForm>({
+    name: '',
+    description: '',
+    text: '',
+    isActive: true
+  });
+  
+  const [emailTemplateForm, setEmailTemplateForm] = useState<EmailTemplateForm>({
+    name: '',
+    subject: '',
+    body: '',
+    description: '',
+    isActive: true,
+    selectedParameters: []
+  });
+  
+  // Reset form states when dialogs open/close
+  useEffect(() => {
+    if (stageDialogOpen && selectedStage) {
+      setStageForm({
+        id: selectedStage.id,
+        name: selectedStage.name,
+        description: selectedStage.description || '',
+        order: selectedStage.order,
+        isActive: selectedStage.isActive !== undefined ? selectedStage.isActive : true
+      });
+    } else if (stageDialogOpen) {
+      setStageForm({
+        name: '',
+        description: '',
+        order: stages.length > 0 ? Math.max(...stages.map(s => s.order)) + 1 : 1,
+        isActive: true
+      });
+    }
+  }, [stageDialogOpen, selectedStage, stages]);
+  
+  useEffect(() => {
+    if (subStageDialogOpen && selectedSubStage && selectedStage) {
+      setSubStageForm({
+        id: selectedSubStage.id,
+        name: selectedSubStage.name,
+        description: selectedSubStage.description || '',
+        type: selectedSubStage.type,
+        expectedDuration: selectedSubStage.expectedDuration,
+        order: selectedSubStage.order,
+        isAuto: selectedSubStage.isAuto !== undefined ? selectedSubStage.isAuto : false,
+        requiresAttestation: selectedSubStage.requiresAttestation !== undefined ? selectedSubStage.requiresAttestation : false,
+        requiresUpload: selectedSubStage.requiresUpload !== undefined ? selectedSubStage.requiresUpload : false,
+        requiresApproval: selectedSubStage.requiresApproval !== undefined ? selectedSubStage.requiresApproval : false,
+        isActive: selectedSubStage.isActive !== undefined ? selectedSubStage.isActive : true,
+        isAdhoc: selectedSubStage.isAdhoc !== undefined ? selectedSubStage.isAdhoc : false,
+        isAlteryx: selectedSubStage.isAlteryx !== undefined ? selectedSubStage.isAlteryx : false
+      });
+    } else if (subStageDialogOpen && selectedStage) {
+      setSubStageForm({
+        name: '',
+        description: '',
+        type: 'manual',
+        expectedDuration: 24,
+        order: selectedStage.subStages.length > 0 ? Math.max(...selectedStage.subStages.map(s => s.order)) + 1 : 1,
+        isAuto: false,
+        requiresAttestation: false,
+        requiresUpload: false,
+        requiresApproval: false,
+        isActive: true,
+        isAdhoc: false,
+        isAlteryx: false
+      });
+    }
+  }, [subStageDialogOpen, selectedSubStage, selectedStage]);
+  
+  useEffect(() => {
+    if (parameterDialogOpen && selectedParameter) {
+      setParameterForm({
+        id: selectedParameter.id,
+        name: selectedParameter.name,
+        description: selectedParameter.description || '',
+        dataType: selectedParameter.dataType,
+        isRequired: selectedParameter.isRequired !== undefined ? selectedParameter.isRequired : false,
+        isActive: selectedParameter.isActive !== undefined ? selectedParameter.isActive : true
+      });
+    } else if (parameterDialogOpen) {
+      setParameterForm({
+        name: '',
+        description: '',
+        dataType: 'string',
+        isRequired: false,
+        isActive: true
+      });
+    }
+  }, [parameterDialogOpen, selectedParameter]);
+  
+  useEffect(() => {
+    if (attestationDialogOpen && selectedAttestation) {
+      setAttestationForm({
+        id: selectedAttestation.id,
+        name: selectedAttestation.name,
+        description: selectedAttestation.description,
+        text: selectedAttestation.text,
+        isActive: selectedAttestation.isActive !== undefined ? selectedAttestation.isActive : true
+      });
+    } else if (attestationDialogOpen) {
+      setAttestationForm({
+        name: '',
+        description: '',
+        text: '',
+        isActive: true
+      });
+    }
+  }, [attestationDialogOpen, selectedAttestation]);
+  
+  useEffect(() => {
+    if (emailTemplateDialogOpen && selectedEmailTemplate) {
+      setEmailTemplateForm({
+        id: selectedEmailTemplate.id,
+        name: selectedEmailTemplate.name,
+        subject: selectedEmailTemplate.subject,
+        body: selectedEmailTemplate.body,
+        description: selectedEmailTemplate.description || '',
+        isActive: selectedEmailTemplate.isActive !== undefined ? selectedEmailTemplate.isActive : true,
+        selectedParameters: selectedEmailTemplate.parameters.map(p => p.id)
+      });
+    } else if (emailTemplateDialogOpen) {
+      setEmailTemplateForm({
+        name: '',
+        subject: '',
+        body: '',
+        description: '',
+        isActive: true,
+        selectedParameters: []
+      });
+    }
+  }, [emailTemplateDialogOpen, selectedEmailTemplate]);
+  
+  // Form handlers
+  const handleStageFormChange = (field: keyof StageForm, value: any) => {
+    setStageForm(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleSubStageFormChange = (field: keyof SubStageForm, value: any) => {
+    setSubStageForm(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleParameterFormChange = (field: keyof ParameterForm, value: any) => {
+    setParameterForm(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleAttestationFormChange = (field: keyof AttestationForm, value: any) => {
+    setAttestationForm(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleEmailTemplateFormChange = (field: keyof EmailTemplateForm, value: any) => {
+    setEmailTemplateForm(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const toggleParameterSelection = (parameterId: string) => {
+    setEmailTemplateForm(prev => {
+      const selectedParameters = [...prev.selectedParameters];
+      const index = selectedParameters.indexOf(parameterId);
+      
+      if (index === -1) {
+        selectedParameters.push(parameterId);
+      } else {
+        selectedParameters.splice(index, 1);
+      }
+      
+      return { ...prev, selectedParameters };
+    });
+  };
+  
+  // Save handlers
+  const saveStage = () => {
+    if (!stageForm.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Stage name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (stageForm.id) {
+      // Update existing stage
+      setStages(prev => prev.map(stage => 
+        stage.id === stageForm.id 
+          ? { 
+              ...stage, 
+              name: stageForm.name, 
+              description: stageForm.description, 
+              order: stageForm.order,
+              isActive: stageForm.isActive
+            } 
+          : stage
+      ));
+      toast({
+        title: "Stage Updated",
+        description: `Stage "${stageForm.name}" has been updated successfully.`
+      });
+    } else {
+      // Add new stage
+      const newStage: StageConfig = {
+        id: `stage-${Date.now()}`,
+        name: stageForm.name,
+        description: stageForm.description,
+        order: stageForm.order,
+        isActive: stageForm.isActive,
+        subStages: []
+      };
+      
+      setStages(prev => [...prev, newStage]);
+      toast({
+        title: "Stage Added",
+        description: `Stage "${stageForm.name}" has been added successfully.`
+      });
+    }
+    
+    setStageDialogOpen(false);
+  };
+  
+  const saveSubStage = () => {
+    if (!subStageForm.name.trim() || !selectedStage) {
+      toast({
+        title: "Validation Error",
+        description: "Sub-stage name is required and a parent stage must be selected",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newSubStage: SubStageConfig = {
+      id: subStageForm.id || `substage-${Date.now()}`,
+      name: subStageForm.name,
+      description: subStageForm.description,
+      type: subStageForm.type,
+      expectedDuration: subStageForm.expectedDuration,
+      order: subStageForm.order,
+      isAuto: subStageForm.isAuto,
+      requiresAttestation: subStageForm.requiresAttestation,
+      requiresUpload: subStageForm.requiresUpload,
+      requiresApproval: subStageForm.requiresApproval,
+      isActive: subStageForm.isActive,
+      isAdhoc: subStageForm.isAdhoc,
+      isAlteryx: subStageForm.isAlteryx,
+      parameters: [],
+      emailTemplates: [],
+      attestations: []
+    };
+    
+    if (subStageForm.id) {
+      // Update existing sub-stage
+      setStages(prev => prev.map(stage => 
+        stage.id === selectedStage.id 
+          ? { 
+              ...stage, 
+              subStages: stage.subStages.map(subStage => 
+                subStage.id === subStageForm.id ? newSubStage : subStage
+              ) 
+            } 
+          : stage
+      ));
+      toast({
+        title: "Sub-Stage Updated",
+        description: `Sub-stage "${subStageForm.name}" has been updated successfully.`
+      });
+    } else {
+      // Add new sub-stage
+      setStages(prev => prev.map(stage => 
+        stage.id === selectedStage.id 
+          ? { 
+              ...stage, 
+              subStages: [...stage.subStages, newSubStage] 
+            } 
+          : stage
+      ));
+      toast({
+        title: "Sub-Stage Added",
+        description: `Sub-stage "${subStageForm.name}" has been added successfully.`
+      });
+    }
+    
+    setSubStageDialogOpen(false);
+  };
+  
+  const saveParameter = () => {
+    if (!parameterForm.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Parameter name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newParameter: Parameter = {
+      id: parameterForm.id || `param-${Date.now()}`,
+      name: parameterForm.name,
+      description: parameterForm.description,
+      dataType: parameterForm.dataType,
+      value: '',
+      isRequired: parameterForm.isRequired,
+      isActive: parameterForm.isActive
+    };
+    
+    if (parameterForm.id) {
+      // Update existing parameter
+      setParameters(prev => prev.map(param => 
+        param.id === parameterForm.id ? newParameter : param
+      ));
+      toast({
+        title: "Parameter Updated",
+        description: `Parameter "${parameterForm.name}" has been updated successfully.`
+      });
+    } else {
+      // Add new parameter
+      setParameters(prev => [...prev, newParameter]);
+      toast({
+        title: "Parameter Added",
+        description: `Parameter "${parameterForm.name}" has been added successfully.`
+      });
+    }
+    
+    setParameterDialogOpen(false);
+  };
+  
+  const saveAttestation = () => {
+    if (!attestationForm.name.trim() || !attestationForm.text.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Attestation name and text are required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newAttestation: Attestation = {
+      id: attestationForm.id || `attest-${Date.now()}`,
+      name: attestationForm.name,
+      description: attestationForm.description,
+      text: attestationForm.text,
+      isActive: attestationForm.isActive
+    };
+    
+    if (attestationForm.id) {
+      // Update existing attestation
+      setAttestations(prev => prev.map(attest => 
+        attest.id === attestationForm.id ? newAttestation : attest
+      ));
+      toast({
+        title: "Attestation Updated",
+        description: `Attestation "${attestationForm.name}" has been updated successfully.`
+      });
+    } else {
+      // Add new attestation
+      setAttestations(prev => [...prev, newAttestation]);
+      toast({
+        title: "Attestation Added",
+        description: `Attestation "${attestationForm.name}" has been added successfully.`
+      });
+    }
+    
+    setAttestationDialogOpen(false);
+  };
+  
+  const saveEmailTemplate = () => {
+    if (!emailTemplateForm.name.trim() || !emailTemplateForm.subject.trim() || !emailTemplateForm.body.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Email template name, subject, and body are required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const selectedParams = parameters.filter(param => emailTemplateForm.selectedParameters.includes(param.id));
+    
+    const newEmailTemplate: EmailTemplate = {
+      id: emailTemplateForm.id || `email-${Date.now()}`,
+      name: emailTemplateForm.name,
+      subject: emailTemplateForm.subject,
+      body: emailTemplateForm.body,
+      description: emailTemplateForm.description,
+      parameters: selectedParams,
+      isActive: emailTemplateForm.isActive
+    };
+    
+    if (emailTemplateForm.id) {
+      // Update existing email template
+      setEmailTemplates(prev => prev.map(template => 
+        template.id === emailTemplateForm.id ? newEmailTemplate : template
+      ));
+      toast({
+        title: "Email Template Updated",
+        description: `Email template "${emailTemplateForm.name}" has been updated successfully.`
+      });
+    } else {
+      // Add new email template
+      setEmailTemplates(prev => [...prev, newEmailTemplate]);
+      toast({
+        title: "Email Template Added",
+        description: `Email template "${emailTemplateForm.name}" has been added successfully.`
+      });
+    }
+    
+    setEmailTemplateDialogOpen(false);
+  };
+  
+  // Delete handlers
+  const confirmDelete = () => {
+    const { type, id, parentId } = itemToDelete;
+    
+    switch (type) {
+      case 'stage':
+        setStages(prev => prev.filter(stage => stage.id !== id));
+        toast({
+          title: "Stage Deleted",
+          description: "The stage has been deleted successfully."
+        });
+        break;
+      case 'subStage':
+        if (parentId) {
+          setStages(prev => prev.map(stage => 
+            stage.id === parentId 
+              ? { 
+                  ...stage, 
+                  subStages: stage.subStages.filter(subStage => subStage.id !== id) 
+                } 
+              : stage
+          ));
+          toast({
+            title: "Sub-Stage Deleted",
+            description: "The sub-stage has been deleted successfully."
+          });
+        }
+        break;
+      case 'parameter':
+        setParameters(prev => prev.filter(param => param.id !== id));
+        toast({
+          title: "Parameter Deleted",
+          description: "The parameter has been deleted successfully."
+        });
+        break;
+      case 'attestation':
+        setAttestations(prev => prev.filter(attest => attest.id !== id));
+        toast({
+          title: "Attestation Deleted",
+          description: "The attestation has been deleted successfully."
+        });
+        break;
+      case 'emailTemplate':
+        setEmailTemplates(prev => prev.filter(template => template.id !== id));
+        toast({
+          title: "Email Template Deleted",
+          description: "The email template has been deleted successfully."
+        });
+        break;
+    }
+    
+    setDeleteDialogOpen(false);
+  };
+  
+  // Reorder handlers
+  const moveStage = (stageId: string, direction: 'up' | 'down') => {
+    const stageIndex = stages.findIndex(stage => stage.id === stageId);
+    if ((direction === 'up' && stageIndex === 0) || (direction === 'down' && stageIndex === stages.length - 1)) {
+      return;
+    }
+    
+    const newStages = [...stages];
+    const targetIndex = direction === 'up' ? stageIndex - 1 : stageIndex + 1;
+    
+    // Swap the stages
+    [newStages[stageIndex], newStages[targetIndex]] = [newStages[targetIndex], newStages[stageIndex]];
+    
+    // Update the order property
+    newStages.forEach((stage, index) => {
+      stage.order = index + 1;
+    });
+    
+    setStages(newStages);
+  };
+  
+  const moveSubStage = (stageId: string, subStageId: string, direction: 'up' | 'down') => {
+    const stageIndex = stages.findIndex(stage => stage.id === stageId);
+    const stage = stages[stageIndex];
+    const subStageIndex = stage.subStages.findIndex(subStage => subStage.id === subStageId);
+    
+    if ((direction === 'up' && subStageIndex === 0) || (direction === 'down' && subStageIndex === stage.subStages.length - 1)) {
+      return;
+    }
+    
+    const newStages = [...stages];
+    const newSubStages = [...newStages[stageIndex].subStages];
+    const targetIndex = direction === 'up' ? subStageIndex - 1 : subStageIndex + 1;
+    
+    // Swap the sub-stages
+    [newSubStages[subStageIndex], newSubStages[targetIndex]] = [newSubStages[targetIndex], newSubStages[subStageIndex]];
+    
+    // Update the order property
+    newSubStages.forEach((subStage, index) => {
+      subStage.order = index + 1;
+    });
+    
+    newStages[stageIndex].subStages = newSubStages;
+    setStages(newStages);
+  };
+  
+  // Export/Import handlers
+  const exportData = (type: 'all' | 'stages' | 'parameters' | 'attestations' | 'emailTemplates') => {
+    let data;
+    let filename;
+    
+    switch (type) {
+      case 'all':
+        data = { stages, parameters, attestations, emailTemplates };
+        filename = 'workflow-metadata-all.json';
+        break;
+      case 'stages':
+        data = { stages };
+        filename = 'workflow-stages.json';
+        break;
+      case 'parameters':
+        data = { parameters };
+        filename = 'workflow-parameters.json';
+        break;
+      case 'attestations':
+        data = { attestations };
+        filename = 'workflow-attestations.json';
+        break;
+      case 'emailTemplates':
+        data = { emailTemplates };
+        filename = 'workflow-email-templates.json';
+        break;
+    }
+    
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Successful",
+      description: `Data has been exported to ${filename}`
+    });
+  };
+  
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+        
+        if (data.stages) setStages(data.stages);
+        if (data.parameters) setParameters(data.parameters);
+        if (data.attestations) setAttestations(data.attestations);
+        if (data.emailTemplates) setEmailTemplates(data.emailTemplates);
+        
+        toast({
+          title: "Import Successful",
+          description: "Metadata has been imported successfully."
+        });
+      } catch (error) {
+        toast({
+          title: "Import Failed",
+          description: "Failed to parse the imported file. Please ensure it's a valid JSON file.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    reader.readAsText(file);
+  };
   
   return (
     <div>
@@ -192,150 +895,331 @@ const MetadataManagement: React.FC = () => {
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="stageName" className="text-right">Name</Label>
-                      <Input id="stageName" className="col-span-3" placeholder="Stage name" />
+                      <Input 
+                        id="stageName" 
+                        className="col-span-3" 
+                        placeholder="Stage name" 
+                        value={stageForm.name}
+                        onChange={(e) => handleStageFormChange('name', e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="stageDescription" className="text-right">Description</Label>
-                      <Textarea id="stageDescription" className="col-span-3" placeholder="Stage description" />
+                      <Textarea 
+                        id="stageDescription" 
+                        className="col-span-3" 
+                        placeholder="Stage description" 
+                        value={stageForm.description}
+                        onChange={(e) => handleStageFormChange('description', e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="stageOrder" className="text-right">Order</Label>
-                      <Input id="stageOrder" type="number" className="col-span-3" placeholder="Order" />
+                      <Input 
+                        id="stageOrder" 
+                        type="number" 
+                        className="col-span-3" 
+                        placeholder="Order" 
+                        value={stageForm.order}
+                        onChange={(e) => handleStageFormChange('order', parseInt(e.target.value))}
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="stageActive" className="text-right">Active</Label>
+                      <div className="flex items-center space-x-2 col-span-3">
+                        <Switch 
+                          id="stageActive" 
+                          checked={stageForm.isActive}
+                          onCheckedChange={(checked) => handleStageFormChange('isActive', checked)}
+                        />
+                        <Label htmlFor="stageActive">{stageForm.isActive ? 'Active' : 'Inactive'}</Label>
+                      </div>
                     </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setStageDialogOpen(false)}>Cancel</Button>
-                    <Button>Save</Button>
+                    <Button onClick={saveStage}>Save</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-              {stages.map((stage) => (
-                <Card key={stage.id} className="mb-4">
-                  <CardHeader className="flex flex-row items-center justify-between py-3">
-                    <div>
-                      <CardTitle className="text-lg">{stage.name}</CardTitle>
-                      <CardDescription>{stage.description}</CardDescription>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => {
-                        setSelectedStage(stage);
-                        setStageDialogOpen(true);
-                      }}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <MoveUp className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <MoveDown className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="text-sm font-medium">Sub-Stages</h4>
-                      <Dialog open={subStageDialogOpen} onOpenChange={setSubStageDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" onClick={() => {
-                            setSelectedSubStage(null);
-                            setSelectedStage(stage);
-                          }}>
-                            <Plus className="mr-2 h-4 w-4" /> Add Sub-Stage
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{selectedSubStage ? 'Edit Sub-Stage' : 'Add New Sub-Stage'}</DialogTitle>
-                            <DialogDescription>
-                              {selectedSubStage ? 'Update the sub-stage details' : 'Enter the details for the new sub-stage'}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="subStageName" className="text-right">Name</Label>
-                              <Input id="subStageName" className="col-span-3" placeholder="Sub-stage name" />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="subStageDescription" className="text-right">Description</Label>
-                              <Textarea id="subStageDescription" className="col-span-3" placeholder="Sub-stage description" />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="subStageType" className="text-right">Type</Label>
-                              <Select>
-                                <SelectTrigger className="col-span-3">
-                                  <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="manual">Manual</SelectItem>
-                                  <SelectItem value="auto">Automatic</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="expectedDuration" className="text-right">Expected Duration (hours)</Label>
-                              <Input id="expectedDuration" type="number" className="col-span-3" placeholder="Duration in hours" />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="subStageOrder" className="text-right">Order</Label>
-                              <Input id="subStageOrder" type="number" className="col-span-3" placeholder="Order" />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setSubStageDialogOpen(false)}>Cancel</Button>
-                            <Button>Save</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Expected Duration</TableHead>
-                          <TableHead>Order</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {stage.subStages.map((subStage) => (
-                          <TableRow key={subStage.id}>
-                            <TableCell className="font-medium">{subStage.name}</TableCell>
-                            <TableCell>{subStage.type === 'manual' ? 'Manual' : 'Automatic'}</TableCell>
-                            <TableCell>{subStage.expectedDuration} hours</TableCell>
-                            <TableCell>{subStage.order}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end space-x-2">
-                                <Button variant="ghost" size="sm" onClick={() => {
-                                  setSelectedSubStage(subStage);
-                                  setSelectedStage(stage);
-                                  setSubStageDialogOpen(true);
-                                }}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <MoveUp className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <MoveDown className="h-4 w-4" />
-                                </Button>
+              {stages.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-2 text-lg font-semibold">No Stages Defined</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Click the "Add Stage" button to create your first workflow stage.
+                  </p>
+                </div>
+              ) : (
+                stages.map((stage) => (
+                  <Card key={stage.id} className="mb-4">
+                    <CardHeader className="flex flex-row items-center justify-between py-3">
+                      <div className="flex items-center">
+                        <div>
+                          <CardTitle className="text-lg flex items-center">
+                            {stage.name}
+                            {!stage.isActive && (
+                              <Badge variant="outline" className="ml-2 text-xs">Inactive</Badge>
+                            )}
+                          </CardTitle>
+                          <CardDescription>{stage.description}</CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setSelectedStage(stage);
+                          setStageDialogOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setItemToDelete({ type: 'stage', id: stage.id });
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => moveStage(stage.id, 'up')}>
+                          <MoveUp className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => moveStage(stage.id, 'down')}>
+                          <MoveDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-sm font-medium">Sub-Stages</h4>
+                        <Dialog open={subStageDialogOpen} onOpenChange={setSubStageDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => {
+                              setSelectedSubStage(null);
+                              setSelectedStage(stage);
+                            }}>
+                              <Plus className="mr-2 h-4 w-4" /> Add Sub-Stage
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>{selectedSubStage ? 'Edit Sub-Stage' : 'Add New Sub-Stage'}</DialogTitle>
+                              <DialogDescription>
+                                {selectedSubStage ? 'Update the sub-stage details' : 'Enter the details for the new sub-stage'}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="subStageName" className="text-right">Name</Label>
+                                <Input 
+                                  id="subStageName" 
+                                  className="col-span-3" 
+                                  placeholder="Sub-stage name" 
+                                  value={subStageForm.name}
+                                  onChange={(e) => handleSubStageFormChange('name', e.target.value)}
+                                />
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              ))}
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="subStageDescription" className="text-right">Description</Label>
+                                <Textarea 
+                                  id="subStageDescription" 
+                                  className="col-span-3" 
+                                  placeholder="Sub-stage description" 
+                                  value={subStageForm.description}
+                                  onChange={(e) => handleSubStageFormChange('description', e.target.value)}
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="subStageType" className="text-right">Type</Label>
+                                <Select 
+                                  value={subStageForm.type} 
+                                  onValueChange={(value: 'manual' | 'auto') => handleSubStageFormChange('type', value)}
+                                >
+                                  <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="manual">Manual</SelectItem>
+                                    <SelectItem value="auto">Automatic</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="expectedDuration" className="text-right">Expected Duration (hours)</Label>
+                                <Input 
+                                  id="expectedDuration" 
+                                  type="number" 
+                                  className="col-span-3" 
+                                  placeholder="Duration in hours" 
+                                  value={subStageForm.expectedDuration}
+                                  onChange={(e) => handleSubStageFormChange('expectedDuration', parseInt(e.target.value))}
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="subStageOrder" className="text-right">Order</Label>
+                                <Input 
+                                  id="subStageOrder" 
+                                  type="number" 
+                                  className="col-span-3" 
+                                  placeholder="Order" 
+                                  value={subStageForm.order}
+                                  onChange={(e) => handleSubStageFormChange('order', parseInt(e.target.value))}
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-start gap-4">
+                                <Label className="text-right pt-2">Properties</Label>
+                                <div className="col-span-3 space-y-2">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="isAuto" 
+                                      checked={subStageForm.isAuto}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('isAuto', checked === true)}
+                                    />
+                                    <Label htmlFor="isAuto">Automatic Execution</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="requiresAttestation" 
+                                      checked={subStageForm.requiresAttestation}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('requiresAttestation', checked === true)}
+                                    />
+                                    <Label htmlFor="requiresAttestation">Requires Attestation</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="requiresUpload" 
+                                      checked={subStageForm.requiresUpload}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('requiresUpload', checked === true)}
+                                    />
+                                    <Label htmlFor="requiresUpload">Requires File Upload</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="requiresApproval" 
+                                      checked={subStageForm.requiresApproval}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('requiresApproval', checked === true)}
+                                    />
+                                    <Label htmlFor="requiresApproval">Requires Approval</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="isAdhoc" 
+                                      checked={subStageForm.isAdhoc}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('isAdhoc', checked === true)}
+                                    />
+                                    <Label htmlFor="isAdhoc">Ad-hoc Execution</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                      id="isAlteryx" 
+                                      checked={subStageForm.isAlteryx}
+                                      onCheckedChange={(checked) => handleSubStageFormChange('isAlteryx', checked === true)}
+                                    />
+                                    <Label htmlFor="isAlteryx">Alteryx Workflow</Label>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="subStageActive" className="text-right">Active</Label>
+                                <div className="flex items-center space-x-2 col-span-3">
+                                  <Switch 
+                                    id="subStageActive" 
+                                    checked={subStageForm.isActive}
+                                    onCheckedChange={(checked) => handleSubStageFormChange('isActive', checked)}
+                                  />
+                                  <Label htmlFor="subStageActive">{subStageForm.isActive ? 'Active' : 'Inactive'}</Label>
+                                </div>
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => setSubStageDialogOpen(false)}>Cancel</Button>
+                              <Button onClick={saveSubStage}>Save</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      {stage.subStages.length === 0 ? (
+                        <div className="text-center py-4 border rounded-md">
+                          <p className="text-sm text-muted-foreground">
+                            No sub-stages defined for this stage. Click "Add Sub-Stage" to create one.
+                          </p>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Properties</TableHead>
+                              <TableHead>Expected Duration</TableHead>
+                              <TableHead>Order</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {stage.subStages.map((subStage) => (
+                              <TableRow key={subStage.id}>
+                                <TableCell className="font-medium">
+                                  <div className="flex items-center">
+                                    {subStage.name}
+                                    {!subStage.isActive && (
+                                      <Badge variant="outline" className="ml-2 text-xs">Inactive</Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{subStage.type === 'manual' ? 'Manual' : 'Automatic'}</TableCell>
+                                <TableCell>
+                                  <div className="flex flex-wrap gap-1">
+                                    {subStage.requiresAttestation && (
+                                      <Badge variant="secondary" className="text-xs">Attestation</Badge>
+                                    )}
+                                    {subStage.requiresUpload && (
+                                      <Badge variant="secondary" className="text-xs">Upload</Badge>
+                                    )}
+                                    {subStage.requiresApproval && (
+                                      <Badge variant="secondary" className="text-xs">Approval</Badge>
+                                    )}
+                                    {subStage.isAdhoc && (
+                                      <Badge variant="secondary" className="text-xs">Ad-hoc</Badge>
+                                    )}
+                                    {subStage.isAlteryx && (
+                                      <Badge variant="secondary" className="text-xs">Alteryx</Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{subStage.expectedDuration} hours</TableCell>
+                                <TableCell>{subStage.order}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end space-x-2">
+                                    <Button variant="ghost" size="sm" onClick={() => {
+                                      setSelectedSubStage(subStage);
+                                      setSelectedStage(stage);
+                                      setSubStageDialogOpen(true);
+                                    }}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => {
+                                      setItemToDelete({ type: 'subStage', id: subStage.id, parentId: stage.id });
+                                      setDeleteDialogOpen(true);
+                                    }}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => moveSubStage(stage.id, subStage.id, 'up')}>
+                                      <MoveUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => moveSubStage(stage.id, subStage.id, 'down')}>
+                                      <MoveDown className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -364,15 +1248,30 @@ const MetadataManagement: React.FC = () => {
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="parameterName" className="text-right">Name</Label>
-                      <Input id="parameterName" className="col-span-3" placeholder="Parameter name" />
+                      <Input 
+                        id="parameterName" 
+                        className="col-span-3" 
+                        placeholder="Parameter name" 
+                        value={parameterForm.name}
+                        onChange={(e) => handleParameterFormChange('name', e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="parameterDescription" className="text-right">Description</Label>
-                      <Textarea id="parameterDescription" className="col-span-3" placeholder="Parameter description" />
+                      <Textarea 
+                        id="parameterDescription" 
+                        className="col-span-3" 
+                        placeholder="Parameter description" 
+                        value={parameterForm.description}
+                        onChange={(e) => handleParameterFormChange('description', e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="dataType" className="text-right">Data Type</Label>
-                      <Select>
+                      <Select 
+                        value={parameterForm.dataType} 
+                        onValueChange={(value: 'string' | 'number' | 'boolean' | 'date') => handleParameterFormChange('dataType', value)}
+                      >
                         <SelectTrigger className="col-span-3">
                           <SelectValue placeholder="Select data type" />
                         </SelectTrigger>
@@ -384,45 +1283,90 @@ const MetadataManagement: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="isRequired" className="text-right">Required</Label>
+                      <div className="flex items-center space-x-2 col-span-3">
+                        <Checkbox 
+                          id="isRequired" 
+                          checked={parameterForm.isRequired}
+                          onCheckedChange={(checked) => handleParameterFormChange('isRequired', checked === true)}
+                        />
+                        <Label htmlFor="isRequired">Parameter is required</Label>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="parameterActive" className="text-right">Active</Label>
+                      <div className="flex items-center space-x-2 col-span-3">
+                        <Switch 
+                          id="parameterActive" 
+                          checked={parameterForm.isActive}
+                          onCheckedChange={(checked) => handleParameterFormChange('isActive', checked)}
+                        />
+                        <Label htmlFor="parameterActive">{parameterForm.isActive ? 'Active' : 'Inactive'}</Label>
+                      </div>
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setParameterDialogOpen(false)}>Cancel</Button>
-                    <Button>Save</Button>
+                    <Button onClick={saveParameter}>Save</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Data Type</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {parameters.map((parameter) => (
-                    <TableRow key={parameter.id}>
-                      <TableCell className="font-medium">{parameter.name}</TableCell>
-                      <TableCell>{parameter.dataType}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="ghost" size="sm" onClick={() => {
-                            setSelectedParameter(parameter);
-                            setParameterDialogOpen(true);
-                          }}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              {parameters.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-2 text-lg font-semibold">No Parameters Defined</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Click the "Add Parameter" button to create your first parameter.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Data Type</TableHead>
+                      <TableHead>Required</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {parameters.map((parameter) => (
+                      <TableRow key={parameter.id}>
+                        <TableCell className="font-medium">{parameter.name}</TableCell>
+                        <TableCell>{parameter.description || '-'}</TableCell>
+                        <TableCell>{parameter.dataType}</TableCell>
+                        <TableCell>{parameter.isRequired ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-red-500" />}</TableCell>
+                        <TableCell>
+                          <Badge variant={parameter.isActive ? "default" : "outline"}>
+                            {parameter.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              setSelectedParameter(parameter);
+                              setParameterDialogOpen(true);
+                            }}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              setItemToDelete({ type: 'parameter', id: parameter.id });
+                              setDeleteDialogOpen(true);
+                            }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -451,55 +1395,108 @@ const MetadataManagement: React.FC = () => {
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="attestationName" className="text-right">Name</Label>
-                      <Input id="attestationName" className="col-span-3" placeholder="Attestation name" />
+                      <Input 
+                        id="attestationName" 
+                        className="col-span-3" 
+                        placeholder="Attestation name" 
+                        value={attestationForm.name}
+                        onChange={(e) => handleAttestationFormChange('name', e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="attestationDescription" className="text-right">Description</Label>
-                      <Textarea id="attestationDescription" className="col-span-3" placeholder="Attestation description" />
+                      <Textarea 
+                        id="attestationDescription" 
+                        className="col-span-3" 
+                        placeholder="Attestation description" 
+                        value={attestationForm.description}
+                        onChange={(e) => handleAttestationFormChange('description', e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="attestationText" className="text-right">Text</Label>
-                      <Textarea id="attestationText" className="col-span-3" placeholder="Attestation text" rows={4} />
+                      <Textarea 
+                        id="attestationText" 
+                        className="col-span-3" 
+                        placeholder="Attestation text" 
+                        rows={4} 
+                        value={attestationForm.text}
+                        onChange={(e) => handleAttestationFormChange('text', e.target.value)}
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="attestationActive" className="text-right">Active</Label>
+                      <div className="flex items-center space-x-2 col-span-3">
+                        <Switch 
+                          id="attestationActive" 
+                          checked={attestationForm.isActive}
+                          onCheckedChange={(checked) => handleAttestationFormChange('isActive', checked)}
+                        />
+                        <Label htmlFor="attestationActive">{attestationForm.isActive ? 'Active' : 'Inactive'}</Label>
+                      </div>
                     </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setAttestationDialogOpen(false)}>Cancel</Button>
-                    <Button>Save</Button>
+                    <Button onClick={saveAttestation}>Save</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attestations.map((attestation) => (
-                    <TableRow key={attestation.id}>
-                      <TableCell className="font-medium">{attestation.name}</TableCell>
-                      <TableCell>{attestation.description}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="ghost" size="sm" onClick={() => {
-                            setSelectedAttestation(attestation);
-                            setAttestationDialogOpen(true);
-                          }}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              {attestations.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-2 text-lg font-semibold">No Attestations Defined</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Click the "Add Attestation" button to create your first attestation.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Text</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {attestations.map((attestation) => (
+                      <TableRow key={attestation.id}>
+                        <TableCell className="font-medium">{attestation.name}</TableCell>
+                        <TableCell>{attestation.description}</TableCell>
+                        <TableCell className="max-w-md">
+                          <div className="truncate">{attestation.text}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={attestation.isActive ? "default" : "outline"}>
+                            {attestation.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              setSelectedAttestation(attestation);
+                              setAttestationDialogOpen(true);
+                            }}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              setItemToDelete({ type: 'attestation', id: attestation.id });
+                              setDeleteDialogOpen(true);
+                            }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -528,15 +1525,44 @@ const MetadataManagement: React.FC = () => {
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="templateName" className="text-right">Name</Label>
-                      <Input id="templateName" className="col-span-3" placeholder="Template name" />
+                      <Input 
+                        id="templateName" 
+                        className="col-span-3" 
+                        placeholder="Template name" 
+                        value={emailTemplateForm.name}
+                        onChange={(e) => handleEmailTemplateFormChange('name', e.target.value)}
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="templateDescription" className="text-right">Description</Label>
+                      <Textarea 
+                        id="templateDescription" 
+                        className="col-span-3" 
+                        placeholder="Template description" 
+                        value={emailTemplateForm.description}
+                        onChange={(e) => handleEmailTemplateFormChange('description', e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="templateSubject" className="text-right">Subject</Label>
-                      <Input id="templateSubject" className="col-span-3" placeholder="Email subject" />
+                      <Input 
+                        id="templateSubject" 
+                        className="col-span-3" 
+                        placeholder="Email subject" 
+                        value={emailTemplateForm.subject}
+                        onChange={(e) => handleEmailTemplateFormChange('subject', e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-4 items-start gap-4">
                       <Label htmlFor="templateBody" className="text-right pt-2">Body</Label>
-                      <Textarea id="templateBody" className="col-span-3" placeholder="Email body" rows={8} />
+                      <Textarea 
+                        id="templateBody" 
+                        className="col-span-3" 
+                        placeholder="Email body" 
+                        rows={8} 
+                        value={emailTemplateForm.body}
+                        onChange={(e) => handleEmailTemplateFormChange('body', e.target.value)}
+                      />
                     </div>
                     <div className="grid grid-cols-4 items-start gap-4">
                       <Label className="text-right pt-2">Parameters</Label>
@@ -546,62 +1572,100 @@ const MetadataManagement: React.FC = () => {
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {parameters.map((param) => (
-                            <Button key={param.id} variant="outline" size="sm" className="h-8">
+                            <Button 
+                              key={param.id} 
+                              variant={emailTemplateForm.selectedParameters.includes(param.id) ? "default" : "outline"} 
+                              size="sm" 
+                              className="h-8"
+                              onClick={() => toggleParameterSelection(param.id)}
+                            >
                               {param.name}
                             </Button>
                           ))}
                         </div>
                       </div>
                     </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="templateActive" className="text-right">Active</Label>
+                      <div className="flex items-center space-x-2 col-span-3">
+                        <Switch 
+                          id="templateActive" 
+                          checked={emailTemplateForm.isActive}
+                          onCheckedChange={(checked) => handleEmailTemplateFormChange('isActive', checked)}
+                        />
+                        <Label htmlFor="templateActive">{emailTemplateForm.isActive ? 'Active' : 'Inactive'}</Label>
+                      </div>
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setEmailTemplateDialogOpen(false)}>Cancel</Button>
-                    <Button>Save</Button>
+                    <Button onClick={saveEmailTemplate}>Save</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Parameters</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {emailTemplates.map((template) => (
-                    <TableRow key={template.id}>
-                      <TableCell className="font-medium">{template.name}</TableCell>
-                      <TableCell>{template.subject}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {template.parameters.map((param) => (
-                            <span key={param.id} className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
-                              {param.name}
-                            </span>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="ghost" size="sm" onClick={() => {
-                            setSelectedEmailTemplate(template);
-                            setEmailTemplateDialogOpen(true);
-                          }}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              {emailTemplates.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-2 text-lg font-semibold">No Email Templates Defined</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Click the "Add Email Template" button to create your first email template.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Parameters</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {emailTemplates.map((template) => (
+                      <TableRow key={template.id}>
+                        <TableCell className="font-medium">{template.name}</TableCell>
+                        <TableCell>{template.description || '-'}</TableCell>
+                        <TableCell>{template.subject}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {template.parameters.map((param) => (
+                              <span key={param.id} className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
+                                {param.name}
+                              </span>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={template.isActive ? "default" : "outline"}>
+                            {template.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              setSelectedEmailTemplate(template);
+                              setEmailTemplateDialogOpen(true);
+                            }}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              setItemToDelete({ type: 'emailTemplate', id: template.id });
+                              setDeleteDialogOpen(true);
+                            }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -619,12 +1683,22 @@ const MetadataManagement: React.FC = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Export your metadata configuration to a JSON file for backup or to transfer to another environment.
                 </p>
-                <div className="flex space-x-2">
-                  <Button>Export All</Button>
-                  <Button variant="outline">Export Stages</Button>
-                  <Button variant="outline">Export Parameters</Button>
-                  <Button variant="outline">Export Attestations</Button>
-                  <Button variant="outline">Export Email Templates</Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => exportData('all')}>
+                    <Download className="mr-2 h-4 w-4" /> Export All
+                  </Button>
+                  <Button variant="outline" onClick={() => exportData('stages')}>
+                    <Download className="mr-2 h-4 w-4" /> Export Stages
+                  </Button>
+                  <Button variant="outline" onClick={() => exportData('parameters')}>
+                    <Download className="mr-2 h-4 w-4" /> Export Parameters
+                  </Button>
+                  <Button variant="outline" onClick={() => exportData('attestations')}>
+                    <Download className="mr-2 h-4 w-4" /> Export Attestations
+                  </Button>
+                  <Button variant="outline" onClick={() => exportData('emailTemplates')}>
+                    <Download className="mr-2 h-4 w-4" /> Export Email Templates
+                  </Button>
                 </div>
               </div>
               
@@ -635,14 +1709,35 @@ const MetadataManagement: React.FC = () => {
                 </p>
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="importFile">Upload JSON file</Label>
-                  <Input id="importFile" type="file" />
+                  <Input id="importFile" type="file" accept=".json" onChange={handleImport} />
                 </div>
-                <Button className="mt-4">Import</Button>
+                <div className="flex items-center mt-4">
+                  <Info className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Importing will merge with existing data. Duplicate IDs will be overwritten.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected item.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

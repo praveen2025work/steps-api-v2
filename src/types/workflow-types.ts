@@ -124,6 +124,12 @@ export interface Parameter {
   value: string;
   description?: string;
   dataType: 'string' | 'number' | 'boolean' | 'date';
+  isRequired?: boolean;
+  appId?: number;
+  isActive?: boolean;
+  updatedBy?: string;
+  updatedOn?: string;
+  ignore?: boolean;
 }
 
 export interface EmailTemplate {
@@ -132,6 +138,10 @@ export interface EmailTemplate {
   subject: string;
   body: string;
   parameters: Parameter[];
+  description?: string;
+  isActive?: boolean;
+  updatedBy?: string;
+  updatedOn?: string;
 }
 
 export interface Attestation {
@@ -139,6 +149,9 @@ export interface Attestation {
   name: string;
   description: string;
   text: string;
+  isActive?: boolean;
+  updatedBy?: string;
+  updatedOn?: string;
 }
 
 export interface SubStageConfig {
@@ -151,6 +164,16 @@ export interface SubStageConfig {
   attestations: Attestation[];
   expectedDuration: number;
   order: number;
+  isAuto?: boolean;
+  requiresAttestation?: boolean;
+  requiresUpload?: boolean;
+  requiresApproval?: boolean;
+  isActive?: boolean;
+  isAdhoc?: boolean;
+  isAlteryx?: boolean;
+  updatedBy?: string;
+  updatedOn?: string;
+  dependencies?: string[]; // IDs of dependent sub-stages
 }
 
 export interface StageConfig {
@@ -159,6 +182,74 @@ export interface StageConfig {
   description?: string;
   subStages: SubStageConfig[];
   order: number;
+  isActive?: boolean;
+  updatedBy?: string;
+  updatedOn?: string;
+}
+
+// Database-aligned types for metadata management
+export interface DBStage {
+  stageId: number;
+  name: string;
+  description?: string;
+  order: number;
+  isActive: boolean;
+  updatedBy?: string;
+  updatedOn?: string;
+}
+
+export interface DBSubStage {
+  subStageId: number;
+  stageId: number;
+  name: string;
+  description?: string;
+  isAuto: boolean;
+  requiresAttestation: boolean;
+  requiresUpload: boolean;
+  requiresApproval: boolean;
+  isActive: boolean;
+  isAdhoc: boolean;
+  isAlteryx: boolean;
+  expectedDuration: number;
+  order: number;
+  updatedBy?: string;
+  updatedOn?: string;
+}
+
+export interface DBParameter {
+  paramId: number;
+  appId?: number;
+  name: string;
+  value: string;
+  description?: string;
+  isRequired: boolean;
+  dataType: 'string' | 'number' | 'boolean' | 'date';
+  isActive: boolean;
+  updatedBy?: string;
+  updatedOn?: string;
+  ignore?: boolean;
+}
+
+export interface DBAttestation {
+  attestationId: number;
+  name: string;
+  description: string;
+  text: string;
+  isActive: boolean;
+  updatedBy?: string;
+  updatedOn?: string;
+}
+
+export interface DBEmailTemplate {
+  templateId: number;
+  name: string;
+  subject: string;
+  body: string;
+  description?: string;
+  isActive: boolean;
+  updatedBy?: string;
+  updatedOn?: string;
+  parameters?: DBParameter[];
 }
 
 // Workflow Instance Config Types
