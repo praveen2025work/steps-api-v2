@@ -1631,43 +1631,6 @@ const MetadataManagement: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="isRequired" className="text-right">Required</Label>
-                      <div className="flex items-center space-x-2 col-span-3">
-                        <Checkbox 
-                          id="isRequired" 
-                          checked={parameterForm.isRequired}
-                          onCheckedChange={(checked) => handleParameterFormChange('isRequired', checked === true)}
-                        />
-                        <Label htmlFor="isRequired">Parameter is required</Label>
-                        <span className="text-xs text-muted-foreground ml-2">(Not required)</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="isReadOnly" className="text-right">Read Only</Label>
-                      <div className="flex items-center space-x-2 col-span-3">
-                        <Switch 
-                          id="isReadOnly" 
-                          checked={parameterForm.isReadOnly}
-                          onCheckedChange={(checked) => handleParameterFormChange('isReadOnly', checked)}
-                        />
-                        <Label htmlFor="isReadOnly">{parameterForm.isReadOnly ? 'Read Only' : 'Editable'}</Label>
-                        <span className="text-xs text-muted-foreground ml-2">(Not required)</span>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="parameterActive" className="text-right">Active</Label>
-                      <div className="flex items-center space-x-2 col-span-3">
-                        <Switch 
-                          id="parameterActive" 
-                          checked={parameterForm.isActive}
-                          onCheckedChange={(checked) => handleParameterFormChange('isActive', checked)}
-                        />
-                        <Label htmlFor="parameterActive">{parameterForm.isActive ? 'Active' : 'Inactive'}</Label>
-                        <span className="text-xs text-muted-foreground ml-2">(Not required)</span>
-                      </div>
-                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setParameterDialogOpen(false)}>Cancel</Button>
@@ -1774,28 +1737,7 @@ const MetadataManagement: React.FC = () => {
                         onChange={(e) => handleAttestationFormChange('description', e.target.value)}
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="attestationText" className="text-right">Text</Label>
-                      <Textarea 
-                        id="attestationText" 
-                        className="col-span-3" 
-                        placeholder="Attestation text" 
-                        rows={4} 
-                        value={attestationForm.text}
-                        onChange={(e) => handleAttestationFormChange('text', e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="attestationActive" className="text-right">Active</Label>
-                      <div className="flex items-center space-x-2 col-span-3">
-                        <Switch 
-                          id="attestationActive" 
-                          checked={attestationForm.isActive}
-                          onCheckedChange={(checked) => handleAttestationFormChange('isActive', checked)}
-                        />
-                        <Label htmlFor="attestationActive">{attestationForm.isActive ? 'Active' : 'Inactive'}</Label>
-                      </div>
-                    </div>
+
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setAttestationDialogOpen(false)}>Cancel</Button>
@@ -1952,38 +1894,7 @@ const MetadataManagement: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    <div className="grid grid-cols-4 items-start gap-4">
-                      <Label className="text-right pt-2">Parameters</Label>
-                      <div className="col-span-3">
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Select parameters to use in this template. Use &#123;&#123;parameterName&#125;&#125; syntax in the body.
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {parameters.map((param) => (
-                            <Button 
-                              key={param.id} 
-                              variant={emailTemplateForm.selectedParameters.includes(param.id) ? "default" : "outline"} 
-                              size="sm" 
-                              className="h-8"
-                              onClick={() => toggleParameterSelection(param.id)}
-                            >
-                              {param.name}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="templateActive" className="text-right">Active</Label>
-                      <div className="flex items-center space-x-2 col-span-3">
-                        <Switch 
-                          id="templateActive" 
-                          checked={emailTemplateForm.isActive}
-                          onCheckedChange={(checked) => handleEmailTemplateFormChange('isActive', checked)}
-                        />
-                        <Label htmlFor="templateActive">{emailTemplateForm.isActive ? 'Active' : 'Inactive'}</Label>
-                      </div>
-                    </div>
+
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setEmailTemplateDialogOpen(false)}>Cancel</Button>
