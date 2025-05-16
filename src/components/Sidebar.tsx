@@ -135,6 +135,12 @@ const navSections: NavSection[] = [
         pattern: /^\/operations/
       },
       {
+        title: 'Finance Dashboard',
+        href: '/finance',
+        icon: <BarChart4 className="h-5 w-5" />,
+        pattern: /^\/finance/
+      },
+      {
         title: 'PnL Operations',
         href: '/pnl-operations',
         icon: <BarChart4 className="h-5 w-5" />,

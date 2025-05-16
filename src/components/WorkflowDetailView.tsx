@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import WorkflowProgressIndicator from './WorkflowProgressIndicator';
 import WorkflowStagesBar from './WorkflowStagesBar';
 import WorkflowTaskItem, { WorkflowTask } from './WorkflowTaskItem';
@@ -33,7 +34,8 @@ import {
   UserCircle,
   ArrowRightCircle,
   XCircle,
-  CircleDot
+  CircleDot,
+  BarChart4
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
@@ -718,7 +720,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       
       {/* Workflow Controls - Aligned with breadcrumb */}
       <div className="flex justify-between items-center">
-        <div className="flex-1"></div>
+        <div className="flex-1">
+          <Link href={`/finance?workflowId=${hierarchyPath[hierarchyPath.length-1]?.id || ''}&workflowName=${workflowTitle}`}>
+            <Button variant="outline" size="sm" className="gap-2">
+              <BarChart4 className="h-4 w-4" />
+              Finance Dashboard
+            </Button>
+          </Link>
+        </div>
         <div className="flex items-center gap-1">
           <Button 
             variant="ghost" 
