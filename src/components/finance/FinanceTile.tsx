@@ -28,12 +28,12 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add error handling for missing slides
-  const currentSlide = tile.slides && tile.slides.length > 0 
+  const currentSlide = tile.slides && Array.isArray(tile.slides) && tile.slides.length > 0 
     ? tile.slides[currentSlideIndex % tile.slides.length] 
     : null;
 
   useEffect(() => {
-    if (!isPinned && tile.slides.length > 1) {
+    if (!isPinned && tile.slides && Array.isArray(tile.slides) && tile.slides.length > 1) {
       intervalRef.current = setInterval(() => {
         setCurrentSlideIndex(prev => (prev + 1) % tile.slides.length);
       }, 15000); // 15 seconds rotation
@@ -44,7 +44,7 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
         clearInterval(intervalRef.current);
       }
     };
-  }, [isPinned, tile.slides.length]);
+  }, [isPinned, tile.slides]);
 
   const handlePinToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,7 +98,7 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
           </div>
           
           <div className="flex gap-1">
-            {(isHovered || isPinned) && tile.slides.length > 1 && (
+            {(isHovered || isPinned) && tile.slides && Array.isArray(tile.slides) && tile.slides.length > 1 && (
               <>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePrevSlide}>
                   <ChevronLeft className="h-4 w-4" />
@@ -123,7 +123,7 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
           </div>
         </div>
         
-        {tile.slides.length > 1 && (
+        {tile.slides && Array.isArray(tile.slides) && tile.slides.length > 1 && (
           <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1 pb-1">
             {tile.slides.map((_, index) => (
               <div 
@@ -152,7 +152,7 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
       {!isCompact && (
         <CardFooter className="flex justify-between text-xs text-muted-foreground">
           <div>Updated: {tile.lastUpdated}</div>
-          {currentSlide?.source && <div>Source: {currentSlide.source}</div>}
+          {currentSlide && currentSlide.source && <div>Source: {currentSlide.source}</div>}
         </CardFooter>
       )}
     </Card>
