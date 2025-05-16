@@ -154,6 +154,12 @@ const navSections: NavSection[] = [
     title: "Management",
     items: [
       {
+        title: 'Support Dashboard',
+        href: '/support',
+        icon: <HelpCircle className="h-5 w-5" />,
+        pattern: /^\/support/
+      },
+      {
         title: 'Document Center',
         href: '/files',
         icon: <FileText className="h-5 w-5" />
