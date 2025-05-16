@@ -149,7 +149,7 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
         )}
       </CardContent>
       
-      {!isCompact && (
+      {!isCompact && currentSlide && (
         <CardFooter className="flex justify-between text-xs text-muted-foreground">
           <div>Updated: {tile.lastUpdated}</div>
           {currentSlide.source && <div>Source: {currentSlide.source}</div>}
