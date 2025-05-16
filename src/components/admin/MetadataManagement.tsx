@@ -226,6 +226,8 @@ interface EmailTemplateForm {
   subject: string;
   body: string;
   description: string;
+  fromEmail: string;
+  isBodyHtml: boolean;
   isActive: boolean;
   selectedParameters: string[];
 }
@@ -375,6 +377,8 @@ const MetadataManagement: React.FC = () => {
     subject: '',
     body: '',
     description: '',
+    fromEmail: '',
+    isBodyHtml: false,
     isActive: true,
     selectedParameters: []
   });
@@ -484,6 +488,8 @@ const MetadataManagement: React.FC = () => {
         subject: selectedEmailTemplate.subject,
         body: selectedEmailTemplate.body,
         description: selectedEmailTemplate.description || '',
+        fromEmail: selectedEmailTemplate.fromEmail || '',
+        isBodyHtml: selectedEmailTemplate.isBodyHtml || false,
         isActive: selectedEmailTemplate.isActive !== undefined ? selectedEmailTemplate.isActive : true,
         selectedParameters: selectedEmailTemplate.parameters.map(p => p.id)
       });
@@ -493,6 +499,8 @@ const MetadataManagement: React.FC = () => {
         subject: '',
         body: '',
         description: '',
+        fromEmail: '',
+        isBodyHtml: false,
         isActive: true,
         selectedParameters: []
       });
@@ -754,6 +762,16 @@ const MetadataManagement: React.FC = () => {
       return;
     }
     
+    // Check if body exceeds 4000 characters
+    if (emailTemplateForm.body.length > 4000) {
+      toast({
+        title: "Validation Error",
+        description: "Email body cannot exceed 4000 characters",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const selectedParams = parameters.filter(param => emailTemplateForm.selectedParameters.includes(param.id));
     
     const newEmailTemplate: EmailTemplate = {
@@ -762,6 +780,8 @@ const MetadataManagement: React.FC = () => {
       subject: emailTemplateForm.subject,
       body: emailTemplateForm.body,
       description: emailTemplateForm.description,
+      fromEmail: emailTemplateForm.fromEmail,
+      isBodyHtml: emailTemplateForm.isBodyHtml,
       parameters: selectedParams,
       isActive: emailTemplateForm.isActive
     };
@@ -1549,7 +1569,7 @@ const MetadataManagement: React.FC = () => {
                           onCheckedChange={(checked) => handleParameterFormChange('isRequired', checked === true)}
                         />
                         <Label htmlFor="isRequired">Parameter is required</Label>
-                        <span className="text-xs text-muted-foreground ml-2">(Optional)</span>
+                        <span className="text-xs text-muted-foreground ml-2">(Not required)</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -1561,7 +1581,7 @@ const MetadataManagement: React.FC = () => {
                           onCheckedChange={(checked) => handleParameterFormChange('isReadOnly', checked)}
                         />
                         <Label htmlFor="isReadOnly">{parameterForm.isReadOnly ? 'Read Only' : 'Editable'}</Label>
-                        <span className="text-xs text-muted-foreground ml-2">(Optional)</span>
+                        <span className="text-xs text-muted-foreground ml-2">(Not required)</span>
                       </div>
                     </div>
                     
@@ -1574,6 +1594,7 @@ const MetadataManagement: React.FC = () => {
                           onCheckedChange={(checked) => handleParameterFormChange('isActive', checked)}
                         />
                         <Label htmlFor="parameterActive">{parameterForm.isActive ? 'Active' : 'Inactive'}</Label>
+                        <span className="text-xs text-muted-foreground ml-2">(Not required)</span>
                       </div>
                     </div>
                   </div>
@@ -1735,26 +1756,18 @@ const MetadataManagement: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Description</TableHead>
-                      <TableHead>Text</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {attestations.map((attestation) => (
                       <TableRow key={attestation.id}>
+                        <TableCell>{attestation.id}</TableCell>
                         <TableCell className="font-medium">{attestation.name}</TableCell>
                         <TableCell>{attestation.description}</TableCell>
-                        <TableCell className="max-w-md">
-                          <div className="truncate">{attestation.text}</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={attestation.isActive ? "default" : "outline"}>
-                            {attestation.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-2">
                             <Button variant="ghost" size="sm" onClick={() => {
@@ -1832,17 +1845,52 @@ const MetadataManagement: React.FC = () => {
                         onChange={(e) => handleEmailTemplateFormChange('subject', e.target.value)}
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-start gap-4">
-                      <Label htmlFor="templateBody" className="text-right pt-2">Body</Label>
-                      <Textarea 
-                        id="templateBody" 
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="fromEmail" className="text-right">From Email</Label>
+                      <Input 
+                        id="fromEmail" 
                         className="col-span-3" 
-                        placeholder="Email body" 
-                        rows={8} 
-                        value={emailTemplateForm.body}
-                        onChange={(e) => handleEmailTemplateFormChange('body', e.target.value)}
+                        placeholder="From email address" 
+                        value={emailTemplateForm.fromEmail}
+                        onChange={(e) => handleEmailTemplateFormChange('fromEmail', e.target.value)}
                       />
                     </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="isBodyHtml" className="text-right">Is Body HTML</Label>
+                      <div className="flex items-center space-x-2 col-span-3">
+                        <Switch 
+                          id="isBodyHtml" 
+                          checked={emailTemplateForm.isBodyHtml}
+                          onCheckedChange={(checked) => handleEmailTemplateFormChange('isBodyHtml', checked)}
+                        />
+                        <Label htmlFor="isBodyHtml">{emailTemplateForm.isBodyHtml ? 'HTML' : 'Plain Text'}</Label>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 items-start gap-4">
+                      <Label htmlFor="templateBody" className="text-right pt-2">Body</Label>
+                      <div className="col-span-3">
+                        <Textarea 
+                          id="templateBody" 
+                          className="w-full" 
+                          placeholder="Email body (max 4000 characters)" 
+                          rows={8} 
+                          maxLength={4000}
+                          value={emailTemplateForm.body}
+                          onChange={(e) => handleEmailTemplateFormChange('body', e.target.value)}
+                        />
+                        <div className="text-xs text-muted-foreground mt-1 text-right">
+                          {emailTemplateForm.body.length}/4000 characters
+                        </div>
+                      </div>
+                    </div>
+                    {emailTemplateForm.isBodyHtml && emailTemplateForm.body && (
+                      <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">HTML Preview</Label>
+                        <div className="col-span-3 border rounded-md p-4 bg-white dark:bg-gray-950">
+                          <div dangerouslySetInnerHTML={{ __html: emailTemplateForm.body }} />
+                        </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-4 items-start gap-4">
                       <Label className="text-right pt-2">Parameters</Label>
                       <div className="col-span-3">
