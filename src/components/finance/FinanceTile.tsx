@@ -27,7 +27,10 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const currentSlide = tile.slides[currentSlideIndex];
+  // Add error handling for missing slides
+  const currentSlide = tile.slides && tile.slides.length > 0 
+    ? tile.slides[currentSlideIndex] 
+    : null;
 
   useEffect(() => {
     if (!isPinned && tile.slides.length > 1) {
@@ -133,11 +136,17 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
       </CardHeader>
       
       <CardContent className={`${isCompact ? 'p-3 pt-0' : 'p-4 pt-0'}`}>
-        <TileContent 
-          slide={currentSlide} 
-          isFullView={isFullView} 
-          isCompact={isCompact}
-        />
+        {currentSlide ? (
+          <TileContent 
+            slide={currentSlide} 
+            isFullView={isFullView} 
+            isCompact={isCompact}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-20 w-full bg-muted/20 rounded-md">
+            <p className="text-muted-foreground text-sm">No data available</p>
+          </div>
+        )}
       </CardContent>
       
       {!isCompact && (

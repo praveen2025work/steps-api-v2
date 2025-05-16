@@ -31,6 +31,14 @@ interface TileContentProps {
 }
 
 const TileContent: React.FC<TileContentProps> = ({ slide, isFullView, isCompact = false }) => {
+  // Add error boundary to handle rendering issues
+  if (!slide || !slide.chartType) {
+    return (
+      <div className="flex items-center justify-center h-full w-full bg-muted/20 rounded-md p-4">
+        <p className="text-muted-foreground text-sm">No data available</p>
+      </div>
+    );
+  }
   const [tableSearchQuery, setTableSearchQuery] = useState('');
   const [tableSortField, setTableSortField] = useState<string | null>(null);
   const [tableSortDirection, setTableSortDirection] = useState<'asc' | 'desc'>('asc');

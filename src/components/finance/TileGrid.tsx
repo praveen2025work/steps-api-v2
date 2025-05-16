@@ -42,7 +42,13 @@ const TileGrid: React.FC<TileGridProps> = ({
 
   if (viewMode === 'full' && focusedTile) {
     const tile = tiles.find(t => t.id === focusedTile);
-    if (!tile) return null;
+    if (!tile) {
+      return (
+        <div className="w-full p-8 bg-muted/20 rounded-lg text-center">
+          <p className="text-muted-foreground">Selected tile not found</p>
+        </div>
+      );
+    }
     
     return (
       <div className="w-full">
@@ -60,7 +66,13 @@ const TileGrid: React.FC<TileGridProps> = ({
     const mainTile = tiles.find(t => t.id === splitTile);
     const otherTiles = tiles.filter(t => t.id !== splitTile);
     
-    if (!mainTile) return null;
+    if (!mainTile) {
+      return (
+        <div className="w-full p-8 bg-muted/20 rounded-lg text-center">
+          <p className="text-muted-foreground">Selected tile not found</p>
+        </div>
+      );
+    }
     
     return (
       <div className="flex flex-col md:flex-row gap-4">

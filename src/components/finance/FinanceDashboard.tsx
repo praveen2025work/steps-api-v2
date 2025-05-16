@@ -284,13 +284,24 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ workflowId, workflo
       {/* Example image from the provided URL */}
       {viewMode === 'summary' && (
         <div className="mb-6">
-          <Image 
-            src="https://assets.co.dev/19129c8d-1c91-4384-9bc0-e0d1fdc82154/image-2ffb6b4.png"
-            alt="Financial Dashboard Example"
-            width={1200}
-            height={800}
-            className="w-full h-auto rounded-lg border shadow-sm"
-          />
+          <div className="relative">
+            <div className="w-full h-[400px] bg-muted/50 rounded-lg border shadow-sm flex items-center justify-center">
+              <p className="text-muted-foreground">Summary View Dashboard</p>
+            </div>
+            {/* Fallback to local image or placeholder if external image fails */}
+            <Image 
+              src="https://assets.co.dev/19129c8d-1c91-4384-9bc0-e0d1fdc82154/image-2ffb6b4.png"
+              alt="Financial Dashboard Example"
+              width={1200}
+              height={800}
+              className="w-full h-auto rounded-lg border shadow-sm"
+              onError={(e) => {
+                // Hide the image on error and show the fallback
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+          </div>
         </div>
       )}
 
