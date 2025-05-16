@@ -323,6 +323,7 @@ const MetadataManagement: React.FC = () => {
   const [attestations, setAttestations] = useState<Attestation[]>(sampleAttestations);
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>(sampleEmailTemplates);
   const [activeTab, setActiveTab] = useState('stages');
+  const [selectedStageFilter, setSelectedStageFilter] = useState<string>("all");
   
   // Dialog states
   const [stageDialogOpen, setStageDialogOpen] = useState(false);
@@ -1124,7 +1125,27 @@ const MetadataManagement: React.FC = () => {
                 <CardTitle>Stages & Sub-Stages</CardTitle>
                 <CardDescription>Define workflow stages and their sub-stages</CardDescription>
               </div>
-              <Dialog open={stageDialogOpen} onOpenChange={setStageDialogOpen}>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="stageFilter">Filter by Stage:</Label>
+                  <Select
+                    value={selectedStageFilter}
+                    onValueChange={setSelectedStageFilter}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Select a stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Stages</SelectItem>
+                      {stages.map((stage) => (
+                        <SelectItem key={stage.id} value={stage.id}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Dialog open={stageDialogOpen} onOpenChange={setStageDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={() => setSelectedStage(null)}>
                     <Plus className="mr-2 h-4 w-4" /> Add Stage
@@ -1203,7 +1224,8 @@ const MetadataManagement: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                stages.map((stage) => (
+                // Filter stages based on selection
+                (selectedStageFilter === "all" ? stages : stages.filter(stage => stage.id === selectedStageFilter)).map((stage) => (
                   <Card key={stage.id} className="mb-4">
                     <CardHeader className="flex flex-row items-center justify-between py-3">
                       <div className="flex items-center">
