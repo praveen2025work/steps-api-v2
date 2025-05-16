@@ -1301,7 +1301,16 @@ const MetadataManagement: React.FC = () => {
                                                   }
                                                 }}
                                               />
-                                              <Label htmlFor={`param-${param.id}`}>{param.name}</Label>
+                                              <Label htmlFor={`param-${param.id}`} className="flex items-center gap-2">
+                                                {param.type === 'upload' ? (
+                                                  <Upload className="h-4 w-4 text-blue-500" />
+                                                ) : param.type === 'download' ? (
+                                                  <Download className="h-4 w-4 text-green-500" />
+                                                ) : (
+                                                  <FileJson className="h-4 w-4 text-gray-500" />
+                                                )}
+                                                {param.name}
+                                              </Label>
                                             </div>
                                           ))}
                                         </div>
@@ -1313,7 +1322,16 @@ const MetadataManagement: React.FC = () => {
                                       const param = parameters.find(p => p.id === paramId);
                                       return param ? (
                                         <Badge key={param.id} variant="secondary" className="flex items-center gap-1">
-                                          {param.name}
+                                          <div className="flex items-center gap-1">
+                                            {param.type === 'upload' ? (
+                                              <Upload className="h-3 w-3 text-blue-500" />
+                                            ) : param.type === 'download' ? (
+                                              <Download className="h-3 w-3 text-green-500" />
+                                            ) : (
+                                              <FileJson className="h-3 w-3 text-gray-500" />
+                                            )}
+                                            {param.name}
+                                          </div>
                                           <Button 
                                             variant="ghost" 
                                             size="sm" 
@@ -1516,7 +1534,14 @@ const MetadataManagement: React.FC = () => {
                                       {subStage.parameters && subStage.parameters.length > 0 ? (
                                         <div className="flex flex-wrap gap-1">
                                           {subStage.parameters.slice(0, 2).map(param => (
-                                            <Badge key={param.id} variant="secondary" className="text-xs">
+                                            <Badge key={param.id} variant="secondary" className="text-xs flex items-center gap-1">
+                                              {param.type === 'upload' ? (
+                                                <Upload className="h-3 w-3 text-blue-500" />
+                                              ) : param.type === 'download' ? (
+                                                <Download className="h-3 w-3 text-green-500" />
+                                              ) : (
+                                                <FileJson className="h-3 w-3 text-gray-500" />
+                                              )}
                                               {param.name}
                                             </Badge>
                                           ))}
@@ -1630,12 +1655,30 @@ const MetadataManagement: React.FC = () => {
                         onValueChange={(value: 'default' | 'upload' | 'download') => handleParameterFormChange('type', value)}
                       >
                         <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select parameter type" />
+                          <div className="flex items-center gap-2">
+                            {parameterForm.type === 'upload' ? (
+                              <Upload className="h-4 w-4 text-blue-500" />
+                            ) : parameterForm.type === 'download' ? (
+                              <Download className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <FileJson className="h-4 w-4 text-gray-500" />
+                            )}
+                            <SelectValue placeholder="Select parameter type" />
+                          </div>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="default">Default</SelectItem>
-                          <SelectItem value="upload">Upload</SelectItem>
-                          <SelectItem value="download">Download</SelectItem>
+                          <SelectItem value="default" className="flex items-center gap-2">
+                            <FileJson className="h-4 w-4 text-gray-500" />
+                            <span>Default</span>
+                          </SelectItem>
+                          <SelectItem value="upload" className="flex items-center gap-2">
+                            <Upload className="h-4 w-4 text-blue-500" />
+                            <span>Upload</span>
+                          </SelectItem>
+                          <SelectItem value="download" className="flex items-center gap-2">
+                            <Download className="h-4 w-4 text-green-500" />
+                            <span>Download</span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1674,9 +1717,18 @@ const MetadataManagement: React.FC = () => {
                         <TableCell className="font-medium">{parameter.name}</TableCell>
                         <TableCell>{parameter.description || '-'}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">
-                            {parameter.type || 'default'}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            {parameter.type === 'upload' ? (
+                              <Upload className="h-4 w-4 text-blue-500" />
+                            ) : parameter.type === 'download' ? (
+                              <Download className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <FileJson className="h-4 w-4 text-gray-500" />
+                            )}
+                            <Badge variant="outline">
+                              {parameter.type || 'default'}
+                            </Badge>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-2">
