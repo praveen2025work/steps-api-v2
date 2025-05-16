@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   Layers,
@@ -200,7 +201,24 @@ const Sidebar = () => {
   const router = useRouter();
   const currentPath = router.pathname;
   const { theme } = useTheme();
-  const { sidebarOpen, toggleSidebar } = useSidebar();
+  const { sidebarOpen, toggleSidebar, closeSidebar } = useSidebar();
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  
+  // Handle click outside to close sidebar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarOpen && 
+          sidebarRef.current && 
+          !sidebarRef.current.contains(event.target as Node)) {
+        closeSidebar();
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [sidebarOpen, closeSidebar]);
   
   // Get theme-specific styles
   const getActiveStyles = () => {
@@ -241,6 +259,7 @@ const Sidebar = () => {
       )}
       
       <div 
+        ref={sidebarRef}
         className={cn(
           "md:flex h-screen flex-col fixed inset-y-0 z-50 border-r border-border bg-card transition-all duration-300 ease-in-out",
           sidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full"

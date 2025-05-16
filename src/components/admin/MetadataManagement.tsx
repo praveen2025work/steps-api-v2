@@ -206,9 +206,10 @@ interface ParameterForm {
   id?: string;
   name: string;
   description: string;
-  dataType: 'string' | 'number' | 'boolean' | 'date';
+  type: 'default' | 'upload' | 'download';
   isRequired: boolean;
   isActive: boolean;
+  isReadOnly: boolean;
 }
 
 interface AttestationForm {
@@ -336,9 +337,10 @@ const MetadataManagement: React.FC = () => {
   const [parameterForm, setParameterForm] = useState<ParameterForm>({
     name: '',
     description: '',
-    dataType: 'string',
+    type: 'default',
     isRequired: false,
-    isActive: true
+    isActive: true,
+    isReadOnly: false
   });
   
   const [attestationForm, setAttestationForm] = useState<AttestationForm>({
@@ -1497,19 +1499,18 @@ const MetadataManagement: React.FC = () => {
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="dataType" className="text-right">Data Type</Label>
+                      <Label htmlFor="type" className="text-right">Type</Label>
                       <Select 
-                        value={parameterForm.dataType} 
-                        onValueChange={(value: 'string' | 'number' | 'boolean' | 'date') => handleParameterFormChange('dataType', value)}
+                        value={parameterForm.type} 
+                        onValueChange={(value: 'default' | 'upload' | 'download') => handleParameterFormChange('type', value)}
                       >
                         <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select data type" />
+                          <SelectValue placeholder="Select parameter type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="string">String</SelectItem>
-                          <SelectItem value="number">Number</SelectItem>
-                          <SelectItem value="boolean">Boolean</SelectItem>
-                          <SelectItem value="date">Date</SelectItem>
+                          <SelectItem value="default">Default</SelectItem>
+                          <SelectItem value="upload">Upload</SelectItem>
+                          <SelectItem value="download">Download</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1524,6 +1525,18 @@ const MetadataManagement: React.FC = () => {
                         <Label htmlFor="isRequired">Parameter is required</Label>
                       </div>
                     </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="isReadOnly" className="text-right">Read Only</Label>
+                      <div className="flex items-center space-x-2 col-span-3">
+                        <Switch 
+                          id="isReadOnly" 
+                          checked={parameterForm.isReadOnly}
+                          onCheckedChange={(checked) => handleParameterFormChange('isReadOnly', checked)}
+                        />
+                        <Label htmlFor="isReadOnly">{parameterForm.isReadOnly ? 'Read Only' : 'Editable'}</Label>
+                      </div>
+                    </div>
+                    
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="parameterActive" className="text-right">Active</Label>
                       <div className="flex items-center space-x-2 col-span-3">
@@ -1556,10 +1569,12 @@ const MetadataManagement: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Description</TableHead>
-                      <TableHead>Data Type</TableHead>
+                      <TableHead>Type</TableHead>
                       <TableHead>Required</TableHead>
+                      <TableHead>Read Only</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -1567,10 +1582,16 @@ const MetadataManagement: React.FC = () => {
                   <TableBody>
                     {parameters.map((parameter) => (
                       <TableRow key={parameter.id}>
+                        <TableCell className="text-xs text-muted-foreground">{parameter.id}</TableCell>
                         <TableCell className="font-medium">{parameter.name}</TableCell>
                         <TableCell>{parameter.description || '-'}</TableCell>
-                        <TableCell>{parameter.dataType}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {parameter.type || 'default'}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{parameter.isRequired ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-red-500" />}</TableCell>
+                        <TableCell>{parameter.isReadOnly ? <Check className="h-4 w-4 text-blue-500" /> : <X className="h-4 w-4 text-gray-400" />}</TableCell>
                         <TableCell>
                           <Badge variant={parameter.isActive ? "default" : "outline"}>
                             {parameter.isActive ? 'Active' : 'Inactive'}
