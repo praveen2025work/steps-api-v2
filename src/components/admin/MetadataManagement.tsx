@@ -19,10 +19,10 @@ import { toast } from '@/components/ui/use-toast';
 
 // Sample applications
 const sampleApplications = [
-  { id: 'app1', name: 'Credit Risk Assessment' },
-  { id: 'app2', name: 'Loan Approval' },
-  { id: 'app3', name: 'Regulatory Reporting' },
-  { id: 'app4', name: 'Customer Onboarding' },
+  { id: '1', name: 'Credit Risk Assessment' },
+  { id: '2', name: 'Loan Approval' },
+  { id: '3', name: 'Regulatory Reporting' },
+  { id: '4', name: 'Customer Onboarding' },
 ];
 
 // Sample data based on the database schema
@@ -31,7 +31,7 @@ const sampleStages: StageConfig[] = [
     id: '1',
     name: 'Data Collection',
     description: 'Collect all required data for the workflow',
-    applicationId: 'app2', // Linked to Loan Approval application
+    applicationId: '2', // Linked to Loan Approval application
     subStages: [
       {
         id: '1-1',
@@ -39,8 +39,8 @@ const sampleStages: StageConfig[] = [
         description: 'Enter basic information',
         type: 'manual',
         parameters: [
-          { id: 'p1', name: 'requesterName', value: '', dataType: 'string' },
-          { id: 'p2', name: 'requestDate', value: '', dataType: 'date' }
+          { id: '101', name: 'requesterName', value: '', dataType: 'string', type: 'default' },
+          { id: '102', name: 'requestDate', value: '', dataType: 'date', type: 'default' }
         ],
         emailTemplates: [],
         attestations: [],
@@ -60,7 +60,7 @@ const sampleStages: StageConfig[] = [
         description: 'Upload supporting documents',
         type: 'manual',
         parameters: [
-          { id: 'p3', name: 'documentType', value: '', dataType: 'string' }
+          { id: '103', name: 'documentType', value: '', dataType: 'string', type: 'upload' }
         ],
         emailTemplates: [],
         attestations: [],
@@ -89,24 +89,24 @@ const sampleStages: StageConfig[] = [
         description: 'Review by department manager',
         type: 'manual',
         parameters: [
-          { id: 'p4', name: 'reviewerName', value: '', dataType: 'string' },
-          { id: 'p5', name: 'approved', value: '', dataType: 'boolean' }
+          { id: '104', name: 'reviewerName', value: '', dataType: 'string', type: 'default' },
+          { id: '105', name: 'approved', value: '', dataType: 'boolean', type: 'default' }
         ],
         emailTemplates: [
           {
-            id: 'e1',
+            id: '301',
             name: 'Review Request',
             subject: 'Please review the workflow',
             body: 'Dear {{reviewerName}},\n\nPlease review the workflow initiated by {{requesterName}}.',
             parameters: [
-              { id: 'ep1', name: 'reviewerName', value: '', dataType: 'string' },
-              { id: 'ep2', name: 'requesterName', value: '', dataType: 'string' }
+              { id: '106', name: 'reviewerName', value: '', dataType: 'string', type: 'default' },
+              { id: '107', name: 'requesterName', value: '', dataType: 'string', type: 'default' }
             ]
           }
         ],
         attestations: [
           {
-            id: 'a1',
+            id: '201',
             name: 'Review Attestation',
             description: 'Attestation for completing the review',
             text: 'I confirm that I have reviewed all the documents and the information provided is accurate.'
@@ -129,23 +129,23 @@ const sampleStages: StageConfig[] = [
 ];
 
 const sampleParameters: Parameter[] = [
-  { id: 'p1', name: 'requesterName', value: '', dataType: 'string', isRequired: true, isActive: true },
-  { id: 'p2', name: 'requestDate', value: '', dataType: 'date', isRequired: true, isActive: true },
-  { id: 'p3', name: 'documentType', value: '', dataType: 'string', isRequired: false, isActive: true },
-  { id: 'p4', name: 'reviewerName', value: '', dataType: 'string', isRequired: true, isActive: true },
-  { id: 'p5', name: 'approved', value: '', dataType: 'boolean', isRequired: true, isActive: true }
+  { id: '101', name: 'requesterName', value: '', dataType: 'string', type: 'default', isRequired: true, isActive: true },
+  { id: '102', name: 'requestDate', value: '', dataType: 'date', type: 'default', isRequired: true, isActive: true },
+  { id: '103', name: 'documentType', value: '', dataType: 'string', type: 'upload', isRequired: false, isActive: true },
+  { id: '104', name: 'reviewerName', value: '', dataType: 'string', type: 'default', isRequired: true, isActive: true },
+  { id: '105', name: 'approved', value: '', dataType: 'boolean', type: 'default', isRequired: true, isActive: true }
 ];
 
 const sampleAttestations: Attestation[] = [
   {
-    id: 'a1',
+    id: '201',
     name: 'Review Attestation',
     description: 'Attestation for completing the review',
     text: 'I confirm that I have reviewed all the documents and the information provided is accurate.',
     isActive: true
   },
   {
-    id: 'a2',
+    id: '202',
     name: 'Approval Attestation',
     description: 'Attestation for approving the workflow',
     text: 'I confirm that I approve this workflow and take responsibility for this decision.',
@@ -155,24 +155,24 @@ const sampleAttestations: Attestation[] = [
 
 const sampleEmailTemplates: EmailTemplate[] = [
   {
-    id: 'e1',
+    id: '301',
     name: 'Review Request',
     subject: 'Please review the workflow',
     body: 'Dear {{reviewerName}},\n\nPlease review the workflow initiated by {{requesterName}}.',
     parameters: [
-      { id: 'ep1', name: 'reviewerName', value: '', dataType: 'string' },
-      { id: 'ep2', name: 'requesterName', value: '', dataType: 'string' }
+      { id: '106', name: 'reviewerName', value: '', dataType: 'string', type: 'default' },
+      { id: '107', name: 'requesterName', value: '', dataType: 'string', type: 'default' }
     ],
     isActive: true
   },
   {
-    id: 'e2',
+    id: '302',
     name: 'Approval Notification',
     subject: 'Your workflow has been approved',
     body: 'Dear {{requesterName}},\n\nYour workflow has been approved by {{approverName}}.',
     parameters: [
-      { id: 'ep3', name: 'requesterName', value: '', dataType: 'string' },
-      { id: 'ep4', name: 'approverName', value: '', dataType: 'string' }
+      { id: '108', name: 'requesterName', value: '', dataType: 'string', type: 'default' },
+      { id: '109', name: 'approverName', value: '', dataType: 'string', type: 'default' }
     ],
     isActive: true
   }
@@ -232,10 +232,27 @@ interface EmailTemplateForm {
   selectedParameters: string[];
 }
 
+// Function to generate incremental numeric IDs for stages
+const generateStageId = (existingStages: StageConfig[]): string => {
+  // Find the highest existing stage number
+  let maxStageNumber = 0;
+  
+  existingStages.forEach(stage => {
+    // Try to extract a numeric ID if it exists
+    const num = parseInt(stage.id, 10);
+    if (!isNaN(num) && num > maxStageNumber) {
+      maxStageNumber = num;
+    }
+  });
+  
+  // Generate new ID with incremented number, starting from 1
+  return `${maxStageNumber + 1}`;
+};
+
 // Function to generate incremental numeric IDs for sub-stages
 const generateSubStageId = (stage: StageConfig): string => {
   // Extract the stage number from the stage ID
-  const stageNumber = stage.id.replace(/\D/g, '');
+  const stageNumber = parseInt(stage.id, 10);
   
   // Find the highest existing sub-stage number for this stage
   let maxSubStageNumber = 0;
@@ -257,21 +274,49 @@ const generateSubStageId = (stage: StageConfig): string => {
 // Function to generate sequential numeric IDs for parameters
 const generateParameterId = (existingParameters: Parameter[]): string => {
   // Find the highest existing parameter number
-  let maxParameterNumber = 0;
+  let maxParameterNumber = 100; // Start from 101
   
   existingParameters.forEach(param => {
-    // Try to extract a numeric ID if it exists
-    const match = param.id.match(/^(\d+)$/);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      if (num > maxParameterNumber) {
-        maxParameterNumber = num;
-      }
+    const num = parseInt(param.id, 10);
+    if (!isNaN(num) && num > maxParameterNumber) {
+      maxParameterNumber = num;
     }
   });
   
   // Generate new ID with incremented number
   return `${maxParameterNumber + 1}`;
+};
+
+// Function to generate sequential numeric IDs for attestations
+const generateAttestationId = (existingAttestations: Attestation[]): string => {
+  // Find the highest existing attestation number
+  let maxAttestationNumber = 200; // Start from 201
+  
+  existingAttestations.forEach(attest => {
+    const num = parseInt(attest.id, 10);
+    if (!isNaN(num) && num > maxAttestationNumber) {
+      maxAttestationNumber = num;
+    }
+  });
+  
+  // Generate new ID with incremented number
+  return `${maxAttestationNumber + 1}`;
+};
+
+// Function to generate sequential numeric IDs for email templates
+const generateEmailTemplateId = (existingTemplates: EmailTemplate[]): string => {
+  // Find the highest existing email template number
+  let maxTemplateNumber = 300; // Start from 301
+  
+  existingTemplates.forEach(template => {
+    const num = parseInt(template.id, 10);
+    if (!isNaN(num) && num > maxTemplateNumber) {
+      maxTemplateNumber = num;
+    }
+  });
+  
+  // Generate new ID with incremented number
+  return `${maxTemplateNumber + 1}`;
 };
 
 const MetadataManagement: React.FC = () => {
@@ -310,11 +355,11 @@ const MetadataManagement: React.FC = () => {
   
   // Sample roles for dropdown
   const [roles, setRoles] = useState<{id: string, name: string}[]>([
-    { id: 'role1', name: 'Administrator' },
-    { id: 'role2', name: 'Finance Manager' },
-    { id: 'role3', name: 'Risk Analyst' },
-    { id: 'role4', name: 'Compliance Officer' },
-    { id: 'role5', name: 'Read Only User' }
+    { id: '1', name: 'Administrator' },
+    { id: '2', name: 'Finance Manager' },
+    { id: '3', name: 'Risk Analyst' },
+    { id: '4', name: 'Compliance Officer' },
+    { id: '5', name: 'Read Only User' }
   ]);
 
   // Email template form tab state
@@ -653,7 +698,7 @@ const MetadataManagement: React.FC = () => {
     } else {
       // Add new stage
       const newStage: StageConfig = {
-        id: `stage-${Date.now()}`,
+        id: generateStageId(stages),
         name: stageForm.name,
         description: stageForm.description,
         applicationId: stageForm.applicationId,
@@ -803,7 +848,7 @@ const MetadataManagement: React.FC = () => {
     }
     
     const newAttestation: Attestation = {
-      id: attestationForm.id || `attest-${Date.now()}`,
+      id: attestationForm.id || generateAttestationId(attestations),
       name: attestationForm.name,
       description: attestationForm.description,
       text: attestationForm.text,
@@ -854,7 +899,7 @@ const MetadataManagement: React.FC = () => {
     const selectedParams = parameters.filter(param => emailTemplateForm.selectedParameters.includes(param.id));
     
     const newEmailTemplate: EmailTemplate = {
-      id: emailTemplateForm.id || `email-${Date.now()}`,
+      id: emailTemplateForm.id || generateEmailTemplateId(emailTemplates),
       name: emailTemplateForm.name,
       subject: emailTemplateForm.subject,
       body: emailTemplateForm.body,
