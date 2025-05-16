@@ -252,6 +252,26 @@ const generateSubStageId = (stage: StageConfig): string => {
   return `${stageNumber}-${maxSubStageNumber + 1}`;
 };
 
+// Function to generate sequential numeric IDs for parameters
+const generateParameterId = (existingParameters: Parameter[]): string => {
+  // Find the highest existing parameter number
+  let maxParameterNumber = 0;
+  
+  existingParameters.forEach(param => {
+    // Try to extract a numeric ID if it exists
+    const match = param.id.match(/^(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxParameterNumber) {
+        maxParameterNumber = num;
+      }
+    }
+  });
+  
+  // Generate new ID with incremented number
+  return `${maxParameterNumber + 1}`;
+};
+
 const MetadataManagement: React.FC = () => {
   // State for data
   const [stages, setStages] = useState<StageConfig[]>(sampleStages);
@@ -418,16 +438,20 @@ const MetadataManagement: React.FC = () => {
         id: selectedParameter.id,
         name: selectedParameter.name,
         description: selectedParameter.description || '',
-        dataType: selectedParameter.dataType,
+        type: selectedParameter.type || 'default',
+        dataType: selectedParameter.dataType || 'string',
         isRequired: selectedParameter.isRequired !== undefined ? selectedParameter.isRequired : false,
+        isReadOnly: selectedParameter.isReadOnly !== undefined ? selectedParameter.isReadOnly : false,
         isActive: selectedParameter.isActive !== undefined ? selectedParameter.isActive : true
       });
     } else if (parameterDialogOpen) {
       setParameterForm({
         name: '',
         description: '',
+        type: 'default',
         dataType: 'string',
         isRequired: false,
+        isReadOnly: false,
         isActive: true
       });
     }
@@ -649,12 +673,14 @@ const MetadataManagement: React.FC = () => {
     }
     
     const newParameter: Parameter = {
-      id: parameterForm.id || `param-${Date.now()}`,
+      id: parameterForm.id || generateParameterId(parameters),
       name: parameterForm.name,
       description: parameterForm.description,
-      dataType: parameterForm.dataType,
+      type: parameterForm.type,
+      dataType: parameterForm.dataType || 'string',
       value: '',
       isRequired: parameterForm.isRequired,
+      isReadOnly: parameterForm.isReadOnly,
       isActive: parameterForm.isActive
     };
     
@@ -1523,6 +1549,7 @@ const MetadataManagement: React.FC = () => {
                           onCheckedChange={(checked) => handleParameterFormChange('isRequired', checked === true)}
                         />
                         <Label htmlFor="isRequired">Parameter is required</Label>
+                        <span className="text-xs text-muted-foreground ml-2">(Optional)</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -1534,6 +1561,7 @@ const MetadataManagement: React.FC = () => {
                           onCheckedChange={(checked) => handleParameterFormChange('isReadOnly', checked)}
                         />
                         <Label htmlFor="isReadOnly">{parameterForm.isReadOnly ? 'Read Only' : 'Editable'}</Label>
+                        <span className="text-xs text-muted-foreground ml-2">(Optional)</span>
                       </div>
                     </div>
                     
@@ -1582,7 +1610,7 @@ const MetadataManagement: React.FC = () => {
                   <TableBody>
                     {parameters.map((parameter) => (
                       <TableRow key={parameter.id}>
-                        <TableCell className="text-xs text-muted-foreground">{parameter.id}</TableCell>
+                        <TableCell>{parameter.id}</TableCell>
                         <TableCell className="font-medium">{parameter.name}</TableCell>
                         <TableCell>{parameter.description || '-'}</TableCell>
                         <TableCell>
