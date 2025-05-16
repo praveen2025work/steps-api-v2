@@ -1,21 +1,14 @@
 import React from 'react';
-import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/DashboardLayout';
-import WorkflowDashboard from '@/components/admin/WorkflowDashboard';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 
 const AdminPage = () => {
-  const router = useRouter();
-  const { tab } = router.query;
-  
-  // Convert tab to string and validate it's one of the allowed values
-  const defaultTab = typeof tab === 'string' && [
-    'applications', 'roles', 'holidays', 'runcalendar', 
-    'hierarchy', 'metadata', 'workflow', 'admin'
-  ].includes(tab) ? tab : 'applications';
-
   return (
     <DashboardLayout>
-      <WorkflowDashboard defaultTab={defaultTab} />
+      <div className="container mx-auto py-6">
+        <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+        <AdminDashboard />
+      </div>
     </DashboardLayout>
   );
 };

@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import ApplicationManagement from './ApplicationManagement';
 import RoleManagement from './RoleManagement';
 import HolidayCalendarManagement from './HolidayCalendarManagement';
 import RunCalendarManagement from './RunCalendarManagement';
 import HierarchyManagement from './HierarchyManagement';
-import MetadataManagement from './MetadataManagement';
-import WorkflowInstanceConfig from './WorkflowInstanceConfig';
-import AdminDashboard from './AdminDashboard';
 
 interface WorkflowDashboardProps {
   defaultTab?: string;
 }
 
 const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'applications' }) => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(defaultTab);
   
   // Update active tab when defaultTab prop changes
@@ -22,11 +22,27 @@ const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'app
     setActiveTab(defaultTab);
   }, [defaultTab]);
 
+  // Navigate to separate pages for metadata, workflow config, and admin dashboard
+  const handleTabChange = (value: string) => {
+    if (value === 'metadata') {
+      router.push('/admin/metadata');
+      return;
+    } else if (value === 'workflow') {
+      router.push('/admin/workflow-config');
+      return;
+    } else if (value === 'admin') {
+      router.push('/admin');
+      return;
+    }
+    
+    setActiveTab(value);
+  };
+
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold mb-6">Workflow Management System</h1>
       
-      <Tabs defaultValue="applications" value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs defaultValue="applications" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-6">
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
@@ -84,15 +100,45 @@ const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'app
             </TabsContent>
             
             <TabsContent value="metadata" className="mt-0">
-              <MetadataManagement />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Metadata Management</CardTitle>
+                  <CardDescription>Redirecting to Metadata Management page...</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center py-8">
+                  <Button onClick={() => router.push('/admin/metadata')}>
+                    Go to Metadata Management
+                  </Button>
+                </CardContent>
+              </Card>
             </TabsContent>
             
             <TabsContent value="workflow" className="mt-0">
-              <WorkflowInstanceConfig />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Workflow Instance Configuration</CardTitle>
+                  <CardDescription>Redirecting to Workflow Instance Configuration page...</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center py-8">
+                  <Button onClick={() => router.push('/admin/workflow-config')}>
+                    Go to Workflow Instance Configuration
+                  </Button>
+                </CardContent>
+              </Card>
             </TabsContent>
             
             <TabsContent value="admin" className="mt-0">
-              <AdminDashboard />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Admin Dashboard</CardTitle>
+                  <CardDescription>Redirecting to Admin Dashboard page...</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center py-8">
+                  <Button onClick={() => router.push('/admin')}>
+                    Go to Admin Dashboard
+                  </Button>
+                </CardContent>
+              </Card>
             </TabsContent>
           </CardContent>
         </Card>
