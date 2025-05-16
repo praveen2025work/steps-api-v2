@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Edit, Trash2, MoveUp, MoveDown, Download, Upload, FileJson, Check, X, Info, AlertCircle, ChevronDown } from 'lucide-react';
+import { Plus, Edit, Trash2, MoveUp, MoveDown, Download, Upload, FileJson, Check, X, Info, AlertCircle, ChevronDown, Code, FileText } from 'lucide-react';
 import { StageConfig, SubStageConfig, Parameter, Attestation, EmailTemplate, DBStage, DBSubStage, DBParameter, DBAttestation, DBEmailTemplate } from '@/types/workflow-types';
 import { toast } from '@/components/ui/use-toast';
 
@@ -317,6 +317,9 @@ const MetadataManagement: React.FC = () => {
     { id: 'role5', name: 'Read Only User' }
   ]);
 
+  // Email template form tab state
+  const [emailFormTab, setEmailFormTab] = useState('basic');
+
   // Function to fetch roles from API
   const fetchRoles = async () => {
     try {
@@ -493,6 +496,8 @@ const MetadataManagement: React.FC = () => {
         isActive: selectedEmailTemplate.isActive !== undefined ? selectedEmailTemplate.isActive : true,
         selectedParameters: selectedEmailTemplate.parameters.map(p => p.id)
       });
+      // Reset the email form tab to basic when opening
+      setEmailFormTab('basic');
     } else if (emailTemplateDialogOpen) {
       // Default HTML template for new email templates
       const sampleHtmlTemplate = `<!DOCTYPE html>
@@ -536,6 +541,9 @@ const MetadataManagement: React.FC = () => {
         isActive: true,
         selectedParameters: []
       });
+      
+      // Reset the email form tab to basic when opening
+      setEmailFormTab('basic');
     }
   }, [emailTemplateDialogOpen, selectedEmailTemplate]);
   
@@ -1810,95 +1818,130 @@ const MetadataManagement: React.FC = () => {
                     <Plus className="mr-2 h-4 w-4" /> Add Email Template
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
                   <DialogHeader>
                     <DialogTitle>{selectedEmailTemplate ? 'Edit Email Template' : 'Add New Email Template'}</DialogTitle>
                     <DialogDescription>
                       {selectedEmailTemplate ? 'Update the email template details' : 'Enter the details for the new email template'}
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="templateName" className="text-right">Name</Label>
-                      <Input 
-                        id="templateName" 
-                        className="col-span-3" 
-                        placeholder="Template name" 
-                        value={emailTemplateForm.name}
-                        onChange={(e) => handleEmailTemplateFormChange('name', e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="templateDescription" className="text-right">Description</Label>
-                      <Textarea 
-                        id="templateDescription" 
-                        className="col-span-3" 
-                        placeholder="Template description" 
-                        value={emailTemplateForm.description}
-                        onChange={(e) => handleEmailTemplateFormChange('description', e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="templateSubject" className="text-right">Subject</Label>
-                      <Input 
-                        id="templateSubject" 
-                        className="col-span-3" 
-                        placeholder="Email subject" 
-                        value={emailTemplateForm.subject}
-                        onChange={(e) => handleEmailTemplateFormChange('subject', e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="fromEmail" className="text-right">From Email</Label>
-                      <Input 
-                        id="fromEmail" 
-                        className="col-span-3" 
-                        placeholder="From email address" 
-                        value={emailTemplateForm.fromEmail}
-                        onChange={(e) => handleEmailTemplateFormChange('fromEmail', e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="isBodyHtml" className="text-right">Is Body HTML</Label>
-                      <div className="flex items-center space-x-2 col-span-3">
-                        <Switch 
-                          id="isBodyHtml" 
-                          checked={emailTemplateForm.isBodyHtml}
-                          onCheckedChange={(checked) => handleEmailTemplateFormChange('isBodyHtml', checked)}
-                        />
-                        <Label htmlFor="isBodyHtml">{emailTemplateForm.isBodyHtml ? 'HTML' : 'Plain Text'}</Label>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-4 items-start gap-4">
-                      <Label htmlFor="templateBody" className="text-right pt-2">Body</Label>
-                      <div className="col-span-3">
-                        <Textarea 
-                          id="templateBody" 
-                          className="w-full" 
-                          placeholder="Email body (max 4000 characters)" 
-                          rows={8} 
-                          maxLength={4000}
-                          value={emailTemplateForm.body}
-                          onChange={(e) => handleEmailTemplateFormChange('body', e.target.value)}
-                        />
-                        <div className="text-xs text-muted-foreground mt-1 text-right">
-                          {emailTemplateForm.body.length}/4000 characters
+                  
+                  <Tabs value={emailFormTab} onValueChange={setEmailFormTab} className="flex-1 overflow-hidden flex flex-col">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="basic" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" /> Basic Information
+                      </TabsTrigger>
+                      <TabsTrigger value="content" className="flex items-center gap-2">
+                        <Code className="h-4 w-4" /> Email Content
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <div className="flex-1 overflow-hidden flex flex-col mt-4">
+                      <TabsContent value="basic" className="flex-1 overflow-auto p-1 data-[state=active]:flex flex-col">
+                        <div className="grid gap-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="templateName" className="text-right">Name</Label>
+                            <Input 
+                              id="templateName" 
+                              className="col-span-3" 
+                              placeholder="Template name" 
+                              value={emailTemplateForm.name}
+                              onChange={(e) => handleEmailTemplateFormChange('name', e.target.value)}
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="templateDescription" className="text-right">Description</Label>
+                            <Textarea 
+                              id="templateDescription" 
+                              className="col-span-3" 
+                              placeholder="Template description" 
+                              value={emailTemplateForm.description}
+                              onChange={(e) => handleEmailTemplateFormChange('description', e.target.value)}
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="templateSubject" className="text-right">Subject</Label>
+                            <Input 
+                              id="templateSubject" 
+                              className="col-span-3" 
+                              placeholder="Email subject" 
+                              value={emailTemplateForm.subject}
+                              onChange={(e) => handleEmailTemplateFormChange('subject', e.target.value)}
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="fromEmail" className="text-right">From Email</Label>
+                            <Input 
+                              id="fromEmail" 
+                              className="col-span-3" 
+                              placeholder="From email address" 
+                              value={emailTemplateForm.fromEmail}
+                              onChange={(e) => handleEmailTemplateFormChange('fromEmail', e.target.value)}
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="isBodyHtml" className="text-right">Is Body HTML</Label>
+                            <div className="flex items-center space-x-2 col-span-3">
+                              <Switch 
+                                id="isBodyHtml" 
+                                checked={emailTemplateForm.isBodyHtml}
+                                onCheckedChange={(checked) => handleEmailTemplateFormChange('isBodyHtml', checked)}
+                              />
+                              <Label htmlFor="isBodyHtml">{emailTemplateForm.isBodyHtml ? 'HTML' : 'Plain Text'}</Label>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    {emailTemplateForm.isBodyHtml && emailTemplateForm.body && (
-                      <div className="grid grid-cols-4 items-start gap-4">
-                        <Label className="text-right pt-2">HTML Preview</Label>
-                        <div className="col-span-3 border rounded-md p-4 bg-white dark:bg-gray-950">
-                          <div dangerouslySetInnerHTML={{ __html: emailTemplateForm.body }} />
+                      </TabsContent>
+                      
+                      <TabsContent value="content" className="flex-1 overflow-auto p-1 data-[state=active]:flex flex-col">
+                        <div className="grid gap-4">
+                          <div className="grid grid-cols-12 items-start gap-4">
+                            <Label htmlFor="templateBody" className="text-right pt-2 col-span-2">
+                              Body
+                            </Label>
+                            <div className="col-span-10 space-y-2">
+                              <Textarea 
+                                id="templateBody" 
+                                className="w-full font-mono text-sm" 
+                                placeholder="Email body (max 4000 characters)" 
+                                rows={12} 
+                                maxLength={4000}
+                                value={emailTemplateForm.body}
+                                onChange={(e) => handleEmailTemplateFormChange('body', e.target.value)}
+                              />
+                              <div className="flex justify-between text-sm">
+                                <span className={emailTemplateForm.body.length > 4000 ? 'text-red-500' : 'text-gray-500'}>
+                                  {4000 - emailTemplateForm.body.length} characters remaining
+                                </span>
+                                {emailTemplateForm.body.length > 4000 && (
+                                  <span className="text-red-500">Body exceeds 4000 character limit</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {emailTemplateForm.isBodyHtml && emailTemplateForm.body && (
+                            <div className="mt-4">
+                              <Label className="mb-2 block">HTML Preview:</Label>
+                              <div 
+                                className="border rounded p-4 h-[300px] overflow-auto bg-white dark:bg-gray-800"
+                                dangerouslySetInnerHTML={{ __html: emailTemplateForm.body }}
+                              />
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-
-                  </div>
-                  <DialogFooter>
+                      </TabsContent>
+                    </div>
+                  </Tabs>
+                  
+                  <DialogFooter className="mt-4">
                     <Button variant="outline" onClick={() => setEmailTemplateDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={saveEmailTemplate}>Save</Button>
+                    <Button 
+                      onClick={saveEmailTemplate}
+                      disabled={emailTemplateForm.body.length > 4000}
+                    >
+                      Save
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
