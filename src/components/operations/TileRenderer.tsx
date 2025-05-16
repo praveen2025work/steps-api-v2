@@ -48,19 +48,29 @@ export default function TileRenderer({ config }: TileRendererProps) {
       return <TileError message={error} />;
     }
 
-    switch (config.type) {
-      case 'status':
-        return <StatusTile data={data} visualization={config.visualization} />;
-      case 'metric':
-        return <MetricTile data={data} visualization={config.visualization} />;
-      case 'chart':
-        return <ChartTile data={data} visualization={config.visualization} />;
-      case 'list':
-        return <ListTile data={data} visualization={config.visualization} />;
-      case 'table':
-        return <TableTile data={data} visualization={config.visualization} />;
-      default:
-        return <div>Unsupported tile type: {config.type}</div>;
+    // Add a try-catch block to handle any rendering errors
+    try {
+      if (!data) {
+        return <TileError message="No data available" />;
+      }
+
+      switch (config.type) {
+        case 'status':
+          return <StatusTile data={data} visualization={config.visualization} />;
+        case 'metric':
+          return <MetricTile data={data} visualization={config.visualization} />;
+        case 'chart':
+          return <ChartTile data={data} visualization={config.visualization} />;
+        case 'list':
+          return <ListTile data={data} visualization={config.visualization} />;
+        case 'table':
+          return <TableTile data={data} visualization={config.visualization} />;
+        default:
+          return <div>Unsupported tile type: {config.type}</div>;
+      }
+    } catch (err) {
+      console.error('Error rendering tile content:', err);
+      return <TileError message="Failed to render tile content" />;
     }
   };
 
@@ -97,7 +107,18 @@ export default function TileRenderer({ config }: TileRendererProps) {
 
 // Tile Type Components
 function StatusTile({ data, visualization }: { data: any, visualization: any }) {
+  // Add defensive checks
+  if (!data || typeof data !== 'object') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-4">
+        <div className="text-3xl font-bold text-muted-foreground">Unknown</div>
+      </div>
+    );
+  }
+
   const getStatusColor = (status: string) => {
+    if (!status) return 'text-blue-500';
+    
     switch (status.toLowerCase()) {
       case 'healthy':
       case 'completed':
@@ -115,10 +136,12 @@ function StatusTile({ data, visualization }: { data: any, visualization: any }) 
     }
   };
 
+  const status = data.status || 'Unknown';
+
   return (
     <div className="flex flex-col items-center justify-center h-full py-4">
-      <div className={`text-3xl font-bold ${getStatusColor(data.status)}`}>
-        {data.status}
+      <div className={`text-3xl font-bold ${getStatusColor(status)}`}>
+        {status}
       </div>
       {data.message && <p className="text-sm mt-2 text-center">{data.message}</p>}
     </div>
@@ -126,12 +149,21 @@ function StatusTile({ data, visualization }: { data: any, visualization: any }) 
 }
 
 function MetricTile({ data, visualization }: { data: any, visualization: any }) {
+  // Add defensive checks
+  if (!data || typeof data !== 'object') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-4">
+        <div className="text-4xl font-bold text-muted-foreground">--</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center justify-center h-full py-4">
-      <div className="text-4xl font-bold">{data.value}</div>
+      <div className="text-4xl font-bold">{data.value || '--'}</div>
       {data.change !== undefined && (
-        <div className={`text-sm mt-1 ${data.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-          {data.change >= 0 ? '↑' : '↓'} {Math.abs(data.change)}%
+        <div className={`text-sm mt-1 ${Number(data.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+          {Number(data.change) >= 0 ? '↑' : '↓'} {Math.abs(Number(data.change))}%
         </div>
       )}
       {data.label && <p className="text-sm mt-1 text-muted-foreground">{data.label}</p>}
@@ -215,15 +247,25 @@ function ChartTile({ data, visualization }: { data: any, visualization: any }) {
 }
 
 function ListTile({ data, visualization }: { data: any, visualization: any }) {
+  // Add defensive checks
+  if (!data || typeof data !== 'object' || !data.items || !Array.isArray(data.items)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-4">
+        <List className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm mt-2 text-center">No items to display</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      {data.items && data.items.length > 0 ? (
+      {data.items.length > 0 ? (
         <ul className="space-y-1">
           {data.items.slice(0, 5).map((item: any, index: number) => (
             <li key={index} className="text-sm py-1 border-b last:border-0">
               <div className="flex justify-between">
-                <span>{item.label}</span>
-                {item.value && <span className="font-medium">{item.value}</span>}
+                <span>{item?.label || 'Unnamed item'}</span>
+                {item?.value && <span className="font-medium">{item.value}</span>}
               </div>
             </li>
           ))}
@@ -239,24 +281,39 @@ function ListTile({ data, visualization }: { data: any, visualization: any }) {
 }
 
 function TableTile({ data, visualization }: { data: any, visualization: any }) {
+  // Add defensive checks
+  if (!data || typeof data !== 'object' || !data.rows || !Array.isArray(data.rows) || 
+      !data.columns || !Array.isArray(data.columns)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-4">
+        <Table className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm mt-2 text-center">No data to display</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      {data.rows && data.rows.length > 0 ? (
+      {data.rows.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b">
                 {data.columns.map((col: any, index: number) => (
-                  <th key={index} className="text-left py-2 font-medium">{col.label}</th>
+                  <th key={index} className="text-left py-2 font-medium">{col?.label || `Column ${index + 1}`}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {data.rows.slice(0, 3).map((row: any, rowIndex: number) => (
                 <tr key={rowIndex} className="border-b last:border-0">
-                  {data.columns.map((col: any, colIndex: number) => (
-                    <td key={colIndex} className="py-2">{row[col.key]}</td>
-                  ))}
+                  {data.columns.map((col: any, colIndex: number) => {
+                    const key = col?.key || '';
+                    const cellValue = row && typeof row === 'object' ? (row[key] || '--') : '--';
+                    return (
+                      <td key={colIndex} className="py-2">{cellValue}</td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
