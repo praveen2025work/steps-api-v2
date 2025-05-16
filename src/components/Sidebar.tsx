@@ -129,6 +129,12 @@ const navSections: NavSection[] = [
     title: "Regulatory",
     items: [
       {
+        title: 'Operations Center',
+        href: '/operations',
+        icon: <Activity className="h-5 w-5" />,
+        pattern: /^\/operations/
+      },
+      {
         title: 'PnL Operations',
         href: '/pnl-operations',
         icon: <BarChart4 className="h-5 w-5" />,
