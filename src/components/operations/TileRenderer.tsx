@@ -140,10 +140,21 @@ function MetricTile({ data, visualization }: { data: any, visualization: any }) 
 }
 
 function ChartTile({ data, visualization }: { data: any, visualization: any }) {
+  // Add defensive checks to prevent rendering errors
+  const isValidChartData = data && 
+    data.labels && 
+    Array.isArray(data.labels) && 
+    data.datasets && 
+    Array.isArray(data.datasets) && 
+    data.datasets.length > 0 && 
+    data.datasets[0].data && 
+    Array.isArray(data.datasets[0].data) && 
+    data.datasets[0].data.length > 0;
+
   // Basic chart rendering with the data we now have
   return (
     <div className="h-full py-4">
-      {data && data.labels && data.datasets ? (
+      {isValidChartData ? (
         <div>
           <div className="flex justify-between mb-2">
             {data.datasets.map((dataset: any, index: number) => (
@@ -152,7 +163,7 @@ function ChartTile({ data, visualization }: { data: any, visualization: any }) {
                   className="w-3 h-3 rounded-full" 
                   style={{ backgroundColor: index === 0 ? '#0369a1' : '#64748b' }}
                 />
-                <span className="text-xs">{dataset.label}</span>
+                <span className="text-xs">{dataset.label || `Dataset ${index + 1}`}</span>
               </div>
             ))}
           </div>
@@ -161,9 +172,11 @@ function ChartTile({ data, visualization }: { data: any, visualization: any }) {
             {/* Simple bar chart visualization */}
             <div className="flex h-full items-end justify-between">
               {data.labels.map((label: string, i: number) => {
-                const value = data.datasets[0].data[i];
-                const maxValue = Math.max(...data.datasets[0].data);
-                const height = (value / maxValue) * 100;
+                // Add safety checks for data access
+                const dataset = data.datasets[0];
+                const value = dataset && dataset.data && i < dataset.data.length ? dataset.data[i] : 0;
+                const maxValue = dataset && dataset.data ? Math.max(...dataset.data.filter((v: any) => typeof v === 'number')) : 1;
+                const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
                 
                 return (
                   <div key={i} className="flex flex-col items-center w-full">
@@ -178,12 +191,12 @@ function ChartTile({ data, visualization }: { data: any, visualization: any }) {
               })}
             </div>
             
-            {/* Target line */}
-            {data.datasets.length > 1 && (
+            {/* Target line - with safety checks */}
+            {data.datasets.length > 1 && data.datasets[1].data && data.datasets[1].data.length > 0 && (
               <div 
                 className="absolute w-full border-t border-dashed border-gray-400"
                 style={{ 
-                  bottom: `${(data.datasets[1].data[0] / Math.max(...data.datasets[0].data)) * 100}%` 
+                  bottom: `${(data.datasets[1].data[0] / Math.max(...data.datasets[0].data.filter((v: any) => typeof v === 'number'))) * 100}%` 
                 }}
               >
                 <span className="absolute right-0 -top-4 text-xs">Target</span>
