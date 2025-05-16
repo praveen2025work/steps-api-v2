@@ -4,9 +4,48 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Grid2X2, LayoutGrid, Table2 } from 'lucide-react';
 
+// Define types for the FinanceTile component
+interface FinanceTileProps {
+  title: string;
+  value: string;
+  status: 'success' | 'warning' | 'error' | 'info' | 'neutral';
+}
+
+// Simple tile component with no complex logic
+const FinanceTile: React.FC<FinanceTileProps> = ({ title, value, status }) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'success': return 'bg-emerald-500';
+      case 'warning': return 'bg-amber-500';
+      case 'error': return 'bg-red-500';
+      case 'info': return 'bg-blue-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  return (
+    <Card className="w-full transition-all duration-300 hover:shadow-md">
+      <CardHeader className="p-4">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`}></div>
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4 pt-0">
+        <div className="text-2xl font-bold">{value}</div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const FinancePage = () => {
-  // Simple static data for financial tiles
-  const financialData = [
+  // Simple static data for financial tiles with proper typing
+  const financialData: Array<{
+    id: string;
+    title: string;
+    value: string;
+    status: 'success' | 'warning' | 'error' | 'info' | 'neutral';
+  }> = [
     { id: '1', title: 'Daily P&L', value: '$2.4M', status: 'success' },
     { id: '2', title: 'Risk Exposure', value: '$24.5M', status: 'warning' },
     { id: '3', title: 'Liquidity', value: '125%', status: 'success' },
@@ -119,31 +158,6 @@ const FinancePage = () => {
   );
 };
 
-// Simple tile component with no complex logic
-const FinanceTile = ({ title, value, status }) => {
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'success': return 'bg-emerald-500';
-      case 'warning': return 'bg-amber-500';
-      case 'error': return 'bg-red-500';
-      case 'info': return 'bg-blue-500';
-      default: return 'bg-gray-500';
-    }
-  };
 
-  return (
-    <Card className="w-full transition-all duration-300 hover:shadow-md">
-      <CardHeader className="p-4">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`}></div>
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <div className="text-2xl font-bold">{value}</div>
-      </CardContent>
-    </Card>
-  );
-};
 
 export default FinancePage;
