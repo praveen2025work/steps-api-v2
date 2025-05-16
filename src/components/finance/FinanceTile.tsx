@@ -29,7 +29,7 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
 
   // Add error handling for missing slides
   const currentSlide = tile.slides && tile.slides.length > 0 
-    ? tile.slides[currentSlideIndex] 
+    ? tile.slides[currentSlideIndex % tile.slides.length] 
     : null;
 
   useEffect(() => {
@@ -149,10 +149,10 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
         )}
       </CardContent>
       
-      {!isCompact && currentSlide && (
+      {!isCompact && (
         <CardFooter className="flex justify-between text-xs text-muted-foreground">
           <div>Updated: {tile.lastUpdated}</div>
-          {currentSlide.source && <div>Source: {currentSlide.source}</div>}
+          {currentSlide?.source && <div>Source: {currentSlide.source}</div>}
         </CardFooter>
       )}
     </Card>

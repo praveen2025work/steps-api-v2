@@ -8,7 +8,7 @@ import {
   BarChart4, LineChart, PieChart, Table2, LayoutGrid, Filter, SlidersHorizontal, Search
 } from 'lucide-react';
 import TileGrid from './TileGrid';
-import { TileData, ViewMode } from '@/types/finance-types';
+import { TileData, ViewMode, TileStatus, ChartType } from '@/types/finance-types';
 import { generateMockTiles } from '@/lib/finance';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -284,23 +284,28 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ workflowId, workflo
       {/* Example image from the provided URL */}
       {viewMode === 'summary' && (
         <div className="mb-6">
-          <div className="relative">
-            <div className="w-full h-[400px] bg-muted/50 rounded-lg border shadow-sm flex items-center justify-center">
-              <p className="text-muted-foreground">Summary View Dashboard</p>
+          <div className="w-full h-[400px] bg-gradient-to-r from-blue-900/20 to-emerald-900/20 rounded-lg border shadow-sm flex flex-col items-center justify-center">
+            <h3 className="text-xl font-medium mb-4">Financial Summary Dashboard</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl px-4 md:px-8">
+              {[
+                { title: "Daily P&L", value: "$2.4M", status: "success" },
+                { title: "Risk Exposure", value: "$24.5M", status: "warning" },
+                { title: "Liquidity", value: "125%", status: "success" },
+                { title: "Settlement", value: "85%", status: "info" },
+                { title: "Regulatory", value: "3 pending", status: "warning" },
+                { title: "Data Quality", value: "97%", status: "success" }
+              ].map((item, i) => (
+                <div key={i} className={`p-4 rounded-lg border ${
+                  item.status === 'success' ? 'bg-green-100/30 border-green-200' : 
+                  item.status === 'warning' ? 'bg-yellow-100/30 border-yellow-200' : 
+                  item.status === 'error' ? 'bg-red-100/30 border-red-200' : 
+                  'bg-blue-100/30 border-blue-200'
+                }`}>
+                  <div className="text-sm font-medium">{item.title}</div>
+                  <div className="text-2xl font-bold mt-1">{item.value}</div>
+                </div>
+              ))}
             </div>
-            {/* Fallback to local image or placeholder if external image fails */}
-            <Image 
-              src="https://assets.co.dev/19129c8d-1c91-4384-9bc0-e0d1fdc82154/image-2ffb6b4.png"
-              alt="Financial Dashboard Example"
-              width={1200}
-              height={800}
-              className="w-full h-auto rounded-lg border shadow-sm"
-              onError={(e) => {
-                // Hide the image on error and show the fallback
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-              }}
-            />
           </div>
         </div>
       )}
