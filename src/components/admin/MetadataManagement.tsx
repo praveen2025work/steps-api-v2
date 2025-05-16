@@ -494,6 +494,38 @@ const MetadataManagement: React.FC = () => {
         selectedParameters: selectedEmailTemplate.parameters.map(p => p.id)
       });
     } else if (emailTemplateDialogOpen) {
+      // Default HTML template for new email templates
+      const sampleHtmlTemplate = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #ddd; }
+    .content { padding: 20px 0; }
+    .footer { font-size: 12px; color: #777; border-top: 1px solid #ddd; padding-top: 10px; }
+    .button { display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; 
+              text-decoration: none; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>{{subject}}</h2>
+    </div>
+    <div class="content">
+      <p>Dear {{requesterName}},</p>
+      <p>This is a sample email template with HTML formatting. You can customize this template with your own content.</p>
+      <p>Please review the workflow initiated by {{reviewerName}}.</p>
+      <p><a href="#" class="button">View Details</a></p>
+    </div>
+    <div class="footer">
+      <p>This is an automated message. Please do not reply to this email.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
       setEmailTemplateForm({
         name: '',
         subject: '',
@@ -525,7 +557,46 @@ const MetadataManagement: React.FC = () => {
   };
   
   const handleEmailTemplateFormChange = (field: keyof EmailTemplateForm, value: any) => {
-    setEmailTemplateForm(prev => ({ ...prev, [field]: value }));
+    if (field === 'isBodyHtml' && value === true && !emailTemplateForm.body) {
+      // If switching to HTML and body is empty, provide a sample HTML template
+      const sampleHtmlTemplate = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #f5f5f5; padding: 10px; border-bottom: 1px solid #ddd; }
+    .content { padding: 20px 0; }
+    .footer { font-size: 12px; color: #777; border-top: 1px solid #ddd; padding-top: 10px; }
+    .button { display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; 
+              text-decoration: none; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>{{subject}}</h2>
+    </div>
+    <div class="content">
+      <p>Dear {{requesterName}},</p>
+      <p>This is a sample email template with HTML formatting. You can customize this template with your own content.</p>
+      <p>Please review the workflow initiated by {{reviewerName}}.</p>
+      <p><a href="#" class="button">View Details</a></p>
+    </div>
+    <div class="footer">
+      <p>This is an automated message. Please do not reply to this email.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+      setEmailTemplateForm(prev => ({ 
+        ...prev, 
+        [field]: value,
+        body: sampleHtmlTemplate
+      }));
+    } else {
+      setEmailTemplateForm(prev => ({ ...prev, [field]: value }));
+    }
   };
   
   const toggleParameterSelection = (parameterId: string) => {
@@ -1622,9 +1693,6 @@ const MetadataManagement: React.FC = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Required</TableHead>
-                      <TableHead>Read Only</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1637,13 +1705,6 @@ const MetadataManagement: React.FC = () => {
                         <TableCell>
                           <Badge variant="outline">
                             {parameter.type || 'default'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{parameter.isRequired ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-red-500" />}</TableCell>
-                        <TableCell>{parameter.isReadOnly ? <Check className="h-4 w-4 text-blue-500" /> : <X className="h-4 w-4 text-gray-400" />}</TableCell>
-                        <TableCell>
-                          <Badge variant={parameter.isActive ? "default" : "outline"}>
-                            {parameter.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -1944,34 +2005,22 @@ const MetadataManagement: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Subject</TableHead>
-                      <TableHead>Parameters</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>From Email</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {emailTemplates.map((template) => (
                       <TableRow key={template.id}>
+                        <TableCell>{template.id}</TableCell>
                         <TableCell className="font-medium">{template.name}</TableCell>
                         <TableCell>{template.description || '-'}</TableCell>
                         <TableCell>{template.subject}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {template.parameters.map((param) => (
-                              <span key={param.id} className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
-                                {param.name}
-                              </span>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={template.isActive ? "default" : "outline"}>
-                            {template.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </TableCell>
+                        <TableCell>{template.fromEmail || '-'}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-2">
                             <Button variant="ghost" size="sm" onClick={() => {
