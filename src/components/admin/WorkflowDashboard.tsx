@@ -15,14 +15,20 @@ interface WorkflowDashboardProps {
 
 const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'applications' }) => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  const { tab } = router.query;
+  const [activeTab, setActiveTab] = useState(tab as string || defaultTab);
   
-  // Update active tab when defaultTab prop changes
+  // Update active tab when URL query parameter changes
   useEffect(() => {
-    setActiveTab(defaultTab);
-  }, [defaultTab]);
+    if (tab) {
+      setActiveTab(tab as string);
+    } else if (defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [tab, defaultTab]);
 
   // Navigate to separate pages for metadata, workflow config, and admin dashboard
+  // or update the URL with query parameter for tabs that stay on the same page
   const handleTabChange = (value: string) => {
     if (value === 'metadata') {
       router.push('/admin/metadata');
@@ -34,6 +40,12 @@ const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'app
       router.push('/admin');
       return;
     }
+    
+    // For other tabs, update the URL with the tab query parameter
+    router.push({
+      pathname: '/admin',
+      query: { tab: value }
+    }, undefined, { shallow: true });
     
     setActiveTab(value);
   };

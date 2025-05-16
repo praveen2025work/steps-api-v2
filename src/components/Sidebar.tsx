@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import {
   LayoutDashboard,
   Layers,
@@ -82,7 +83,7 @@ const navSections: NavSection[] = [
         title: 'Admin Dashboard',
         href: '/admin',
         icon: <Shield className="h-5 w-5" />,
-        pattern: /^\/admin/
+        pattern: /^\/admin$/
       },
       {
         title: 'Applications',
@@ -111,13 +112,15 @@ const navSections: NavSection[] = [
       },
       {
         title: 'Metadata',
-        href: '/admin?tab=metadata',
-        icon: <Tags className="h-5 w-5" />
+        href: '/admin/metadata',
+        icon: <Tags className="h-5 w-5" />,
+        pattern: /^\/admin\/metadata/
       },
       {
         title: 'Workflow Config',
-        href: '/admin?tab=workflow',
-        icon: <Workflow className="h-5 w-5" />
+        href: '/admin/workflow-config',
+        icon: <Workflow className="h-5 w-5" />,
+        pattern: /^\/admin\/workflow-config/
       }
     ]
   },
@@ -260,22 +263,36 @@ const Sidebar = () => {
                 {section.title}
               </h3>
               <ul className="space-y-1">
-                {section.items.map((item) => (
-                  <li key={item.href}>
-                    <a
-                      href={item.href === '/stages/[workflowId]' ? '#' : item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
-                        (item.pattern ? item.pattern.test(currentPath) : currentPath === item.href) 
-                          ? getActiveStyles()
-                          : "text-muted-foreground"
+                {section.items.map((item) => {
+                  // Check if this item should be active based on path and query params
+                  const isActive = item.pattern 
+                    ? item.pattern.test(currentPath)
+                    : item.href.includes('?') 
+                      ? currentPath === item.href.split('?')[0] && router.asPath === item.href
+                      : currentPath === item.href;
+                  
+                  return (
+                    <li key={item.href}>
+                      {item.href === '/stages/[workflowId]' ? (
+                        <span className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground">
+                          {item.icon}
+                          {item.title}
+                        </span>
+                      ) : (
+                        <Link 
+                          href={item.href}
+                          className={cn(
+                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                            isActive ? getActiveStyles() : "text-muted-foreground"
+                          )}
+                        >
+                          {item.icon}
+                          {item.title}
+                        </Link>
                       )}
-                    >
-                      {item.icon}
-                      {item.title}
-                    </a>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
