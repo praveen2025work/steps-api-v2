@@ -140,11 +140,63 @@ function MetricTile({ data, visualization }: { data: any, visualization: any }) 
 }
 
 function ChartTile({ data, visualization }: { data: any, visualization: any }) {
-  // In a real implementation, this would render an actual chart using a library like recharts
+  // Basic chart rendering with the data we now have
   return (
-    <div className="flex flex-col items-center justify-center h-full py-4">
-      <BarChart3 className="h-24 w-24 text-muted-foreground" />
-      <p className="text-sm mt-2 text-center">Chart visualization would appear here</p>
+    <div className="h-full py-4">
+      {data && data.labels && data.datasets ? (
+        <div>
+          <div className="flex justify-between mb-2">
+            {data.datasets.map((dataset: any, index: number) => (
+              <div key={index} className="flex items-center gap-1">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: index === 0 ? '#0369a1' : '#64748b' }}
+                />
+                <span className="text-xs">{dataset.label}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="relative h-40 mt-4">
+            {/* Simple bar chart visualization */}
+            <div className="flex h-full items-end justify-between">
+              {data.labels.map((label: string, i: number) => {
+                const value = data.datasets[0].data[i];
+                const maxValue = Math.max(...data.datasets[0].data);
+                const height = (value / maxValue) * 100;
+                
+                return (
+                  <div key={i} className="flex flex-col items-center w-full">
+                    <div 
+                      className="w-4/5 bg-blue-500 rounded-t"
+                      style={{ height: `${height}%` }}
+                    />
+                    <div className="text-xs mt-1">{label}</div>
+                    <div className="text-xs font-medium">{value}</div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Target line */}
+            {data.datasets.length > 1 && (
+              <div 
+                className="absolute w-full border-t border-dashed border-gray-400"
+                style={{ 
+                  bottom: `${(data.datasets[1].data[0] / Math.max(...data.datasets[0].data)) * 100}%` 
+                }}
+              >
+                <span className="absolute right-0 -top-4 text-xs">Target</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full">
+          <BarChart3 className="h-24 w-24 text-muted-foreground" />
+          <p className="text-sm mt-2 text-center">No chart data available</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -266,6 +266,19 @@ const sampleTileData = {
       { label: 'Trade Reconciliation', value: 'Idle' }
     ]
   },
+  'chart-data': {
+    labels: ['APAC', 'EMEA', 'Americas'],
+    datasets: [
+      {
+        label: 'Average Duration (minutes)',
+        data: [45, 32, 38]
+      },
+      {
+        label: 'SLA Target (minutes)',
+        data: [60, 60, 60]
+      }
+    ]
+  },
   'table-data': {
     columns: [
       { key: 'name', label: 'Process' },
