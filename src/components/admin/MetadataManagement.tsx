@@ -1146,73 +1146,74 @@ const MetadataManagement: React.FC = () => {
                   </Select>
                 </div>
                 <Dialog open={stageDialogOpen} onOpenChange={setStageDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => setSelectedStage(null)}>
-                    <Plus className="mr-2 h-4 w-4" /> Add Stage
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{selectedStage ? 'Edit Stage' : 'Add New Stage'}</DialogTitle>
-                    <DialogDescription>
-                      {selectedStage ? 'Update the stage details' : 'Enter the details for the new stage'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="stageName" className="text-right">Name</Label>
-                      <Input 
-                        id="stageName" 
-                        className="col-span-3" 
-                        placeholder="Stage name" 
-                        value={stageForm.name}
-                        onChange={(e) => handleStageFormChange('name', e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="stageDescription" className="text-right">Description</Label>
-                      <Textarea 
-                        id="stageDescription" 
-                        className="col-span-3" 
-                        placeholder="Stage description" 
-                        value={stageForm.description}
-                        onChange={(e) => handleStageFormChange('description', e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="applicationId" className="text-right">Application</Label>
-                      <Select 
-                        value={stageForm.applicationId} 
-                        onValueChange={(value) => handleStageFormChange('applicationId', value)}
-                      >
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select application" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {sampleApplications.map(app => (
-                            <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="stageActive" className="text-right">Active</Label>
-                      <div className="flex items-center space-x-2 col-span-3">
-                        <Switch 
-                          id="stageActive" 
-                          checked={stageForm.isActive}
-                          onCheckedChange={(checked) => handleStageFormChange('isActive', checked)}
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setSelectedStage(null)}>
+                      <Plus className="mr-2 h-4 w-4" /> Add Stage
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{selectedStage ? 'Edit Stage' : 'Add New Stage'}</DialogTitle>
+                      <DialogDescription>
+                        {selectedStage ? 'Update the stage details' : 'Enter the details for the new stage'}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="stageName" className="text-right">Name</Label>
+                        <Input 
+                          id="stageName" 
+                          className="col-span-3" 
+                          placeholder="Stage name" 
+                          value={stageForm.name}
+                          onChange={(e) => handleStageFormChange('name', e.target.value)}
                         />
-                        <Label htmlFor="stageActive">{stageForm.isActive ? 'Active' : 'Inactive'}</Label>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="stageDescription" className="text-right">Description</Label>
+                        <Textarea 
+                          id="stageDescription" 
+                          className="col-span-3" 
+                          placeholder="Stage description" 
+                          value={stageForm.description}
+                          onChange={(e) => handleStageFormChange('description', e.target.value)}
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="applicationId" className="text-right">Application</Label>
+                        <Select 
+                          value={stageForm.applicationId} 
+                          onValueChange={(value) => handleStageFormChange('applicationId', value)}
+                        >
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select application" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sampleApplications.map(app => (
+                              <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="stageActive" className="text-right">Active</Label>
+                        <div className="flex items-center space-x-2 col-span-3">
+                          <Switch 
+                            id="stageActive" 
+                            checked={stageForm.isActive}
+                            onCheckedChange={(checked) => handleStageFormChange('isActive', checked)}
+                          />
+                          <Label htmlFor="stageActive">{stageForm.isActive ? 'Active' : 'Inactive'}</Label>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setStageDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={saveStage}>Save</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setStageDialogOpen(false)}>Cancel</Button>
+                      <Button onClick={saveStage}>Save</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
               {stages.length === 0 ? (
@@ -1861,7 +1862,16 @@ const MetadataManagement: React.FC = () => {
                         onChange={(e) => handleAttestationFormChange('description', e.target.value)}
                       />
                     </div>
-
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="attestationText" className="text-right">Text</Label>
+                      <Textarea 
+                        id="attestationText" 
+                        className="col-span-3" 
+                        placeholder="Attestation text" 
+                        value={attestationForm.text}
+                        onChange={(e) => handleAttestationFormChange('text', e.target.value)}
+                      />
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setAttestationDialogOpen(false)}>Cancel</Button>
@@ -2155,7 +2165,7 @@ const MetadataManagement: React.FC = () => {
                 </p>
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="importFile">Upload JSON file</Label>
-                  <Input id="importFile" type="file" accept=".json" onChange={handleImport} />
+                  <Input id="import-file" type="file" accept=".json" onChange={handleImport} />
                 </div>
                 <div className="flex items-center mt-4">
                   <Info className="h-4 w-4 mr-2 text-muted-foreground" />
