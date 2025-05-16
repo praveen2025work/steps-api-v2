@@ -1,4 +1,4 @@
-export type ViewMode = 'tile' | 'split' | 'full';
+export type ViewMode = 'tile' | 'split' | 'full' | 'summary' | 'grid' | 'pivot';
 export type TileStatus = 'success' | 'warning' | 'error' | 'info' | 'neutral';
 export type ChartType = 'bar' | 'line' | 'pie' | 'grid' | 'progress' | 'status' | 'text';
 

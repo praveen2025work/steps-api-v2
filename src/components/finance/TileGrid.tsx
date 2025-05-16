@@ -24,7 +24,13 @@ const TileGrid: React.FC<TileGridProps> = ({
 }) => {
   if (isLoading && tiles.length === 0) {
     return (
-      <div className={`grid grid-cols-1 md:grid-cols-${columns} gap-4`}>
+      <div className={`grid grid-cols-1 ${
+        columns === 1 ? 'md:grid-cols-1' : 
+        columns === 2 ? 'md:grid-cols-2' : 
+        columns === 3 ? 'md:grid-cols-3' : 
+        columns === 4 ? 'md:grid-cols-4' : 
+        'md:grid-cols-5'
+      } gap-4`}>
         {Array.from({ length: 9 }).map((_, index) => (
           <div key={index} className="w-full">
             <Skeleton className="w-full h-64 rounded-lg" />
@@ -86,7 +92,13 @@ const TileGrid: React.FC<TileGridProps> = ({
 
   // Default tile view
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-${columns} gap-4`}>
+    <div className={`grid grid-cols-1 ${
+      columns === 1 ? 'md:grid-cols-1' : 
+      columns === 2 ? 'md:grid-cols-2' : 
+      columns === 3 ? 'md:grid-cols-3' : 
+      columns === 4 ? 'md:grid-cols-4' : 
+      'md:grid-cols-5'
+    } gap-4`}>
       {tiles.map(tile => (
         <FinanceTile 
           key={tile.id} 
