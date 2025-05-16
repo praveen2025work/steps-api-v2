@@ -34,7 +34,7 @@ const sampleStages: StageConfig[] = [
     applicationId: '2', // Linked to Loan Approval application
     subStages: [
       {
-        id: '1-1',
+        id: '1',
         name: 'Initial Data Entry',
         description: 'Enter basic information',
         type: 'manual',
@@ -55,7 +55,7 @@ const sampleStages: StageConfig[] = [
         isAlteryx: false
       },
       {
-        id: '1-2',
+        id: '2',
         name: 'Document Upload',
         description: 'Upload supporting documents',
         type: 'manual',
@@ -84,7 +84,7 @@ const sampleStages: StageConfig[] = [
     description: 'Review the collected data',
     subStages: [
       {
-        id: '2-1',
+        id: '3',
         name: 'Manager Review',
         description: 'Review by department manager',
         type: 'manual',
@@ -257,18 +257,15 @@ const generateSubStageId = (stage: StageConfig): string => {
   // Find the highest existing sub-stage number for this stage
   let maxSubStageNumber = 0;
   stage.subStages.forEach(subStage => {
-    // Extract numeric part after the dash
-    const match = subStage.id.match(/(\d+)$/);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      if (num > maxSubStageNumber) {
-        maxSubStageNumber = num;
-      }
+    // Extract numeric part of the ID
+    const subStageId = parseInt(subStage.id, 10);
+    if (!isNaN(subStageId) && subStageId > maxSubStageNumber) {
+      maxSubStageNumber = subStageId;
     }
   });
   
   // Generate new ID with incremented number
-  return `${stageNumber}-${maxSubStageNumber + 1}`;
+  return `${maxSubStageNumber + 1}`;
 };
 
 // Function to generate sequential numeric IDs for parameters
