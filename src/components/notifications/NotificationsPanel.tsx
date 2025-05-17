@@ -30,8 +30,7 @@ const NotificationsPanel = ({ isOpen, onClose }: NotificationsPanelProps) => {
     // Load notifications when panel opens
     if (isOpen) {
       const mockNotifications = generateMockNotifications();
-      // Keep only the last 20 notifications
-      setNotifications(mockNotifications.slice(0, 20));
+      setNotifications(mockNotifications);
     }
   }, [isOpen]);
 
@@ -69,8 +68,7 @@ const NotificationsPanel = ({ isOpen, onClose }: NotificationsPanelProps) => {
 
   const refreshNotifications = () => {
     const mockNotifications = generateMockNotifications();
-    // Keep only the last 20 notifications
-    setNotifications(mockNotifications.slice(0, 20));
+    setNotifications(mockNotifications);
   };
 
   // Get notification icon based on type

@@ -192,26 +192,6 @@ export const generateMockNotifications = (): Notification[] => {
   const alerts = generateAlertNotifications();
   
   // Combine all notifications and sort by timestamp (newest first)
-  const allNotifications = [...approvals, ...rejections, ...infos, ...alerts]
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  
-  // Generate additional notifications if needed to demonstrate version limiting
-  // This is just for demonstration purposes
-  const extraNotifications: Notification[] = [];
-  if (allNotifications.length < 25) {
-    for (let i = 0; i < 10; i++) {
-      extraNotifications.push({
-        id: uuidv4(),
-        type: Math.random() > 0.5 ? 'info' : 'alert',
-        title: `Additional Notification ${i+1}`,
-        message: `This is an additional notification to demonstrate version limiting. Notification ${i+1} of 10.`,
-        timestamp: getRandomRecentDate(),
-        isRead: Math.random() > 0.7,
-        sender: users[Math.floor(Math.random() * users.length)],
-      });
-    }
-  }
-  
-  return [...allNotifications, ...extraNotifications]
+  return [...approvals, ...rejections, ...infos, ...alerts]
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 };
