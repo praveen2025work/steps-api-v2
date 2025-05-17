@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,41 +13,60 @@ import {
   XCircle,
   Calendar,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Search,
+  Filter
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { SLABreakdownTable } from "./SLABreakdownTable";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export function SLADashboard() {
   const [timeRange, setTimeRange] = useState("week");
+  const [processFilter, setProcessFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filter SLA data based on the selected filter and search query
+  const filteredSLAData = processSLAData.filter(process => {
+    const matchesFilter = 
+      processFilter === "all" || 
+      (processFilter === "breached" && process.status === "breached") ||
+      (processFilter === "at-risk" && process.status === "at-risk") ||
+      (processFilter === "compliant" && process.status === "compliant");
+    
+    const matchesSearch = 
+      searchQuery === "" ||
+      process.processId.toString().includes(searchQuery) ||
+      process.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      process.team.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
+  });
   
   return (
     <div className="space-y-6">
-      {/* SLA Dashboard Header with Reference Image */}
-      <Card className="border-none shadow-none">
-        <CardContent className="p-0">
-          <div className="relative w-full h-[200px] rounded-lg overflow-hidden">
-            <Image 
-              src="https://assets.co.dev/19129c8d-1c91-4384-9bc0-e0d1fdc82154/img_7407-e604730.heic"
-              alt="SLA Dashboard Overview"
-              fill
-              style={{ objectFit: "cover" }}
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-center">
-              <div className="p-6 text-white">
-                <h2 className="text-2xl font-bold mb-2">SLA Management Dashboard</h2>
-                <p className="max-w-md">Track and analyze service level agreement performance metrics</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Time Range Selector */}
-      <div className="flex justify-end">
-        <Tabs value={timeRange} onValueChange={setTimeRange} className="w-[400px]">
-          <TabsList className="grid grid-cols-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">SLA Management</h2>
+          <p className="text-muted-foreground">Track process SLAs and performance metrics</p>
+        </div>
+        <Tabs value={timeRange} onValueChange={setTimeRange} className="w-full sm:w-auto">
+          <TabsList className="grid w-full sm:w-[400px] grid-cols-4">
             <TabsTrigger value="day">Day</TabsTrigger>
             <TabsTrigger value="week">Week</TabsTrigger>
             <TabsTrigger value="month">Month</TabsTrigger>
@@ -60,115 +78,206 @@ export function SLADashboard() {
       {/* SLA Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <SLAMetricCard 
-          title="Overall SLA" 
-          value="94.2%" 
+          title="Overall SLA Compliance" 
+          value="92.5%" 
           target="95%" 
           status="warning"
-          trend="+1.5% from last period"
+          trend="+1.2% from last period"
           trendDirection="up"
         />
         <SLAMetricCard 
-          title="First Response" 
-          value="97.8%" 
-          target="95%" 
-          status="success"
-          trend="+2.3% from last period"
-          trendDirection="up"
-        />
-        <SLAMetricCard 
-          title="Resolution Time" 
-          value="92.1%" 
-          target="95%" 
+          title="Process Completion" 
+          value="96.3%" 
+          target="98%" 
           status="warning"
-          trend="-0.7% from last period"
+          trend="-0.8% from last period"
           trendDirection="down"
         />
         <SLAMetricCard 
-          title="Customer Satisfaction" 
-          value="4.7/5" 
-          target="4.5/5" 
+          title="Avg. Process Time" 
+          value="3h 45m" 
+          target="4h" 
           status="success"
-          trend="+0.2 from last period"
-          trendDirection="up"
+          trend="-15m from last period"
+          trendDirection="down"
+        />
+        <SLAMetricCard 
+          title="Critical Process SLA" 
+          value="89.7%" 
+          target="99%" 
+          status="danger"
+          trend="-2.3% from last period"
+          trendDirection="down"
         />
       </div>
 
-      {/* SLA Performance Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div>
-              <CardTitle>Response Time Trends</CardTitle>
-              <CardDescription>Average response times by priority</CardDescription>
-            </div>
-            <LineChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-md">
-              <div className="text-center p-6">
-                <LineChart className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">Response time chart visualization would appear here</p>
-                <p className="text-xs text-muted-foreground mt-2">Showing declining response times across all priorities</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div>
-              <CardTitle>SLA Compliance by Category</CardTitle>
-              <CardDescription>Performance across different ticket types</CardDescription>
-            </div>
-            <PieChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-md">
-              <div className="text-center p-6">
-                <PieChart className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">SLA compliance by category chart would appear here</p>
-                <p className="text-xs text-muted-foreground mt-2">Technical issues at 97%, Billing at 92%, Account at 95%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* SLA Breakdown Table */}
+      {/* Process SLA Table */}
       <Card>
         <CardHeader>
-          <CardTitle>SLA Breakdown by Team</CardTitle>
-          <CardDescription>Detailed performance metrics for each support team</CardDescription>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <CardTitle>Process SLA Status</CardTitle>
+              <CardDescription>SLA compliance for business processes</CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <div className="relative w-full sm:w-[260px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search processes..."
+                  className="pl-8 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Select value={processFilter} onValueChange={setProcessFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Filter status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Processes</SelectItem>
+                  <SelectItem value="breached">SLA Breached</SelectItem>
+                  <SelectItem value="at-risk">At Risk</SelectItem>
+                  <SelectItem value="compliant">Compliant</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <SLABreakdownTable />
-        </CardContent>
-      </Card>
-
-      {/* SLA At Risk */}
-      <Card className="border-red-200 bg-red-50 dark:bg-red-950/10">
-        <CardHeader>
-          <CardTitle className="flex items-center text-red-700 dark:text-red-400">
-            <AlertTriangle className="h-5 w-5 mr-2" />
-            SLA Violations & At-Risk Tickets
-          </CardTitle>
-          <CardDescription className="text-red-600/80 dark:text-red-400/80">
-            Tickets requiring immediate attention to prevent or address SLA breaches
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {slaAtRiskData.map((item, index) => (
-              <SLAAtRiskItem key={index} {...item} />
-            ))}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">Process ID</TableHead>
+                  <TableHead>Process Name</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead>Business Date</TableHead>
+                  <TableHead>Target Time</TableHead>
+                  <TableHead>Actual Time</TableHead>
+                  <TableHead>SLA Status</TableHead>
+                  <TableHead>Progress</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSLAData.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      No processes found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredSLAData.map((process) => (
+                    <TableRow key={process.id}>
+                      <TableCell className="font-medium">{process.processId}</TableCell>
+                      <TableCell>{process.name}</TableCell>
+                      <TableCell>{process.team}</TableCell>
+                      <TableCell>{process.businessDate}</TableCell>
+                      <TableCell>{process.targetTime}</TableCell>
+                      <TableCell>{process.actualTime || "In Progress"}</TableCell>
+                      <TableCell>
+                        <SLAStatusBadge status={process.status} timeRemaining={process.timeRemaining} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="w-[100px]">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span>{process.progress}%</span>
+                          </div>
+                          <Progress 
+                            value={process.progress} 
+                            className="h-2" 
+                            indicatorClassName={getProgressColor(process.status)}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
-        <CardFooter>
-          <Button variant="outline" className="w-full border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50">
-            View All At-Risk Tickets
-          </Button>
+        <CardFooter className="flex justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredSLAData.length} of {processSLAData.length} processes
+          </div>
+          <Button variant="outline">Export SLA Report</Button>
         </CardFooter>
       </Card>
+
+      {/* SLA Performance by Team */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>SLA Performance by Team</CardTitle>
+            <CardDescription>Team compliance with process SLAs</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-5">
+              {teamSLAPerformance.map((team) => (
+                <div key={team.name} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{team.name}</span>
+                      <Badge variant={team.slaCompliance >= 95 ? "default" : "outline"} className={
+                        team.slaCompliance >= 95 
+                          ? "bg-green-500 hover:bg-green-500" 
+                          : team.slaCompliance >= 90 
+                            ? "border-amber-500 text-amber-500" 
+                            : "border-red-500 text-red-500"
+                      }>
+                        {team.slaCompliance}%
+                      </Badge>
+                    </div>
+                    <span className="text-sm">{team.processCount} processes</span>
+                  </div>
+                  <Progress 
+                    value={team.slaCompliance} 
+                    className="h-2" 
+                    indicatorClassName={
+                      team.slaCompliance >= 95 
+                        ? "bg-green-500" 
+                        : team.slaCompliance >= 90 
+                          ? "bg-amber-500" 
+                          : "bg-red-500"
+                    }
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{team.breachedCount} breached</span>
+                    <span>{team.atRiskCount} at risk</span>
+                    <span>{team.compliantCount} compliant</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SLA At Risk */}
+        <Card className="border-red-200 bg-red-50 dark:bg-red-950/10">
+          <CardHeader>
+            <CardTitle className="flex items-center text-red-700 dark:text-red-400">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              SLA Violations & At-Risk Processes
+            </CardTitle>
+            <CardDescription className="text-red-600/80 dark:text-red-400/80">
+              Processes requiring immediate attention to prevent or address SLA breaches
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {slaAtRiskData.map((item) => (
+                <SLAAtRiskItem key={item.processId} {...item} />
+              ))}
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" className="w-full border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50">
+              View All At-Risk Processes
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -210,20 +319,54 @@ function SLAMetricCard({ title, value, target, status, trend, trendDirection }) 
   );
 }
 
-function SLAAtRiskItem({ id, customer, priority, timeRemaining, progress }) {
+function SLAStatusBadge({ status, timeRemaining }) {
+  if (status === "compliant") {
+    return (
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        <CheckCircle2 className="h-3 w-3 mr-1" />
+        Compliant
+      </Badge>
+    );
+  } else if (status === "at-risk") {
+    return (
+      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+        <Clock className="h-3 w-3 mr-1" />
+        {timeRemaining} left
+      </Badge>
+    );
+  } else {
+    return (
+      <Badge variant="destructive">
+        <AlertTriangle className="h-3 w-3 mr-1" />
+        SLA Breached
+      </Badge>
+    );
+  }
+}
+
+function getProgressColor(status) {
+  switch (status) {
+    case "compliant": return "bg-green-500";
+    case "at-risk": return "bg-amber-500";
+    case "breached": return "bg-red-500";
+    default: return "bg-blue-500";
+  }
+}
+
+function SLAAtRiskItem({ processId, name, team, businessDate, timeRemaining, progress, status }) {
   return (
     <div className="border border-red-200 rounded-md p-4 dark:border-red-800/50">
       <div className="flex justify-between items-start mb-2">
         <div>
           <div className="font-medium flex items-center">
-            #{id} - {customer}
-            <Badge variant="outline" className="ml-2 border-red-500 text-red-500 text-xs">
-              {priority}
-            </Badge>
+            #{processId} - {name}
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {team} • {businessDate}
           </div>
           <div className="flex items-center text-sm text-red-600 dark:text-red-400 mt-1">
             <Clock className="h-3 w-3 mr-1" />
-            {timeRemaining} remaining
+            {status === "breached" ? "SLA Breached" : `${timeRemaining} remaining`}
           </div>
         </div>
         <Button size="sm" variant="outline" className="border-red-200 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50">
@@ -241,26 +384,177 @@ function SLAAtRiskItem({ id, customer, priority, timeRemaining, progress }) {
   );
 }
 
+// Sample process SLA data
+const processSLAData = [
+  {
+    id: 1,
+    processId: 1001,
+    name: "PnL Calculation - APAC",
+    team: "PnL Team",
+    businessDate: "2025-05-16",
+    targetTime: "08:00 AM",
+    actualTime: "08:45 AM",
+    status: "breached",
+    progress: 100,
+    timeRemaining: "0h 00m"
+  },
+  {
+    id: 2,
+    processId: 1042,
+    name: "Rate Feed Processing",
+    team: "Rates Team",
+    businessDate: "2025-05-16",
+    targetTime: "09:30 AM",
+    actualTime: null,
+    status: "at-risk",
+    progress: 75,
+    timeRemaining: "0h 45m"
+  },
+  {
+    id: 3,
+    processId: 985,
+    name: "FX Position Reconciliation",
+    team: "FX Team",
+    businessDate: "2025-05-16",
+    targetTime: "10:00 AM",
+    actualTime: null,
+    status: "at-risk",
+    progress: 60,
+    timeRemaining: "1h 15m"
+  },
+  {
+    id: 4,
+    processId: 1078,
+    name: "EOD Batch Process",
+    team: "Operations",
+    businessDate: "2025-05-15",
+    targetTime: "18:00 PM",
+    actualTime: "17:45 PM",
+    status: "compliant",
+    progress: 100,
+    timeRemaining: "0h 00m"
+  },
+  {
+    id: 5,
+    processId: 1103,
+    name: "Risk Calculations",
+    team: "Risk Team",
+    businessDate: "2025-05-15",
+    targetTime: "14:00 PM",
+    actualTime: "13:30 PM",
+    status: "compliant",
+    progress: 100,
+    timeRemaining: "0h 00m"
+  },
+  {
+    id: 6,
+    processId: 972,
+    name: "Market Data Service",
+    team: "Technical Support",
+    businessDate: "2025-05-15",
+    targetTime: "07:30 AM",
+    actualTime: "07:15 AM",
+    status: "compliant",
+    progress: 100,
+    timeRemaining: "0h 00m"
+  },
+  {
+    id: 7,
+    processId: 1056,
+    name: "Compliance Check",
+    team: "Compliance",
+    businessDate: "2025-05-14",
+    targetTime: "11:00 AM",
+    actualTime: "12:30 PM",
+    status: "breached",
+    progress: 100,
+    timeRemaining: "0h 00m"
+  },
+  {
+    id: 8,
+    processId: 1089,
+    name: "Database Performance Check",
+    team: "Technical Support",
+    businessDate: "2025-05-14",
+    targetTime: "09:00 AM",
+    actualTime: null,
+    status: "at-risk",
+    progress: 85,
+    timeRemaining: "0h 30m"
+  }
+];
+
+// Team SLA performance data
+const teamSLAPerformance = [
+  {
+    name: "PnL Team",
+    slaCompliance: 92,
+    processCount: 12,
+    breachedCount: 1,
+    atRiskCount: 2,
+    compliantCount: 9
+  },
+  {
+    name: "Rates Team",
+    slaCompliance: 95,
+    processCount: 8,
+    breachedCount: 0,
+    atRiskCount: 1,
+    compliantCount: 7
+  },
+  {
+    name: "FX Team",
+    slaCompliance: 90,
+    processCount: 10,
+    breachedCount: 1,
+    atRiskCount: 1,
+    compliantCount: 8
+  },
+  {
+    name: "Technical Support",
+    slaCompliance: 88,
+    processCount: 15,
+    breachedCount: 2,
+    atRiskCount: 3,
+    compliantCount: 10
+  },
+  {
+    name: "Operations",
+    slaCompliance: 97,
+    processCount: 20,
+    breachedCount: 0,
+    atRiskCount: 1,
+    compliantCount: 19
+  }
+];
+
+// SLA at risk data
 const slaAtRiskData = [
   {
-    id: "T-4291",
-    customer: "Acme Corporation",
-    priority: "Critical",
-    timeRemaining: "1h 23m",
-    progress: 85
+    processId: 1001,
+    name: "PnL Calculation - APAC",
+    team: "PnL Team",
+    businessDate: "2025-05-16",
+    timeRemaining: "0h 00m",
+    progress: 100,
+    status: "breached"
   },
   {
-    id: "T-4285",
-    customer: "Global Industries",
-    priority: "High",
-    timeRemaining: "2h 05m",
-    progress: 70
+    processId: 1042,
+    name: "Rate Feed Processing",
+    team: "Rates Team",
+    businessDate: "2025-05-16",
+    timeRemaining: "0h 45m",
+    progress: 75,
+    status: "at-risk"
   },
   {
-    id: "T-4278",
-    customer: "Tech Solutions Inc",
-    priority: "Medium",
-    timeRemaining: "4h 30m",
-    progress: 60
+    processId: 985,
+    name: "FX Position Reconciliation",
+    team: "FX Team",
+    businessDate: "2025-05-16",
+    timeRemaining: "1h 15m",
+    progress: 60,
+    status: "at-risk"
   }
 ];

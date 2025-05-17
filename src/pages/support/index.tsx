@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Image from "next/image";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,13 +12,13 @@ export default function SupportPage() {
     <DashboardLayout>
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Support Team Dashboard</h1>
+          <h1 className="text-3xl font-bold">Process Support Dashboard</h1>
         </div>
 
         <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full md:w-auto grid-cols-2">
-            <TabsTrigger value="dashboard">Support Dashboard</TabsTrigger>
-            <TabsTrigger value="sla">SLA Management</TabsTrigger>
+            <TabsTrigger value="dashboard">Issue Management</TabsTrigger>
+            <TabsTrigger value="sla">SLA Tracking</TabsTrigger>
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-4">
