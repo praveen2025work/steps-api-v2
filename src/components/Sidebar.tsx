@@ -57,23 +57,6 @@ const navSections: NavSection[] = [
         title: 'Management Board',
         href: '/management',
         icon: <BarChart4 className="h-5 w-5" />
-      },
-      {
-        title: 'Stage Viewer',
-        href: '/stages/[workflowId]',
-        icon: <Layers className="h-5 w-5" />,
-        pattern: /^\/stages/
-      },
-      {
-        title: 'Workflow Hierarchy',
-        href: '/hierarchy',
-        icon: <Layers className="h-5 w-5" />,
-        pattern: /^\/hierarchy/
-      },
-      {
-        title: 'Analytics',
-        href: '/analytics',
-        icon: <Activity className="h-5 w-5" />
       }
     ]
   },
@@ -150,21 +133,6 @@ const navSections: NavSection[] = [
         title: 'Rates',
         href: '/rates',
         icon: <BarChart4 className="h-5 w-5" />
-      },
-      {
-        title: 'Compliance',
-        href: '/compliance',
-        icon: <ShieldAlert className="h-5 w-5" />
-      },
-      {
-        title: 'Audit Trails',
-        href: '/audit',
-        icon: <FileCheck className="h-5 w-5" />
-      },
-      {
-        title: 'Risk Assessment',
-        href: '/risk',
-        icon: <Activity className="h-5 w-5" />
       }
     ]
   },
