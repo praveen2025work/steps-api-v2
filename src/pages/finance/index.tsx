@@ -1,19 +1,16 @@
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
+import React from 'react';
+import Head from 'next/head';
+import DynamicFinanceDashboard from '@/components/finance/DynamicFinanceDashboard';
 
 const FinancePage = () => {
-  const router = useRouter();
-  
-  useEffect(() => {
-    // Redirect to the static version of the finance dashboard
-    router.replace('/finance/static');
-  }, [router]);
-  
-  // Return a loading state while redirecting
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <p className="text-lg text-muted-foreground">Loading Finance Dashboard...</p>
-    </div>
+    <>
+      <Head>
+        <title>Finance Dashboard | STEPS</title>
+        <meta name="description" content="Financial dashboard with real-time data visualization" />
+      </Head>
+      <DynamicFinanceDashboard />
+    </>
   );
 };
 
