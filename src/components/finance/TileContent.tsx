@@ -58,7 +58,7 @@ const TileContent: React.FC<TileContentProps> = ({ slide, isFullView, isCompact 
   };
 
   const renderChart = () => {
-    const height = isFullView ? 400 : isCompact ? 100 : 200;
+    const height = isFullView ? 400 : isCompact ? 120 : 200;
     
     switch (slide.chartType) {
       case 'bar':
@@ -552,7 +552,7 @@ const TileContent: React.FC<TileContentProps> = ({ slide, isFullView, isCompact 
   };
   
   return (
-    <div className={`w-full ${isCompact ? 'h-24' : ''}`}>
+    <div className={`w-full ${isCompact ? 'h-auto' : ''}`}>
       {renderChart()}
     </div>
   );

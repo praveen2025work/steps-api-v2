@@ -77,27 +77,27 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
 
   return (
     <Card 
-      className={`w-full transition-all duration-300 ${isFocused ? 'ring-2 ring-primary' : ''} ${isCompact ? 'h-48' : ''}`}
+      className={`w-full transition-all duration-300 ${isFocused ? 'ring-2 ring-primary' : ''} ${isCompact ? 'h-auto min-h-[180px]' : ''}`}
       onClick={onFocus}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <CardHeader className={`relative ${isCompact ? 'p-3' : 'p-4'}`}>
+      <CardHeader className={`relative ${isCompact ? 'p-3 pb-2' : 'p-4'}`}>
         <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className={`${isCompact ? 'text-sm' : 'text-lg'} flex items-center gap-2`}>
-              <div className={`w-2 h-2 rounded-full ${getStatusColor(tile.status)}`}></div>
-              {tile.title}
+          <div className={`${isCompact ? 'max-w-[70%]' : ''}`}>
+            <CardTitle className={`${isCompact ? 'text-sm' : 'text-lg'} flex items-center gap-2 truncate`}>
+              <div className={`flex-shrink-0 w-2 h-2 rounded-full ${getStatusColor(tile.status)}`}></div>
+              <span className="truncate">{tile.title}</span>
               {tile.alert && (
-                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <AlertCircle className="flex-shrink-0 h-4 w-4 text-amber-500" />
               )}
             </CardTitle>
             {!isCompact && (
-              <CardDescription>{tile.description}</CardDescription>
+              <CardDescription className="mt-1">{tile.description}</CardDescription>
             )}
           </div>
           
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-shrink-0">
             {(isHovered || isPinned) && tile.slides && Array.isArray(tile.slides) && tile.slides.length > 1 && (
               <>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePrevSlide}>
@@ -123,7 +123,7 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
           </div>
         </div>
         
-        {tile.slides && Array.isArray(tile.slides) && tile.slides.length > 1 && (
+        {tile.slides && Array.isArray(tile.slides) && tile.slides.length > 1 && !isCompact && (
           <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1 pb-1">
             {tile.slides.map((_, index) => (
               <div 
@@ -152,7 +152,7 @@ const FinanceTile: React.FC<FinanceTileProps> = ({
       {!isCompact && (
         <CardFooter className="flex justify-between text-xs text-muted-foreground">
           <div>Updated: {tile.lastUpdated}</div>
-          {currentSlide && currentSlide.source && <div>Source: {currentSlide.source}</div>}
+          {currentSlide && currentSlide.source && <div className="truncate max-w-[50%]">Source: {currentSlide.source}</div>}
         </CardFooter>
       )}
     </Card>
