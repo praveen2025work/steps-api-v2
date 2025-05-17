@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { generateMockTiles } from '@/lib/finance';
 import { TileData, ViewMode } from '@/types/finance-types';
 import TileGrid from './TileGrid';
+import FinanceAnalysis from './FinanceAnalysis';
 
 const DynamicFinanceDashboard: React.FC = () => {
   // State for dashboard configuration
@@ -216,11 +217,6 @@ const DynamicFinanceDashboard: React.FC = () => {
       {/* Main Content */}
       <main className="container py-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div>
-            <p className="text-muted-foreground">
-              Last refreshed: {lastRefreshed.toLocaleTimeString()}
-            </p>
-          </div>
           <div className="flex flex-wrap gap-2">
             <ViewModeControls />
             <LayoutControls />
@@ -228,6 +224,9 @@ const DynamicFinanceDashboard: React.FC = () => {
               <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
+            <span className="text-sm text-muted-foreground flex items-center ml-2">
+              Last refreshed: {lastRefreshed.toLocaleTimeString()}
+            </span>
           </div>
         </div>
 
@@ -251,11 +250,16 @@ const DynamicFinanceDashboard: React.FC = () => {
             />
           </TabsContent>
           <TabsContent value="analysis" className="mt-4">
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-center text-muted-foreground">Analysis view coming soon</p>
-              </CardContent>
-            </Card>
+            <FinanceAnalysis 
+              selectedTile={
+                focusedTile 
+                  ? tiles.find(t => t.id === focusedTile) || null
+                  : splitTile 
+                    ? tiles.find(t => t.id === splitTile) || null
+                    : null
+              } 
+              tiles={tiles}
+            />
           </TabsContent>
           <TabsContent value="risk" className="mt-4">
             <Card>
