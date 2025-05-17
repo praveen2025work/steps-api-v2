@@ -36,7 +36,8 @@ import {
   ArrowRightCircle,
   XCircle,
   CircleDot,
-  BarChart4
+  BarChart4,
+  AlertCircle
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
