@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import NotificationItem from './NotificationItem';
-import { generateMockNotifications } from '@/data/notificationsData';
+import { useNotifications } from '@/contexts/NotificationsContext';
 
 export type NotificationType = 'approval' | 'rejection' | 'info' | 'alert';
 
@@ -33,20 +33,18 @@ export interface Notification {
 }
 
 const NotificationsCenter = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications } = useNotifications();
   const [filter, setFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showUnreadOnly, setShowUnreadOnly] = useState<boolean>(false);
+  const [localNotifications, setLocalNotifications] = useState<Notification[]>([]);
 
+  // Sync with global notifications
   useEffect(() => {
-    // In a real app, this would be an API call
-    const mockNotifications = generateMockNotifications();
-    setNotifications(mockNotifications);
-  }, []);
-
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+    setLocalNotifications(notifications);
+  }, [notifications]);
   
-  const filteredNotifications = notifications.filter(notification => {
+  const filteredNotifications = localNotifications.filter(notification => {
     // Filter by type
     if (filter !== 'all' && notification.type !== filter) {
       return false;
@@ -66,28 +64,22 @@ const NotificationsCenter = () => {
     return true;
   });
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === id ? { ...notification, isRead: true } : notification
-      )
-    );
+  const handleMarkAsRead = (id: string) => {
+    markAsRead(id);
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, isRead: true }))
-    );
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
   };
 
   const deleteNotification = (id: string) => {
-    setNotifications(prev => 
+    setLocalNotifications(prev => 
       prev.filter(notification => notification.id !== id)
     );
   };
 
   const clearAllNotifications = () => {
-    setNotifications([]);
+    setLocalNotifications([]);
   };
 
   return (
@@ -105,10 +97,10 @@ const NotificationsCenter = () => {
               <Bell className="h-3 w-3" />
               <span>{unreadCount} unread</span>
             </Badge>
-            <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0}>
+            <Button variant="outline" size="sm" onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
               <Check className="h-4 w-4 mr-1" /> Mark all as read
             </Button>
-            <Button variant="outline" size="sm" onClick={clearAllNotifications} disabled={notifications.length === 0}>
+            <Button variant="outline" size="sm" onClick={clearAllNotifications} disabled={localNotifications.length === 0}>
               <Trash className="h-4 w-4 mr-1" /> Clear all
             </Button>
           </div>
@@ -157,25 +149,25 @@ const NotificationsCenter = () => {
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="approvals">
               Approvals
-              {notifications.filter(n => n.type === 'approval').length > 0 && (
+              {localNotifications.filter(n => n.type === 'approval').length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {notifications.filter(n => n.type === 'approval').length}
+                  {localNotifications.filter(n => n.type === 'approval').length}
                 </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="rejections">
               Rejections
-              {notifications.filter(n => n.type === 'rejection').length > 0 && (
+              {localNotifications.filter(n => n.type === 'rejection').length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {notifications.filter(n => n.type === 'rejection').length}
+                  {localNotifications.filter(n => n.type === 'rejection').length}
                 </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="other">
               Other
-              {notifications.filter(n => n.type !== 'approval' && n.type !== 'rejection').length > 0 && (
+              {localNotifications.filter(n => n.type !== 'approval' && n.type !== 'rejection').length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {notifications.filter(n => n.type !== 'approval' && n.type !== 'rejection').length}
+                  {localNotifications.filter(n => n.type !== 'approval' && n.type !== 'rejection').length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -188,7 +180,7 @@ const NotificationsCenter = () => {
                   <NotificationItem 
                     key={notification.id} 
                     notification={notification} 
-                    onMarkAsRead={markAsRead}
+                    onMarkAsRead={handleMarkAsRead}
                     onDelete={deleteNotification}
                   />
                 ))
@@ -215,7 +207,7 @@ const NotificationsCenter = () => {
                     <NotificationItem 
                       key={notification.id} 
                       notification={notification} 
-                      onMarkAsRead={markAsRead}
+                      onMarkAsRead={handleMarkAsRead}
                       onDelete={deleteNotification}
                     />
                   ))
@@ -242,7 +234,7 @@ const NotificationsCenter = () => {
                     <NotificationItem 
                       key={notification.id} 
                       notification={notification} 
-                      onMarkAsRead={markAsRead}
+                      onMarkAsRead={handleMarkAsRead}
                       onDelete={deleteNotification}
                     />
                   ))
@@ -269,7 +261,7 @@ const NotificationsCenter = () => {
                     <NotificationItem 
                       key={notification.id} 
                       notification={notification} 
-                      onMarkAsRead={markAsRead}
+                      onMarkAsRead={handleMarkAsRead}
                       onDelete={deleteNotification}
                     />
                   ))

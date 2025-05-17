@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { useEffect, useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SidebarProvider } from '@/contexts/SidebarContext';
+import { NotificationsProvider } from '@/contexts/NotificationsContext';
 
 export default function App({ Component, pageProps }: AppProps) {
   const [mounted, setMounted] = useState(false);
@@ -20,10 +21,12 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider>
       <SidebarProvider>
-        <div className="min-h-screen">
-          <Component {...pageProps} />
-          <Toaster />
-        </div>
+        <NotificationsProvider>
+          <div className="min-h-screen">
+            <Component {...pageProps} />
+            <Toaster />
+          </div>
+        </NotificationsProvider>
       </SidebarProvider>
     </ThemeProvider>
   )
