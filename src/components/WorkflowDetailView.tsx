@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
+import { CreateSupportIssue } from './support/CreateSupportIssue';
 import { 
   FileText, 
   Lock, 
@@ -721,12 +722,20 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       {/* Workflow Controls - Aligned with breadcrumb */}
       <div className="flex justify-between items-center">
         <div className="flex-1">
-          <Link href={`/finance?workflowId=${hierarchyPath[hierarchyPath.length-1]?.id || ''}&workflowName=${workflowTitle}`}>
-            <Button variant="outline" size="sm" className="gap-2">
-              <BarChart4 className="h-4 w-4" />
-              Finance Dashboard
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href={`/finance?workflowId=${hierarchyPath[hierarchyPath.length-1]?.id || ''}&workflowName=${workflowTitle}`}>
+              <Button variant="outline" size="sm" className="gap-2">
+                <BarChart4 className="h-4 w-4" />
+                Finance Dashboard
+              </Button>
+            </Link>
+            <Link href="/support">
+              <Button variant="outline" size="sm" className="gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Support Dashboard
+              </Button>
+            </Link>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <Button 
@@ -820,13 +829,23 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                             <Clock className="h-4 w-4 text-gray-500" />
                           )}
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          className="p-0 h-auto font-mono"
-                          onClick={() => handleProcessIdClick(subStage.processId)}
-                        >
-                          {subStage.processId}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            className="p-0 h-auto font-mono"
+                            onClick={() => handleProcessIdClick(subStage.processId)}
+                          >
+                            {subStage.processId}
+                          </Button>
+                          <CreateSupportIssue 
+                            processId={subStage.processId}
+                            processName={subStage.name}
+                            application={hierarchyPath[0]?.name || ""}
+                            buttonVariant="ghost"
+                            buttonSize="icon"
+                            buttonClassName="h-5 w-5 p-0 text-red-500 hover:text-red-600"
+                          />
+                        </div>
                         {subStage.type === 'auto' ? (
                           <Bot className="h-4 w-4 text-muted-foreground" />
                         ) : (
@@ -943,6 +962,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                         >
                           <Mail className="h-4 w-4" />
                         </Button>
+                        <CreateSupportIssue 
+                          processId={subStage.processId}
+                          processName={subStage.name}
+                          application={hierarchyPath[0]?.name || ""}
+                          buttonVariant="ghost"
+                          buttonSize="sm"
+                          buttonClassName="h-8 w-8 p-0"
+                        />
                       </div>
                     </div>
                   </div>
