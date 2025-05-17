@@ -1,6 +1,6 @@
 export type ViewMode = 'tile' | 'split' | 'full' | 'summary' | 'grid' | 'pivot';
 export type TileStatus = 'success' | 'warning' | 'error' | 'info' | 'neutral';
-export type ChartType = 'bar' | 'line' | 'pie' | 'grid' | 'progress' | 'status' | 'text';
+export type ChartType = 'bar' | 'line' | 'pie' | 'grid' | 'progress' | 'status' | 'text' | 'area' | 'scatter';
 
 export interface TileData {
   id: string;
@@ -48,4 +48,51 @@ export interface FinanceDashboardConfig {
   tiles: FinanceTileConfig[];
   defaultColumns: number;
   defaultViewMode: ViewMode;
+}
+
+// Tile Configuration Types
+export enum TileType {
+  Chart = "chart",
+  Grid = "grid",
+  Progress = "progress",
+  Text = "text"
+}
+
+export interface AxisConfig {
+  field: string;
+  label: string;
+}
+
+export interface Filter {
+  field: string;
+  operator: 'equals' | 'contains' | 'greaterThan' | 'lessThan';
+  value: string | number;
+}
+
+export interface TileConfig {
+  id: string;
+  title: string;
+  type: TileType;
+  chartType?: ChartType;
+  dataSource: string;
+  xAxis: AxisConfig;
+  yAxis: AxisConfig;
+  filters: Filter[];
+  refreshInterval: number;
+  isActive: boolean;
+}
+
+export interface DataSourceField {
+  name: string;
+  label: string;
+  type: 'string' | 'number' | 'date' | 'boolean';
+}
+
+export interface DataSource {
+  id: string;
+  name: string;
+  description: string;
+  endpoint: string;
+  refreshInterval: number;
+  fields: DataSourceField[];
 }

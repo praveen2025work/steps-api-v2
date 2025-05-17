@@ -228,6 +228,14 @@ const DynamicFinanceDashboard: React.FC = () => {
               Last refreshed: {lastRefreshed.toLocaleTimeString()}
             </span>
           </div>
+          <div>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/finance/configure">
+                <Settings className="h-4 w-4 mr-1" />
+                Configure Tiles
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Dashboard Tabs */}
