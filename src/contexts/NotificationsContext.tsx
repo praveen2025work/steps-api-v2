@@ -58,7 +58,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   
   const refreshNotifications = () => {
     const mockNotifications = generateMockNotifications();
-    setNotifications(mockNotifications);
+    // Keep only the last 20 notifications
+    setNotifications(mockNotifications.slice(0, 20));
   };
   
   return (

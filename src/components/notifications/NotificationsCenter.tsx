@@ -41,7 +41,8 @@ const NotificationsCenter = () => {
 
   // Sync with global notifications
   useEffect(() => {
-    setLocalNotifications(notifications);
+    // Keep only the last 20 notifications
+    setLocalNotifications(notifications.slice(0, 20));
   }, [notifications]);
   
   const filteredNotifications = localNotifications.filter(notification => {
