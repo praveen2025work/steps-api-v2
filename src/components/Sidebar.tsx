@@ -179,11 +179,17 @@ const navSections: NavSection[] = [
         title: 'Settings',
         href: '/settings',
         icon: <Settings className="h-5 w-5" />
-      },
+      }
+    ]
+  },
+  {
+    title: "Help",
+    items: [
       {
         title: 'Help & Support',
         href: '/help',
-        icon: <HelpCircle className="h-5 w-5" />
+        icon: <HelpCircle className="h-5 w-5" />,
+        pattern: /^\/help/
       }
     ]
   }
