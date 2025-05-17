@@ -57,18 +57,23 @@ const navSections: NavSection[] = [
         title: 'Management Board',
         href: '/management',
         icon: <BarChart4 className="h-5 w-5" />
+      },
+      {
+        title: 'Finance Dashboard',
+        href: '/finance',
+        icon: <BarChart4 className="h-5 w-5" />,
+        pattern: /^\/finance/
+      },
+      {
+        title: 'Rates',
+        href: '/rates',
+        icon: <BarChart4 className="h-5 w-5" />
       }
     ]
   },
   {
     title: "Admin",
     items: [
-      {
-        title: 'Admin Dashboard',
-        href: '/admin',
-        icon: <Shield className="h-5 w-5" />,
-        pattern: /^\/admin$/
-      },
       {
         title: 'Applications',
         href: '/admin?tab=applications',
@@ -109,19 +114,19 @@ const navSections: NavSection[] = [
     ]
   },
   {
-    title: "Regulatory",
+    title: "Support Admin",
     items: [
+      {
+        title: 'Admin Dashboard',
+        href: '/admin',
+        icon: <Shield className="h-5 w-5" />,
+        pattern: /^\/admin$/
+      },
       {
         title: 'Operations Center',
         href: '/operations',
         icon: <Activity className="h-5 w-5" />,
         pattern: /^\/operations/
-      },
-      {
-        title: 'Finance Dashboard',
-        href: '/finance',
-        icon: <BarChart4 className="h-5 w-5" />,
-        pattern: /^\/finance/
       },
       {
         title: 'PnL Operations',
@@ -130,21 +135,16 @@ const navSections: NavSection[] = [
         pattern: /^\/pnl-operations/
       },
       {
-        title: 'Rates',
-        href: '/rates',
-        icon: <BarChart4 className="h-5 w-5" />
+        title: 'Support Dashboard',
+        href: '/support',
+        icon: <HelpCircle className="h-5 w-5" />,
+        pattern: /^\/support/
       }
     ]
   },
   {
     title: "Management",
     items: [
-      {
-        title: 'Support Dashboard',
-        href: '/support',
-        icon: <HelpCircle className="h-5 w-5" />,
-        pattern: /^\/support/
-      },
       {
         title: 'Document Center',
         href: '/files',
