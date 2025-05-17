@@ -830,23 +830,13 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                             <Clock className="h-4 w-4 text-gray-500" />
                           )}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            variant="ghost" 
-                            className="p-0 h-auto font-mono"
-                            onClick={() => handleProcessIdClick(subStage.processId)}
-                          >
-                            {subStage.processId}
-                          </Button>
-                          <CreateSupportIssue 
-                            processId={subStage.processId}
-                            processName={subStage.name}
-                            application={hierarchyPath[0]?.name || ""}
-                            buttonVariant="ghost"
-                            buttonSize="icon"
-                            buttonClassName="h-5 w-5 p-0 text-red-500 hover:text-red-600"
-                          />
-                        </div>
+                        <Button 
+                          variant="ghost" 
+                          className="p-0 h-auto font-mono"
+                          onClick={() => handleProcessIdClick(subStage.processId)}
+                        >
+                          {subStage.processId}
+                        </Button>
                         {subStage.type === 'auto' ? (
                           <Bot className="h-4 w-4 text-muted-foreground" />
                         ) : (
@@ -963,14 +953,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                         >
                           <Mail className="h-4 w-4" />
                         </Button>
-                        <CreateSupportIssue 
-                          processId={subStage.processId}
-                          processName={subStage.name}
-                          application={hierarchyPath[0]?.name || ""}
-                          buttonVariant="ghost"
-                          buttonSize="sm"
-                          buttonClassName="h-8 w-8 p-0"
-                        />
                       </div>
                     </div>
                   </div>
@@ -1018,6 +1000,21 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           <div className="text-sm text-muted-foreground">Average Start Time</div>
                           <div className="font-medium">{subStage.timing.avgStart}</div>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Support Options */}
+                    <div className="pt-4 border-t">
+                      <h4 className="font-medium mb-3">Support Options</h4>
+                      <div className="flex gap-2">
+                        <CreateSupportIssue 
+                          processId={subStage.processId}
+                          processName={subStage.name}
+                          application={hierarchyPath[0]?.name || ""}
+                          buttonVariant="outline"
+                          buttonSize="sm"
+                          buttonClassName=""
+                        />
                       </div>
                     </div>
                   </CollapsibleContent>
