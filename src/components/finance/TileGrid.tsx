@@ -202,9 +202,10 @@ const TileGrid: React.FC<TileGridProps> = ({
               isFocused={true}
               isFullView={false}
             />
+            {renderDetailedDataGrid(mainTile.id)}
           </div>
           <div className="w-full md:w-[40%]">
-            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4`}>
+            <div className={`grid grid-cols-1 gap-4`}>
               {otherTiles.map(tile => (
                 <FinanceTile 
                   key={tile.id} 
@@ -218,7 +219,6 @@ const TileGrid: React.FC<TileGridProps> = ({
             </div>
           </div>
         </div>
-        {renderDetailedDataGrid(mainTile.id)}
       </div>
     );
   }
