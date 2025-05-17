@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   RefreshCw, LayoutGrid, SplitSquareVertical, Maximize2, 
-  Settings, ChevronLeft
+  Settings, ChevronLeft, ArrowLeft, Home
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -12,6 +12,8 @@ import { generateMockTiles } from '@/lib/finance';
 import { TileData, ViewMode } from '@/types/finance-types';
 import TileGrid from './TileGrid';
 import FinanceAnalysis from './FinanceAnalysis';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
 
 const DynamicFinanceDashboard: React.FC = () => {
   const router = useRouter();
@@ -23,13 +25,47 @@ const DynamicFinanceDashboard: React.FC = () => {
   const [tiles, setTiles] = useState<TileData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [selectedApp, setSelectedApp] = useState<string>("");
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string>("");
+  const [availableWorkflows, setAvailableWorkflows] = useState<{id: string, name: string}[]>([]);
+  const [navigationSource, setNavigationSource] = useState<'direct' | 'dashboard'>('direct');
+
+  // Determine navigation source
+  useEffect(() => {
+    // Check if we came from the dashboard or directly via the menu
+    const referrer = document.referrer;
+    if (referrer && (referrer.includes('/workflow/') || referrer.includes('/'))) {
+      setNavigationSource('dashboard');
+    } else {
+      setNavigationSource('direct');
+    }
+  }, []);
+
+  // Update available workflows when selected app changes
+  useEffect(() => {
+    if (selectedApp) {
+      const app = mockHierarchicalWorkflows.find(a => a.id === selectedApp);
+      if (app) {
+        const workflows: {id: string, name: string}[] = [];
+        app.assetClasses.forEach(assetClass => {
+          assetClass.workflowLevels.forEach(wf => {
+            workflows.push({ id: wf.id, name: wf.name });
+          });
+        });
+        setAvailableWorkflows(workflows);
+        if (workflows.length > 0 && !selectedWorkflow) {
+          setSelectedWorkflow(workflows[0].id);
+        }
+      }
+    }
+  }, [selectedApp, selectedWorkflow]);
 
   // Load dashboard data
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        // In a real app, we would fetch data from an API
+        // In a real app, we would fetch data from an API based on selectedApp and selectedWorkflow
         const data = generateMockTiles();
         setTiles(data);
       } catch (error) {
@@ -47,7 +83,7 @@ const DynamicFinanceDashboard: React.FC = () => {
     }, 60000); // Refresh every minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedApp, selectedWorkflow]);
 
   // Handle tile focus
   const handleTileFocus = (tileId: string) => {
@@ -84,9 +120,11 @@ const DynamicFinanceDashboard: React.FC = () => {
 
   // Handle back navigation
   const handleBack = () => {
-    // Navigate back to the workflow that opened this dashboard
-    // Default to wf-level-001 if no referrer is available
-    router.back();
+    if (navigationSource === 'dashboard') {
+      router.push('/');
+    } else {
+      router.back();
+    }
   };
 
   // Layout controls component
@@ -198,15 +236,56 @@ const DynamicFinanceDashboard: React.FC = () => {
 
   return (
     <>
-      {/* Back button */}
-      <div className="mb-4">
-        <Button variant="outline" size="sm" onClick={handleBack}>
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Back to Workflow
-        </Button>
-      </div>
-      
-      {/* Main Content */}
+      <div className="flex flex-col space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h1 className="text-2xl font-bold">Finance Dashboard</h1>
+          
+          {navigationSource === 'direct' ? (
+            <div className="flex flex-wrap gap-2">
+              <Select value={selectedApp} onValueChange={setSelectedApp}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Application" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockHierarchicalWorkflows.map(app => (
+                    <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select 
+                value={selectedWorkflow} 
+                onValueChange={setSelectedWorkflow}
+                disabled={availableWorkflows.length === 0}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Workflow" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableWorkflows.map(wf => (
+                    <SelectItem key={wf.id} value={wf.id}>{wf.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <Button variant="outline" size="sm" onClick={handleBack}>
+              {navigationSource === 'dashboard' ? (
+                <>
+                  <Home className="h-4 w-4 mr-1" />
+                  <span>Return to Dashboard</span>
+                </>
+              ) : (
+                <>
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  <span>Back</span>
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+        
+        {/* Main Content */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div className="flex flex-wrap gap-2">
             <ViewModeControls />
@@ -215,9 +294,16 @@ const DynamicFinanceDashboard: React.FC = () => {
               <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <span className="text-sm text-muted-foreground flex items-center ml-2">
+            
+            {navigationSource === 'direct' ? null : (
+              <Button variant="ghost" size="icon" onClick={handleBack} title="Back">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            )}
+            
+            <div className="text-sm text-muted-foreground flex items-center ml-auto">
               Last refreshed: {lastRefreshed.toLocaleTimeString()}
-            </span>
+            </div>
           </div>
           <div>
             <Button variant="outline" size="sm" asChild>
@@ -275,6 +361,7 @@ const DynamicFinanceDashboard: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
+      </div>
     </>
   );
 };
