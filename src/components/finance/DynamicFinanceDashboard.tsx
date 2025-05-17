@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   RefreshCw, LayoutGrid, SplitSquareVertical, Maximize2, 
-  Settings, Download, Filter, Pin, ChevronLeft, Home
+  Settings, ChevronLeft
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { generateMockTiles } from '@/lib/finance';
 import { TileData, ViewMode } from '@/types/finance-types';
 import TileGrid from './TileGrid';
 import FinanceAnalysis from './FinanceAnalysis';
 
 const DynamicFinanceDashboard: React.FC = () => {
+  const router = useRouter();
   // State for dashboard configuration
   const [columns, setColumns] = useState<number>(3);
   const [viewMode, setViewMode] = useState<ViewMode>('tile');
@@ -78,6 +80,13 @@ const DynamicFinanceDashboard: React.FC = () => {
       setLastRefreshed(new Date());
       setIsLoading(false);
     }, 500);
+  };
+
+  // Handle back navigation
+  const handleBack = () => {
+    // Navigate back to the workflow that opened this dashboard
+    // Default to wf-level-001 if no referrer is available
+    router.back();
   };
 
   // Layout controls component
@@ -188,34 +197,16 @@ const DynamicFinanceDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background">
-        <div className="container flex h-16 items-center justify-between py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Home className="h-5 w-5" />
-              <span className="font-bold">STEPS</span>
-            </Link>
-            
-            <div className="flex items-center">
-              <ChevronLeft className="h-4 w-4" />
-              <Link href="/" className="ml-2 text-sm text-muted-foreground">
-                Back to Dashboard
-              </Link>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              John Doe
-            </span>
-          </div>
-        </div>
-      </header>
-
+    <>
+      {/* Back button */}
+      <div className="mb-4">
+        <Button variant="outline" size="sm" onClick={handleBack}>
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Workflow
+        </Button>
+      </div>
+      
       {/* Main Content */}
-      <main className="container py-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div className="flex flex-wrap gap-2">
             <ViewModeControls />
@@ -284,8 +275,7 @@ const DynamicFinanceDashboard: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+    </>
   );
 };
 

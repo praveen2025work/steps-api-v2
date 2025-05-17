@@ -1,5 +1,6 @@
 import React from 'react';
 import Head from 'next/head';
+import DashboardLayout from '@/components/DashboardLayout';
 import DynamicFinanceDashboard from '@/components/finance/DynamicFinanceDashboard';
 
 const FinancePage = () => {
@@ -9,7 +10,9 @@ const FinancePage = () => {
         <title>Finance Dashboard | STEPS</title>
         <meta name="description" content="Financial dashboard with real-time data visualization" />
       </Head>
-      <DynamicFinanceDashboard />
+      <DashboardLayout title="Finance Dashboard">
+        <DynamicFinanceDashboard />
+      </DashboardLayout>
     </>
   );
 };
