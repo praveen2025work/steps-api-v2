@@ -1,11 +1,11 @@
 import React from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import BasicFinanceDashboard from '@/components/finance/BasicFinanceDashboard';
+import MinimalFinanceDashboard from '@/components/finance/MinimalFinanceDashboard';
 
 const FinancePage: React.FC = () => {
   return (
     <DashboardLayout>
-      <BasicFinanceDashboard />
+      <MinimalFinanceDashboard />
     </DashboardLayout>
   );
 };
