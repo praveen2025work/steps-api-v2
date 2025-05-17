@@ -30,14 +30,32 @@ const DynamicFinanceDashboard: React.FC = () => {
   const [availableWorkflows, setAvailableWorkflows] = useState<{id: string, name: string}[]>([]);
   const [navigationSource, setNavigationSource] = useState<'direct' | 'dashboard'>('direct');
 
-  // Determine navigation source
+  // Determine navigation source and initialize selections
   useEffect(() => {
-    // Check if we came from the dashboard or directly via the menu
+    // Check if we came from the dashboard or workflow page
     const referrer = document.referrer;
-    if (referrer && (referrer.includes('/workflow/') || referrer.includes('/'))) {
+    const isFromWorkflowOrDashboard = referrer && 
+      (referrer.includes('/workflow/') || 
+       referrer.includes('/dashboard') || 
+       referrer === window.location.origin + '/');
+    
+    if (isFromWorkflowOrDashboard) {
       setNavigationSource('dashboard');
     } else {
+      // If accessed directly or from sidebar menu
       setNavigationSource('direct');
+      
+      // Pre-select the first application if available
+      if (mockHierarchicalWorkflows.length > 0 && !selectedApp) {
+        const firstApp = mockHierarchicalWorkflows[0];
+        setSelectedApp(firstApp.id);
+        
+        // Pre-select the first workflow if available
+        if (firstApp.assetClasses.length > 0 && 
+            firstApp.assetClasses[0].workflowLevels.length > 0) {
+          setSelectedWorkflow(firstApp.assetClasses[0].workflowLevels[0].id);
+        }
+      }
     }
   }, []);
 
@@ -63,27 +81,39 @@ const DynamicFinanceDashboard: React.FC = () => {
   // Load dashboard data
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
-      try {
-        // In a real app, we would fetch data from an API based on selectedApp and selectedWorkflow
-        const data = generateMockTiles();
-        setTiles(data);
-      } catch (error) {
-        console.error('Failed to load finance dashboard data:', error);
-      } finally {
-        setIsLoading(false);
+      // Only load data if we have both an application and workflow selected
+      // or if we're coming from a workflow page (where data is contextual)
+      if ((selectedApp && selectedWorkflow) || navigationSource === 'dashboard') {
+        setIsLoading(true);
+        try {
+          // In a real app, we would fetch data from an API based on selectedApp and selectedWorkflow
+          // For now, we'll use mock data but in a real implementation, we would pass these as parameters
+          // to the API call: `/api/finance/dashboard?appId=${selectedApp}&workflowId=${selectedWorkflow}`
+          const data = generateMockTiles();
+          setTiles(data);
+        } catch (error) {
+          console.error('Failed to load finance dashboard data:', error);
+        } finally {
+          setIsLoading(false);
+        }
       }
     };
 
     loadData();
-    // Set up auto-refresh interval
-    const interval = setInterval(() => {
-      loadData();
-      setLastRefreshed(new Date());
-    }, 60000); // Refresh every minute
+    
+    // Set up auto-refresh interval only if we have data to refresh
+    let interval: NodeJS.Timeout | null = null;
+    if ((selectedApp && selectedWorkflow) || navigationSource === 'dashboard') {
+      interval = setInterval(() => {
+        loadData();
+        setLastRefreshed(new Date());
+      }, 60000); // Refresh every minute
+    }
 
-    return () => clearInterval(interval);
-  }, [selectedApp, selectedWorkflow]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [selectedApp, selectedWorkflow, navigationSource]);
 
   // Handle tile focus
   const handleTileFocus = (tileId: string) => {
