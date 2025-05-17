@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Maximize2, Pin, PinOff, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 import { TileData, TileSlide, TileStatus } from '@/types/finance-types';
-import TileContent from './TileContent';
+import { TileContent } from './TileContent';
 
 interface FinanceTileProps {
   tile: TileData;

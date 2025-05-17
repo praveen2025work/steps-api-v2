@@ -1,6 +1,17 @@
 export type ViewMode = 'tile' | 'split' | 'full' | 'summary' | 'grid' | 'pivot';
 export type TileStatus = 'success' | 'warning' | 'error' | 'info' | 'neutral';
-export type ChartType = 'bar' | 'line' | 'pie' | 'grid' | 'progress' | 'status' | 'text' | 'area' | 'scatter';
+
+export enum ChartType {
+  Bar = "bar",
+  Line = "line",
+  Pie = "pie",
+  Grid = "grid",
+  Progress = "progress",
+  Status = "status",
+  Text = "text",
+  Area = "area",
+  Scatter = "scatter"
+}
 
 export interface TileData {
   id: string;

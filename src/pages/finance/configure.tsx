@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import DashboardLayout from '@/components/DashboardLayout';
 import { TileConfigurator } from '@/components/finance/TileConfigurator';
 
 export default function ConfigureTilesPage() {
