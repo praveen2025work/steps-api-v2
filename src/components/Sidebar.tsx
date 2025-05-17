@@ -8,11 +8,9 @@ import {
   Activity,
   Settings,
   Users,
-  Calendar,
   Bell,
   BarChart4,
   ShieldAlert,
-  Building2,
   FileCheck,
   HelpCircle,
   ChevronLeft,
@@ -63,11 +61,6 @@ const navSections: NavSection[] = [
         href: '/finance',
         icon: <BarChart4 className="h-5 w-5" />,
         pattern: /^\/finance/
-      },
-      {
-        title: 'Rates',
-        href: '/rates',
-        icon: <BarChart4 className="h-5 w-5" />
       }
     ]
   },
@@ -154,16 +147,6 @@ const navSections: NavSection[] = [
         title: 'User Management',
         href: '/users',
         icon: <Users className="h-5 w-5" />
-      },
-      {
-        title: 'Organizations',
-        href: '/organizations',
-        icon: <Building2 className="h-5 w-5" />
-      },
-      {
-        title: 'Calendar',
-        href: '/calendar',
-        icon: <Calendar className="h-5 w-5" />
       },
       {
         title: 'Notifications',
@@ -314,17 +297,6 @@ const Sidebar = () => {
             </div>
           ))}
         </nav>
-        <div className="p-4 border-t border-border">
-          <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${getThemeAccentColor()}`}>
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-              <Users className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">Premium Plan</p>
-              <p className="text-xs text-muted-foreground">Enterprise Access</p>
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );
