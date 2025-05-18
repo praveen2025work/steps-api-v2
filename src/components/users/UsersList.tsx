@@ -71,10 +71,7 @@ const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }
                 <TableHead>Username</TableHead>
                 <TableHead>Full Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Applications</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -82,7 +79,7 @@ const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No users found.
                   </TableCell>
                 </TableRow>
@@ -92,15 +89,10 @@ const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }
                     <TableCell className="font-medium">{user.username}</TableCell>
                     <TableCell>{user.fullName}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell>{user.department}</TableCell>
                     <TableCell>
                       <Badge variant={user.isActive ? "success" : "destructive"}>
                         {user.isActive ? "Active" : "Inactive"}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{user.applications.length}</Badge>
                     </TableCell>
                     <TableCell>
                       {user.createdOn ? formatDistanceToNow(new Date(user.createdOn), { addSuffix: true }) : 'N/A'}

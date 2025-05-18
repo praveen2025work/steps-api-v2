@@ -5,12 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Trash } from 'lucide-react';
-import { getRoles } from '@/data/usersData';
+import { Trash, Plus } from 'lucide-react';
+import { getAvailableApplications, getApplicationRoles } from '@/data/usersData';
 
 interface UserFormProps {
   user?: User;
@@ -21,17 +21,22 @@ interface UserFormProps {
 
 const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
   const isEditMode = !!user;
-  const roles = getRoles();
+  const applications = getAvailableApplications();
   const [formData, setFormData] = useState<UserFormData>({
     username: '',
     fullName: '',
     email: '',
     isActive: true,
-    role: roles[0],
+    role: '',
     department: '', // We'll keep this in the type but not use it in the UI
     applications: []
   });
+  
+  const [selectedAppId, setSelectedAppId] = useState<string>('');
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [applicableRoles, setApplicableRoles] = useState<string[]>([]);
 
+  // Initialize form data when user changes
   useEffect(() => {
     if (user) {
       setFormData({
@@ -50,18 +55,75 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
         fullName: '',
         email: '',
         isActive: true,
-        role: roles[0],
+        role: '',
         department: '', // Empty string as we're not using it
         applications: []
       });
     }
-  }, [user, roles]);
+    
+    // Reset application selection
+    setSelectedAppId(applications.length > 0 ? applications[0].id : '');
+    setSelectedRoles([]);
+  }, [user, applications]);
+  
+  // Update applicable roles when application changes
+  useEffect(() => {
+    if (selectedAppId) {
+      const roles = getApplicationRoles(selectedAppId);
+      setApplicableRoles(roles);
+      setSelectedRoles([]);
+    }
+  }, [selectedAppId]);
 
   const handleChange = (field: keyof UserFormData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+  
+  const handleRoleToggle = (role: string) => {
+    setSelectedRoles(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role) 
+        : [...prev, role]
+    );
+  };
+  
+  const addApplication = () => {
+    if (!selectedAppId || selectedRoles.length === 0) return;
+    
+    // Check if application is already assigned
+    const isAlreadyAssigned = formData.applications.some(
+      app => app.applicationId === selectedAppId
+    );
+    
+    if (isAlreadyAssigned) {
+      // Update existing application roles
+      setFormData(prev => ({
+        ...prev,
+        applications: prev.applications.map(app => 
+          app.applicationId === selectedAppId
+            ? { ...app, accessLevel: selectedRoles.join(', ') }
+            : app
+        )
+      }));
+    } else {
+      // Add new application
+      const newApplication: UserApplication = {
+        applicationId: selectedAppId,
+        accessLevel: selectedRoles.join(', '),
+        assignedOn: new Date()
+      };
+      
+      setFormData(prev => ({
+        ...prev,
+        applications: [...prev.applications, newApplication]
+      }));
+    }
+    
+    // Reset selection
+    setSelectedRoles([]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -127,21 +189,55 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select 
-                value={formData.role} 
-                onValueChange={(value) => handleChange('role', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map(role => (
-                    <SelectItem key={role} value={role}>{role}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Application Assignment</Label>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="application">Select Application</Label>
+                    <Select 
+                      value={selectedAppId} 
+                      onValueChange={setSelectedAppId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select application" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {applications.map(app => (
+                          <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {selectedAppId && applicableRoles.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Select Roles</Label>
+                      <div className="grid grid-cols-2 gap-2 border rounded-md p-3">
+                        {applicableRoles.map(role => (
+                          <div key={role} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`role-${role}`} 
+                              checked={selectedRoles.includes(role)}
+                              onCheckedChange={() => handleRoleToggle(role)}
+                            />
+                            <Label htmlFor={`role-${role}`} className="cursor-pointer">{role}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={addApplication}
+                    disabled={!selectedAppId || selectedRoles.length === 0}
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Add Application
+                  </Button>
+                </div>
+              </div>
             </div>
             
             <div className="flex items-center space-x-2">
