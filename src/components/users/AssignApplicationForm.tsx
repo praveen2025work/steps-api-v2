@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { getAvailableApplications, getAccessLevels } from '@/data/usersData';
+import { getAvailableApplications, getAccessLevels, getApplicationRoles } from '@/data/usersData';
 
 interface AssignApplicationFormProps {
   user: User | null;
@@ -20,21 +20,34 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
   const [selectedAppId, setSelectedAppId] = useState<string>('');
   const [selectedAccessLevel, setSelectedAccessLevel] = useState<string>(accessLevels[0]);
   const [availableApps, setAvailableApps] = useState(applications);
+  const [applicableRoles, setApplicableRoles] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
       // Filter out applications that are already assigned to the user
       const userAppIds = user.applications.map(app => app.applicationId);
-      setAvailableApps(applications.filter(app => !userAppIds.includes(app.id)));
+      const filteredApps = applications.filter(app => !userAppIds.includes(app.id));
+      setAvailableApps(filteredApps);
       
       // Reset selection if no apps are available
-      if (availableApps.length > 0) {
-        setSelectedAppId(availableApps[0].id);
+      if (filteredApps.length > 0) {
+        setSelectedAppId(filteredApps[0].id);
       } else {
         setSelectedAppId('');
       }
     }
   }, [user, applications]);
+
+  // Update applicable roles when application changes
+  useEffect(() => {
+    if (selectedAppId) {
+      const roles = getApplicationRoles(selectedAppId);
+      setApplicableRoles(roles);
+      if (roles.length > 0) {
+        setSelectedAccessLevel(roles[0]);
+      }
+    }
+  }, [selectedAppId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,23 +96,24 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
               )}
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="accessLevel">Access Level</Label>
-              <Select 
-                value={selectedAccessLevel} 
-                onValueChange={setSelectedAccessLevel}
-                disabled={availableApps.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select access level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accessLevels.map(level => (
-                    <SelectItem key={level} value={level}>{level}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {selectedAppId && applicableRoles.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="accessLevel">Access Level</Label>
+                <Select 
+                  value={selectedAccessLevel} 
+                  onValueChange={setSelectedAccessLevel}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select access level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {applicableRoles.map(level => (
+                      <SelectItem key={level} value={level}>{level}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           
           <DialogFooter>

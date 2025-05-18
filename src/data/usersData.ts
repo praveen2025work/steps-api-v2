@@ -1,13 +1,33 @@
 import { v4 as uuidv4 } from 'uuid';
 import { User, UserApplication } from '@/types/user-types';
 
-// Sample applications from applications.json
+// Sample applications with their applicable roles
 const applications = [
-  { id: 'app-001', name: 'Financial Reporting' },
-  { id: 'app-002', name: 'Risk Management' },
-  { id: 'app-003', name: 'Compliance Tracker' },
-  { id: 'app-004', name: 'Audit System' },
-  { id: 'app-005', name: 'Regulatory Reporting' }
+  { 
+    id: 'app-001', 
+    name: 'Financial Reporting',
+    roles: ['Viewer', 'Editor', 'Admin']
+  },
+  { 
+    id: 'app-002', 
+    name: 'Risk Management',
+    roles: ['Analyst', 'Manager', 'Admin']
+  },
+  { 
+    id: 'app-003', 
+    name: 'Compliance Tracker',
+    roles: ['Viewer', 'Compliance Officer', 'Admin']
+  },
+  { 
+    id: 'app-004', 
+    name: 'Audit System',
+    roles: ['Auditor', 'Senior Auditor', 'Admin']
+  },
+  { 
+    id: 'app-005', 
+    name: 'Regulatory Reporting',
+    roles: ['Reporter', 'Reviewer', 'Admin']
+  }
 ];
 
 // Generate mock user data
@@ -139,17 +159,23 @@ export const updateUser = (user: User): User => {
   };
 };
 
-// Get access level options
+// Get access level options - now deprecated, use getApplicationRoles instead
 export const getAccessLevels = (): string[] => {
   return ['Viewer', 'Editor', 'Admin'];
 };
 
-// Get role options
+// Get role options for the user
 export const getRoles = (): string[] => {
   return ['Admin', 'Manager', 'Analyst', 'Developer', 'Auditor', 'User'];
 };
 
-// Get department options
+// Get roles specific to an application
+export const getApplicationRoles = (applicationId: string): string[] => {
+  const app = applications.find(app => app.id === applicationId);
+  return app?.roles || ['Viewer', 'Editor', 'Admin']; // Default if app not found
+};
+
+// Get department options - deprecated but kept for data consistency
 export const getDepartments = (): string[] => {
   return ['Finance', 'Risk', 'Compliance', 'IT', 'Operations', 'Management'];
 };

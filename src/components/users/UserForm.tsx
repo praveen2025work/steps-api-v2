@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Trash } from 'lucide-react';
-import { getRoles, getDepartments } from '@/data/usersData';
+import { getRoles } from '@/data/usersData';
 
 interface UserFormProps {
   user?: User;
@@ -22,15 +22,13 @@ interface UserFormProps {
 const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
   const isEditMode = !!user;
   const roles = getRoles();
-  const departments = getDepartments();
-
   const [formData, setFormData] = useState<UserFormData>({
     username: '',
     fullName: '',
     email: '',
     isActive: true,
     role: roles[0],
-    department: departments[0],
+    department: '', // We'll keep this in the type but not use it in the UI
     applications: []
   });
 
@@ -42,7 +40,7 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
         email: user.email,
         isActive: user.isActive,
         role: user.role,
-        department: user.department,
+        department: user.department, // Keep this for data consistency
         applications: [...user.applications]
       });
     } else {
@@ -53,11 +51,11 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
         email: '',
         isActive: true,
         role: roles[0],
-        department: departments[0],
+        department: '', // Empty string as we're not using it
         applications: []
       });
     }
-  }, [user, roles, departments]);
+  }, [user, roles]);
 
   const handleChange = (field: keyof UserFormData, value: any) => {
     setFormData(prev => ({
@@ -129,40 +127,21 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select 
-                  value={formData.role} 
-                  onValueChange={(value) => handleChange('role', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map(role => (
-                      <SelectItem key={role} value={role}>{role}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select 
-                  value={formData.department} 
-                  onValueChange={(value) => handleChange('department', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map(dept => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select 
+                value={formData.role} 
+                onValueChange={(value) => handleChange('role', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map(role => (
+                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="flex items-center space-x-2">
