@@ -73,9 +73,18 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
     if (selectedAppId) {
       const roles = getApplicationRoles(selectedAppId);
       setApplicableRoles(roles);
-      setSelectedRoles([]);
+      
+      // Check if we're editing an existing application
+      const existingApp = formData.applications.find(app => app.applicationId === selectedAppId);
+      if (existingApp) {
+        // If editing existing app, pre-select its roles
+        setSelectedRoles(existingApp.accessLevel.split(', '));
+      } else {
+        // If adding new app, clear selection
+        setSelectedRoles([]);
+      }
     }
-  }, [selectedAppId]);
+  }, [selectedAppId, formData.applications]);
 
   const handleChange = (field: keyof UserFormData, value: any) => {
     setFormData(prev => ({
@@ -230,7 +239,13 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
                             <Checkbox 
                               id={`role-${role}`} 
                               checked={selectedRoles.includes(role)}
-                              onCheckedChange={() => handleRoleToggle(role)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedRoles(prev => [...prev, role]);
+                                } else {
+                                  setSelectedRoles(prev => prev.filter(r => r !== role));
+                                }
+                              }}
                             />
                             <Label htmlFor={`role-${role}`} className="cursor-pointer text-sm">{role}</Label>
                           </div>
@@ -250,7 +265,10 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
                     onClick={addApplication}
                     disabled={!selectedAppId || selectedRoles.length === 0}
                   >
-                    <Plus className="mr-2 h-4 w-4" /> Add Application
+                    <Plus className="mr-2 h-4 w-4" /> 
+                    {formData.applications.some(app => app.applicationId === selectedAppId)
+                      ? 'Update Application Roles'
+                      : 'Add Application'}
                   </Button>
                 </div>
               </div>
@@ -285,7 +303,25 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {app.accessLevel.split(', ').map((role, index) => (
-                                <Badge key={index} variant="outline">{role}</Badge>
+                                <Badge 
+                                  key={index} 
+                                  variant="outline"
+                                  className="cursor-pointer hover:bg-muted"
+                                  onClick={() => {
+                                    // Set the selected application and load its roles for editing
+                                    setSelectedAppId(app.applicationId);
+                                    const currentRoles = app.accessLevel.split(', ');
+                                    setSelectedRoles(currentRoles);
+                                    
+                                    // Show toast notification
+                                    toast({
+                                      title: "Edit Application Roles",
+                                      description: `Click on roles to select/deselect, then click 'Add Application' to update`,
+                                    });
+                                  }}
+                                >
+                                  {role}
+                                </Badge>
                               ))}
                             </div>
                           </TableCell>

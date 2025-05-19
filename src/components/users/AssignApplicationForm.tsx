@@ -49,6 +49,9 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
     }
   }, [selectedAppId]);
 
+  // This function is no longer used since we're using onCheckedChange directly
+  // Keeping it commented for reference
+  /*
   const handleRoleToggle = (role: string) => {
     setSelectedRoles(prev => 
       prev.includes(role) 
@@ -56,6 +59,7 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
         : [...prev, role]
     );
   };
+  */
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,7 +126,13 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
                       <Checkbox 
                         id={`assign-role-${role}`} 
                         checked={selectedRoles.includes(role)}
-                        onCheckedChange={() => handleRoleToggle(role)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedRoles(prev => [...prev, role]);
+                          } else {
+                            setSelectedRoles(prev => prev.filter(r => r !== role));
+                          }
+                        }}
                       />
                       <Label htmlFor={`assign-role-${role}`} className="cursor-pointer text-sm">{role}</Label>
                     </div>
