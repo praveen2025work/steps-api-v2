@@ -48,33 +48,32 @@ export default function OperationsDashboard() {
     }
   };
 
+  // Listen for global refresh events
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      handleRefresh();
+    };
+    
+    window.addEventListener('app:refresh', handleGlobalRefresh);
+    return () => {
+      window.removeEventListener('app:refresh', handleGlobalRefresh);
+    };
+  }, [selectedApp]);
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Operations Dashboard</h2>
-          <p className="text-muted-foreground">
-            Monitor and manage application processes across the enterprise
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <Select value={selectedApp} onValueChange={setSelectedApp}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Application" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Applications</SelectItem>
-              {applications.map(app => (
-                <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Button variant="outline" size="icon" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
+      <div className="flex justify-end mb-4">
+        <Select value={selectedApp} onValueChange={setSelectedApp}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Select Application" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Applications</SelectItem>
+            {applications.map(app => (
+              <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Critical Alerts Section */}

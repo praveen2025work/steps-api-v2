@@ -175,26 +175,27 @@ export default function ProcessManagement() {
     setIsDetailsDialogOpen(true);
   };
 
+  // Listen for global refresh events
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      // Refresh process data here
+      console.log("Refreshing process data");
+      // In a real app, you would fetch updated process data here
+    };
+    
+    window.addEventListener('app:refresh', handleGlobalRefresh);
+    return () => {
+      window.removeEventListener('app:refresh', handleGlobalRefresh);
+    };
+  }, []);
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Process Management</h2>
-          <p className="text-muted-foreground">
-            Monitor and manage application processes across the enterprise
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button variant="outline">
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-          <Button>
-            <Play className="mr-2 h-4 w-4" />
-            Start Process
-          </Button>
-        </div>
+      <div className="flex justify-end mb-4">
+        <Button>
+          <Play className="mr-2 h-4 w-4" />
+          Start Process
+        </Button>
       </div>
       
       <div className="flex flex-col md:flex-row gap-4">

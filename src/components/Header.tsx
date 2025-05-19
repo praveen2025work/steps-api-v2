@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Logo from './Logo';
 import { Button } from '@/components/ui/button';
-import { Bell, User } from 'lucide-react';
+import { Bell, User, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -32,6 +32,14 @@ const Header = () => {
         </div>
         
         <div className="flex items-center space-x-4">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => window.dispatchEvent(new CustomEvent('app:refresh'))}
+            title="Refresh data"
+          >
+            <RefreshCw className="h-5 w-5" />
+          </Button>
           <div className="relative">
             <Button 
               variant="ghost" 
