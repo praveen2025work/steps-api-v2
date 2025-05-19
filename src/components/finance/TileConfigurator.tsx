@@ -295,10 +295,10 @@ export function TileConfigurator() {
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={TileType.Chart || " "}>Chart</SelectItem>
-                        <SelectItem value={TileType.Grid || " "}>Grid</SelectItem>
-                        <SelectItem value={TileType.Progress || " "}>Progress</SelectItem>
-                        <SelectItem value={TileType.Text || " "}>Text</SelectItem>
+                        <SelectItem value={TileType.Chart || "chart"}>Chart</SelectItem>
+                        <SelectItem value={TileType.Grid || "grid"}>Grid</SelectItem>
+                        <SelectItem value={TileType.Progress || "progress"}>Progress</SelectItem>
+                        <SelectItem value={TileType.Text || "text"}>Text</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -315,11 +315,11 @@ export function TileConfigurator() {
                         <SelectValue placeholder="Select chart type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={ChartType.Bar || " "}>Bar Chart</SelectItem>
-                        <SelectItem value={ChartType.Line || " "}>Line Chart</SelectItem>
-                        <SelectItem value={ChartType.Pie || " "}>Pie Chart</SelectItem>
-                        <SelectItem value={ChartType.Area || " "}>Area Chart</SelectItem>
-                        <SelectItem value={ChartType.Scatter || " "}>Scatter Plot</SelectItem>
+                        <SelectItem value={ChartType.Bar || "bar"}>Bar Chart</SelectItem>
+                        <SelectItem value={ChartType.Line || "line"}>Line Chart</SelectItem>
+                        <SelectItem value={ChartType.Pie || "pie"}>Pie Chart</SelectItem>
+                        <SelectItem value={ChartType.Area || "area"}>Area Chart</SelectItem>
+                        <SelectItem value={ChartType.Scatter || "scatter"}>Scatter Plot</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -358,7 +358,7 @@ export function TileConfigurator() {
                     </SelectTrigger>
                     <SelectContent>
                       {dataSources.map(source => (
-                        <SelectItem key={source.id} value={source.id || " "}>
+                        <SelectItem key={source.id} value={source.id || "no-source-id"}>
                           {source.name}
                         </SelectItem>
                       ))}
@@ -385,7 +385,7 @@ export function TileConfigurator() {
                           </SelectTrigger>
                           <SelectContent>
                             {getAvailableFields(editingTile.dataSource).map(field => (
-                              <SelectItem key={field.name} value={field.name || " "}>
+                              <SelectItem key={field.name} value={field.name || "no-field-name"}>
                                 {field.label}
                               </SelectItem>
                             ))}
@@ -421,7 +421,7 @@ export function TileConfigurator() {
                           </SelectTrigger>
                           <SelectContent>
                             {getAvailableFields(editingTile.dataSource).map(field => (
-                              <SelectItem key={field.name} value={field.name || " "}>
+                              <SelectItem key={field.name} value={field.name || "no-field-name"}>
                                 {field.label}
                               </SelectItem>
                             ))}
