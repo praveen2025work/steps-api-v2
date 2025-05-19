@@ -108,7 +108,7 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
                 <SelectContent>
                   {availableApps.length > 0 ? (
                     availableApps.map(app => (
-                      <SelectItem key={app.id} value={app.id || "no-app-id"}>{app.name}</SelectItem>
+                      <SelectItem key={app.id} value={app.id || `app-id-${app.name}`}>{app.name}</SelectItem>
                     ))
                   ) : (
                     <SelectItem value="no-apps" disabled>No available applications</SelectItem>

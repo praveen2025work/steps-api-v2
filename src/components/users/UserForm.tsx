@@ -228,7 +228,7 @@ const UserForm = ({ user, isOpen, onClose, onSave, embedded = false }: UserFormP
               </SelectTrigger>
               <SelectContent>
                 {applications.map(app => (
-                  <SelectItem key={app.id} value={app.id || "no-app-id"}>{app.name}</SelectItem>
+                  <SelectItem key={app.id} value={app.id || `app-id-${app.name}`}>{app.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

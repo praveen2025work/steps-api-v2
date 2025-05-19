@@ -277,8 +277,8 @@ const DynamicFinanceDashboard: React.FC = () => {
                   <SelectValue placeholder="Select Application" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockHierarchicalWorkflows.map(app => (
-                    <SelectItem key={app.id} value={app.id || "no-app-id"}>{app.name}</SelectItem>
+                  {mockHierarchicalWorkflows.map((app, index) => (
+                    <SelectItem key={app.id} value={app.id || `app-id-${index}`}>{app.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -293,7 +293,7 @@ const DynamicFinanceDashboard: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {availableWorkflows.map((wf, index) => (
-                    <SelectItem key={wf.id} value={wf.id || "no-workflow-id-" + index}>{wf.name}</SelectItem>
+                    <SelectItem key={wf.id} value={wf.id || `workflow-id-${index}`}>{wf.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
