@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardLayout from '@/components/DashboardLayout';
 import OperationsDashboard from '@/components/operations/OperationsDashboard';
-import ApplicationRegistry from '@/components/operations/ApplicationRegistry';
-import TileConfiguration from '@/components/operations/TileConfiguration';
 import ProcessManagement from '@/components/operations/ProcessManagement';
 
 export default function OperationsCenter() {
@@ -34,23 +32,13 @@ export default function OperationsCenter() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid grid-cols-4 mb-8">
+          <TabsList className="grid grid-cols-2 mb-8">
             <TabsTrigger value="dashboard">Operations Dashboard</TabsTrigger>
-            <TabsTrigger value="applications">Application Registry</TabsTrigger>
-            <TabsTrigger value="tiles">Tile Configuration</TabsTrigger>
             <TabsTrigger value="processes">Process Management</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-4">
             <OperationsDashboard />
-          </TabsContent>
-
-          <TabsContent value="applications" className="space-y-4">
-            <ApplicationRegistry />
-          </TabsContent>
-
-          <TabsContent value="tiles" className="space-y-4">
-            <TileConfiguration />
           </TabsContent>
 
           <TabsContent value="processes" className="space-y-4">
