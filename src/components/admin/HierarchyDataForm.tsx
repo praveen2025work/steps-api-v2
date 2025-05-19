@@ -203,9 +203,13 @@ const HierarchyDataForm = ({ hierarchyData, isOpen, onClose, onSave, embedded = 
                 <SelectValue placeholder={`Select ${formData.parentHierarchyLevel}`} />
               </SelectTrigger>
               <SelectContent>
-                {parentValues.map(parent => (
-                  <SelectItem key={parent.value} value={parent.value}>{parent.name}</SelectItem>
-                ))}
+                {parentValues.length > 0 ? (
+                  parentValues.map(parent => (
+                    <SelectItem key={parent.value} value={parent.value || " "}>{parent.name}</SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-parent" disabled>No parent values available</SelectItem>
+                )}
               </SelectContent>
             </Select>
             {parentValues.length === 0 && (

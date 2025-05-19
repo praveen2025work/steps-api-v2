@@ -106,9 +106,13 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
                   <SelectValue placeholder="Select application" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableApps.map(app => (
-                    <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
-                  ))}
+                  {availableApps.length > 0 ? (
+                    availableApps.map(app => (
+                      <SelectItem key={app.id} value={app.id || " "}>{app.name}</SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-apps" disabled>No available applications</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               {availableApps.length === 0 && (

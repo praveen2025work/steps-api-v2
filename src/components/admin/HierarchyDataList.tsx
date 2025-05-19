@@ -86,7 +86,7 @@ const HierarchyDataList = ({
             <SelectContent>
               <SelectItem value="">All Applications</SelectItem>
               {applications.map(app => (
-                <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
+                <SelectItem key={app.id} value={app.id || " "}>{app.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -100,7 +100,7 @@ const HierarchyDataList = ({
             <SelectContent>
               <SelectItem value="">All Levels</SelectItem>
               {hierarchyLevels.map(level => (
-                <SelectItem key={level.id} value={level.name}>{level.name}</SelectItem>
+                <SelectItem key={level.id} value={level.name || " "}>{level.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
