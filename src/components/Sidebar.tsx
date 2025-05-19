@@ -109,6 +109,12 @@ const navSections: NavSection[] = [
         href: '/admin/workflow-config',
         icon: <Workflow className="h-5 w-5" />,
         pattern: /^\/admin\/workflow-config/
+      },
+      {
+        title: 'User Hierarchy',
+        href: '/admin/user-hierarchy',
+        icon: <Users className="h-5 w-5" />,
+        pattern: /^\/admin\/user-hierarchy/
       }
     ]
   },
