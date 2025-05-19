@@ -145,7 +145,7 @@ const navSections: NavSection[] = [
     title: "Management",
     items: [
       {
-        title: 'Document Center',
+        title: 'File Management',
         href: '/files',
         icon: <FileText className="h-5 w-5" />
       },
