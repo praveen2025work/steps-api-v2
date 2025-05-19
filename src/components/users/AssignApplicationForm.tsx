@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
 import { getAvailableApplications, getApplicationRoles } from '@/data/usersData';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -120,41 +121,58 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
             {selectedAppId && applicableRoles.length > 0 && (
               <div className="space-y-2">
                 <Label>Select Roles</Label>
-                <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-[150px] overflow-y-auto">
-                  {applicableRoles.map(role => (
-                    <div key={role} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`assign-role-${role}`} 
-                        checked={selectedRoles.includes(role)}
-                        onCheckedChange={(checked) => {
-                          console.log(`Role ${role} checked:`, checked);
-                          if (checked) {
-                            setSelectedRoles(prev => [...prev, role]);
-                          } else {
-                            setSelectedRoles(prev => prev.filter(r => r !== role));
-                          }
-                        }}
-                      />
-                      <Label 
-                        htmlFor={`assign-role-${role}`} 
-                        className="cursor-pointer text-sm"
-                        onClick={() => {
-                          // Toggle role selection when label is clicked
-                          if (selectedRoles.includes(role)) {
-                            setSelectedRoles(prev => prev.filter(r => r !== role));
-                          } else {
-                            setSelectedRoles(prev => [...prev, role]);
-                          }
-                        }}
-                      >
-                        {role}
-                      </Label>
-                    </div>
-                  ))}
+                <div className="relative">
+                  <Select
+                    onValueChange={(value) => {
+                      // If the role is already selected, remove it, otherwise add it
+                      if (selectedRoles.includes(value)) {
+                        setSelectedRoles(prev => prev.filter(r => r !== value));
+                      } else {
+                        setSelectedRoles(prev => [...prev, value]);
+                      }
+                    }}
+                    value={applicableRoles[0]} // Default value to show something in the dropdown
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select roles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {applicableRoles.map(role => (
+                        <SelectItem key={role} value={role}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-4 h-4 border rounded-sm ${selectedRoles.includes(role) ? 'bg-primary border-primary' : 'border-input'}`}>
+                              {selectedRoles.includes(role) && (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary-foreground">
+                                  <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                              )}
+                            </div>
+                            <span>{role}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+                
                 {selectedRoles.length > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    Selected roles: {selectedRoles.join(', ')}
+                  <div className="mt-2">
+                    <div className="text-sm font-medium mb-1">Selected roles:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedRoles.map(role => (
+                        <Badge 
+                          key={role} 
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          {role}
+                          <X 
+                            className="h-3 w-3 cursor-pointer" 
+                            onClick={() => setSelectedRoles(prev => prev.filter(r => r !== role))}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
