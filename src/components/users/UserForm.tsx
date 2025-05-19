@@ -237,38 +237,33 @@ const UserForm = ({ user, isOpen, onClose, onSave, embedded = false }: UserFormP
           {selectedAppId && applicableRoles.length > 0 && (
             <div className="space-y-2">
               <Label>Select Roles</Label>
-              <div className="relative">
-                <Select
-                  onValueChange={(value) => {
-                    // If the role is already selected, remove it, otherwise add it
-                    if (selectedRoles.includes(value)) {
-                      setSelectedRoles(prev => prev.filter(r => r !== value));
-                    } else {
-                      setSelectedRoles(prev => [...prev, value]);
-                    }
-                  }}
-                  value={applicableRoles[0]} // Default value to show something in the dropdown
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select roles" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {applicableRoles.map(role => (
-                      <SelectItem key={role} value={role}>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-4 h-4 border rounded-sm ${selectedRoles.includes(role) ? 'bg-primary border-primary' : 'border-input'}`}>
-                            {selectedRoles.includes(role) && (
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary-foreground">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                              </svg>
-                            )}
-                          </div>
-                          <span>{role}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="border rounded-md p-2">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {applicableRoles.map(role => (
+                    <div 
+                      key={role}
+                      onClick={() => {
+                        // Toggle role selection
+                        if (selectedRoles.includes(role)) {
+                          setSelectedRoles(prev => prev.filter(r => r !== role));
+                        } else {
+                          setSelectedRoles(prev => [...prev, role]);
+                        }
+                      }}
+                      className={`
+                        px-3 py-1 rounded-md cursor-pointer text-sm transition-colors
+                        ${selectedRoles.includes(role) 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}
+                      `}
+                    >
+                      {role}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Click on roles to select/deselect
+                </div>
               </div>
               
               {selectedRoles.length > 0 && (
