@@ -127,7 +127,7 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
                         id={`assign-role-${role}`} 
                         checked={selectedRoles.includes(role)}
                         onCheckedChange={(checked) => {
-                          if (checked === true) {
+                          if (checked) {
                             setSelectedRoles(prev => [...prev, role]);
                           } else {
                             setSelectedRoles(prev => prev.filter(r => r !== role));

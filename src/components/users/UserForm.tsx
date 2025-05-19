@@ -243,7 +243,7 @@ const UserForm = ({ user, isOpen, onClose, onSave, embedded = false }: UserFormP
                         id={`role-${role}`} 
                         checked={selectedRoles.includes(role)}
                         onCheckedChange={(checked) => {
-                          if (checked === true) {
+                          if (checked) {
                             setSelectedRoles(prev => [...prev, role]);
                           } else {
                             setSelectedRoles(prev => prev.filter(r => r !== role));
