@@ -293,11 +293,10 @@ const Sidebar = () => {
                       ) : (
                         <Link 
                           href={item.href}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            router.push(item.href);
-                            closeSidebar();
+                          onClick={() => {
+                            // Don't prevent default navigation
+                            // Just close the sidebar after navigation
+                            setTimeout(() => closeSidebar(), 100);
                           }}
                           className={cn(
                             "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
