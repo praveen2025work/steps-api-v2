@@ -292,8 +292,8 @@ const DynamicFinanceDashboard: React.FC = () => {
                   <SelectValue placeholder="Select Workflow" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableWorkflows.map(wf => (
-                    <SelectItem key={wf.id} value={wf.id || "no-workflow-id"}>{wf.name}</SelectItem>
+                  {availableWorkflows.map((wf, index) => (
+                    <SelectItem key={wf.id} value={wf.id || "no-workflow-id-" + index}>{wf.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

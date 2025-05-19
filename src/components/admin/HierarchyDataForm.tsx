@@ -134,8 +134,8 @@ const HierarchyDataForm = ({ hierarchyData, isOpen, onClose, onSave, embedded = 
               <SelectValue placeholder="Select application" />
             </SelectTrigger>
             <SelectContent>
-              {applications.map(app => (
-                <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
+              {applications.map((app, index) => (
+                <SelectItem key={app.id} value={app.id || "app-id-fallback-" + index}>{app.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -162,8 +162,8 @@ const HierarchyDataForm = ({ hierarchyData, isOpen, onClose, onSave, embedded = 
               <SelectValue placeholder="Select level" />
             </SelectTrigger>
             <SelectContent>
-              {hierarchyLevels.map(level => (
-                <SelectItem key={level.id} value={level.name}>{level.name}</SelectItem>
+              {hierarchyLevels.map((level, index) => (
+                <SelectItem key={level.id} value={level.name || "level-name-fallback-" + index}>{level.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -204,8 +204,8 @@ const HierarchyDataForm = ({ hierarchyData, isOpen, onClose, onSave, embedded = 
               </SelectTrigger>
               <SelectContent>
                 {parentValues.length > 0 ? (
-                  parentValues.map(parent => (
-                    <SelectItem key={parent.value} value={parent.value || "no-value"}>{parent.name}</SelectItem>
+                  parentValues.map((parent, index) => (
+                    <SelectItem key={parent.value} value={parent.value || "no-value-" + index}>{parent.name}</SelectItem>
                   ))
                 ) : (
                   <SelectItem value="no-parent-available" disabled>No parent values available</SelectItem>

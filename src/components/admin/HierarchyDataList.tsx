@@ -85,8 +85,8 @@ const HierarchyDataList = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Applications</SelectItem>
-              {applications.map(app => (
-                <SelectItem key={app.id} value={app.id || "no-app-id"}>{app.name}</SelectItem>
+              {applications.map((app, index) => (
+                <SelectItem key={app.id} value={app.id || "no-app-id-" + index}>{app.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -99,8 +99,8 @@ const HierarchyDataList = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Levels</SelectItem>
-              {hierarchyLevels.map(level => (
-                <SelectItem key={level.id} value={level.name || "no-level-name"}>{level.name}</SelectItem>
+              {hierarchyLevels.map((level, index) => (
+                <SelectItem key={level.id} value={level.name || "no-level-name-" + index}>{level.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
