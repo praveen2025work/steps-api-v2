@@ -4,9 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Edit, Plus, Search, Trash, UserPlus, Copy, Check } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Copy, Check, Search, UserPlus, Edit, Trash } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 interface UsersListProps {
@@ -15,9 +13,10 @@ interface UsersListProps {
   onDelete: (userId: string) => void;
   onCreateNew: () => void;
   onAssignApplication: (user: User) => void;
+  selectedUserId?: string;
 }
 
-const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }: UsersListProps) => {
+const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication, selectedUserId }: UsersListProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>(users);
@@ -39,7 +38,8 @@ const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }
     }
   }, [searchQuery, users]);
 
-  const copyEmailToClipboard = (email: string) => {
+  const copyEmailToClipboard = (e: React.MouseEvent, email: string) => {
+    e.stopPropagation(); // Prevent row click event
     navigator.clipboard.writeText(email)
       .then(() => {
         setCopiedEmail(email);
@@ -58,94 +58,102 @@ const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }
       });
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Users</CardTitle>
-            <CardDescription>Manage system users and their application access</CardDescription>
-          </div>
-          <Button onClick={onCreateNew}>
-            <Plus className="mr-2 h-4 w-4" /> Add User
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4 flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
+  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation(); // Prevent row click event
+    action();
+  };
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
+  return (
+    <div>
+      <div className="mb-4 flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search users..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Username</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableHead>Username</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableCell colSpan={4} className="h-24 text-center">
+                  No users found.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    No users found.
+            ) : (
+              filteredUsers.map((user) => (
+                <TableRow 
+                  key={user.id} 
+                  className={`cursor-pointer ${user.id === selectedUserId ? "bg-muted" : "hover:bg-muted/50"}`}
+                  onClick={() => onEdit(user)}
+                >
+                  <TableCell className="font-medium">{user.username}</TableCell>
+                  <TableCell>
+                    <Badge variant={user.isActive ? "success" : "destructive"}>
+                      {user.isActive ? "Active" : "Inactive"}
+                    </Badge>
                   </TableCell>
-                </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.username}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.isActive ? "success" : "destructive"}>
-                        {user.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-2 text-xs"
+                      onClick={(e) => copyEmailToClipboard(e, user.email)}
+                    >
+                      {copiedEmail === user.email ? (
+                        <Check className="h-3.5 w-3.5 mr-1 text-green-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5 mr-1" />
+                      )}
+                      Copy Email
+                    </Button>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
                       <Button 
                         variant="ghost" 
-                        size="sm" 
-                        className="h-8 px-2 text-xs"
-                        onClick={() => copyEmailToClipboard(user.email)}
+                        size="icon" 
+                        onClick={(e) => handleActionClick(e, () => onAssignApplication(user))}
                       >
-                        {copiedEmail === user.email ? (
-                          <Check className="h-3.5 w-3.5 mr-1 text-green-500" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5 mr-1" />
-                        )}
-                        Copy Email
+                        <UserPlus className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => onAssignApplication(user)}>
-                          <UserPlus className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => onDelete(user.id)}>
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={(e) => handleActionClick(e, () => onEdit(user))}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={(e) => handleActionClick(e, () => onDelete(user.id))}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 };
 

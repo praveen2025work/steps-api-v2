@@ -7,29 +7,19 @@ import AssignApplicationForm from '@/components/users/AssignApplicationForm';
 import { User, UserFormData, UserApplication } from '@/types/user-types';
 import { generateMockUsers, createUser, updateUser, getAvailableApplications } from '@/data/usersData';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, UserPlus } from 'lucide-react';
+import { UserPlus, X } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const UsersPage = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isUserFormOpen, setIsUserFormOpen] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isAssignFormOpen, setIsAssignFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('list');
-  
-  // Advanced search state
-  const [searchUsername, setSearchUsername] = useState('');
-  const [searchEmail, setSearchEmail] = useState('');
-  const [searchApplication, setSearchApplication] = useState('');
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-  const applications = getAvailableApplications();
 
   // Load mock users on mount
   useEffect(() => {
@@ -41,7 +31,8 @@ const UsersPage = () => {
   const handleCreateUser = (userData: UserFormData) => {
     const newUser = createUser(userData);
     setUsers(prev => [...prev, newUser]);
-    setIsUserFormOpen(false);
+    setIsCreatingUser(false);
+    setSelectedUser(null);
     toast({
       title: "User Created",
       description: `User ${userData.username} has been created successfully.`,
@@ -61,7 +52,6 @@ const UsersPage = () => {
       user.id === updatedUser.id ? updatedUser : user
     ));
     
-    setIsUserFormOpen(false);
     setSelectedUser(null);
     
     toast({
@@ -108,16 +98,22 @@ const UsersPage = () => {
     });
   };
 
-  // Open the user form for creating a new user
-  const openCreateUserForm = () => {
+  // Start creating a new user
+  const startCreateUser = () => {
     setSelectedUser(null);
-    setIsUserFormOpen(true);
+    setIsCreatingUser(true);
   };
 
-  // Open the user form for editing an existing user
-  const openEditUserForm = (user: User) => {
+  // Start editing an existing user
+  const startEditUser = (user: User) => {
     setSelectedUser(user);
-    setIsUserFormOpen(true);
+    setIsCreatingUser(false);
+  };
+  
+  // Cancel editing or creating
+  const cancelEditCreate = () => {
+    setSelectedUser(null);
+    setIsCreatingUser(false);
   };
 
   // Open the delete confirmation dialog
@@ -141,145 +137,85 @@ const UsersPage = () => {
     }
   };
 
-  // Handle advanced search
-  const handleAdvancedSearch = () => {
-    let results = [...users];
-    
-    if (searchUsername) {
-      results = results.filter(user => 
-        user.username.toLowerCase().includes(searchUsername.toLowerCase()) ||
-        user.fullName.toLowerCase().includes(searchUsername.toLowerCase())
-      );
-    }
-    
-    if (searchEmail) {
-      results = results.filter(user => 
-        user.email.toLowerCase().includes(searchEmail.toLowerCase())
-      );
-    }
-    
-    if (searchApplication) {
-      results = results.filter(user => 
-        user.applications.some(app => app.applicationId === searchApplication)
-      );
-    }
-    
-    setSearchResults(results);
-  };
-  
-  // Reset search fields
-  const resetSearch = () => {
-    setSearchUsername('');
-    setSearchEmail('');
-    setSearchApplication('');
-    setSearchResults([]);
-  };
-
   return (
     <DashboardLayout>
       <div className="container mx-auto py-6">
-        <Tabs defaultValue="list" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="list">Users List</TabsTrigger>
-            <TabsTrigger value="search">Advanced Search</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="list">
-            <UsersList
-              users={users}
-              onEdit={openEditUserForm}
-              onDelete={openDeleteDialog}
-              onCreateNew={openCreateUserForm}
-              onAssignApplication={openAssignApplicationForm}
-            />
-          </TabsContent>
-          
-          <TabsContent value="search">
-            <Card>
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left side - Users list */}
+          <div className="w-full lg:w-1/2">
+            <Card className="h-full">
               <CardHeader>
-                <CardTitle>Advanced User Search</CardTitle>
-                <CardDescription>Search for users by name, email, or application</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Users</CardTitle>
+                    <CardDescription>Manage system users and their application access</CardDescription>
+                  </div>
+                  <Button onClick={startCreateUser}>
+                    <UserPlus className="mr-2 h-4 w-4" /> Add User
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 mb-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label htmlFor="username-search">Username or Full Name</label>
-                      <Input
-                        id="username-search"
-                        placeholder="Search by name..."
-                        value={searchUsername}
-                        onChange={(e) => setSearchUsername(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="email-search">Email</label>
-                      <Input
-                        id="email-search"
-                        placeholder="Search by email..."
-                        value={searchEmail}
-                        onChange={(e) => setSearchEmail(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="application-search">Application</label>
-                      <Select 
-                        value={searchApplication} 
-                        onValueChange={setSearchApplication}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select application" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Any Application</SelectItem>
-                          {applications.map(app => (
-                            <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={resetSearch}>
-                      Reset
-                    </Button>
-                    <Button onClick={handleAdvancedSearch}>
-                      <Search className="mr-2 h-4 w-4" /> Search
-                    </Button>
-                  </div>
-                </div>
-                
-                {searchResults.length > 0 && (
-                  <div className="rounded-md border">
-                    <UsersList
-                      users={searchResults}
-                      onEdit={openEditUserForm}
-                      onDelete={openDeleteDialog}
-                      onCreateNew={openCreateUserForm}
-                      onAssignApplication={openAssignApplicationForm}
-                    />
-                  </div>
-                )}
-                
-                {searchResults.length === 0 && searchUsername || searchEmail || searchApplication ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No users found matching your search criteria.
-                  </div>
-                ) : null}
+                <ScrollArea className="h-[calc(100vh-250px)]">
+                  <UsersList
+                    users={users}
+                    onEdit={startEditUser}
+                    onDelete={openDeleteDialog}
+                    onCreateNew={startCreateUser}
+                    onAssignApplication={openAssignApplicationForm}
+                    selectedUserId={selectedUser?.id}
+                  />
+                </ScrollArea>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-        
-        <UserForm
-          user={selectedUser || undefined}
-          isOpen={isUserFormOpen}
-          onClose={() => setIsUserFormOpen(false)}
-          onSave={handleFormSubmit}
-        />
+          </div>
+          
+          {/* Right side - User form */}
+          <div className="w-full lg:w-1/2">
+            <Card className="h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>
+                      {selectedUser 
+                        ? `Edit User: ${selectedUser.username}` 
+                        : isCreatingUser 
+                          ? 'Create New User' 
+                          : 'User Details'}
+                    </CardTitle>
+                    <CardDescription>
+                      {selectedUser 
+                        ? 'Update user information and application access' 
+                        : isCreatingUser 
+                          ? 'Fill in the details to create a new user' 
+                          : 'Select a user to edit or create a new one'}
+                    </CardDescription>
+                  </div>
+                  {(selectedUser || isCreatingUser) && (
+                    <Button variant="ghost" size="icon" onClick={cancelEditCreate}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[calc(100vh-250px)]">
+                  {(selectedUser || isCreatingUser) ? (
+                    <UserForm
+                      user={selectedUser || undefined}
+                      onSave={handleFormSubmit}
+                      embedded={true}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      Select a user from the list or create a new one
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
         
         <AssignApplicationForm
           user={selectedUser}
