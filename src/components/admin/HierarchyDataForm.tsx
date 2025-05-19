@@ -208,7 +208,7 @@ const HierarchyDataForm = ({ hierarchyData, isOpen, onClose, onSave, embedded = 
                     <SelectItem key={parent.value} value={parent.value || `parent-value-${index}`}>{parent.name}</SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="no-parent-available" disabled>No parent values available</SelectItem>
+                  <SelectItem value="no-parent-available-placeholder" disabled>No parent values available</SelectItem>
                 )}
               </SelectContent>
             </Select>

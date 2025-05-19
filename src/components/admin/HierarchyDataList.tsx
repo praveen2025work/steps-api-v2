@@ -42,8 +42,8 @@ const HierarchyDataList = ({
       data.colValue.toLowerCase().includes(searchTerm.toLowerCase()) ||
       data.colName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesApp = selectedApp ? data.applicationId === selectedApp : true;
-    const matchesLevel = selectedLevel ? data.hierarchyLevel === selectedLevel : true;
+    const matchesApp = selectedApp && selectedApp !== "all-apps" ? data.applicationId === selectedApp : true;
+    const matchesLevel = selectedLevel && selectedLevel !== "all-levels" ? data.hierarchyLevel === selectedLevel : true;
     
     return matchesSearch && matchesApp && matchesLevel;
   });
@@ -84,7 +84,7 @@ const HierarchyDataList = ({
               <SelectValue placeholder="All Applications" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Applications</SelectItem>
+              <SelectItem value="all-apps">All Applications</SelectItem>
               {applications.map((app, index) => (
                 <SelectItem key={app.id} value={app.id || `app-id-${index}`}>{app.name}</SelectItem>
               ))}
@@ -98,7 +98,7 @@ const HierarchyDataList = ({
               <SelectValue placeholder="All Levels" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Levels</SelectItem>
+              <SelectItem value="all-levels">All Levels</SelectItem>
               {hierarchyLevels.map((level, index) => (
                 <SelectItem key={level.id} value={level.name || `level-name-${index}`}>{level.name}</SelectItem>
               ))}

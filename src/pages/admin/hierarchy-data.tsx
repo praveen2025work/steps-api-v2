@@ -24,35 +24,53 @@ const HierarchyDataManagementPage = () => {
 
   // Handle creating a new hierarchy data entry
   const handleCreateData = (formData: HierarchyFormData) => {
-    const newData = createHierarchyData(formData);
-    setHierarchyData(prev => [...prev, newData]);
-    setIsCreatingData(false);
-    setSelectedData(null);
-    toast({
-      title: "Hierarchy Data Created",
-      description: `Hierarchy data ${formData.hierarchy_id} has been created successfully.`,
-    });
+    try {
+      const newData = createHierarchyData(formData);
+      setHierarchyData(prev => [...prev, newData]);
+      setIsCreatingData(false);
+      setSelectedData(null);
+      toast({
+        title: "Hierarchy Data Created",
+        description: `Hierarchy data ${formData.hierarchy_id} has been created successfully.`,
+      });
+    } catch (error) {
+      console.error("Error creating hierarchy data:", error);
+      toast({
+        title: "Error Creating Hierarchy Data",
+        description: "There was an error creating the hierarchy data. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle updating an existing hierarchy data entry
   const handleUpdateData = (formData: HierarchyFormData) => {
     if (!selectedData) return;
     
-    const updatedData = updateHierarchyData({
-      ...selectedData,
-      ...formData
-    });
-    
-    setHierarchyData(prev => prev.map(data => 
-      data.id === updatedData.id ? updatedData : data
-    ));
-    
-    setSelectedData(null);
-    
-    toast({
-      title: "Hierarchy Data Updated",
-      description: `Hierarchy data ${formData.hierarchy_id} has been updated successfully.`,
-    });
+    try {
+      const updatedData = updateHierarchyData({
+        ...selectedData,
+        ...formData
+      });
+      
+      setHierarchyData(prev => prev.map(data => 
+        data.id === updatedData.id ? updatedData : data
+      ));
+      
+      setSelectedData(null);
+      
+      toast({
+        title: "Hierarchy Data Updated",
+        description: `Hierarchy data ${formData.hierarchy_id} has been updated successfully.`,
+      });
+    } catch (error) {
+      console.error("Error updating hierarchy data:", error);
+      toast({
+        title: "Error Updating Hierarchy Data",
+        description: "There was an error updating the hierarchy data. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle deleting a hierarchy data entry
