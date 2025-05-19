@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
 import { CreateSupportIssue } from './support/CreateSupportIssue';
+import ProcessQueries from './workflow/ProcessQueries';
 import { 
   FileText, 
   Lock, 
@@ -37,7 +38,8 @@ import {
   XCircle,
   CircleDot,
   BarChart4,
-  AlertCircle
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
@@ -112,7 +114,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [countdown, setCountdown] = useState<number>(15);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
-  const [rightPanelContent, setRightPanelContent] = useState<'overview' | 'stages' | 'documents' | 'parameters' | 'dependencies' | 'roles' | 'activity' | 'audit' | 'app-parameters' | 'global-parameters'>('overview');
+  const [rightPanelContent, setRightPanelContent] = useState<'overview' | 'stages' | 'documents' | 'parameters' | 'dependencies' | 'roles' | 'activity' | 'audit' | 'app-parameters' | 'global-parameters' | 'queries'>('overview');
   const [selectedSubStage, setSelectedSubStage] = useState<string | null>(null);
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false);
   const [stageSpecificSubStages, setStageSpecificSubStages] = useState<SubStage[]>([]);
@@ -623,6 +625,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         return <div>App Parameters Content</div>;
       case 'global-parameters':
         return <div>Global Parameters Content</div>;
+      case 'queries':
+        return <ProcessQueries processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
       default:
         return null;
     }
@@ -1033,6 +1037,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               <div className="p-2">
                 <div className="flex flex-wrap gap-1">
                   <Button 
+                    variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('queries')}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                    Queries
+                  </Button>
+                  <Button 
                     variant={rightPanelContent === 'activity' ? 'secondary' : 'ghost'}
                     size="sm"
                     className="h-7"
@@ -1109,6 +1122,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             ) : (
               // Vertical Menu when collapsed
               <div className="p-2 flex flex-col gap-1">
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('queries')}
+                >
+                  <MessageSquare className="h-3.5 w-3.5 mr-2" />
+                  Queries
+                </Button>
                 <Button 
                   variant="ghost"
                   size="sm"
