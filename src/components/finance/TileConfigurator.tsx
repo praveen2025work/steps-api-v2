@@ -295,10 +295,10 @@ export function TileConfigurator() {
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={TileType.Chart || "chart"}>Chart</SelectItem>
-                        <SelectItem value={TileType.Grid || "grid"}>Grid</SelectItem>
-                        <SelectItem value={TileType.Progress || "progress"}>Progress</SelectItem>
-                        <SelectItem value={TileType.Text || "text"}>Text</SelectItem>
+                        <SelectItem value={TileType.Chart !== "" ? TileType.Chart : "chart"}>Chart</SelectItem>
+                        <SelectItem value={TileType.Grid !== "" ? TileType.Grid : "grid"}>Grid</SelectItem>
+                        <SelectItem value={TileType.Progress !== "" ? TileType.Progress : "progress"}>Progress</SelectItem>
+                        <SelectItem value={TileType.Text !== "" ? TileType.Text : "text"}>Text</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -315,11 +315,11 @@ export function TileConfigurator() {
                         <SelectValue placeholder="Select chart type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={ChartType.Bar || "bar"}>Bar Chart</SelectItem>
-                        <SelectItem value={ChartType.Line || "line"}>Line Chart</SelectItem>
-                        <SelectItem value={ChartType.Pie || "pie"}>Pie Chart</SelectItem>
-                        <SelectItem value={ChartType.Area || "area"}>Area Chart</SelectItem>
-                        <SelectItem value={ChartType.Scatter || "scatter"}>Scatter Plot</SelectItem>
+                        <SelectItem value={ChartType.Bar !== "" ? ChartType.Bar : "bar"}>Bar Chart</SelectItem>
+                        <SelectItem value={ChartType.Line !== "" ? ChartType.Line : "line"}>Line Chart</SelectItem>
+                        <SelectItem value={ChartType.Pie !== "" ? ChartType.Pie : "pie"}>Pie Chart</SelectItem>
+                        <SelectItem value={ChartType.Area !== "" ? ChartType.Area : "area"}>Area Chart</SelectItem>
+                        <SelectItem value={ChartType.Scatter !== "" ? ChartType.Scatter : "scatter"}>Scatter Plot</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
