@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Trash, Plus } from 'lucide-react';
 import { getAvailableApplications, getApplicationRoles } from '@/data/usersData';
+import { useToast } from '@/components/ui/use-toast';
 
 interface UserFormProps {
   user?: User;
@@ -20,6 +21,7 @@ interface UserFormProps {
 }
 
 const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
+  const { toast } = useToast();
   const isEditMode = !!user;
   const applications = getAvailableApplications();
   const [formData, setFormData] = useState<UserFormData>({
@@ -124,6 +126,15 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
     
     // Reset selection
     setSelectedRoles([]);
+    
+    // Find the application name for the toast
+    const appName = applications.find(app => app.id === selectedAppId)?.name || selectedAppId;
+    
+    // Show toast notification
+    toast({
+      title: isAlreadyAssigned ? "Application Updated" : "Application Added",
+      description: `${appName} with roles: ${selectedRoles.join(', ')}`,
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -213,7 +224,7 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
                   {selectedAppId && applicableRoles.length > 0 && (
                     <div className="space-y-2">
                       <Label>Select Roles</Label>
-                      <div className="grid grid-cols-2 gap-2 border rounded-md p-3">
+                      <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-[150px] overflow-y-auto">
                         {applicableRoles.map(role => (
                           <div key={role} className="flex items-center space-x-2">
                             <Checkbox 
@@ -221,10 +232,15 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
                               checked={selectedRoles.includes(role)}
                               onCheckedChange={() => handleRoleToggle(role)}
                             />
-                            <Label htmlFor={`role-${role}`} className="cursor-pointer">{role}</Label>
+                            <Label htmlFor={`role-${role}`} className="cursor-pointer text-sm">{role}</Label>
                           </div>
                         ))}
                       </div>
+                      {selectedRoles.length > 0 && (
+                        <div className="text-sm text-muted-foreground">
+                          Selected roles: {selectedRoles.join(', ')}
+                        </div>
+                      )}
                     </div>
                   )}
                   
@@ -267,7 +283,11 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
                         <TableRow key={app.applicationId}>
                           <TableCell>{app.applicationId}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{app.accessLevel}</Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {app.accessLevel.split(', ').map((role, index) => (
+                                <Badge key={index} variant="outline">{role}</Badge>
+                              ))}
+                            </div>
                           </TableCell>
                           <TableCell>
                             {new Date(app.assignedOn).toLocaleDateString()}

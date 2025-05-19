@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { getAvailableApplications, getAccessLevels, getApplicationRoles } from '@/data/usersData';
+import { Checkbox } from '@/components/ui/checkbox';
+import { getAvailableApplications, getApplicationRoles } from '@/data/usersData';
+import { useToast } from '@/components/ui/use-toast';
 
 interface AssignApplicationFormProps {
   user: User | null;
@@ -14,11 +16,11 @@ interface AssignApplicationFormProps {
 }
 
 const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplicationFormProps) => {
+  const { toast } = useToast();
   const applications = getAvailableApplications();
-  const accessLevels = getAccessLevels();
   
   const [selectedAppId, setSelectedAppId] = useState<string>('');
-  const [selectedAccessLevel, setSelectedAccessLevel] = useState<string>(accessLevels[0]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [availableApps, setAvailableApps] = useState(applications);
   const [applicableRoles, setApplicableRoles] = useState<string[]>([]);
 
@@ -43,21 +45,36 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
     if (selectedAppId) {
       const roles = getApplicationRoles(selectedAppId);
       setApplicableRoles(roles);
-      if (roles.length > 0) {
-        setSelectedAccessLevel(roles[0]);
-      }
+      setSelectedRoles([]);
     }
   }, [selectedAppId]);
 
+  const handleRoleToggle = (role: string) => {
+    setSelectedRoles(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role) 
+        : [...prev, role]
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (user && selectedAppId) {
+    if (user && selectedAppId && selectedRoles.length > 0) {
       const newApplication: UserApplication = {
         applicationId: selectedAppId,
-        accessLevel: selectedAccessLevel,
+        accessLevel: selectedRoles.join(', '),
         assignedOn: new Date()
       };
       onAssign(user.id, newApplication);
+      
+      // Find the application name for the toast
+      const appName = applications.find(app => app.id === selectedAppId)?.name || selectedAppId;
+      
+      // Show toast notification
+      toast({
+        title: "Application Assigned",
+        description: `${appName} with roles: ${selectedRoles.join(', ')}`,
+      });
     }
   };
 
@@ -98,20 +115,24 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
             
             {selectedAppId && applicableRoles.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="accessLevel">Access Level</Label>
-                <Select 
-                  value={selectedAccessLevel} 
-                  onValueChange={setSelectedAccessLevel}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select access level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {applicableRoles.map(level => (
-                      <SelectItem key={level} value={level}>{level}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Select Roles</Label>
+                <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-[150px] overflow-y-auto">
+                  {applicableRoles.map(role => (
+                    <div key={role} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`assign-role-${role}`} 
+                        checked={selectedRoles.includes(role)}
+                        onCheckedChange={() => handleRoleToggle(role)}
+                      />
+                      <Label htmlFor={`assign-role-${role}`} className="cursor-pointer text-sm">{role}</Label>
+                    </div>
+                  ))}
+                </div>
+                {selectedRoles.length > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    Selected roles: {selectedRoles.join(', ')}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -120,7 +141,7 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!selectedAppId || availableApps.length === 0}>
+            <Button type="submit" disabled={!selectedAppId || availableApps.length === 0 || selectedRoles.length === 0}>
               Assign Application
             </Button>
           </DialogFooter>
