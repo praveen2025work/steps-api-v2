@@ -117,6 +117,7 @@ const HierarchyDataForm = ({ hierarchyData, isOpen, onClose, onSave, embedded = 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Only stop propagation for this specific event
     onSave(formData);
   };
 

@@ -248,7 +248,7 @@ const Sidebar = () => {
       <div 
         ref={sidebarRef}
         className={cn(
-          "md:flex h-screen flex-col fixed inset-y-0 z-50 border-r border-border bg-card transition-all duration-300 ease-in-out",
+          "md:flex h-screen flex-col fixed inset-y-0 z-[100] border-r border-border bg-card transition-all duration-300 ease-in-out",
           sidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full"
         )}
       >
@@ -287,6 +287,12 @@ const Sidebar = () => {
                       ) : (
                         <Link 
                           href={item.href}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            router.push(item.href);
+                            closeSidebar();
+                          }}
                           className={cn(
                             "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
                             isActive ? getActiveStyles() : "text-muted-foreground"
