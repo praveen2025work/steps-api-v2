@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Edit, Plus, Search, Trash, UserPlus } from 'lucide-react';
+import { Edit, Plus, Search, Trash, UserPlus, Copy, Check } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
 
 interface UsersListProps {
   users: User[];
@@ -17,8 +18,10 @@ interface UsersListProps {
 }
 
 const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }: UsersListProps) => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>(users);
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -30,13 +33,30 @@ const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }
           user =>
             user.username.toLowerCase().includes(query) ||
             user.fullName.toLowerCase().includes(query) ||
-            user.email.toLowerCase().includes(query) ||
-            user.role.toLowerCase().includes(query) ||
-            user.department.toLowerCase().includes(query)
+            user.email.toLowerCase().includes(query)
         )
       );
     }
   }, [searchQuery, users]);
+
+  const copyEmailToClipboard = (email: string) => {
+    navigator.clipboard.writeText(email)
+      .then(() => {
+        setCopiedEmail(email);
+        toast({
+          title: "Email Copied",
+          description: "Email address copied to clipboard",
+        });
+        setTimeout(() => setCopiedEmail(null), 2000);
+      })
+      .catch(err => {
+        toast({
+          title: "Failed to copy",
+          description: "Could not copy email to clipboard",
+          variant: "destructive"
+        });
+      });
+  };
 
   return (
     <Card>
@@ -69,17 +89,15 @@ const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }
             <TableHeader>
               <TableRow>
                 <TableHead>Username</TableHead>
-                <TableHead>Full Name</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     No users found.
                   </TableCell>
                 </TableRow>
@@ -87,15 +105,25 @@ const UsersList = ({ users, onEdit, onDelete, onCreateNew, onAssignApplication }
                 filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.username}</TableCell>
-                    <TableCell>{user.fullName}</TableCell>
-                    <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Badge variant={user.isActive ? "success" : "destructive"}>
                         {user.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {user.createdOn ? formatDistanceToNow(new Date(user.createdOn), { addSuffix: true }) : 'N/A'}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 px-2 text-xs"
+                        onClick={() => copyEmailToClipboard(user.email)}
+                      >
+                        {copiedEmail === user.email ? (
+                          <Check className="h-3.5 w-3.5 mr-1 text-green-500" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5 mr-1" />
+                        )}
+                        Copy Email
+                      </Button>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

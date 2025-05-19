@@ -9,9 +9,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Trash, Plus } from 'lucide-react';
+import { Trash, Plus, Save, X } from 'lucide-react';
 import { getAvailableApplications, getApplicationRoles } from '@/data/usersData';
 import { useToast } from '@/components/ui/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 interface UserFormProps {
   user?: User;
@@ -159,9 +161,9 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+    <Dialog open={isOpen} onOpenChange={onClose} className="max-w-4xl">
+      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6">
           <DialogTitle>{isEditMode ? 'Edit User' : 'Create New User'}</DialogTitle>
           <DialogDescription>
             {isEditMode 
@@ -170,49 +172,70 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => handleChange('username', e.target.value)}
-                  placeholder="username"
-                  required
-                  disabled={isEditMode} // Username cannot be changed in edit mode
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={(e) => handleChange('fullName', e.target.value)}
-                  placeholder="Full Name"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="email@example.com"
-                required
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Application Assignment</Label>
-                <div className="grid grid-cols-1 gap-4">
+        <div className="flex flex-col md:flex-row h-[70vh]">
+          {/* Left side - User details form */}
+          <div className="w-full md:w-1/2 p-6 border-r">
+            <ScrollArea className="h-full pr-4">
+              <form id="userForm" onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={formData.username}
+                      onChange={(e) => handleChange('username', e.target.value)}
+                      placeholder="username"
+                      required
+                      disabled={isEditMode} // Username cannot be changed in edit mode
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input
+                      id="fullName"
+                      value={formData.fullName}
+                      onChange={(e) => handleChange('fullName', e.target.value)}
+                      placeholder="Full Name"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleChange('email', e.target.value)}
+                      placeholder="email@example.com"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Switch
+                      id="isActive"
+                      checked={formData.isActive}
+                      onCheckedChange={(checked) => handleChange('isActive', checked)}
+                    />
+                    <Label htmlFor="isActive">Active</Label>
+                  </div>
+                </div>
+              </form>
+            </ScrollArea>
+          </div>
+          
+          {/* Right side - Application assignments */}
+          <div className="w-full md:w-1/2 p-6">
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium">Application Assignment</h3>
+                  <p className="text-sm text-muted-foreground">Assign applications and roles to this user</p>
+                </div>
+                
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="application">Select Application</Label>
                     <Select 
@@ -240,7 +263,7 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
                               id={`role-${role}`} 
                               checked={selectedRoles.includes(role)}
                               onCheckedChange={(checked) => {
-                                if (checked) {
+                                if (checked === true) {
                                   setSelectedRoles(prev => [...prev, role]);
                                 } else {
                                   setSelectedRoles(prev => prev.filter(r => r !== role));
@@ -271,90 +294,85 @@ const UserForm = ({ user, isOpen, onClose, onSave }: UserFormProps) => {
                       : 'Add Application'}
                   </Button>
                 </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) => handleChange('isActive', checked)}
-              />
-              <Label htmlFor="isActive">Active</Label>
-            </div>
-            
-            {formData.applications.length > 0 && (
-              <div className="space-y-2">
-                <Label>Assigned Applications</Label>
-                <div className="rounded-md border max-h-[200px] overflow-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Application ID</TableHead>
-                        <TableHead>Access Level</TableHead>
-                        <TableHead>Assigned On</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {formData.applications.map((app) => (
-                        <TableRow key={app.applicationId}>
-                          <TableCell>{app.applicationId}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {app.accessLevel.split(', ').map((role, index) => (
-                                <Badge 
-                                  key={index} 
-                                  variant="outline"
-                                  className="cursor-pointer hover:bg-muted"
-                                  onClick={() => {
-                                    // Set the selected application and load its roles for editing
-                                    setSelectedAppId(app.applicationId);
-                                    const currentRoles = app.accessLevel.split(', ');
-                                    setSelectedRoles(currentRoles);
-                                    
-                                    // Show toast notification
-                                    toast({
-                                      title: "Edit Application Roles",
-                                      description: `Click on roles to select/deselect, then click 'Add Application' to update`,
-                                    });
-                                  }}
+                
+                <Separator className="my-4" />
+                
+                {formData.applications.length > 0 ? (
+                  <div className="space-y-2">
+                    <Label>Assigned Applications</Label>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Application</TableHead>
+                            <TableHead>Roles</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {formData.applications.map((app) => (
+                            <TableRow key={app.applicationId}>
+                              <TableCell>
+                                {applications.find(a => a.id === app.applicationId)?.name || app.applicationId}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {app.accessLevel.split(', ').map((role, index) => (
+                                    <Badge 
+                                      key={index} 
+                                      variant="outline"
+                                      className="cursor-pointer hover:bg-muted"
+                                      onClick={() => {
+                                        // Set the selected application and load its roles for editing
+                                        setSelectedAppId(app.applicationId);
+                                        const currentRoles = app.accessLevel.split(', ');
+                                        setSelectedRoles(currentRoles);
+                                        
+                                        // Show toast notification
+                                        toast({
+                                          title: "Edit Application Roles",
+                                          description: `Click on roles to select/deselect, then click 'Update Application Roles' to save changes`,
+                                        });
+                                      }}
+                                    >
+                                      {role}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => removeApplication(app.applicationId)}
                                 >
-                                  {role}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(app.assignedOn).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => removeApplication(app.applicationId)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground border rounded-md">
+                    No applications assigned yet.
+                  </div>
+                )}
               </div>
-            )}
+            </ScrollArea>
           </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {isEditMode ? 'Update User' : 'Create User'}
-            </Button>
-          </DialogFooter>
-        </form>
+        </div>
+        
+        <DialogFooter className="px-6 py-4 border-t">
+          <Button type="button" variant="outline" onClick={onClose} className="gap-1">
+            <X className="h-4 w-4" /> Cancel
+          </Button>
+          <Button type="submit" form="userForm" className="gap-1">
+            <Save className="h-4 w-4" /> {isEditMode ? 'Update User' : 'Create User'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
