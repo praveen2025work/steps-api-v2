@@ -93,6 +93,12 @@ const navSections: NavSection[] = [
         icon: <GitFork className="h-5 w-5" />
       },
       {
+        title: 'Hierarchy Data',
+        href: '/admin/hierarchy-data',
+        icon: <Database className="h-5 w-5" />,
+        pattern: /^\/admin\/hierarchy-data/
+      },
+      {
         title: 'Metadata',
         href: '/admin/metadata',
         icon: <Tags className="h-5 w-5" />,
