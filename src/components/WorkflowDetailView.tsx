@@ -11,6 +11,11 @@ import { Separator } from '@/components/ui/separator';
 import { toast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
 import { CreateSupportIssue } from './support/CreateSupportIssue';
 import ProcessQueries from './workflow/ProcessQueries';
+import ProcessParameters from './workflow/ProcessParameters';
+import AppParameters from './workflow/AppParameters';
+import GlobalParameters from './workflow/GlobalParameters';
+import ProcessDependencies from './workflow/ProcessDependencies';
+import ProcessOverview from './workflow/ProcessOverview';
 import { 
   FileText, 
   Lock, 
@@ -606,15 +611,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const renderRightPanelContent = () => {
     switch (rightPanelContent) {
       case 'overview':
-        return <div>Overview Content</div>;
+        return <ProcessOverview processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
       case 'stages':
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
         return <DocumentsList documents={stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments} />;
       case 'parameters':
-        return <div>Parameters Content</div>;
+        return <ProcessParameters processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
       case 'dependencies':
-        return <DependencyTreeMap dependencies={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
+        return <ProcessDependencies processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
       case 'roles':
         return <RoleAssignments roleAssignments={mockRoleAssignments} />;
       case 'activity':
@@ -622,9 +627,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       case 'audit':
         return <ActivityLog activities={mockAuditInfo} />;
       case 'app-parameters':
-        return <div>App Parameters Content</div>;
+        return <AppParameters processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
       case 'global-parameters':
-        return <div>Global Parameters Content</div>;
+        return <GlobalParameters processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
       case 'queries':
         return <ProcessQueries processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
       default:
