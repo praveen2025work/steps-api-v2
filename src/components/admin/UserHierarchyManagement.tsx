@@ -254,12 +254,12 @@ export function UserHierarchyManagement() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Select value={selectedUser || ''} onValueChange={value => setSelectedUser(value || null)}>
+                  <Select value={selectedUser || 'all-users'} onValueChange={value => setSelectedUser(value === 'all-users' ? null : value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select User" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Users</SelectItem>
+                      <SelectItem value="all-users">All Users</SelectItem>
                       {users.map(user => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.fullName} ({user.username})
@@ -270,12 +270,12 @@ export function UserHierarchyManagement() {
                 </div>
                 
                 <div>
-                  <Select value={selectedApplication || ''} onValueChange={value => setSelectedApplication(value || null)}>
+                  <Select value={selectedApplication || 'all-apps'} onValueChange={value => setSelectedApplication(value === 'all-apps' ? null : value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select Application" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Applications</SelectItem>
+                      <SelectItem value="all-apps">All Applications</SelectItem>
                       {applications.map(app => (
                         <SelectItem key={app.id} value={app.id}>
                           {app.name}
