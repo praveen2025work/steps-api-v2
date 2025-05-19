@@ -127,6 +127,7 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
                         id={`assign-role-${role}`} 
                         checked={selectedRoles.includes(role)}
                         onCheckedChange={(checked) => {
+                          console.log(`Role ${role} checked:`, checked);
                           if (checked) {
                             setSelectedRoles(prev => [...prev, role]);
                           } else {
@@ -134,7 +135,20 @@ const AssignApplicationForm = ({ user, isOpen, onClose, onAssign }: AssignApplic
                           }
                         }}
                       />
-                      <Label htmlFor={`assign-role-${role}`} className="cursor-pointer text-sm">{role}</Label>
+                      <Label 
+                        htmlFor={`assign-role-${role}`} 
+                        className="cursor-pointer text-sm"
+                        onClick={() => {
+                          // Toggle role selection when label is clicked
+                          if (selectedRoles.includes(role)) {
+                            setSelectedRoles(prev => prev.filter(r => r !== role));
+                          } else {
+                            setSelectedRoles(prev => [...prev, role]);
+                          }
+                        }}
+                      >
+                        {role}
+                      </Label>
                     </div>
                   ))}
                 </div>
