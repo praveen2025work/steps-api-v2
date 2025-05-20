@@ -22,7 +22,10 @@ import {
   GitFork,
   Tags,
   Workflow,
-  Shield
+  Shield,
+  Sparkles,
+  TrendingUp,
+  Command
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -61,6 +64,35 @@ const navSections: NavSection[] = [
         href: '/finance',
         icon: <BarChart4 className="h-5 w-5" />,
         pattern: /^\/finance/
+      }
+    ]
+  },
+  {
+    title: "Experimental",
+    items: [
+      {
+        title: 'AI Assistant',
+        href: '/experimental/ai-assistant',
+        icon: <Sparkles className="h-5 w-5" />,
+        pattern: /^\/experimental\/ai-assistant/
+      },
+      {
+        title: 'Predictive Analytics',
+        href: '/experimental/predictive-analytics',
+        icon: <TrendingUp className="h-5 w-5" />,
+        pattern: /^\/experimental\/predictive-analytics/
+      },
+      {
+        title: 'Blockchain Audit',
+        href: '/experimental/blockchain-audit',
+        icon: <Shield className="h-5 w-5" />,
+        pattern: /^\/experimental\/blockchain-audit/
+      },
+      {
+        title: 'NLP Commands',
+        href: '/experimental/nlp-commands',
+        icon: <Command className="h-5 w-5" />,
+        pattern: /^\/experimental\/nlp-commands/
       }
     ]
   },
