@@ -879,31 +879,69 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                             <UserCircle className="h-4 w-4 text-muted-foreground" />
                           )}
                           
-                          {/* Process-level actions moved next to step type */}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showSuccessToast(`Started ${subStage.name}`);
-                            }}
-                            title="Start"
-                          >
-                            <PlayCircle className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showInfoToast(`Refreshing ${subStage.name}`);
-                            }}
-                            title="Refresh"
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" />
-                          </Button>
+                          {/* All process-level actions moved next to step type */}
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showSuccessToast(`Started ${subStage.name}`);
+                              }}
+                              title="Start"
+                            >
+                              <PlayCircle className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showInfoToast(`Refreshing ${subStage.name}`);
+                              }}
+                              title="Refresh"
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showSuccessToast(`Completed ${subStage.name}`);
+                              }}
+                              title="Complete"
+                            >
+                              <ArrowRightCircle className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showWarningToast(`Skipped ${subStage.name}`);
+                              }}
+                              title="Skip"
+                            >
+                              <SkipForward className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showInfoToast(`Notification sent for ${subStage.name}`);
+                              }}
+                              title="Send Notification"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                         
                         <div className="flex items-center gap-2 ml-auto">
@@ -960,42 +998,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                         </div>
                       )}
 
-                      {/* Additional Action Buttons */}
-                      <div className="flex gap-2 mt-4">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => {
-                            showSuccessToast(`Completed ${subStage.name}`);
-                          }}
-                          title="Complete"
-                        >
-                          <ArrowRightCircle className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => {
-                            showWarningToast(`Skipped ${subStage.name}`);
-                          }}
-                          title="Skip"
-                        >
-                          <SkipForward className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => {
-                            showInfoToast(`Notification sent for ${subStage.name}`);
-                          }}
-                          title="Send Notification"
-                        >
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {/* Action buttons moved to process level */}
                     </div>
                   </div>
 
@@ -1128,7 +1131,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     <Network className="h-3.5 w-3.5 mr-1" />
                     Dependency
                   </Button>
-                  {/* Remove Overview from right panel since it's now at process level */}
+                  <Button 
+                    variant={rightPanelContent === 'overview' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('overview')}
+                  >
+                    <FileText className="h-3.5 w-3.5 mr-1" />
+                    Overview
+                  </Button>
                   <Button 
                     variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
                     size="sm"
