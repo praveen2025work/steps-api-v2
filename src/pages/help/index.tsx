@@ -13,11 +13,10 @@ export default function HelpAndSupport() {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Help & Support">
       <div className="container mx-auto p-6">
         <div className="flex flex-col space-y-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Help & Support</h1>
+          <div className="flex justify-end items-center">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input

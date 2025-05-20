@@ -25,7 +25,7 @@ export default function OperationsCenter() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Operations Center">
       <div className="container mx-auto p-4">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid grid-cols-2 mb-8">

@@ -3,8 +3,7 @@ import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
 import Logo from './Logo';
 import ThemeSwitcher from './ThemeSwitcher';
-import { Bell, Search, User, Menu } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Bell, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -32,20 +31,11 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               <MobileNav />
               <Logo />
               
-              {/* Search bar */}
-              <div className="hidden md:flex relative max-w-md">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  type="search" 
-                  placeholder="Search workflows, applications..." 
-                  className="pl-8 w-[300px] bg-muted/30"
-                />
-              </div>
+              {/* Page title next to logo */}
+              {title && (
+                <h1 className="text-xl font-bold">{title}</h1>
+              )}
             </div>
-            
-            {title && (
-              <h1 className="text-xl font-bold md:hidden">{title}</h1>
-            )}
             
             <div className="flex items-center gap-4">
               {/* Theme Switcher */}
@@ -78,8 +68,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         {/* Page content */}
         <main className="flex-1 container py-6 px-4 md:px-6">
           {title && (
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold hidden md:block">{title}</h1>
+            <div className="mb-6">
               <div className="text-sm text-muted-foreground">
                 <span>Last updated: April 14, 2025 | 02:28 PM</span>
               </div>

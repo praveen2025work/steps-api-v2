@@ -116,7 +116,7 @@ const HierarchyDataManagementPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Hierarchy Data Management">
       <div className="container mx-auto py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left side - Hierarchy data list */}

@@ -11,12 +11,11 @@ const AdminPage = () => {
   // If there's a tab query parameter, show the WorkflowDashboard with that tab
   // Otherwise, show the AdminDashboard
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Admin Dashboard">
       {tab ? (
         <WorkflowDashboard defaultTab={tab as string} />
       ) : (
         <div className="container mx-auto py-6">
-          <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
           <AdminDashboard />
         </div>
       )}

@@ -47,8 +47,6 @@ const mockApprovals = [
 const ManagementBoard = () => {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Management Board</h2>
-      
       {/* Performance Overview Section */}
       <Card>
         <CardHeader className="pb-2">

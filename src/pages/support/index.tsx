@@ -9,11 +9,8 @@ export default function SupportPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Process Support Dashboard">
       <div className="container mx-auto py-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Process Support Dashboard</h1>
-        </div>
 
         <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full md:w-auto grid-cols-2">

@@ -10,7 +10,7 @@ const FinancePage = () => {
         <title>Finance Dashboard | STEPS</title>
         <meta name="description" content="Financial dashboard with real-time data visualization" />
       </Head>
-      <DashboardLayout>
+      <DashboardLayout title="Finance Dashboard">
         <DynamicFinanceDashboard />
       </DashboardLayout>
     </>

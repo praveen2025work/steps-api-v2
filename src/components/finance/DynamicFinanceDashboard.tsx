@@ -267,9 +267,11 @@ const DynamicFinanceDashboard: React.FC = () => {
   return (
     <>
       <div className="flex flex-col space-y-6">
+        <div className="text-sm text-muted-foreground mb-4">
+          Last refreshed: {lastRefreshed.toLocaleTimeString()}
+        </div>
+        
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-2xl font-bold">Finance Dashboard</h1>
-          
           {navigationSource === 'direct' ? (
             <div className="flex flex-wrap gap-2">
               <Select value={selectedApp} onValueChange={setSelectedApp}>
@@ -330,10 +332,6 @@ const DynamicFinanceDashboard: React.FC = () => {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
             )}
-            
-            <div className="text-sm text-muted-foreground flex items-center ml-auto">
-              Last refreshed: {lastRefreshed.toLocaleTimeString()}
-            </div>
           </div>
           <div>
             <Button variant="outline" size="sm" asChild>
