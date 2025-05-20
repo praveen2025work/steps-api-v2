@@ -339,7 +339,7 @@ const WorkflowDetailPage = () => {
   
   if (loading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Loading Workflow...">
         <div className="flex flex-col items-center justify-center h-[60vh]">
           <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold mb-2">Loading...</h2>
@@ -350,7 +350,7 @@ const WorkflowDetailPage = () => {
   
   if (!workflowData) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Workflow Not Found">
         <div className="flex flex-col items-center justify-center h-[60vh]">
           <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold mb-2">Workflow Not Found</h2>
@@ -406,7 +406,7 @@ const WorkflowDetailPage = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <DashboardLayout>
+      <DashboardLayout title={workflowData.title}>
         <div className="grid grid-cols-1 gap-4">
           <div>
             <WorkflowDetailView 

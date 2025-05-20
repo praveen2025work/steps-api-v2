@@ -26,16 +26,16 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-0'}`}>
         {/* Header for mobile and desktop */}
         <header className="sticky top-0 z-40 border-b bg-background">
-          <div className="container flex h-16 items-center justify-between py-4">
+          <div className="container flex h-16 items-center justify-between py-4 px-2 sm:px-4">
             <div className="flex items-center gap-4">
               <MobileNav />
               <Logo />
               
-              {/* Page title next to logo with Last updated below */}
+              {/* Page title next to logo with Last updated below - responsive for mobile */}
               {title && (
                 <div className="flex flex-col">
-                  <h1 className="text-xl font-bold">{title}</h1>
-                  <span className="text-xs text-muted-foreground">
+                  <h1 className="text-lg md:text-xl font-bold truncate max-w-[150px] md:max-w-none">{title}</h1>
+                  <span className="text-xs text-muted-foreground hidden sm:inline-block">
                     Last updated: {new Date().toLocaleDateString()} | {new Date().toLocaleTimeString()}
                   </span>
                 </div>
@@ -70,8 +70,14 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           </div>
         </header>
         
-        {/* Page content */}
-        <main className="flex-1 container py-6 px-4 md:px-6">
+        {/* Page content - improved for mobile */}
+        <main className="flex-1 container py-4 sm:py-6 px-2 sm:px-4 md:px-6 overflow-x-hidden">
+          {/* Show timestamp on mobile only */}
+          {title && (
+            <div className="sm:hidden text-xs text-muted-foreground mb-4">
+              Last updated: {new Date().toLocaleDateString()} | {new Date().toLocaleTimeString()}
+            </div>
+          )}
           {children}
         </main>
       </div>
