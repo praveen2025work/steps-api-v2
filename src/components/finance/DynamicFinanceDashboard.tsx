@@ -268,75 +268,91 @@ const DynamicFinanceDashboard: React.FC = () => {
     <>
       <div className="flex flex-col space-y-6">
         
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          {navigationSource === 'direct' ? (
-            <div className="flex flex-wrap gap-2">
-              <Select value={selectedApp} onValueChange={setSelectedApp}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select Application" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockHierarchicalWorkflows.map((app, index) => (
-                    <SelectItem key={app.id} value={app.id || `app-id-${index}`}>{app.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select 
-                value={selectedWorkflow} 
-                onValueChange={setSelectedWorkflow}
-                disabled={availableWorkflows.length === 0}
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select Workflow" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableWorkflows.map((wf, index) => (
-                    <SelectItem key={wf.id} value={wf.id || `workflow-id-${index}`}>{wf.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
-            <Button variant="outline" size="sm" onClick={handleBack}>
-              {navigationSource === 'dashboard' ? (
-                <>
-                  <Home className="h-4 w-4 mr-1" />
-                  <span>Return to Dashboard</span>
-                </>
-              ) : (
-                <>
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                  <span>Back</span>
-                </>
+        {/* Dashboard Header with better aligned controls */}
+        <div className="bg-card rounded-lg p-4 shadow-sm">
+          <div className="flex flex-col space-y-4">
+            {/* Top row - Title and workflow info */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+              <h2 className="text-lg font-semibold">Daily Named PNL</h2>
+              {navigationSource !== 'direct' && (
+                <div className="flex items-center mt-2 sm:mt-0">
+                  <h3 className="text-md font-medium">eRates</h3>
+                  <Button variant="ghost" size="sm" className="ml-2" onClick={handleBack}>
+                    {navigationSource === 'dashboard' ? (
+                      <>
+                        <Home className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Return to Dashboard</span>
+                        <span className="sm:hidden">Dashboard</span>
+                      </>
+                    ) : (
+                      <>
+                        <ArrowLeft className="h-4 w-4 mr-1" />
+                        <span>Back</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
-            </Button>
-          )}
-        </div>
-        
-        {/* Main Content */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div className="flex flex-wrap gap-2">
-            <ViewModeControls />
-            <LayoutControls />
-            <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            </div>
             
-            {navigationSource === 'direct' ? null : (
-              <Button variant="ghost" size="icon" onClick={handleBack} title="Back">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+            {/* Middle row - Application & Workflow Selection (if direct navigation) */}
+            {navigationSource === 'direct' && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Select value={selectedApp} onValueChange={setSelectedApp}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Select Application" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockHierarchicalWorkflows.map((app, index) => (
+                      <SelectItem key={app.id} value={app.id || `app-id-${index}`}>{app.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select 
+                  value={selectedWorkflow} 
+                  onValueChange={setSelectedWorkflow}
+                  disabled={availableWorkflows.length === 0}
+                >
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Select Workflow" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableWorkflows.map((wf, index) => (
+                      <SelectItem key={wf.id} value={wf.id || `workflow-id-${index}`}>{wf.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
-          </div>
-          <div>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/finance/configure">
-                <Settings className="h-4 w-4 mr-1" />
-                Configure Tiles
-              </Link>
-            </Button>
+            
+            {/* Bottom row - View Controls in a single line */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-border">
+              <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2">
+                <div className="flex items-center">
+                  <span className="text-sm font-medium mr-2">View:</span>
+                  <ViewModeControls />
+                </div>
+                
+                <div className="flex items-center">
+                  <span className="text-sm font-medium mr-2">Layout:</span>
+                  <LayoutControls />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 justify-between sm:justify-end">
+                <Button variant="outline" size="sm" onClick={handleRefresh} className="flex-1 sm:flex-none">
+                  <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
+                  <Link href="/finance/configure">
+                    <Settings className="h-4 w-4 mr-1" />
+                    Configure Tiles
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
