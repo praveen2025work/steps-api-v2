@@ -801,8 +801,24 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         Last refreshed: {getSecondsSinceRefresh()} seconds ago | Auto-refresh in: {countdown}s
       </div>
 
+      {/* Modified to include completion percentage */}
       <WorkflowStagesBar 
-        stages={stages} 
+        stages={stages.map(stage => {
+          // Get tasks for this stage
+          const stageTasks = tasks[stage.id] || [];
+          
+          // Calculate completion percentage
+          let completionPercentage = 0;
+          if (stageTasks.length > 0) {
+            const completedTasks = stageTasks.filter(task => task.status === 'completed').length;
+            completionPercentage = Math.round((completedTasks / stageTasks.length) * 100);
+          }
+          
+          return {
+            ...stage,
+            completionPercentage
+          };
+        })} 
         activeStage={activeStage} 
         onStageClick={handleStageClick} 
       />
@@ -810,6 +826,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       <div className="flex gap-4">
         {/* Main Content - 60% width */}
         <div className="flex-[0.6]">
+          {/* Process Overview at the top of the main content */}
+          {rightPanelContent === 'overview' && (
+            <div className="mb-4">
+              <ProcessOverview 
+                processId={activeStage} 
+                processName={activeStageInfo?.name || 'Unknown Process'} 
+              />
+            </div>
+          )}
           <div className="space-y-4">
             {(stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages).map((subStage, index) => (
               <Collapsible key={subStage.id}>
@@ -846,11 +871,41 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                         >
                           {subStage.processId}
                         </Button>
-                        {subStage.type === 'auto' ? (
-                          <Bot className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <UserCircle className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        
+                        <div className="flex items-center gap-1">
+                          {subStage.type === 'auto' ? (
+                            <Bot className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <UserCircle className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          
+                          {/* Process-level actions moved next to step type */}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              showSuccessToast(`Started ${subStage.name}`);
+                            }}
+                            title="Start"
+                          >
+                            <PlayCircle className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              showInfoToast(`Refreshing ${subStage.name}`);
+                            }}
+                            title="Refresh"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        
                         <div className="flex items-center gap-2 ml-auto">
                           <span className="text-sm text-muted-foreground">
                             {subStage.progress}%
@@ -905,30 +960,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                         </div>
                       )}
 
-                      {/* Action Buttons */}
+                      {/* Additional Action Buttons */}
                       <div className="flex gap-2 mt-4">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => {
-                            showSuccessToast(`Started ${subStage.name}`);
-                          }}
-                          title="Start"
-                        >
-                          <PlayCircle className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => {
-                            showInfoToast(`Refreshing ${subStage.name}`);
-                          }}
-                          title="Refresh"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -1095,15 +1128,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     <Network className="h-3.5 w-3.5 mr-1" />
                     Dependency
                   </Button>
-                  <Button 
-                    variant={rightPanelContent === 'overview' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('overview')}
-                  >
-                    <FileText className="h-3.5 w-3.5 mr-1" />
-                    Overview
-                  </Button>
+                  {/* Remove Overview from right panel since it's now at process level */}
                   <Button 
                     variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
                     size="sm"
