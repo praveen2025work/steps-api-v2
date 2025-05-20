@@ -272,75 +272,69 @@ const DynamicFinanceDashboard: React.FC = () => {
     <>
       <div className="flex flex-col space-y-6">
         
-        {/* Dashboard Header with optimized controls */}
-        <div className="bg-card rounded-lg p-3 shadow-sm">
-          <div className="flex flex-col space-y-2">
-            {/* Application & Workflow Selection (if direct navigation) */}
-            {navigationSource === 'direct' && (
-              <div className="flex flex-wrap gap-2 items-center">
-                <Select value={selectedApp} onValueChange={setSelectedApp}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select Application" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockHierarchicalWorkflows.map((app, index) => (
-                      <SelectItem key={app.id} value={app.id || `app-id-${index}`}>{app.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Select 
-                  value={selectedWorkflow} 
-                  onValueChange={setSelectedWorkflow}
-                  disabled={availableWorkflows.length === 0}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select Workflow" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableWorkflows.map((wf, index) => (
-                      <SelectItem key={wf.id} value={wf.id || `workflow-id-${index}`}>{wf.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            
-            {/* Workflow info if coming from dashboard */}
-            {navigationSource !== 'direct' && (
-              <div className="flex items-center">
-                <h3 className="text-md font-medium">eRates</h3>
-              </div>
-            )}
-            
-            {/* Controls in a single line */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <ViewModeControls />
-                  <LayoutControls />
-                </div>
-              </div>
+        {/* Dashboard Header with all controls in a single row */}
+        <div className="bg-card rounded-lg p-2 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Left side: Application & Workflow Selection or Workflow info */}
+            <div className="flex flex-wrap items-center gap-2">
+              {navigationSource === 'direct' ? (
+                <>
+                  <Select value={selectedApp} onValueChange={setSelectedApp}>
+                    <SelectTrigger className="w-[160px] h-8">
+                      <SelectValue placeholder="Select Application" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockHierarchicalWorkflows.map((app, index) => (
+                        <SelectItem key={app.id} value={app.id || `app-id-${index}`}>{app.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select 
+                    value={selectedWorkflow} 
+                    onValueChange={setSelectedWorkflow}
+                    disabled={availableWorkflows.length === 0}
+                  >
+                    <SelectTrigger className="w-[160px] h-8">
+                      <SelectValue placeholder="Select Workflow" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableWorkflows.map((wf, index) => (
+                        <SelectItem key={wf.id} value={wf.id || `workflow-id-${index}`}>{wf.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              ) : (
+                <h3 className="text-md font-medium mr-2">eRates</h3>
+              )}
               
+              {/* View and Layout Controls */}
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" onClick={handleRefresh} className="px-2 h-8" title="Refresh">
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                </Button>
-                <Button variant="outline" size="sm" asChild className="px-2 h-8" title="Configure Tiles">
-                  <Link href="/finance/configure">
-                    <Settings className="h-4 w-4" />
-                  </Link>
-                </Button>
-                {navigationSource !== 'direct' && (
-                  <Button variant="ghost" size="sm" onClick={handleBack} className="px-2 h-8" title={navigationSource === 'dashboard' ? "Return to Dashboard" : "Back"}>
-                    {navigationSource === 'dashboard' ? (
-                      <Home className="h-4 w-4" />
-                    ) : (
-                      <ArrowLeft className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
+                <ViewModeControls />
+                <LayoutControls />
               </div>
+            </div>
+            
+            {/* Right side: Action buttons */}
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="sm" onClick={handleRefresh} className="px-2 h-8" title="Refresh">
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button variant="outline" size="sm" asChild className="px-2 h-8" title="Configure Tiles">
+                <Link href="/finance/configure">
+                  <Settings className="h-4 w-4" />
+                </Link>
+              </Button>
+              {navigationSource !== 'direct' && (
+                <Button variant="ghost" size="sm" onClick={handleBack} className="px-2 h-8" title={navigationSource === 'dashboard' ? "Return to Dashboard" : "Back"}>
+                  {navigationSource === 'dashboard' ? (
+                    <Home className="h-4 w-4" />
+                  ) : (
+                    <ArrowLeft className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>
