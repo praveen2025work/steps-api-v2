@@ -31,9 +31,14 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               <MobileNav />
               <Logo />
               
-              {/* Page title next to logo */}
+              {/* Page title next to logo with Last updated below */}
               {title && (
-                <h1 className="text-xl font-bold">{title}</h1>
+                <div className="flex flex-col">
+                  <h1 className="text-xl font-bold">{title}</h1>
+                  <span className="text-xs text-muted-foreground">
+                    Last updated: {new Date().toLocaleDateString()} | {new Date().toLocaleTimeString()}
+                  </span>
+                </div>
               )}
             </div>
             
@@ -67,13 +72,6 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         
         {/* Page content */}
         <main className="flex-1 container py-6 px-4 md:px-6">
-          {title && (
-            <div className="mb-6">
-              <div className="text-sm text-muted-foreground">
-                <span>Last updated: April 14, 2025 | 02:28 PM</span>
-              </div>
-            </div>
-          )}
           {children}
         </main>
       </div>

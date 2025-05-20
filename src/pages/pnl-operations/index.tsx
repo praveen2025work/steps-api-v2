@@ -23,9 +23,6 @@ export default function PnLOperationsPage() {
   return (
     <DashboardLayout title="PnL Operations Center">
       <div className="container mx-auto py-6">
-        <div className="text-sm text-muted-foreground mb-4">
-          Current Time: {new Date().toLocaleString()} | EOD Deadline: 19:00 EST
-        </div>
 
         <Tabs 
           defaultValue="dashboard" 
