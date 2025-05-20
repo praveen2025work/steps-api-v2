@@ -154,11 +154,11 @@ const FinanceAnalysis: React.FC<FinanceAnalysisProps> = ({ selectedTile, tiles }
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {insights.map((insight, index) => (
               <Card key={index} className={`
-                ${insight.type === 'positive' ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20' : ''}
-                ${insight.type === 'warning' ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/20' : ''}
-                ${insight.type === 'negative' ? 'border-red-200 bg-red-50 dark:bg-red-950/20' : ''}
-                ${insight.type === 'insight' ? 'border-blue-200 bg-blue-50 dark:bg-blue-950/20' : ''}
-                ${insight.type === 'recommendation' ? 'border-purple-200 bg-purple-50 dark:bg-purple-950/20' : ''}
+                ${insight.type === 'positive' ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-50' : ''}
+                ${insight.type === 'warning' ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-50' : ''}
+                ${insight.type === 'negative' ? 'border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 dark:text-red-50' : ''}
+                ${insight.type === 'insight' ? 'border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-50' : ''}
+                ${insight.type === 'recommendation' ? 'border-purple-200 bg-purple-50 dark:bg-purple-950/30 dark:border-purple-800 dark:text-purple-50' : ''}
               `}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
@@ -167,7 +167,7 @@ const FinanceAnalysis: React.FC<FinanceAnalysisProps> = ({ selectedTile, tiles }
                     </div>
                     <div>
                       <h4 className="font-medium mb-1">{insight.title}</h4>
-                      <p className="text-sm">{insight.description}</p>
+                      <p className="text-sm dark:text-current">{insight.description}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -203,22 +203,22 @@ const FinanceAnalysis: React.FC<FinanceAnalysisProps> = ({ selectedTile, tiles }
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={predictiveData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
+                        <CartesianGrid strokeDasharray="3 3" className="dark:opacity-30" />
+                        <XAxis dataKey="name" className="dark:fill-white dark:opacity-80" />
+                        <YAxis className="dark:fill-white dark:opacity-80" />
+                        <Tooltip contentStyle={{ backgroundColor: 'var(--card)', color: 'var(--card-foreground)', borderColor: 'var(--border)' }} />
+                        <Legend className="dark:fill-white" />
                         <Line 
                           type="monotone" 
                           dataKey="value" 
-                          stroke="#0369a1" 
+                          stroke="#0ea5e9" 
                           name="Actual" 
                           strokeWidth={2}
                         />
                         <Line 
                           type="monotone" 
                           dataKey="predicted" 
-                          stroke="#6366f1" 
+                          stroke="#8b5cf6" 
                           name="Predicted" 
                           strokeDasharray="5 5"
                           strokeWidth={2}
@@ -242,12 +242,12 @@ const FinanceAnalysis: React.FC<FinanceAnalysisProps> = ({ selectedTile, tiles }
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={correlationData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="correlation" fill="#0369a1" name="Correlation Coefficient" />
+                        <CartesianGrid strokeDasharray="3 3" className="dark:opacity-30" />
+                        <XAxis dataKey="name" className="dark:fill-white dark:opacity-80" />
+                        <YAxis className="dark:fill-white dark:opacity-80" />
+                        <Tooltip contentStyle={{ backgroundColor: 'var(--card)', color: 'var(--card-foreground)', borderColor: 'var(--border)' }} />
+                        <Legend className="dark:fill-white" />
+                        <Bar dataKey="correlation" fill="#0ea5e9" name="Correlation Coefficient" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -282,19 +282,20 @@ const FinanceAnalysis: React.FC<FinanceAnalysisProps> = ({ selectedTile, tiles }
                           fill="#8884d8"
                           dataKey="value"
                           label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          labelStyle={{ fill: 'var(--card-foreground)', fontWeight: 500 }}
                         >
                           {[
-                            { name: 'Revenue', value: 35, color: '#0369a1' },
+                            { name: 'Revenue', value: 35, color: '#0ea5e9' },
                             { name: 'Cost Reduction', value: 25, color: '#10b981' },
                             { name: 'Risk Mitigation', value: 20, color: '#f59e0b' },
-                            { name: 'Compliance', value: 15, color: '#6366f1' },
-                            { name: 'Other', value: 5, color: '#d1d5db' },
+                            { name: 'Compliance', value: 15, color: '#8b5cf6' },
+                            { name: 'Other', value: 5, color: '#94a3b8' },
                           ].map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip />
-                        <Legend />
+                        <Tooltip contentStyle={{ backgroundColor: 'var(--card)', color: 'var(--card-foreground)', borderColor: 'var(--border)' }} />
+                        <Legend className="dark:fill-white" formatter={(value) => <span className="dark:text-white">{value}</span>} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
