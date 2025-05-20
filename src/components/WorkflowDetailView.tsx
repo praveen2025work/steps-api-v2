@@ -16,6 +16,7 @@ import AppParameters from './workflow/AppParameters';
 import GlobalParameters from './workflow/GlobalParameters';
 import ProcessDependencies from './workflow/ProcessDependencies';
 import ProcessOverview from './workflow/ProcessOverview';
+import StageOverview from './workflow/StageOverview';
 import { 
   FileText, 
   Lock, 
@@ -119,7 +120,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [countdown, setCountdown] = useState<number>(15);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
-  const [rightPanelContent, setRightPanelContent] = useState<'overview' | 'stages' | 'documents' | 'parameters' | 'dependencies' | 'roles' | 'activity' | 'audit' | 'app-parameters' | 'global-parameters' | 'queries'>('overview');
+  const [rightPanelContent, setRightPanelContent] = useState<'overview' | 'stage-overview' | 'process-overview' | 'stages' | 'documents' | 'parameters' | 'dependencies' | 'roles' | 'activity' | 'audit' | 'app-parameters' | 'global-parameters' | 'queries'>('stage-overview');
   const [selectedSubStage, setSelectedSubStage] = useState<string | null>(null);
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false);
   const [stageSpecificSubStages, setStageSpecificSubStages] = useState<SubStage[]>([]);
@@ -603,7 +604,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   };
 
   const handleProcessIdClick = (processId: string) => {
-    setRightPanelContent('audit');
+    setSelectedSubStage(processId);
+    setRightPanelContent('process-overview');
     setRightPanelOpen(true);
     setIsRightPanelExpanded(true);
   };
@@ -611,7 +613,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const renderRightPanelContent = () => {
     switch (rightPanelContent) {
       case 'overview':
-        return <ProcessOverview processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
+      case 'stage-overview':
+        return <StageOverview stageId={activeStage} stageName={activeStageInfo?.name || 'Unknown Stage'} />;
+      case 'process-overview':
+        return <ProcessOverview processId={selectedSubStage || activeStage} processName={selectedSubStage ? (stageSpecificSubStages.find(s => s.id === selectedSubStage)?.name || 'Unknown Process') : (activeStageInfo?.name || 'Unknown Process')} />;
       case 'stages':
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
@@ -826,15 +831,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       <div className="flex gap-4">
         {/* Main Content - 60% width */}
         <div className="flex-[0.6]">
-          {/* Process Overview at the top of the main content */}
-          {rightPanelContent === 'overview' && (
-            <div className="mb-4">
-              <ProcessOverview 
-                processId={activeStage} 
-                processName={activeStageInfo?.name || 'Unknown Process'} 
-              />
-            </div>
-          )}
+          {/* Process Overview removed from main content as it's now in the right panel */}
           <div className="space-y-4">
             {(stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages).map((subStage, index) => (
               <Collapsible key={subStage.id}>
@@ -1132,13 +1129,22 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     Dependency
                   </Button>
                   <Button 
-                    variant={rightPanelContent === 'overview' ? 'secondary' : 'ghost'}
+                    variant={rightPanelContent === 'stage-overview' ? 'secondary' : 'ghost'}
                     size="sm"
                     className="h-7"
-                    onClick={() => setRightPanelContent('overview')}
+                    onClick={() => setRightPanelContent('stage-overview')}
+                  >
+                    <Layers className="h-3.5 w-3.5 mr-1" />
+                    Stage Overview
+                  </Button>
+                  <Button 
+                    variant={rightPanelContent === 'process-overview' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setRightPanelContent('process-overview')}
                   >
                     <FileText className="h-3.5 w-3.5 mr-1" />
-                    Overview
+                    Process Overview
                   </Button>
                   <Button 
                     variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
@@ -1221,10 +1227,19 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                   variant="ghost"
                   size="sm"
                   className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('overview')}
+                  onClick={() => setRightPanelContent('stage-overview')}
+                >
+                  <Layers className="h-3.5 w-3.5 mr-2" />
+                  Stage Overview
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-7"
+                  onClick={() => setRightPanelContent('process-overview')}
                 >
                   <FileText className="h-3.5 w-3.5 mr-2" />
-                  Overview
+                  Process Overview
                 </Button>
                 <Button 
                   variant="ghost"
