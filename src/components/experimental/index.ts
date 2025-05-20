@@ -6,6 +6,4 @@ export * from './NLPCommandCenter';
 export * from './WorkflowAutomationBuilder';
 export * from './WorkflowSimulator';
 export * from './WorkflowTemplateLibrary';
-export * from './DroolsRulesEngine';
-export * from './PegaBPMConnector';
-export * from './AppianProcessIntegration';
+export * from './IntegratedBusinessRulesEngine';
