@@ -4,7 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, TrendingUp, Shield, Command, ArrowRight } from 'lucide-react';
+import { Sparkles, TrendingUp, Shield, Command, ArrowRight, Wand2, PlayCircle, Library } from 'lucide-react';
 
 const ExperimentalFeaturesPage = () => {
   const router = useRouter();
@@ -37,6 +37,27 @@ const ExperimentalFeaturesPage = () => {
       icon: <Command className="h-6 w-6" />,
       href: '/experimental/nlp-commands',
       color: 'bg-amber-500/10 text-amber-500'
+    },
+    {
+      title: 'Workflow Automation Builder',
+      description: 'Create intelligent automation rules to streamline your workflows',
+      icon: <Wand2 className="h-6 w-6" />,
+      href: '/experimental/workflow-automation',
+      color: 'bg-indigo-500/10 text-indigo-500'
+    },
+    {
+      title: 'Workflow Simulator',
+      description: 'Simulate and analyze workflow execution to identify bottlenecks',
+      icon: <PlayCircle className="h-6 w-6" />,
+      href: '/experimental/workflow-simulator',
+      color: 'bg-rose-500/10 text-rose-500'
+    },
+    {
+      title: 'Workflow Template Library',
+      description: 'Create, manage, and use workflow templates to standardize processes',
+      icon: <Library className="h-6 w-6" />,
+      href: '/experimental/template-library',
+      color: 'bg-teal-500/10 text-teal-500'
     }
   ];
 
@@ -52,11 +73,11 @@ const ExperimentalFeaturesPage = () => {
             </Badge>
           </h1>
           <p className="text-muted-foreground">
-            Cutting-edge features powered by AI and blockchain technology
+            Cutting-edge features powered by AI, automation, and advanced workflow tools
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <Card key={index} className="overflow-hidden">
               <CardHeader>
@@ -80,6 +101,12 @@ const ExperimentalFeaturesPage = () => {
                     'Ensure the integrity of your workflow data with an immutable audit trail secured by blockchain technology, providing tamper-proof records for compliance and auditing.'}
                   {feature.title === 'Natural Language Commands' && 
                     'Control your workflows using simple English commands. Just type what you want to do, and the AI will understand and execute the appropriate actions.'}
+                  {feature.title === 'Workflow Automation Builder' && 
+                    'Create conditional automation rules that trigger actions based on workflow events, status changes, or schedules to reduce manual intervention and streamline processes.'}
+                  {feature.title === 'Workflow Simulator' && 
+                    'Test and analyze workflow execution in a simulated environment to identify bottlenecks, optimize resource allocation, and ensure SLA compliance before deployment.'}
+                  {feature.title === 'Workflow Template Library' && 
+                    'Build a library of standardized workflow templates with pre-configured stages, parameters, and automation rules to ensure consistency and accelerate workflow creation.'}
                 </p>
               </CardContent>
               <CardFooter>
