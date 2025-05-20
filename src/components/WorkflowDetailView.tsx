@@ -17,6 +17,7 @@ import GlobalParameters from './workflow/GlobalParameters';
 import ProcessDependencies from './workflow/ProcessDependencies';
 import ProcessOverview from './workflow/ProcessOverview';
 import StageOverview from './workflow/StageOverview';
+import WorkflowUnifiedHeader from './workflow/WorkflowUnifiedHeader';
 import { 
   FileText, 
   Lock, 
@@ -725,83 +726,61 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     );
   };
 
+  // Calculate overall workflow progress
+  const calculateOverallProgress = () => {
+    // If we have hierarchy path, use the last node's progress
+    if (hierarchyPath.length > 0) {
+      return hierarchyPath[hierarchyPath.length - 1].progress;
+    }
+    
+    // Otherwise calculate from tasks
+    let totalTasks = 0;
+    let completedTasks = 0;
+    
+    Object.values(tasks).forEach(stageTasks => {
+      totalTasks += stageTasks.length;
+      completedTasks += stageTasks.filter(task => task.status === 'completed').length;
+    });
+    
+    return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  };
+
+  // Calculate task counts
+  const calculateTaskCounts = () => {
+    let completed = 0;
+    let failed = 0;
+    let rejected = 0;
+    let pending = 0;
+    let processing = 0;
+    
+    Object.values(tasks).forEach(stageTasks => {
+      stageTasks.forEach(task => {
+        if (task.status === 'completed') completed++;
+        else if (task.status === 'failed') failed++;
+        else if (task.status === 'rejected') rejected++;
+        else if (task.status === 'in_progress' || task.status === 'in-progress') processing++;
+        else pending++;
+      });
+    });
+    
+    return { completed, failed, rejected, pending, processing };
+  };
+
   return (
     <div className="space-y-4">
-      {/* Hierarchy Navigation Breadcrumb */}
-      <WorkflowHierarchyBreadcrumb 
-        nodes={hierarchyPath}
-        onNodeClick={handleHierarchyNodeClick}
-        onHomeClick={handleHomeClick}
+      {/* Unified Workflow Header Card */}
+      <WorkflowUnifiedHeader
+        workflowId={hierarchyPath[hierarchyPath.length-1]?.id || ''}
+        workflowTitle={workflowTitle}
+        hierarchyPath={hierarchyPath}
+        progress={calculateOverallProgress()}
+        status="Active"
+        isLocked={isLocked}
+        onToggleLock={toggleLock}
+        onRefresh={handleRefresh}
+        taskCounts={calculateTaskCounts()}
       />
       
-      {/* Workflow Controls - Aligned with breadcrumb */}
-      <div className="flex justify-between items-center">
-        <div className="flex-1">
-          <div className="flex gap-2">
-            <Link href={`/finance?workflowId=${hierarchyPath[hierarchyPath.length-1]?.id || ''}&workflowName=${workflowTitle}`}>
-              <Button variant="outline" size="sm" className="gap-2">
-                <BarChart4 className="h-4 w-4" />
-                Finance Dashboard
-              </Button>
-            </Link>
-            <Link href="/support">
-              <Button variant="outline" size="sm" className="gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Support Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            onClick={toggleLock}
-            title={isLocked ? "Locked" : "Unlocked"}
-          >
-            {isLocked ? (
-              <Lock className="h-4 w-4" />
-            ) : (
-              <Unlock className="h-4 w-4" />
-            )}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            title="Add Adhoc Stage"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            title="Reset Workflow"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            title="Reopen Toll Gate"
-          >
-            <UnlockIcon className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            onClick={handleRefresh}
-            title="Refresh"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
       <div className="text-xs text-muted-foreground text-right">
         Last refreshed: {getSecondsSinceRefresh()} seconds ago | Auto-refresh in: {countdown}s
       </div>
