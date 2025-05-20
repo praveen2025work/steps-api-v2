@@ -7,12 +7,8 @@ export default function UserHierarchyPage() {
   const [activeTab, setActiveTab] = useState('manage')
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="User Hierarchy Management">
       <div className="container mx-auto py-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">User Hierarchy Management</h1>
-        </div>
-
         <Tabs defaultValue="manage" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="manage">Manage Access</TabsTrigger>

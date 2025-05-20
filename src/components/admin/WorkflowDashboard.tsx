@@ -52,8 +52,6 @@ const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'app
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Workflow Management System</h1>
-      
       <Tabs defaultValue="applications" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-6">
           <TabsTrigger value="applications">Applications</TabsTrigger>

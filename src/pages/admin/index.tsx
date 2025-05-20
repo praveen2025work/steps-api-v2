@@ -10,8 +10,21 @@ const AdminPage = () => {
   
   // If there's a tab query parameter, show the WorkflowDashboard with that tab
   // Otherwise, show the AdminDashboard
+  const getTitle = () => {
+    if (!tab) return "Admin Dashboard";
+    
+    switch (tab) {
+      case 'applications': return "Application Management";
+      case 'roles': return "Role Management";
+      case 'holidays': return "Holiday Calendar Management";
+      case 'runcalendar': return "Run Calendar Management";
+      case 'hierarchy': return "Workflow Management System";
+      default: return "Admin Dashboard";
+    }
+  };
+
   return (
-    <DashboardLayout title="Admin Dashboard">
+    <DashboardLayout title={getTitle()}>
       {tab ? (
         <WorkflowDashboard defaultTab={tab as string} />
       ) : (
