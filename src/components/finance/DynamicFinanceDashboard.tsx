@@ -160,12 +160,13 @@ const DynamicFinanceDashboard: React.FC = () => {
   // Layout controls component
   const LayoutControls = () => {
     return (
-      <div className="flex items-center gap-2 bg-card rounded-lg shadow-sm p-1">
+      <div className="flex items-center gap-1 bg-card rounded-lg shadow-sm p-1">
         <Button
           variant={columns === 2 ? "default" : "ghost"}
           size="sm"
           onClick={() => setColumns(2)}
           title="2 columns"
+          className="px-2"
         >
           <div className="flex gap-0.5">
             <div className="w-2 h-4 bg-current opacity-70 rounded-sm"></div>
@@ -177,6 +178,7 @@ const DynamicFinanceDashboard: React.FC = () => {
           size="sm"
           onClick={() => setColumns(3)}
           title="3 columns"
+          className="px-2"
         >
           <div className="flex gap-0.5">
             <div className="w-1.5 h-4 bg-current opacity-70 rounded-sm"></div>
@@ -189,6 +191,7 @@ const DynamicFinanceDashboard: React.FC = () => {
           size="sm"
           onClick={() => setColumns(4)}
           title="4 columns"
+          className="px-2"
         >
           <div className="flex gap-0.5">
             <div className="w-1 h-4 bg-current opacity-70 rounded-sm"></div>
@@ -202,6 +205,7 @@ const DynamicFinanceDashboard: React.FC = () => {
           size="sm"
           onClick={() => setColumns(5)}
           title="5 columns"
+          className="px-2"
         >
           <div className="flex gap-0.5">
             <div className="w-1 h-4 bg-current opacity-70 rounded-sm"></div>
@@ -218,7 +222,7 @@ const DynamicFinanceDashboard: React.FC = () => {
   // View mode controls component
   const ViewModeControls = () => {
     return (
-      <div className="flex items-center gap-2 bg-card rounded-lg shadow-sm p-1">
+      <div className="flex items-center gap-1 bg-card rounded-lg shadow-sm p-1">
         <Button
           variant={viewMode === 'tile' ? "default" : "ghost"}
           size="sm"
@@ -228,9 +232,9 @@ const DynamicFinanceDashboard: React.FC = () => {
             setSplitTile(null);
           }}
           title="Tile View"
+          className="px-2"
         >
-          <LayoutGrid className="h-4 w-4 mr-1" />
-          <span className="hidden sm:inline">Tiles</span>
+          <LayoutGrid className="h-4 w-4" />
         </Button>
         <Button
           variant={viewMode === 'split' ? "default" : "ghost"}
@@ -242,9 +246,9 @@ const DynamicFinanceDashboard: React.FC = () => {
             }
           }}
           title="Split View"
+          className="px-2"
         >
-          <SplitSquareVertical className="h-4 w-4 mr-1" />
-          <span className="hidden sm:inline">Split</span>
+          <SplitSquareVertical className="h-4 w-4" />
         </Button>
         <Button
           variant={viewMode === 'full' ? "default" : "ghost"}
@@ -256,9 +260,9 @@ const DynamicFinanceDashboard: React.FC = () => {
             }
           }}
           title="Full View"
+          className="px-2"
         >
-          <Maximize2 className="h-4 w-4 mr-1" />
-          <span className="hidden sm:inline">Full</span>
+          <Maximize2 className="h-4 w-4" />
         </Button>
       </div>
     );
@@ -268,38 +272,14 @@ const DynamicFinanceDashboard: React.FC = () => {
     <>
       <div className="flex flex-col space-y-6">
         
-        {/* Dashboard Header with better aligned controls */}
-        <div className="bg-card rounded-lg p-4 shadow-sm">
-          <div className="flex flex-col space-y-4">
-            {/* Top row - Title and workflow info */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-              <h2 className="text-lg font-semibold">Daily Named PNL</h2>
-              {navigationSource !== 'direct' && (
-                <div className="flex items-center mt-2 sm:mt-0">
-                  <h3 className="text-md font-medium">eRates</h3>
-                  <Button variant="ghost" size="sm" className="ml-2" onClick={handleBack}>
-                    {navigationSource === 'dashboard' ? (
-                      <>
-                        <Home className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Return to Dashboard</span>
-                        <span className="sm:hidden">Dashboard</span>
-                      </>
-                    ) : (
-                      <>
-                        <ArrowLeft className="h-4 w-4 mr-1" />
-                        <span>Back</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
-            
-            {/* Middle row - Application & Workflow Selection (if direct navigation) */}
+        {/* Dashboard Header with optimized controls */}
+        <div className="bg-card rounded-lg p-3 shadow-sm">
+          <div className="flex flex-col space-y-2">
+            {/* Application & Workflow Selection (if direct navigation) */}
             {navigationSource === 'direct' && (
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 <Select value={selectedApp} onValueChange={setSelectedApp}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select Application" />
                   </SelectTrigger>
                   <SelectContent>
@@ -314,7 +294,7 @@ const DynamicFinanceDashboard: React.FC = () => {
                   onValueChange={setSelectedWorkflow}
                   disabled={availableWorkflows.length === 0}
                 >
-                  <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select Workflow" />
                   </SelectTrigger>
                   <SelectContent>
@@ -326,31 +306,40 @@ const DynamicFinanceDashboard: React.FC = () => {
               </div>
             )}
             
-            {/* Bottom row - View Controls in a single line */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-border">
-              <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2">
-                <div className="flex items-center">
-                  <span className="text-sm font-medium mr-2">View:</span>
+            {/* Workflow info if coming from dashboard */}
+            {navigationSource !== 'direct' && (
+              <div className="flex items-center">
+                <h3 className="text-md font-medium">eRates</h3>
+              </div>
+            )}
+            
+            {/* Controls in a single line */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <ViewModeControls />
-                </div>
-                
-                <div className="flex items-center">
-                  <span className="text-sm font-medium mr-2">Layout:</span>
                   <LayoutControls />
                 </div>
               </div>
               
-              <div className="flex items-center gap-2 justify-between sm:justify-end">
-                <Button variant="outline" size="sm" onClick={handleRefresh} className="flex-1 sm:flex-none">
-                  <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-                  Refresh
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" onClick={handleRefresh} className="px-2 h-8" title="Refresh">
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 </Button>
-                <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
+                <Button variant="outline" size="sm" asChild className="px-2 h-8" title="Configure Tiles">
                   <Link href="/finance/configure">
-                    <Settings className="h-4 w-4 mr-1" />
-                    Configure Tiles
+                    <Settings className="h-4 w-4" />
                   </Link>
                 </Button>
+                {navigationSource !== 'direct' && (
+                  <Button variant="ghost" size="sm" onClick={handleBack} className="px-2 h-8" title={navigationSource === 'dashboard' ? "Return to Dashboard" : "Back"}>
+                    {navigationSource === 'dashboard' ? (
+                      <Home className="h-4 w-4" />
+                    ) : (
+                      <ArrowLeft className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
