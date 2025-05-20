@@ -4,7 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, TrendingUp, Shield, Command, ArrowRight, Wand2, PlayCircle, Library } from 'lucide-react';
+import { Sparkles, TrendingUp, Shield, Command, ArrowRight, Wand2, PlayCircle, Library, Code, Workflow, Boxes } from 'lucide-react';
 
 const ExperimentalFeaturesPage = () => {
   const router = useRouter();
@@ -58,6 +58,27 @@ const ExperimentalFeaturesPage = () => {
       icon: <Library className="h-6 w-6" />,
       href: '/experimental/template-library',
       color: 'bg-teal-500/10 text-teal-500'
+    },
+    {
+      title: 'Drools Rules Engine',
+      description: 'Create and manage business rules using the Drools Rules Engine',
+      icon: <Code className="h-6 w-6" />,
+      href: '/experimental/drools-rules',
+      color: 'bg-red-500/10 text-red-500'
+    },
+    {
+      title: 'PEGA BPM Connector',
+      description: 'Connect and integrate with PEGA Business Process Management systems',
+      icon: <Workflow className="h-6 w-6" />,
+      href: '/experimental/pega-connector',
+      color: 'bg-cyan-500/10 text-cyan-500'
+    },
+    {
+      title: 'Appian Process Integration',
+      description: 'Connect and integrate with Appian Business Process Management platform',
+      icon: <Boxes className="h-6 w-6" />,
+      href: '/experimental/appian-integration',
+      color: 'bg-orange-500/10 text-orange-500'
     }
   ];
 
@@ -107,6 +128,12 @@ const ExperimentalFeaturesPage = () => {
                     'Test and analyze workflow execution in a simulated environment to identify bottlenecks, optimize resource allocation, and ensure SLA compliance before deployment.'}
                   {feature.title === 'Workflow Template Library' && 
                     'Build a library of standardized workflow templates with pre-configured stages, parameters, and automation rules to ensure consistency and accelerate workflow creation.'}
+                  {feature.title === 'Drools Rules Engine' && 
+                    'Define and manage complex business rules using the powerful Drools Rules Engine. Create, test, and deploy rules that automatically execute based on your business conditions.'}
+                  {feature.title === 'PEGA BPM Connector' && 
+                    'Seamlessly integrate with PEGA BPM systems to orchestrate cross-platform processes. Connect to PEGA environments, manage processes, and monitor case execution.'}
+                  {feature.title === 'Appian Process Integration' && 
+                    'Integrate with Appian to leverage its powerful process automation capabilities. Configure environments, manage processes, and synchronize data between systems.'}
                 </p>
               </CardContent>
               <CardFooter>
