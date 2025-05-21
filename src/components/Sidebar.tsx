@@ -71,6 +71,12 @@ const navSections: NavSection[] = [
     title: "Experimental",
     items: [
       {
+        title: 'Experimental Dashboard',
+        href: '/experimental',
+        icon: <Sparkles className="h-5 w-5" />,
+        pattern: /^\/experimental$/
+      },
+      {
         title: 'AI Assistant',
         href: '/experimental/ai-assistant',
         icon: <Sparkles className="h-5 w-5" />,
