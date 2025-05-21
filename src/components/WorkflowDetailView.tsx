@@ -747,7 +747,51 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       case 'stages':
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
-        return <DocumentsList documents={stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments} />;
+        // Add a custom handler for document preview
+        const handleDocumentPreview = (document: any) => {
+          // Set the document as the selected file and show the preview
+          setSelectedFile(document.name);
+          setShowFilePreview(true);
+          
+          // Create a file item for the preview
+          const fileItem = {
+            id: document.id,
+            name: document.name,
+            type: document.type,
+            size: document.size,
+            category: 'preview'
+          };
+          
+          // Set the current files to include this document
+          setCurrentSubStageFiles([fileItem]);
+        };
+        
+        return (
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-medium">Files</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-xs"
+                onClick={() => {
+                  // If there are documents, preview the first one
+                  const docs = stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments;
+                  if (docs.length > 0) {
+                    handleDocumentPreview(docs[0]);
+                  }
+                }}
+              >
+                <Eye className="h-3.5 w-3.5 mr-1" />
+                Preview
+              </Button>
+            </div>
+            <DocumentsList 
+              documents={stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments} 
+              onPreview={handleDocumentPreview}
+            />
+          </div>
+        );
       case 'parameters':
         return <ProcessParameters processId={currentProcessId} processName={currentProcessName} />;
       case 'dependencies':
@@ -1191,8 +1235,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         {/* File Preview Panel - Only shown when a file is selected */}
         {showFilePreview && (
           <div className="flex-1 flex flex-col relative">
-            {/* Toggle buttons for workflow detail and sub-stage cards */}
-            <div className="absolute -left-4 top-2 flex flex-col gap-2 z-10">
+            {/* Toggle buttons for workflow detail and sub-stage cards - moved to top right */}
+            <div className="absolute right-2 top-2 flex gap-2 z-10">
               {/* Sub-stage cards toggle */}
               <Button
                 variant="outline"
@@ -1303,8 +1347,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             <div className="p-1">
               {/* Simplified menu - only show Config and Overview by default */}
               <div className="flex flex-wrap gap-1 items-center">
-                {/* Only show navigation options when not in preview mode */}
-                {!showFilePreview && (
+                {/* Show navigation options when not in preview mode or when workflow detail is explicitly shown */}
+                {(!showFilePreview || showWorkflowDetail) && (
                   <>
                     {/* Stage-level navigation */}
                     <Button 
@@ -1366,7 +1410,27 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
                           size="sm"
                           className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('documents')}
+                          onClick={() => {
+                            setRightPanelContent('documents');
+                            // If there are files available for the selected sub-stage, show the preview
+                            const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+                              .find(s => s.id === selectedSubStage);
+                            
+                            if (subStage && subStage.files && subStage.files.length > 0) {
+                              // Set current sub-stage files
+                              setCurrentSubStageFiles(subStage.files.map((file, index) => ({
+                                id: `file-${subStage.id}-${index}`,
+                                name: file.name,
+                                type: file.name.split('.').pop() || '',
+                                size: file.size,
+                                category: file.type
+                              })));
+                              
+                              // Set the first file as selected and show the preview
+                              setSelectedFile(subStage.files[0].name);
+                              setShowFilePreview(true);
+                            }
+                          }}
                         >
                           <FileText className="h-3 w-3 mr-1" />
                           Files
@@ -1382,23 +1446,21 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           Dependencies
                         </Button>
                         
-                        <div className="flex items-center ml-auto">
-                          <Button 
-                            variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
-                            size="sm"
-                            className="h-6 text-xs"
-                            onClick={() => setRightPanelContent('queries')}
-                          >
-                            <MessageSquare className="h-3 w-3 mr-1" />
-                            Queries
-                          </Button>
-                        </div>
+                        <Button 
+                          variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('queries')}
+                        >
+                          <MessageSquare className="h-3 w-3 mr-1" />
+                          Queries
+                        </Button>
                       </>
                     )}
                   </>
                 )}
-                {/* When in preview mode, show a message */}
-                {showFilePreview && (
+                {/* When in preview mode and workflow detail is hidden, show a message */}
+                {showFilePreview && !showWorkflowDetail && (
                   <div className="w-full text-center text-xs text-muted-foreground py-1">
                     Navigation hidden in preview mode
                   </div>
