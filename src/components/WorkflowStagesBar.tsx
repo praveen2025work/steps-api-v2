@@ -21,22 +21,22 @@ const WorkflowStagesBar: React.FC<WorkflowStagesBarProps> = ({
   onStageClick 
 }) => {
   return (
-    <div className="flex overflow-x-auto pb-2 mb-6 gap-1">
+    <div className="flex overflow-x-auto pb-1 mb-4 gap-1">
       {stages.map((stage) => (
         <button
           key={stage.id}
           onClick={() => onStageClick(stage.id)}
           className={cn(
-            "px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors border relative",
+            "px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors border relative",
             activeStage === stage.id
               ? "bg-primary text-primary-foreground border-primary"
               : "bg-muted hover:bg-muted/80 text-foreground border-muted-foreground/20"
           )}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <span>{stage.name}</span>
             {typeof stage.completionPercentage === 'number' && (
-              <span className="text-xs opacity-80">
+              <span className="text-xs opacity-80 ml-1">
                 {stage.completionPercentage}%
               </span>
             )}

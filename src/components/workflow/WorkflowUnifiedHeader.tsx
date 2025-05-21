@@ -14,7 +14,7 @@ import {
   Unlock,
   Lock,
   ChevronRight,
-  ArrowLeft
+  ArrowRight
 } from 'lucide-react';
 import { HierarchyNode } from '../WorkflowHierarchyBreadcrumb';
 import { showSuccessToast, showInfoToast, showWarningToast } from '@/lib/toast';
@@ -71,40 +71,10 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
     showInfoToast("Reopen Toll Gate functionality would be implemented here");
   };
 
-  // Navigate back to the parent level (application or group)
-  const handleBackToParent = () => {
-    // If we have a hierarchy path, navigate to the parent level
-    if (hierarchyPath && hierarchyPath.length > 1) {
-      // Get the parent level (second to last item in the hierarchy)
-      const parentIndex = hierarchyPath.length > 2 ? 1 : 0;
-      const parentLevel = hierarchyPath[parentIndex];
-      
-      // Navigate to the appropriate page based on the level
-      if (parentLevel.level === 'app') {
-        router.push(`/application/${parentLevel.id}`);
-      } else {
-        // For other levels, navigate to the application page with the appropriate level selected
-        router.push(`/application/${hierarchyPath[0].id}`);
-      }
-    } else {
-      // If no hierarchy path, just go back to the dashboard
-      router.push('/');
-    }
-  };
-
   return (
     <Card className="mb-4">
       <CardHeader className="pb-2 flex flex-row justify-between items-center">
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7 mr-1"
-            onClick={handleBackToParent}
-            title="Back to parent level"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </Button>
           <h3 className="text-lg font-medium">{workflowTitle}</h3>
           <Badge variant="outline" className="text-xs">
             {status}
@@ -169,8 +139,8 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
       
       <CardContent className="pb-3">
         <div className="flex flex-col space-y-3">
-          {/* Hierarchy Path - Made clickable */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {/* Hierarchy Path with Progress - Made clickable */}
+          <div className="flex items-center gap-1 text-sm">
             {hierarchyPath.map((node, index) => (
               <React.Fragment key={node.id}>
                 <Button 
@@ -191,80 +161,75 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                   }}
                 >
                   <span>{node.name}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {node.progress}%
-                  </Badge>
+                  <span className="text-xs text-muted-foreground">{node.progress}%</span>
                 </Button>
                 {index < hierarchyPath.length - 1 && (
-                  <ChevronRight className="h-3 w-3" />
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
                 )}
               </React.Fragment>
             ))}
+            <Badge variant="outline" className="ml-2 text-xs">
+              Active
+            </Badge>
           </div>
           
-          {/* Progress Section */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium">
-                Overall Progress
-              </span>
-              <span className="text-sm font-medium">
-                {progress}%
-              </span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-          
-          {/* Task Counts */}
-          <div className="grid grid-cols-4 gap-1">
-            <div className="p-1 bg-green-500/10 rounded-md">
-              <p className="text-xs text-muted-foreground">Completed</p>
-              <p className="text-sm font-semibold text-green-500">{defaultTaskCounts.completed}</p>
+          <div className="flex flex-wrap gap-3">
+            {/* Left side: Progress and Task Counts in a more compact layout */}
+            <div className="flex-1 min-w-[280px]">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs text-muted-foreground">Overall Progress</span>
+                <span className="text-xs font-medium">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-1.5 mb-2" />
+              
+              <div className="flex gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span>Completed: {defaultTaskCounts.completed}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span>Processing: {defaultTaskCounts.processing}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                  <span>Pending: {defaultTaskCounts.pending}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                  <span>Failed: {defaultTaskCounts.failed + defaultTaskCounts.rejected}</span>
+                </div>
+              </div>
             </div>
             
-            <div className="p-1 bg-blue-500/10 rounded-md">
-              <p className="text-xs text-muted-foreground">Processing</p>
-              <p className="text-sm font-semibold text-blue-500">{defaultTaskCounts.processing}</p>
-            </div>
-            
-            <div className="p-1 bg-yellow-500/10 rounded-md">
-              <p className="text-xs text-muted-foreground">Pending</p>
-              <p className="text-sm font-semibold text-yellow-500">{defaultTaskCounts.pending}</p>
-            </div>
-            
-            <div className="p-1 bg-red-500/10 rounded-md">
-              <p className="text-xs text-muted-foreground">Failed</p>
-              <p className="text-sm font-semibold text-red-500">{defaultTaskCounts.failed + defaultTaskCounts.rejected}</p>
-            </div>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex gap-1">
-            <Link 
-              href={`/finance?workflowId=${workflowId}&workflowName=${workflowTitle}`}
-              className="flex-1"
-            >
-              <Button 
-                variant="outline" 
-                className="w-full h-8 text-xs"
+            {/* Right side: Action Buttons */}
+            <div className="flex gap-1">
+              <Link 
+                href={`/finance?workflowId=${workflowId}&workflowName=${workflowTitle}`}
               >
-                <BarChart4 className="h-3.5 w-3.5 mr-1" />
-                Finance Dashboard
-              </Button>
-            </Link>
-            
-            <Link 
-              href="/support"
-              className="flex-1"
-            >
-              <Button 
-                variant="outline" 
-                className="w-full h-8 text-xs"
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-7 text-xs"
+                >
+                  <BarChart4 className="h-3.5 w-3.5 mr-1" />
+                  Finance
+                </Button>
+              </Link>
+              
+              <Link 
+                href="/support"
               >
-                <AlertCircle className="h-3.5 w-3.5 mr-1" />
-                Support Dashboard
-              </Button>
-            </Link>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-7 text-xs"
+                >
+                  <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                  Support
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </CardContent>

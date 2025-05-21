@@ -836,191 +836,181 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               <Collapsible key={subStage.id}>
                 <div 
                   className={`${
-                    subStage.status === 'completed' ? 'border-l-[6px] border-l-green-500' :
-                    subStage.status === 'in-progress' ? 'border-l-[6px] border-l-blue-500' :
-                    subStage.status === 'failed' ? 'border-l-[6px] border-l-red-500' :
-                    'border-l-[6px] border-l-gray-300'
-                  } bg-background p-4`}
+                    subStage.status === 'completed' ? 'border-l-[4px] border-l-green-500' :
+                    subStage.status === 'in-progress' ? 'border-l-[4px] border-l-blue-500' :
+                    subStage.status === 'failed' ? 'border-l-[4px] border-l-red-500' :
+                    'border-l-[4px] border-l-gray-300'
+                  } bg-background p-2 rounded-sm mb-2`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm text-muted-foreground font-mono">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-xs text-muted-foreground font-mono">
                           {String(index + 1).padStart(2, '0')}
                         </span>
-                        <h3 className="font-medium text-lg">{subStage.name}</h3>
-                        <div className="flex items-center gap-1">
-                          {subStage.status === 'completed' ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          ) : subStage.status === 'in-progress' ? (
-                            <CircleDot className="h-4 w-4 text-blue-500" />
-                          ) : subStage.status === 'failed' ? (
-                            <XCircle className="h-4 w-4 text-red-500" />
-                          ) : (
-                            <Clock className="h-4 w-4 text-gray-500" />
-                          )}
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          className="p-0 h-auto font-mono"
-                          onClick={() => handleProcessIdClick(subStage.processId)}
-                        >
-                          {subStage.processId}
-                        </Button>
+                        <h3 className="font-medium text-sm">{subStage.name}</h3>
                         
-                        <div className="flex items-center gap-1">
-                          {subStage.type === 'auto' ? (
-                            <Bot className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-1 ml-1">
+                          {subStage.status === 'completed' ? (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          ) : subStage.status === 'in-progress' ? (
+                            <CircleDot className="h-3 w-3 text-blue-500" />
+                          ) : subStage.status === 'failed' ? (
+                            <XCircle className="h-3 w-3 text-red-500" />
                           ) : (
-                            <UserCircle className="h-4 w-4 text-muted-foreground" />
+                            <Clock className="h-3 w-3 text-gray-500" />
                           )}
                           
-                          {/* All process-level actions moved next to step type */}
-                          <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            className="p-0 h-auto font-mono text-xs"
+                            onClick={() => handleProcessIdClick(subStage.processId)}
+                          >
+                            {subStage.processId}
+                          </Button>
+                          
+                          {subStage.type === 'auto' ? (
+                            <Bot className="h-3 w-3 text-muted-foreground" />
+                          ) : (
+                            <UserCircle className="h-3 w-3 text-muted-foreground" />
+                          )}
+                          
+                          {/* Process-level actions */}
+                          <div className="flex items-center">
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-6 w-6 p-0"
+                              className="h-5 w-5 p-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 showSuccessToast(`Started ${subStage.name}`);
                               }}
                               title="Start"
                             >
-                              <PlayCircle className="h-3.5 w-3.5" />
+                              <PlayCircle className="h-3 w-3" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-6 w-6 p-0"
+                              className="h-5 w-5 p-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 showInfoToast(`Refreshing ${subStage.name}`);
                               }}
                               title="Refresh"
                             >
-                              <RefreshCw className="h-3.5 w-3.5" />
+                              <RefreshCw className="h-3 w-3" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-6 w-6 p-0"
+                              className="h-5 w-5 p-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 showSuccessToast(`Completed ${subStage.name}`);
                               }}
                               title="Complete"
                             >
-                              <ArrowRightCircle className="h-3.5 w-3.5" />
+                              <ArrowRightCircle className="h-3 w-3" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-6 w-6 p-0"
+                              className="h-5 w-5 p-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 showWarningToast(`Skipped ${subStage.name}`);
                               }}
                               title="Skip"
                             >
-                              <SkipForward className="h-3.5 w-3.5" />
+                              <SkipForward className="h-3 w-3" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-6 w-6 p-0"
+                              className="h-5 w-5 p-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 showInfoToast(`Notification sent for ${subStage.name}`);
                               }}
                               title="Send Notification"
                             >
-                              <Mail className="h-3.5 w-3.5" />
+                              <Mail className="h-3 w-3" />
                             </Button>
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-2 ml-auto">
-                          <span className="text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1 ml-auto">
+                          <span className="text-xs text-muted-foreground">
                             {subStage.progress}%
                           </span>
                           <Progress 
                             value={subStage.progress} 
-                            className="w-16 h-2"
+                            className="w-12 h-1.5"
                             {...(subStage.status === 'failed' && { 
-                              className: "w-16 h-2 bg-destructive" 
+                              className: "w-12 h-1.5 bg-destructive" 
                             })}
                           />
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
-                          <span>Expected Start: {subStage.timing.start}</span>
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>Start: {subStage.timing.start}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
                           <span>Duration: {subStage.timing.duration}</span>
                         </div>
                         {subStage.meta.updatedBy && (
-                          <div className="flex items-center gap-2">
-                            <UserCircle className="h-4 w-4" />
-                            <span>Updated by: {subStage.meta.updatedBy} {subStage.meta.updatedOn && `(${subStage.meta.updatedOn})`}</span>
+                          <div className="flex items-center gap-1">
+                            <UserCircle className="h-3 w-3" />
+                            <span>By: {subStage.meta.updatedBy}</span>
+                          </div>
+                        )}
+                        
+                        {/* Dependencies - Compact */}
+                        {subStage.dependencies && subStage.dependencies.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Network className="h-3 w-3" />
+                            <span>Deps: {subStage.dependencies.map(d => d.name).join(', ')}</span>
                           </div>
                         )}
                       </div>
 
-                      {/* Dependencies */}
-                      {subStage.dependencies && subStage.dependencies.length > 0 && (
-                        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                          <Network className="h-4 w-4" />
-                          <span>Dependencies:</span>
-                          {subStage.dependencies.map((dep, depIndex) => (
-                            <span key={dep.id} className="flex items-center gap-1">
-                              {dep.name}
-                              {depIndex < subStage.dependencies.length - 1 && ", "}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Messages */}
+                      {/* Messages - Compact */}
                       {subStage.messages && subStage.messages.length > 0 && (
-                        <div className="mt-2 text-sm">
-                          {subStage.messages.map((message, msgIndex) => (
-                            <p key={msgIndex} className="text-muted-foreground">{message}</p>
-                          ))}
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {subStage.messages[0]}
                         </div>
                       )}
-
-                      {/* Action buttons moved to process level */}
                     </div>
                   </div>
 
-                  <CollapsibleTrigger className="w-full text-left mt-4">
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      <ChevronDown className="h-4 w-4" />
-                      Show Details
+                  <CollapsibleTrigger className="w-full text-left mt-1">
+                    <Button variant="ghost" size="sm" className="h-6 text-xs gap-1">
+                      <ChevronDown className="h-3 w-3" />
+                      Details
                     </Button>
                   </CollapsibleTrigger>
 
-                  <CollapsibleContent className="mt-4 space-y-4">
-                    {/* Files Section */}
+                  <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-muted">
+                    {/* Files Section - Compact */}
                     {subStage.files && subStage.files.length > 0 && (
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         {subStage.files.map((file, fileIndex) => (
-                          <div key={fileIndex} className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4" />
+                          <div key={fileIndex} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <FileText className="h-3 w-3" />
                               <span>{file.name}</span>
                               <span className="text-muted-foreground">({file.size})</span>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-1">
                               {file.type !== 'upload' && (
                                 <>
-                                  <Button variant="ghost" size="sm">Preview</Button>
-                                  <Button variant="ghost" size="sm">Download</Button>
+                                  <Button variant="ghost" size="sm" className="h-6 text-xs">Preview</Button>
+                                  <Button variant="ghost" size="sm" className="h-6 text-xs">Download</Button>
                                 </>
                               )}
                             </div>
@@ -1029,34 +1019,28 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                       </div>
                     )}
 
-                    {/* Performance Metrics */}
-                    <div className="pt-4 border-t">
-                      <h4 className="font-medium mb-3">Performance Metrics</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <div className="text-sm text-muted-foreground">Average Duration</div>
-                          <div className="font-medium">{subStage.timing.avgDuration}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-muted-foreground">Average Start Time</div>
-                          <div className="font-medium">{subStage.timing.avgStart}</div>
-                        </div>
+                    {/* Performance Metrics - Compact */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <div className="text-muted-foreground">Avg Duration</div>
+                        <div>{subStage.timing.avgDuration}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Avg Start</div>
+                        <div>{subStage.timing.avgStart}</div>
                       </div>
                     </div>
 
-                    {/* Support Options */}
-                    <div className="pt-4 border-t">
-                      <h4 className="font-medium mb-3">Support Options</h4>
-                      <div className="flex gap-2">
-                        <CreateSupportIssue 
-                          processId={subStage.processId}
-                          processName={subStage.name}
-                          application={hierarchyPath[0]?.name || ""}
-                          buttonVariant="outline"
-                          buttonSize="sm"
-                          buttonClassName=""
-                        />
-                      </div>
+                    {/* Support Options - Compact */}
+                    <div>
+                      <CreateSupportIssue 
+                        processId={subStage.processId}
+                        processName={subStage.name}
+                        application={hierarchyPath[0]?.name || ""}
+                        buttonVariant="outline"
+                        buttonSize="sm"
+                        buttonClassName="h-6 text-xs"
+                      />
                     </div>
                   </CollapsibleContent>
                 </div>
@@ -1066,197 +1050,241 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         </div>
 
         {/* Right Panel - 40% width */}
-        <div className={`bg-background border-l transition-all duration-200 ${rightPanelContent ? 'flex-[0.4]' : 'w-[240px]'}`}>
+        <div className={`bg-background border-l transition-all duration-200 ${rightPanelContent ? 'flex-[0.4]' : 'w-[200px]'}`}>
           {/* Sticky Header and Menu */}
           <div className="sticky top-0 bg-background border-b z-10">
             {rightPanelContent ? (
-              // Horizontal Menu when expanded
-              <div className="p-2">
-                <div className="flex flex-wrap gap-1">
-                  <Button 
-                    variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('queries')}
-                  >
-                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
-                    Queries
-                  </Button>
-                  <Button 
-                    variant={rightPanelContent === 'activity' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('activity')}
-                  >
-                    <Activity className="h-3.5 w-3.5 mr-1" />
-                    Activity
-                  </Button>
-                  <Button 
-                    variant={rightPanelContent === 'roles' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('roles')}
-                  >
-                    <Users className="h-3.5 w-3.5 mr-1" />
-                    Roles
-                  </Button>
-                  <Button 
-                    variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('app-parameters')}
-                  >
-                    <Settings className="h-3.5 w-3.5 mr-1" />
-                    App Parameters
-                  </Button>
-                  <Button 
-                    variant={rightPanelContent === 'global-parameters' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('global-parameters')}
-                  >
-                    <Settings className="h-3.5 w-3.5 mr-1" />
-                    Global Parameters
-                  </Button>
-                  <Button 
-                    variant={rightPanelContent === 'dependencies' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('dependencies')}
-                  >
-                    <Network className="h-3.5 w-3.5 mr-1" />
-                    Dependency
-                  </Button>
-                  <Button 
-                    variant={rightPanelContent === 'stage-overview' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('stage-overview')}
-                  >
-                    <Layers className="h-3.5 w-3.5 mr-1" />
-                    Stage Overview
-                  </Button>
-                  <Button 
-                    variant={rightPanelContent === 'process-overview' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('process-overview')}
-                  >
-                    <FileText className="h-3.5 w-3.5 mr-1" />
-                    Process Overview
-                  </Button>
-                  <Button 
-                    variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('documents')}
-                  >
-                    <FileText className="h-3.5 w-3.5 mr-1" />
-                    Documents
-                  </Button>
-                  <Button 
-                    variant={rightPanelContent === 'parameters' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setRightPanelContent('parameters')}
-                  >
-                    <Settings className="h-3.5 w-3.5 mr-1" />
-                    Parameters
-                  </Button>
-                </div>
+              // Horizontal Menu when expanded - Tabs style for better organization
+              <div className="p-1">
+                <Tabs defaultValue="overview" className="w-full">
+                  <TabsList className="w-full h-auto flex flex-wrap justify-start gap-1 bg-transparent p-0">
+                    <TabsTrigger 
+                      value="overview" 
+                      className={`h-6 px-2 text-xs ${
+                        ['stage-overview', 'process-overview'].includes(rightPanelContent) ? 'bg-secondary' : ''
+                      }`}
+                      onClick={() => setRightPanelContent('stage-overview')}
+                    >
+                      <Layers className="h-3 w-3 mr-1" />
+                      Overview
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="data" 
+                      className={`h-6 px-2 text-xs ${
+                        ['documents', 'parameters', 'dependencies'].includes(rightPanelContent) ? 'bg-secondary' : ''
+                      }`}
+                      onClick={() => setRightPanelContent('documents')}
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Data
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="config" 
+                      className={`h-6 px-2 text-xs ${
+                        ['app-parameters', 'global-parameters', 'parameters'].includes(rightPanelContent) ? 'bg-secondary' : ''
+                      }`}
+                      onClick={() => setRightPanelContent('parameters')}
+                    >
+                      <Settings className="h-3 w-3 mr-1" />
+                      Config
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="people" 
+                      className={`h-6 px-2 text-xs ${
+                        ['roles', 'activity', 'queries'].includes(rightPanelContent) ? 'bg-secondary' : ''
+                      }`}
+                      onClick={() => setRightPanelContent('activity')}
+                    >
+                      <Users className="h-3 w-3 mr-1" />
+                      People
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  {/* Second level menu based on selected tab */}
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {['stage-overview', 'process-overview'].includes(rightPanelContent) && (
+                      <>
+                        <Button 
+                          variant={rightPanelContent === 'stage-overview' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('stage-overview')}
+                        >
+                          Stage
+                        </Button>
+                        <Button 
+                          variant={rightPanelContent === 'process-overview' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('process-overview')}
+                        >
+                          Process
+                        </Button>
+                      </>
+                    )}
+                    
+                    {['documents', 'parameters', 'dependencies'].includes(rightPanelContent) && (
+                      <>
+                        <Button 
+                          variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('documents')}
+                        >
+                          Files
+                        </Button>
+                        <Button 
+                          variant={rightPanelContent === 'dependencies' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('dependencies')}
+                        >
+                          Dependencies
+                        </Button>
+                      </>
+                    )}
+                    
+                    {['app-parameters', 'global-parameters', 'parameters'].includes(rightPanelContent) && (
+                      <>
+                        <Button 
+                          variant={rightPanelContent === 'parameters' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('parameters')}
+                        >
+                          Process
+                        </Button>
+                        <Button 
+                          variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('app-parameters')}
+                        >
+                          App
+                        </Button>
+                        <Button 
+                          variant={rightPanelContent === 'global-parameters' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('global-parameters')}
+                        >
+                          Global
+                        </Button>
+                      </>
+                    )}
+                    
+                    {['roles', 'activity', 'queries'].includes(rightPanelContent) && (
+                      <>
+                        <Button 
+                          variant={rightPanelContent === 'roles' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('roles')}
+                        >
+                          Roles
+                        </Button>
+                        <Button 
+                          variant={rightPanelContent === 'activity' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('activity')}
+                        >
+                          Activity
+                        </Button>
+                        <Button 
+                          variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('queries')}
+                        >
+                          Queries
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </Tabs>
               </div>
             ) : (
-              // Vertical Menu when collapsed
-              <div className="p-2 flex flex-col gap-1">
+              // Vertical Menu when collapsed - More compact with icons only
+              <div className="p-1 flex flex-col gap-1">
+                <div className="text-xs font-medium text-muted-foreground px-2 py-1">Overview</div>
                 <Button 
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('queries')}
+                  className="justify-start h-6 text-xs"
+                  onClick={() => setRightPanelContent('stage-overview')}
                 >
-                  <MessageSquare className="h-3.5 w-3.5 mr-2" />
-                  Queries
+                  <Layers className="h-3 w-3 mr-1" />
+                  Stage
                 </Button>
                 <Button 
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('activity')}
+                  className="justify-start h-6 text-xs"
+                  onClick={() => setRightPanelContent('process-overview')}
                 >
-                  <Activity className="h-3.5 w-3.5 mr-2" />
-                  Activity
+                  <FileText className="h-3 w-3 mr-1" />
+                  Process
+                </Button>
+                
+                <div className="text-xs font-medium text-muted-foreground px-2 py-1 mt-1">Data</div>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start h-6 text-xs"
+                  onClick={() => setRightPanelContent('documents')}
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  Files
                 </Button>
                 <Button 
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start h-7"
+                  className="justify-start h-6 text-xs"
+                  onClick={() => setRightPanelContent('dependencies')}
+                >
+                  <Network className="h-3 w-3 mr-1" />
+                  Dependencies
+                </Button>
+                
+                <div className="text-xs font-medium text-muted-foreground px-2 py-1 mt-1">Config</div>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start h-6 text-xs"
+                  onClick={() => setRightPanelContent('parameters')}
+                >
+                  <Settings className="h-3 w-3 mr-1" />
+                  Process Params
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start h-6 text-xs"
+                  onClick={() => setRightPanelContent('app-parameters')}
+                >
+                  <Settings className="h-3 w-3 mr-1" />
+                  App Params
+                </Button>
+                
+                <div className="text-xs font-medium text-muted-foreground px-2 py-1 mt-1">People</div>
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start h-6 text-xs"
                   onClick={() => setRightPanelContent('roles')}
                 >
-                  <Users className="h-3.5 w-3.5 mr-2" />
+                  <Users className="h-3 w-3 mr-1" />
                   Roles
                 </Button>
                 <Button 
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('app-parameters')}
+                  className="justify-start h-6 text-xs"
+                  onClick={() => setRightPanelContent('activity')}
                 >
-                  <Settings className="h-3.5 w-3.5 mr-2" />
-                  App Parameters
-                </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('global-parameters')}
-                >
-                  <Settings className="h-3.5 w-3.5 mr-2" />
-                  Global Parameters
-                </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('dependencies')}
-                >
-                  <Network className="h-3.5 w-3.5 mr-2" />
-                  Dependency
-                </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('stage-overview')}
-                >
-                  <Layers className="h-3.5 w-3.5 mr-2" />
-                  Stage Overview
-                </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('process-overview')}
-                >
-                  <FileText className="h-3.5 w-3.5 mr-2" />
-                  Process Overview
-                </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('documents')}
-                >
-                  <FileText className="h-3.5 w-3.5 mr-2" />
-                  Documents
-                </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start h-7"
-                  onClick={() => setRightPanelContent('parameters')}
-                >
-                  <Settings className="h-3.5 w-3.5 mr-2" />
-                  Parameters
+                  <Activity className="h-3 w-3 mr-1" />
+                  Activity
                 </Button>
               </div>
             )}
@@ -1264,7 +1292,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
           {/* Panel Content */}
           {rightPanelContent && (
-            <div className="flex-1 overflow-y-auto p-4 bg-background">
+            <div className="flex-1 overflow-y-auto p-3 bg-background">
               {renderRightPanelContent()}
             </div>
           )}
