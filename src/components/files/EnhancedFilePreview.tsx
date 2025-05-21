@@ -38,10 +38,6 @@ interface EnhancedFilePreviewProps {
   processId?: string
   onClose: () => void
   subStageId?: string
-  onToggleWorkflowDetail?: () => void
-  showWorkflowDetail?: boolean
-  onToggleSubStageCards?: () => void
-  showSubStageCards?: boolean
 }
 
 // Mock API call - would be replaced with actual API
@@ -230,11 +226,7 @@ export function EnhancedFilePreview({
   files, 
   processId, 
   onClose, 
-  subStageId,
-  onToggleWorkflowDetail,
-  showWorkflowDetail,
-  onToggleSubStageCards,
-  showSubStageCards
+  subStageId
 }: EnhancedFilePreviewProps) {
   const [selectedFileId, setSelectedFileId] = useState<string | null>(files.length > 0 ? files[0].id : null)
   const [fileDetails, setFileDetails] = useState<FileDetails | null>(null)
@@ -443,59 +435,15 @@ export function EnhancedFilePreview({
       <div className="border-b pb-1.5 mb-2">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-base font-medium">Preview Files</h3>
-          <div className="flex items-center gap-2">
-            {onToggleSubStageCards && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-1.5"
-                onClick={onToggleSubStageCards}
-                title={showSubStageCards ? "Hide process cards" : "Show process cards"}
-              >
-                {showSubStageCards ? (
-                  <>
-                    <PanelLeftClose className="h-3.5 w-3.5 mr-1" />
-                    <span className="hidden sm:inline">Hide Cards</span>
-                  </>
-                ) : (
-                  <>
-                    <PanelLeft className="h-3.5 w-3.5 mr-1" />
-                    <span className="hidden sm:inline">Show Cards</span>
-                  </>
-                )}
-              </Button>
-            )}
-            {onToggleWorkflowDetail && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-1.5"
-                onClick={onToggleWorkflowDetail}
-                title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
-              >
-                {showWorkflowDetail ? (
-                  <>
-                    <PanelLeftClose className="h-3.5 w-3.5 mr-1" />
-                    <span className="hidden sm:inline">Hide Detail</span>
-                  </>
-                ) : (
-                  <>
-                    <PanelLeft className="h-3.5 w-3.5 mr-1" />
-                    <span className="hidden sm:inline">Show Detail</span>
-                  </>
-                )}
-              </Button>
-            )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-6 px-1.5"
-              onClick={onClose}
-            >
-              <X className="h-3.5 w-3.5 mr-1" />
-              Close
-            </Button>
-          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-6 px-1.5"
+            onClick={onClose}
+          >
+            <X className="h-3.5 w-3.5 mr-1" />
+            Close
+          </Button>
         </div>
         <div className="flex flex-wrap gap-2">
           {files.map((file) => (

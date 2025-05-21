@@ -1174,17 +1174,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           <div className="flex-1 flex flex-col relative">
             {/* Toggle buttons for workflow detail and sub-stage cards */}
             <div className="absolute -left-4 top-2 flex flex-col gap-2 z-10">
-              {/* Workflow detail toggle */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0 rounded-full bg-background border shadow-sm"
-                onClick={toggleWorkflowDetail}
-                title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
-              >
-                {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-              </Button>
-              
               {/* Sub-stage cards toggle */}
               <Button
                 variant="outline"
@@ -1194,6 +1183,17 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                 title={showSubStageCards ? "Hide process cards" : "Show process cards"}
               >
                 {showSubStageCards ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </Button>
+              
+              {/* Workflow detail toggle */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full bg-background border shadow-sm"
+                onClick={toggleWorkflowDetail}
+                title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
+              >
+                {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
               </Button>
             </div>
             {/* Display the selected sub-stage card in a horizontal layout above the file preview */}
@@ -1270,10 +1270,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               processId={selectedSubStage || undefined}
               onClose={handleCloseFilePreview}
               subStageId={selectedSubStage || undefined}
-              onToggleWorkflowDetail={toggleWorkflowDetail}
-              showWorkflowDetail={showWorkflowDetail}
-              onToggleSubStageCards={toggleSubStageCards}
-              showSubStageCards={showSubStageCards}
             />
           </div>
         )}
