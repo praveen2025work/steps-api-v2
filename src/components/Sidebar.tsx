@@ -88,12 +88,7 @@ const navSections: NavSection[] = [
         icon: <TrendingUp className="h-5 w-5" />,
         pattern: /^\/experimental\/predictive-analytics/
       },
-      {
-        title: 'Blockchain Audit',
-        href: '/experimental/blockchain-audit',
-        icon: <Shield className="h-5 w-5" />,
-        pattern: /^\/experimental\/blockchain-audit/
-      },
+
       {
         title: 'NLP Commands',
         href: '/experimental/nlp-commands',

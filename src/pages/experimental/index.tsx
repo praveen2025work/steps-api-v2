@@ -24,13 +24,7 @@ const ExperimentalFeaturesPage = () => {
       href: '/experimental/predictive-analytics',
       color: 'bg-green-500/10 text-green-500'
     },
-    {
-      title: 'Blockchain Audit Trail',
-      description: 'Immutable, tamper-proof audit records for all workflow actions',
-      icon: <Shield className="h-6 w-6" />,
-      href: '/experimental/blockchain-audit',
-      color: 'bg-purple-500/10 text-purple-500'
-    },
+
     {
       title: 'Natural Language Commands',
       description: 'Control your workflows using natural language commands',
