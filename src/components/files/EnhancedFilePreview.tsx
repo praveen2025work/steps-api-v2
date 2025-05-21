@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Download, Eye, RefreshCw, Bot, Sparkles, BarChart, FileText } from 'lucide-react'
+import { Download, Eye, RefreshCw, Bot, Sparkles, BarChart, FileText, X } from 'lucide-react'
 import { getFileIcon } from '@/components/DocumentsList'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -442,7 +442,18 @@ export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFileP
     <div className="flex flex-col h-full">
       {/* File List Header */}
       <div className="border-b pb-2 mb-4">
-        <h3 className="text-lg font-medium mb-3">Available Files</h3>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-medium">Available Files</h3>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-7 px-2"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4 mr-1" />
+            Close
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-2">
           {files.map((file) => (
             <Button
@@ -469,8 +480,9 @@ export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFileP
             </div>
           ) : (
             <Tabs defaultValue="preview" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="data">Data Tabs</TabsTrigger>
                 <TabsTrigger value="metadata">Metadata</TabsTrigger>
                 <TabsTrigger value="ai-analysis" className="flex items-center gap-1">
                   <Bot className="h-3 w-3" />
@@ -480,6 +492,133 @@ export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFileP
               
               <TabsContent value="preview" className="py-4">
                 {renderPreviewContent()}
+              </TabsContent>
+              
+              <TabsContent value="data" className="py-4">
+                {fileDetails && (fileDetails.type.toLowerCase() === 'xlsx' || fileDetails.type.toLowerCase() === 'csv') ? (
+                  <Tabs defaultValue="tab1">
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="tab1">Sheet 1</TabsTrigger>
+                      <TabsTrigger value="tab2">Sheet 2</TabsTrigger>
+                      <TabsTrigger value="tab3">Sheet 3</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="tab1">
+                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
+                        <table className="w-full border-collapse text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left p-2 font-medium">Date</th>
+                              <th className="text-left p-2 font-medium">Symbol</th>
+                              <th className="text-left p-2 font-medium">Open</th>
+                              <th className="text-left p-2 font-medium">High</th>
+                              <th className="text-left p-2 font-medium">Low</th>
+                              <th className="text-left p-2 font-medium">Close</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b">
+                              <td className="p-2">2025-05-18</td>
+                              <td className="p-2">AAPL</td>
+                              <td className="p-2">185.23</td>
+                              <td className="p-2">187.45</td>
+                              <td className="p-2">184.90</td>
+                              <td className="p-2">186.75</td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="p-2">2025-05-18</td>
+                              <td className="p-2">MSFT</td>
+                              <td className="p-2">390.12</td>
+                              <td className="p-2">395.67</td>
+                              <td className="p-2">389.45</td>
+                              <td className="p-2">394.20</td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="p-2">2025-05-18</td>
+                              <td className="p-2">GOOGL</td>
+                              <td className="p-2">175.34</td>
+                              <td className="p-2">177.89</td>
+                              <td className="p-2">174.56</td>
+                              <td className="p-2">177.23</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="tab2">
+                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
+                        <table className="w-full border-collapse text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left p-2 font-medium">Region</th>
+                              <th className="text-left p-2 font-medium">Product</th>
+                              <th className="text-left p-2 font-medium">Sales</th>
+                              <th className="text-left p-2 font-medium">Growth</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b">
+                              <td className="p-2">EMEA</td>
+                              <td className="p-2">Product A</td>
+                              <td className="p-2">$1,245,000</td>
+                              <td className="p-2">5.2%</td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="p-2">APAC</td>
+                              <td className="p-2">Product B</td>
+                              <td className="p-2">$879,500</td>
+                              <td className="p-2">3.7%</td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="p-2">AMER</td>
+                              <td className="p-2">Product C</td>
+                              <td className="p-2">$1,567,800</td>
+                              <td className="p-2">7.1%</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="tab3">
+                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
+                        <table className="w-full border-collapse text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left p-2 font-medium">Category</th>
+                              <th className="text-left p-2 font-medium">Budget</th>
+                              <th className="text-left p-2 font-medium">Actual</th>
+                              <th className="text-left p-2 font-medium">Variance</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b">
+                              <td className="p-2">Marketing</td>
+                              <td className="p-2">$500,000</td>
+                              <td className="p-2">$487,500</td>
+                              <td className="p-2">-2.5%</td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="p-2">R&D</td>
+                              <td className="p-2">$1,200,000</td>
+                              <td className="p-2">$1,275,000</td>
+                              <td className="p-2">6.25%</td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="p-2">Operations</td>
+                              <td className="p-2">$750,000</td>
+                              <td className="p-2">$742,300</td>
+                              <td className="p-2">-1.03%</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                ) : (
+                  <div className="bg-muted p-4 rounded-md text-center">
+                    <p>This file type doesn't support multiple data tabs view.</p>
+                    <p className="text-sm text-muted-foreground mt-2">Only Excel (.xlsx) and CSV files can display multiple data tabs.</p>
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="metadata" className="py-4">
@@ -504,12 +643,14 @@ export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFileP
           Back to Process View
         </Button>
         
-        {selectedFileId && (
-          <Button onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-2" />
-            Download
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {selectedFileId && (
+            <Button onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )
