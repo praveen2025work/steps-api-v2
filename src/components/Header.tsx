@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Logo from './Logo';
 import { Button } from '@/components/ui/button';
 import { Bell, User, RefreshCw } from 'lucide-react';
+import DateSelector from './DateSelector';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -27,8 +28,16 @@ const Header = () => {
   return (
     <div className="w-full border-b">
       <div className="flex justify-between items-center py-4 px-4 sm:px-6 lg:px-8">
-        <div className="cursor-pointer" onClick={() => router.push("/")}>
-          <Logo />
+        <div className="flex items-center space-x-4">
+          <div className="cursor-pointer" onClick={() => router.push("/")}>
+            <Logo />
+          </div>
+          <DateSelector 
+            buttonVariant="outline" 
+            buttonSize="sm" 
+            label="Business Date"
+            className="ml-4"
+          />
         </div>
         
         <div className="flex items-center space-x-4">

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
+import { useDate } from '@/contexts/DateContext';
 import { CreateSupportIssue } from './support/CreateSupportIssue';
 import ProcessQueries from './workflow/ProcessQueries';
 import ProcessParameters from './workflow/ProcessParameters';
@@ -112,6 +113,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   stages,
   tasks,
 }) => {
+  const { selectedDate } = useDate();
   const [activeStage, setActiveStage] = useState<string>(stages[0]?.id || '');
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({

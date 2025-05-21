@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import { DateProvider } from '@/contexts/DateContext';
 
 export default function App({ Component, pageProps }: AppProps) {
   const [mounted, setMounted] = useState(false);
@@ -22,10 +23,12 @@ export default function App({ Component, pageProps }: AppProps) {
     <ThemeProvider>
       <SidebarProvider>
         <NotificationsProvider>
-          <div className="min-h-screen">
-            <Component {...pageProps} />
-            <Toaster />
-          </div>
+          <DateProvider>
+            <div className="min-h-screen">
+              <Component {...pageProps} />
+              <Toaster />
+            </div>
+          </DateProvider>
         </NotificationsProvider>
       </SidebarProvider>
     </ThemeProvider>

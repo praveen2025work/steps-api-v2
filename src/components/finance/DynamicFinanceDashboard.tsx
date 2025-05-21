@@ -6,6 +6,9 @@ import {
   RefreshCw, LayoutGrid, SplitSquareVertical, Maximize2, 
   Settings, ChevronLeft, ArrowLeft, Home
 } from 'lucide-react';
+import { useDate } from '@/contexts/DateContext';
+import { formatDate } from '@/lib/dateUtils';
+import DateSelector from '@/components/DateSelector';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { generateMockTiles } from '@/lib/finance';
@@ -17,6 +20,7 @@ import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
 
 const DynamicFinanceDashboard: React.FC = () => {
   const router = useRouter();
+  const { selectedDate } = useDate();
   // State for dashboard configuration
   const [columns, setColumns] = useState<number>(3);
   const [viewMode, setViewMode] = useState<ViewMode>('tile');
@@ -87,8 +91,9 @@ const DynamicFinanceDashboard: React.FC = () => {
         setIsLoading(true);
         try {
           // In a real app, we would fetch data from an API based on selectedApp and selectedWorkflow
+          // and the selected date from the date context
           // For now, we'll use mock data but in a real implementation, we would pass these as parameters
-          // to the API call: `/api/finance/dashboard?appId=${selectedApp}&workflowId=${selectedWorkflow}`
+          // to the API call: `/api/finance/dashboard?appId=${selectedApp}&workflowId=${selectedWorkflow}&date=${formatDate(selectedDate)}`
           const data = generateMockTiles();
           setTiles(data);
         } catch (error) {
@@ -141,6 +146,7 @@ const DynamicFinanceDashboard: React.FC = () => {
   const handleRefresh = () => {
     setIsLoading(true);
     setTimeout(() => {
+      // In a real app, we would fetch data for the selected date
       const data = generateMockTiles();
       setTiles(data);
       setLastRefreshed(new Date());
@@ -317,7 +323,14 @@ const DynamicFinanceDashboard: React.FC = () => {
             </div>
             
             {/* Right side: Action buttons */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
+              <DateSelector 
+                buttonVariant="outline" 
+                buttonSize="sm" 
+                label="Business Date"
+                className="h-8"
+                onChange={handleRefresh}
+              />
               <Button variant="outline" size="sm" onClick={handleRefresh} className="px-2 h-8" title="Refresh">
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>

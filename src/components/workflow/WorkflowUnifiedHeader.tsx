@@ -16,6 +16,9 @@ import {
   ArrowRight,
   Clock
 } from 'lucide-react';
+import { useDate } from '@/contexts/DateContext';
+import { formatDate } from '@/lib/dateUtils';
+import DateSelector from '@/components/DateSelector';
 import { HierarchyNode } from '../WorkflowHierarchyBreadcrumb';
 import { showSuccessToast, showInfoToast, showWarningToast } from '@/lib/toast';
 
@@ -174,47 +177,53 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
       <CardContent className="pb-3">
         <div className="flex flex-col space-y-3">
           {/* Hierarchy Path with Progress - Made clickable with visual indicators */}
-          <div className="flex items-center gap-1 text-sm">
-            {hierarchyPath.map((node, index) => (
-              <React.Fragment key={node.id}>
-                <div className="flex flex-col">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 px-2 flex items-center gap-1 hover:bg-secondary/50"
-                    onClick={() => {
-                      // Navigate to the appropriate level
-                      if (node.level === 'app') {
-                        router.push(`/application/${node.id}`);
-                      } else if (index < hierarchyPath.length - 1) {
-                        // If not the last node (current level), navigate to application with this level selected
-                        const appNode = hierarchyPath.find(n => n.level === 'app');
-                        if (appNode) {
-                          router.push(`/application/${appNode.id}`);
+          <div className="flex items-center justify-between gap-1 text-sm">
+            <div className="flex items-center gap-1">
+              {hierarchyPath.map((node, index) => (
+                <React.Fragment key={node.id}>
+                  <div className="flex flex-col">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2 flex items-center gap-1 hover:bg-secondary/50"
+                      onClick={() => {
+                        // Navigate to the appropriate level
+                        if (node.level === 'app') {
+                          router.push(`/application/${node.id}`);
+                        } else if (index < hierarchyPath.length - 1) {
+                          // If not the last node (current level), navigate to application with this level selected
+                          const appNode = hierarchyPath.find(n => n.level === 'app');
+                          if (appNode) {
+                            router.push(`/application/${appNode.id}`);
+                          }
                         }
-                      }
-                    }}
-                  >
-                    <span className="font-medium">{node.name}</span>
-                    <span className="ml-1 text-muted-foreground">({node.progress}%)</span>
-                  </Button>
-                  
-                  {/* Visual progress indicator with color coding */}
-                  <div className="h-1 w-full bg-gray-200 rounded-full mt-1 overflow-hidden">
-                    <div 
-                      className={`h-full ${getProgressColor(node.progress)}`} 
-                      style={{ width: `${node.progress}%` }}
-                    ></div>
+                      }}
+                    >
+                      <span className="font-medium">{node.name}</span>
+                      <span className="ml-1 text-muted-foreground">({node.progress}%)</span>
+                    </Button>
+                    
+                    {/* Visual progress indicator with color coding */}
+                    <div className="h-1 w-full bg-gray-200 rounded-full mt-1 overflow-hidden">
+                      <div 
+                        className={`h-full ${getProgressColor(node.progress)}`} 
+                        style={{ width: `${node.progress}%` }}
+                      ></div>
+                    </div>
                   </div>
-                </div>
-                {index < hierarchyPath.length - 1 && (
-                  <ArrowRight className="h-4 w-4 text-muted-foreground mx-1" />
-                )}
-              </React.Fragment>
-            ))}
-            <Badge variant="outline" className="ml-2 text-xs">
-              Active
-            </Badge>
+                  {index < hierarchyPath.length - 1 && (
+                    <ArrowRight className="h-4 w-4 text-muted-foreground mx-1" />
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+            
+            <DateSelector 
+              buttonVariant="outline" 
+              buttonSize="sm" 
+              label="Business Date"
+              className="ml-auto"
+            />
           </div>
           
           <div className="flex flex-wrap gap-3">

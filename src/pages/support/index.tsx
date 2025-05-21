@@ -2,7 +2,7 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SupportDashboard } from "@/components/support/SupportDashboard";
+import { SupportDashboardWithDate } from "@/components/support/SupportDashboardWithDate";
 import { SLADashboard } from "@/components/support/SLADashboard";
 
 export default function SupportPage() {
@@ -19,7 +19,7 @@ export default function SupportPage() {
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-4">
-            <SupportDashboard />
+            <SupportDashboardWithDate />
           </TabsContent>
           
           <TabsContent value="sla" className="space-y-4">
