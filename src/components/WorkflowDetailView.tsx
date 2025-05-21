@@ -50,7 +50,9 @@ import {
   AlertCircle,
   MessageSquare,
   PanelLeft,
-  PanelLeftClose
+  PanelLeftClose,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { getFileIcon } from './DocumentsList';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -960,6 +962,31 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           
                           {/* Process-level actions - Context-aware based on status */}
                           <div className="flex items-center gap-1 ml-1">
+                            {/* Show Detail button - Always visible */}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 px-1.5 text-xs hover:bg-muted flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedSubStage(subStage.id);
+                                setShowWorkflowDetail(!showWorkflowDetail);
+                              }}
+                              title="Toggle workflow detail view"
+                            >
+                              {showWorkflowDetail ? (
+                                <>
+                                  <EyeOff className="h-3.5 w-3.5" />
+                                  <span className="hidden sm:inline">Hide Detail</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span className="hidden sm:inline">Show Detail</span>
+                                </>
+                              )}
+                            </Button>
+                            
                             {/* Files button - Always visible */}
                             {subStage.files && subStage.files.length > 0 && (
                               <Button 
