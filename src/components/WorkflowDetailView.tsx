@@ -668,7 +668,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const handleFileClick = (file: any, subStageId: string) => {
     setSelectedFile(file.name);
     setShowFilePreview(true);
-    // Hide workflow detail view to give more space to file preview
+    // Always hide workflow detail view to give more space to file preview
     setShowWorkflowDetail(false);
     setSelectedSubStage(subStageId);
     
@@ -691,7 +691,12 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const handleCloseFilePreview = () => {
     setShowFilePreview(false);
     setSelectedFile(null);
-    setShowWorkflowDetail(true);
+    // Don't automatically show workflow detail when closing file preview
+    // Let the user toggle it with the icon if they want
+  };
+  
+  const toggleWorkflowDetail = () => {
+    setShowWorkflowDetail(!showWorkflowDetail);
   };
 
   const renderRightPanelContent = () => {
@@ -901,18 +906,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       <div className="flex gap-4">
         {/* Main Content - Only visible when file preview is not shown or explicitly kept visible */}
         <div className={`${showFilePreview ? (showWorkflowDetail ? 'flex-[0.3] relative' : 'hidden') : 'flex-[0.6]'}`}>
-          {/* Collapse button for workflow detail view when file preview is open */}
-          {showFilePreview && showWorkflowDetail && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="absolute -right-4 top-2 h-8 w-8 p-0 rounded-full bg-background border shadow-sm z-10"
-              onClick={() => setShowWorkflowDetail(false)}
-              title="Hide workflow detail"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </Button>
-          )}
           {/* Process Overview removed from main content as it's now in the right panel */}
           <div className="space-y-4">
             {(stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages).map((subStage, index) => (
@@ -1170,18 +1163,16 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         {/* File Preview Panel - Only shown when a file is selected */}
         {showFilePreview && (
           <div className="flex-1 flex flex-col relative">
-            {/* Expand/Collapse button for workflow detail view */}
-            {!showWorkflowDetail && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="absolute -left-4 top-2 h-8 w-8 p-0 rounded-full bg-background border shadow-sm z-10"
-                onClick={() => setShowWorkflowDetail(true)}
-                title="Show workflow detail"
-              >
-                <PanelLeft className="h-4 w-4" />
-              </Button>
-            )}
+            {/* Always show the toggle button for workflow detail view */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute -left-4 top-2 h-8 w-8 p-0 rounded-full bg-background border shadow-sm z-10"
+              onClick={toggleWorkflowDetail}
+              title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
+            >
+              {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+            </Button>
             {/* Display the selected sub-stage card in a horizontal layout above the file preview */}
             {selectedSubStage && (
               <div className="border-b p-2">
@@ -1256,6 +1247,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               processId={selectedSubStage || undefined}
               onClose={handleCloseFilePreview}
               subStageId={selectedSubStage || undefined}
+              onToggleWorkflowDetail={toggleWorkflowDetail}
+              showWorkflowDetail={showWorkflowDetail}
             />
           </div>
         )}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Download, Eye, RefreshCw, Bot, Sparkles, BarChart, FileText, X } from 'lucide-react'
+import { Download, Eye, RefreshCw, Bot, Sparkles, BarChart, FileText, X, PanelLeft, PanelLeftClose } from 'lucide-react'
 import { getFileIcon } from '@/components/DocumentsList'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -38,6 +38,8 @@ interface EnhancedFilePreviewProps {
   processId?: string
   onClose: () => void
   subStageId?: string
+  onToggleWorkflowDetail?: () => void
+  showWorkflowDetail?: boolean
 }
 
 // Mock API call - would be replaced with actual API
@@ -222,7 +224,14 @@ const fetchFileDetails = async (fileId: string): Promise<FileDetails> => {
   return mockFile
 }
 
-export function EnhancedFilePreview({ files, processId, onClose, subStageId }: EnhancedFilePreviewProps) {
+export function EnhancedFilePreview({ 
+  files, 
+  processId, 
+  onClose, 
+  subStageId,
+  onToggleWorkflowDetail,
+  showWorkflowDetail
+}: EnhancedFilePreviewProps) {
   const [selectedFileId, setSelectedFileId] = useState<string | null>(files.length > 0 ? files[0].id : null)
   const [fileDetails, setFileDetails] = useState<FileDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -430,15 +439,33 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
       <div className="border-b pb-1.5 mb-2">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-base font-medium">Preview Files</h3>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-6 px-1.5"
-            onClick={onClose}
-          >
-            <X className="h-3.5 w-3.5 mr-1" />
-            Close
-          </Button>
+          <div className="flex items-center gap-2">
+            {onToggleWorkflowDetail && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5"
+                onClick={onToggleWorkflowDetail}
+                title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
+              >
+                {showWorkflowDetail ? (
+                  <PanelLeftClose className="h-3.5 w-3.5 mr-1" />
+                ) : (
+                  <PanelLeft className="h-3.5 w-3.5 mr-1" />
+                )}
+                {showWorkflowDetail ? "Hide Detail" : "Show Detail"}
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-6 px-1.5"
+              onClick={onClose}
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Close
+            </Button>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {files.map((file) => (
