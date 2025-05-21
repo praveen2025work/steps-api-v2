@@ -83,11 +83,9 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
     return () => clearInterval(timer);
   }, [lastRefreshed]);
   
-  // Get progress color based on percentage
-  const getProgressColor = (progressValue: number) => {
-    if (progressValue >= 65) return "bg-green-500";
-    if (progressValue >= 50) return "bg-amber-600";
-    return "bg-orange-500";
+  // Use a single color for progress indicators
+  const getProgressColor = () => {
+    return "bg-blue-500";
   };
 
   // Handle action buttons
@@ -203,10 +201,10 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                       <span className="ml-1 text-muted-foreground">({node.progress}%)</span>
                     </Button>
                     
-                    {/* Visual progress indicator with color coding */}
+                    {/* Visual progress indicator with single color */}
                     <div className="h-1 w-full bg-gray-200 rounded-full mt-1 overflow-hidden">
                       <div 
-                        className={`h-full ${getProgressColor(node.progress)}`} 
+                        className={`h-full ${getProgressColor()}`} 
                         style={{ width: `${node.progress}%` }}
                       ></div>
                     </div>
@@ -227,14 +225,8 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
           </div>
           
           <div className="flex flex-wrap gap-3">
-            {/* Left side: Progress and Task Counts in a more compact layout */}
+            {/* Left side: Task Counts in a more compact layout */}
             <div className="flex-1 min-w-[280px]">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs text-muted-foreground">Overall Progress</span>
-                <span className="text-xs font-medium">{progress}%</span>
-              </div>
-              <Progress value={progress} className="h-1.5 mb-2" />
-              
               <div className="flex gap-2 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>

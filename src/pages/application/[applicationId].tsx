@@ -498,8 +498,21 @@ const ApplicationDetailPage = () => {
                         ? Math.round(currentLevels.reduce((sum, level) => sum + level.progress, 0) / currentLevels.length) 
                         : 0)
                     : application.progress} 
-                  className="h-2" 
-                />
+                  className="h-2 bg-gray-200"
+                >
+                  <div 
+                    className="h-full bg-blue-500" 
+                    style={{ 
+                      width: `${breadcrumbs.length > 1 
+                        ? (breadcrumbs[breadcrumbs.length - 1].id === application.id 
+                          ? application.progress 
+                          : currentLevels.length > 0 
+                            ? Math.round(currentLevels.reduce((sum, level) => sum + level.progress, 0) / currentLevels.length) 
+                            : 0)
+                        : application.progress}%` 
+                    }}
+                  ></div>
+                </Progress>
               </div>
               
               <div className="flex items-center gap-2">
@@ -646,7 +659,9 @@ const ApplicationDetailPage = () => {
                         <span className="text-sm font-medium">Progress</span>
                         <span className="text-sm font-medium">{level.progress}%</span>
                       </div>
-                      <Progress value={level.progress} className="h-2" />
+                      <Progress value={level.progress} className="h-2 bg-gray-200">
+                        <div className="h-full bg-blue-500" style={{ width: `${level.progress}%` }}></div>
+                      </Progress>
                     </div>
                     
                     <div className="flex justify-between items-center">

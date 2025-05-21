@@ -4,6 +4,7 @@ import Logo from './Logo';
 import { Button } from '@/components/ui/button';
 import { Bell, User, RefreshCw } from 'lucide-react';
 import DateSelector from './DateSelector';
+import ThemeSwitcher from './ThemeSwitcher';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -32,15 +33,15 @@ const Header = () => {
           <div className="cursor-pointer" onClick={() => router.push("/")}>
             <Logo />
           </div>
+        </div>
+        
+        <div className="flex items-center space-x-4">
           <DateSelector 
             buttonVariant="outline" 
             buttonSize="sm" 
             label="Business Date"
-            className="ml-4"
           />
-        </div>
-        
-        <div className="flex items-center space-x-4">
+          <ThemeSwitcher />
           <Button 
             variant="ghost" 
             size="icon"
