@@ -259,6 +259,10 @@ export function EnhancedFilePreview({
   }
   
   const handleFileSelect = (fileId: string) => {
+    // Prevent event bubbling if event is available
+    event?.stopPropagation?.();
+    
+    // Set the selected file ID
     setSelectedFileId(fileId)
   }
   

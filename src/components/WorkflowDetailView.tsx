@@ -638,6 +638,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   };
 
   const handleProcessIdClick = (processId: string) => {
+    // Prevent event bubbling if event is available
+    event?.stopPropagation?.();
+    
     // Find the sub-stage by process ID
     const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
       .find(s => s.processId === processId);
@@ -656,10 +659,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         setSelectedFile(null);
       }
     } else {
+      // Switching to a different sub-stage
       setSelectedSubStage(subStageId);
-      setRightPanelContent('process-overview');
-      setRightPanelOpen(true);
-      setIsRightPanelExpanded(true);
       
       // Set current sub-stage files
       if (subStage && subStage.files) {
@@ -678,6 +679,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         if (subStage.files.length > 0) {
           // Navigate to files section
           setRightPanelContent('documents');
+          setRightPanelOpen(true);
           
           // Auto-preview the first file
           setSelectedFile(subStage.files[0].name);
@@ -685,7 +687,21 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           // Hide workflow detail to give more space to file preview
           setShowWorkflowDetail(false);
           setShowSubStageCards(false);
+        } else {
+          // If no files, just show the process overview
+          setRightPanelContent('process-overview');
+          setRightPanelOpen(true);
+          setIsRightPanelExpanded(true);
+          
+          // Ensure file preview is closed
+          setShowFilePreview(false);
+          setSelectedFile(null);
         }
+      } else {
+        // If no sub-stage or no files, just show the process overview
+        setRightPanelContent('process-overview');
+        setRightPanelOpen(true);
+        setIsRightPanelExpanded(true);
       }
     }
   };
@@ -714,7 +730,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     setRightPanelOpen(true);
     setShowWorkflowDetail(true);
     
-    // Don't automatically open file preview
+    // Explicitly ensure file preview is closed
     setShowFilePreview(false);
     setSelectedFile(null);
   };
@@ -757,8 +773,11 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
         
-        // Add a custom handler for document preview
+        // Define a reliable document preview handler
         const handleDocumentPreview = (document: any) => {
+          // Prevent event bubbling
+          event?.stopPropagation?.();
+          
           // Set the document as the selected file and show the preview
           setSelectedFile(document.name);
           setShowFilePreview(true);
@@ -788,7 +807,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                   variant="outline" 
                   size="sm" 
                   className="h-7 text-xs"
-                  onClick={() => {
+                  onClick={(e) => {
+                    // Prevent event bubbling
+                    e.stopPropagation();
+                    
                     // If there are documents, preview the first one
                     const docs = stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments;
                     if (docs.length > 0) {
@@ -803,7 +825,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             </div>
             <DocumentsList 
               documents={stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments} 
-              onPreview={handleDocumentPreview}
+              onPreview={(document) => {
+                // Ensure we have a clean event handler that won't be affected by other state changes
+                handleDocumentPreview(document);
+              }}
             />
           </div>
         );
@@ -1167,7 +1192,11 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                                 size="sm" 
                                 className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
                                 onClick={(e) => {
+                                  // Ensure event doesn't bubble up to parent elements
                                   e.stopPropagation();
+                                  e.preventDefault();
+                                  
+                                  // Call the file click handler
                                   handleFileClick(subStage.files[0], subStage.id);
                                 }}
                                 title={`View Files (${subStage.files.length})`}
@@ -1446,9 +1475,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
                           size="sm"
                           className="h-6 text-xs"
-                          onClick={() => {
+                          onClick={(e) => {
+                            // Prevent event bubbling
+                            e.stopPropagation();
+                            
+                            // Only navigate to documents section, never auto-preview
                             setRightPanelContent('documents');
-                            // If there are files available for the selected sub-stage, show the preview
+                            
+                            // Set current sub-stage files without auto-previewing
                             const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
                               .find(s => s.id === selectedSubStage);
                             
@@ -1462,9 +1496,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                                 category: file.type
                               })));
                               
-                              // Set the first file as selected and show the preview
-                              setSelectedFile(subStage.files[0].name);
-                              setShowFilePreview(true);
+                              // Explicitly ensure file preview is closed
+                              setShowFilePreview(false);
+                              setSelectedFile(null);
                             }
                           }}
                         >
