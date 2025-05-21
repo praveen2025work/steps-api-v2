@@ -42,10 +42,10 @@ const DateSelector: React.FC<DateSelectorProps> = ({
         <Button
           variant={buttonVariant}
           size={buttonSize}
-          className={`${className} justify-start`}
+          className={`${className} justify-start shadow-sm border border-primary/20`}
         >
           {showIcon && <CalendarIcon className="mr-2 h-4 w-4" />}
-          {label}: {format(selectedDate, dateFormat)}
+          <span className="whitespace-nowrap">{label}: {format(selectedDate, dateFormat)}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

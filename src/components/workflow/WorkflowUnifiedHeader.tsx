@@ -105,7 +105,7 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
     <Card className="mb-4">
       <CardHeader className="pb-2 flex flex-row justify-between items-center">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-medium">{workflowTitle}</h3>
+          <h3 className="text-base font-medium">{workflowTitle}</h3>
           <Badge variant="outline" className="text-xs">
             {status}
           </Badge>
@@ -113,7 +113,7 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
         <div className="flex items-center gap-1">
           <div className="flex items-center mr-3 text-xs text-muted-foreground">
             <Clock className="h-3 w-3 mr-1" />
-            <span>Last refreshed: {secondsSinceRefresh}s | Auto-refresh in: {countdown}s</span>
+            <span>Auto-refresh in: {countdown}s</span>
           </div>
           
           <Button 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Logo from './Logo';
 import { Button } from '@/components/ui/button';
@@ -25,22 +25,40 @@ const Header = () => {
     togglePanel, 
     closePanel 
   } = useNotifications();
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  
+  useEffect(() => {
+    // Set initial last updated time
+    setLastUpdated(new Date());
+    
+    // Listen for refresh events
+    const handleRefresh = () => {
+      setLastUpdated(new Date());
+    };
+    
+    window.addEventListener('app:refresh', handleRefresh);
+    
+    return () => {
+      window.removeEventListener('app:refresh', handleRefresh);
+    };
+  }, []);
 
   return (
     <div className="w-full border-b">
       <div className="flex justify-between items-center py-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-6">
           <div className="cursor-pointer" onClick={() => router.push("/")}>
             <Logo />
           </div>
+          <DateSelector 
+            buttonVariant="default" 
+            buttonSize="default" 
+            label="Business Date"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+          />
         </div>
         
         <div className="flex items-center space-x-4">
-          <DateSelector 
-            buttonVariant="outline" 
-            buttonSize="sm" 
-            label="Business Date"
-          />
           <ThemeSwitcher />
           <Button 
             variant="ghost" 
@@ -73,6 +91,9 @@ const Header = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <div className="px-2 py-1 text-xs text-muted-foreground">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Profile</DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
