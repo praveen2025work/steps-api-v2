@@ -53,7 +53,7 @@ const RatesPage = () => {
         <meta name="description" content="Rates workflows management" />
       </Head>
       <DashboardLayout title="Rates Workflows">
-        <div className="space-y-8">
+        <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <WorkflowListView workflows={rateWorkflows} />

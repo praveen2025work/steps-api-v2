@@ -106,8 +106,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         </header>
         
         {/* Page content - improved for mobile */}
-        <main className="flex-1 container py-4 sm:py-6 px-2 sm:px-4 md:px-6 overflow-x-hidden">
-
+        <main className="flex-1 container pt-0 pb-4 sm:pb-6 px-2 sm:px-4 md:px-6 overflow-x-hidden">
           {children}
         </main>
       </div>
