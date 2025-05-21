@@ -892,67 +892,115 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                             <UserCircle className="h-3 w-3 text-muted-foreground" />
                           )}
                           
-                          {/* Process-level actions */}
-                          <div className="flex items-center">
+                          {/* Process-level actions - Context-aware based on status */}
+                          <div className="flex items-center gap-1 ml-1">
+                            {/* Files button - Always visible */}
+                            {subStage.files && subStage.files.length > 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleProcessIdClick(subStage.processId);
+                                  setRightPanelContent('documents');
+                                }}
+                                title={`Files (${subStage.files.length})`}
+                              >
+                                <FileText className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            
+                            {/* Start button - Only for not-started or failed processes */}
+                            {(subStage.status === 'not-started' || subStage.status === 'failed') && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  showSuccessToast(`Started ${subStage.name}`);
+                                }}
+                                title="Start"
+                              >
+                                <PlayCircle className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            
+                            {/* Refresh button - For all statuses */}
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-5 w-5 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                showSuccessToast(`Started ${subStage.name}`);
-                              }}
-                              title="Start"
-                            >
-                              <PlayCircle className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-5 w-5 p-0"
+                              className="h-6 w-6 p-0 hover:bg-muted"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 showInfoToast(`Refreshing ${subStage.name}`);
                               }}
                               title="Refresh"
                             >
-                              <RefreshCw className="h-3 w-3" />
+                              <RefreshCw className="h-3.5 w-3.5" />
                             </Button>
+                            
+                            {/* Complete button - Only for in-progress processes */}
+                            {subStage.status === 'in-progress' && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  showSuccessToast(`Completed ${subStage.name}`);
+                                }}
+                                title="Complete"
+                              >
+                                <ArrowRightCircle className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            
+                            {/* Skip button - Only for not-started or in-progress processes */}
+                            {(subStage.status === 'not-started' || subStage.status === 'in-progress') && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  showWarningToast(`Skipped ${subStage.name}`);
+                                }}
+                                title="Skip"
+                              >
+                                <SkipForward className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            
+                            {/* Rerun button - Only for completed or failed processes */}
+                            {(subStage.status === 'completed' || subStage.status === 'failed') && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  showInfoToast(`Rerunning ${subStage.name}`);
+                                }}
+                                title="Rerun"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            
+                            {/* Notification button - For all statuses */}
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-5 w-5 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                showSuccessToast(`Completed ${subStage.name}`);
-                              }}
-                              title="Complete"
-                            >
-                              <ArrowRightCircle className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-5 w-5 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                showWarningToast(`Skipped ${subStage.name}`);
-                              }}
-                              title="Skip"
-                            >
-                              <SkipForward className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-5 w-5 p-0"
+                              className="h-6 w-6 p-0 hover:bg-muted"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 showInfoToast(`Notification sent for ${subStage.name}`);
                               }}
                               title="Send Notification"
                             >
-                              <Mail className="h-3 w-3" />
+                              <Mail className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -1015,24 +1063,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                   </CollapsibleTrigger>
 
                   <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-muted">
-                    {/* Files Section - Just show file icon with count */}
-                    {subStage.files && subStage.files.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-6 text-xs flex items-center gap-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleProcessIdClick(subStage.processId);
-                            setRightPanelContent('documents');
-                          }}
-                        >
-                          <FileText className="h-3 w-3" />
-                          <span>Files ({subStage.files.length})</span>
-                        </Button>
-                      </div>
-                    )}
+                    {/* Files section removed from here as it's now in the process-level actions */}
 
                     {/* Performance Metrics - Compact */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
