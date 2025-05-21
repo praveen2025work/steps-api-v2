@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
 import Logo from './Logo';
 import ThemeSwitcher from './ThemeSwitcher';
-import { Bell, User } from 'lucide-react';
+import DateSelector from './DateSelector';
+import { Bell, User, RefreshCw } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -16,6 +17,23 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const { sidebarOpen, toggleSidebar } = useSidebar();
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  
+  useEffect(() => {
+    // Set initial last updated time
+    setLastUpdated(new Date());
+    
+    // Listen for refresh events
+    const handleRefresh = () => {
+      setLastUpdated(new Date());
+    };
+    
+    window.addEventListener('app:refresh', handleRefresh);
+    
+    return () => {
+      window.removeEventListener('app:refresh', handleRefresh);
+    };
+  }, []);
   
   return (
     <div className="min-h-screen bg-background flex">
@@ -31,13 +49,18 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               <MobileNav />
               <Logo />
               
-              {/* Page title next to logo with Last updated below - responsive for mobile */}
+              {/* Business Date Selector */}
+              <DateSelector 
+                buttonVariant="default" 
+                buttonSize="default" 
+                label="Business Date"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-sm border border-primary/20 ml-2"
+              />
+              
+              {/* Page title next to logo - responsive for mobile */}
               {title && (
                 <div className="flex flex-col">
-                  <h1 className="text-lg md:text-xl font-bold truncate max-w-[150px] md:max-w-none">{title}</h1>
-                  <span className="text-xs text-muted-foreground hidden sm:inline-block">
-                    Last updated: {new Date().toLocaleDateString()} | {new Date().toLocaleTimeString()}
-                  </span>
+                  <h1 className="text-base md:text-lg font-bold truncate max-w-[150px] md:max-w-none">{title}</h1>
                 </div>
               )}
             </div>
@@ -55,6 +78,17 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </Button>
               
+              {/* Refresh button */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={() => window.dispatchEvent(new CustomEvent('app:refresh'))}
+                title="Refresh data"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+              
               {/* User profile */}
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8">
@@ -63,7 +97,9 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
                 </Avatar>
                 <div className="hidden md:block">
                   <p className="text-sm font-medium">John Doe</p>
-                  <p className="text-xs text-muted-foreground">Compliance Officer</p>
+                  <p className="text-xs text-muted-foreground">
+                    Last updated: {lastUpdated.toLocaleTimeString()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -72,12 +108,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         
         {/* Page content - improved for mobile */}
         <main className="flex-1 container py-4 sm:py-6 px-2 sm:px-4 md:px-6 overflow-x-hidden">
-          {/* Show timestamp on mobile only */}
-          {title && (
-            <div className="sm:hidden text-xs text-muted-foreground mb-4">
-              Last updated: {new Date().toLocaleDateString()} | {new Date().toLocaleTimeString()}
-            </div>
-          )}
+
           {children}
         </main>
       </div>

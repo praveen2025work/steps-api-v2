@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useDate } from '@/contexts/DateContext';
 import { formatDate } from '@/lib/dateUtils';
-import DateSelector from '@/components/DateSelector';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { generateMockTiles } from '@/lib/finance';
@@ -324,13 +323,6 @@ const DynamicFinanceDashboard: React.FC = () => {
             
             {/* Right side: Action buttons */}
             <div className="flex items-center gap-2">
-              <DateSelector 
-                buttonVariant="outline" 
-                buttonSize="sm" 
-                label="Business Date"
-                className="h-8"
-                onChange={handleRefresh}
-              />
               <Button variant="outline" size="sm" onClick={handleRefresh} className="px-2 h-8" title="Refresh">
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
