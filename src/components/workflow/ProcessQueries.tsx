@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { FileText, Send, Paperclip, X, MessageSquare, Download, Eye } from 'lucide-react';
+import { FileText, Send, Paperclip, X, MessageSquare, Download, Eye, Search } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
 
 interface QueryFile {
