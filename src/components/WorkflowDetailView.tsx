@@ -952,6 +952,44 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         lastRefreshed={lastRefreshed}
       />
 
+      {/* Control buttons row */}
+      <div className="flex items-center gap-2 mb-2">
+        {/* Show Process Cards button - far left */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 flex items-center gap-1"
+          onClick={toggleSubStageCards}
+          title={showSubStageCards ? "Hide process cards" : "Show process cards"}
+        >
+          {showSubStageCards ? <Eye className="h-4 w-4 mr-1" /> : <EyeOff className="h-4 w-4 mr-1" />}
+          {showSubStageCards ? "Hide Process Cards" : "Show Process Cards"}
+        </Button>
+
+        {/* Status ribbon and horizontal sub-stage process would go here */}
+        <div className="flex-1 flex justify-center">
+          {/* This space is reserved for the status ribbon and horizontal sub-stage process */}
+          {selectedSubStage && showFilePreview && (
+            <div className="text-sm text-muted-foreground">
+              {(stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+                .find(s => s.id === selectedSubStage)?.name || 'Selected Process'}
+            </div>
+          )}
+        </div>
+
+        {/* Show Workflow Detail button - far right */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 flex items-center gap-1"
+          onClick={toggleWorkflowDetail}
+          title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
+        >
+          {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4 mr-1" /> : <PanelLeft className="h-4 w-4 mr-1" />}
+          {showWorkflowDetail ? "Hide Workflow Detail" : "Show Workflow Detail"}
+        </Button>
+      </div>
+
       {/* Modified to include completion percentage */}
       <WorkflowStagesBar 
         stages={stages.map(stage => {
@@ -1235,30 +1273,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         {/* File Preview Panel - Only shown when a file is selected */}
         {showFilePreview && (
           <div className="flex-1 flex flex-col relative">
-            {/* Toggle buttons for workflow detail and sub-stage cards - moved to top right */}
-            <div className="absolute right-2 top-2 flex gap-2 z-10">
-              {/* Sub-stage cards toggle */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0 rounded-full bg-background border shadow-sm"
-                onClick={toggleSubStageCards}
-                title={showSubStageCards ? "Hide process cards" : "Show process cards"}
-              >
-                {showSubStageCards ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-              </Button>
-              
-              {/* Workflow detail toggle */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0 rounded-full bg-background border shadow-sm"
-                onClick={toggleWorkflowDetail}
-                title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
-              >
-                {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-              </Button>
-            </div>
             {/* Display the selected sub-stage card in a horizontal layout above the file preview */}
             {selectedSubStage && (
               <div className="border-b p-2">
