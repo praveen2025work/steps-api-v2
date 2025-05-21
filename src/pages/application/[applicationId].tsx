@@ -3,11 +3,12 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertCircle, ChevronRight, Info } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, AlertCircle, ChevronRight, Info, Search, CheckCircle2, Clock, XCircle, PlayCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
 import applicationsData from '@/data/applications.json';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,6 +31,20 @@ const ApplicationDetailPage = () => {
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<{id: string, name: string}[]>([]);
   const [currentLevels, setCurrentLevels] = useState<WorkflowLevel[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [processStats, setProcessStats] = useState<{
+    completed: number;
+    inProgress: number;
+    notStarted: number;
+    failed: number;
+    total: number;
+  }>({
+    completed: 0,
+    inProgress: 0,
+    notStarted: 0,
+    failed: 0,
+    total: 0
+  });
   
   // Fetch application data based on applicationId
   useEffect(() => {
@@ -50,6 +65,50 @@ const ApplicationDetailPage = () => {
           children: assetClass.workflowLevels
         })));
         setBreadcrumbs([{ id: app.id, name: app.name }]);
+        
+        // Calculate process statistics
+        let completed = 0;
+        let inProgress = 0;
+        let notStarted = 0;
+        let failed = 0;
+        let total = 0;
+        
+        // Function to count processes recursively
+        const countProcesses = (items: any[]) => {
+          items.forEach(item => {
+            total++;
+            
+            if (item.progress === 100) {
+              completed++;
+            } else if (item.progress === 0) {
+              notStarted++;
+            } else if (item.status === 'rejected' || item.status === 'failed') {
+              failed++;
+            } else {
+              inProgress++;
+            }
+            
+            // Count children if they exist
+            if (item.children && item.children.length > 0) {
+              countProcesses(item.children);
+            }
+            if (item.workflowLevels && item.workflowLevels.length > 0) {
+              countProcesses(item.workflowLevels);
+            }
+          });
+        };
+        
+        // Start counting from asset classes
+        countProcesses(app.assetClasses);
+        
+        setProcessStats({
+          completed,
+          inProgress,
+          notStarted,
+          failed,
+          total
+        });
+        
       } else {
         // If not found in hierarchical data, try to find in applications.json
         const appData = applicationsData.find((a: any) => `app-${a.APP_ID}` === applicationId);
@@ -70,6 +129,15 @@ const ApplicationDetailPage = () => {
           setApplication(placeholderApp);
           setCurrentLevels([]);
           setBreadcrumbs([{ id: placeholderApp.id, name: placeholderApp.NAME }]);
+          
+          // Reset process stats
+          setProcessStats({
+            completed: 0,
+            inProgress: 0,
+            notStarted: 0,
+            failed: 0,
+            total: 0
+          });
         }
       }
       
@@ -169,152 +237,211 @@ const ApplicationDetailPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <DashboardLayout>
-        <div className="mb-6">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+        {/* Header with Breadcrumb Navigation and Back Button */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center flex-wrap gap-2">
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={crumb.id}>
+                {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm" 
-                  onClick={() => router.push('/')}
+                  className="h-8 px-2"
+                  onClick={() => handleBreadcrumbClick(index)}
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                  {crumb.name}
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Return to dashboard</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center flex-wrap gap-2 mb-6">
-          {breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={crumb.id}>
-              {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 px-2"
-                      onClick={() => handleBreadcrumbClick(index)}
-                    >
-                      {crumb.name}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Navigate to {crumb.name}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </React.Fragment>
-          ))}
-        </div>
-        
-        {/* Application Overview */}
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle>{application.name}</CardTitle>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Application details</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <p className="text-sm text-muted-foreground">{application.description}</p>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm font-medium">Overall Progress</span>
-                <span className="text-sm font-medium">{application.progress}%</span>
-              </div>
-              <Progress value={application.progress} className="h-2" />
-            </div>
-            
-            <div className="flex items-center gap-2 mb-4">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge className={`${application.status === 'in-progress' ? 'bg-blue-500' : 'bg-green-500'} text-white`}>
-                      {application.status}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Current status</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <span className="text-sm text-muted-foreground">
-                Last updated: {application.updatedAt}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Workflow Levels */}
-        {currentLevels.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {currentLevels.map((level) => (
-              <Card 
-                key={level.id} 
-                className="cursor-pointer hover:border-primary transition-colors"
-                onClick={() => handleLevelSelect(level)}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg">{level.name}</CardTitle>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge variant="outline" className="text-xs">
-                            {level.status}
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Status: {level.status}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium">Progress</span>
-                      <span className="text-sm font-medium">{level.progress}%</span>
-                    </div>
-                    <Progress value={level.progress} className="h-2" />
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      {level.children ? `${level.children.length} sub-levels` : 'View details'}
-                    </span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>View {level.name} details</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </CardContent>
-              </Card>
+              </React.Fragment>
             ))}
           </div>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => router.push('/')}
+            className="h-8"
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" /> Back
+          </Button>
+        </div>
+        
+        {/* Application Overview with Process Statistics */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle>{application.name}</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Application details</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-sm text-muted-foreground">{application.description}</p>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium">Overall Progress</span>
+                  <span className="text-sm font-medium">{application.progress}%</span>
+                </div>
+                <Progress value={application.progress} className="h-2" />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge className={`${application.status === 'in-progress' ? 'bg-blue-500' : 'bg-green-500'} text-white`}>
+                        {application.status}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Current status</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <span className="text-sm text-muted-foreground">
+                  Last updated: {application.updatedAt}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Process Statistics Card */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Process Statistics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-green-500/10 p-2 rounded-full">
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Completed</p>
+                    <p className="text-2xl font-bold">{processStats.completed}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-500/10 p-2 rounded-full">
+                    <PlayCircle className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">In Progress</p>
+                    <p className="text-2xl font-bold">{processStats.inProgress}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="bg-yellow-500/10 p-2 rounded-full">
+                    <Clock className="h-5 w-5 text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Not Started</p>
+                    <p className="text-2xl font-bold">{processStats.notStarted}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="bg-red-500/10 p-2 rounded-full">
+                    <XCircle className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Failed</p>
+                    <p className="text-2xl font-bold">{processStats.failed}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Search and Workflow Levels */}
+        {currentLevels.length > 0 ? (
+          <>
+            <div className="mb-4 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search workflow levels..." 
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            {/* Display count of filtered items */}
+            {searchTerm && (
+              <p className="text-sm text-muted-foreground mb-4">
+                Found {currentLevels.filter(level => 
+                  level.name.toLowerCase().includes(searchTerm.toLowerCase())
+                ).length} matching items
+              </p>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentLevels
+                .filter(level => searchTerm ? 
+                  level.name.toLowerCase().includes(searchTerm.toLowerCase()) : true)
+                .map((level) => (
+                <Card 
+                  key={level.id} 
+                  className="cursor-pointer hover:border-primary transition-colors"
+                  onClick={() => handleLevelSelect(level)}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">{level.name}</CardTitle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="outline" className="text-xs">
+                              {level.status}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Status: {level.status}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-medium">Progress</span>
+                        <span className="text-sm font-medium">{level.progress}%</span>
+                      </div>
+                      <Progress value={level.progress} className="h-2" />
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">
+                        {level.children ? `${level.children.length} sub-levels` : 'View details'}
+                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View {level.name} details</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
         ) : (
           <Card>
             <CardContent className="py-8">
