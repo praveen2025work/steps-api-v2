@@ -84,15 +84,6 @@ const StageOverview: React.FC<StageOverviewProps> = ({ stageId, stageName }) => 
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-medium">Stage Overview</CardTitle>
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {stageId} - {stageName}
-          </p>
-          <div className="flex items-center gap-2">
-            {getStatusBadge(stageDetails.status)}
-            {getPriorityBadge(stageDetails.priority)}
-          </div>
-        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>

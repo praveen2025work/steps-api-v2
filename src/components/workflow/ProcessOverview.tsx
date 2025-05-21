@@ -86,15 +86,6 @@ const ProcessOverview: React.FC<ProcessOverviewProps> = ({ processId, processNam
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-medium">Process Overview</CardTitle>
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {processId} - {processName}
-          </p>
-          <div className="flex items-center gap-2">
-            {getStatusBadge(processDetails.status)}
-            {getPriorityBadge(processDetails.priority)}
-          </div>
-        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
