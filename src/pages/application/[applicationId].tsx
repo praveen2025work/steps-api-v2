@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertCircle, ChevronRight, Info, Search, CheckCircle2, Clock, XCircle, PlayCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, ChevronRight, Info, Search, CheckCircle2, Clock, XCircle, PlayCircle, Copy, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -145,6 +145,57 @@ const ApplicationDetailPage = () => {
     }
   }, [applicationId]);
 
+  // Calculate statistics for the current level
+  const calculateLevelStats = (level: any) => {
+    let completed = 0;
+    let inProgress = 0;
+    let notStarted = 0;
+    let failed = 0;
+    let total = 0;
+    
+    // Function to count processes recursively
+    const countProcesses = (items: any[]) => {
+      if (!items || items.length === 0) return;
+      
+      items.forEach(item => {
+        total++;
+        
+        if (item.progress === 100) {
+          completed++;
+        } else if (item.progress === 0) {
+          notStarted++;
+        } else if (item.status === 'rejected' || item.status === 'failed') {
+          failed++;
+        } else {
+          inProgress++;
+        }
+        
+        // Count children if they exist
+        if (item.children && item.children.length > 0) {
+          countProcesses(item.children);
+        }
+        if (item.workflowLevels && item.workflowLevels.length > 0) {
+          countProcesses(item.workflowLevels);
+        }
+      });
+    };
+    
+    // If level has children, count them
+    if (level.children && level.children.length > 0) {
+      countProcesses(level.children);
+    } else if (level.workflowLevels && level.workflowLevels.length > 0) {
+      countProcesses(level.workflowLevels);
+    }
+    
+    return {
+      completed,
+      inProgress,
+      notStarted,
+      failed,
+      total
+    };
+  };
+
   // Handle navigation to a specific level
   const handleLevelSelect = (level: WorkflowLevel) => {
     setSelectedLevel(level.id);
@@ -156,6 +207,9 @@ const ApplicationDetailPage = () => {
     // If this level has children, navigate to them
     if (level.children && level.children.length > 0) {
       setCurrentLevels(level.children);
+      
+      // Update process statistics for this level
+      setProcessStats(calculateLevelStats(level));
     } else {
       // If no children, navigate to the workflow instance view
       router.push(`/workflow/${level.id}`);
@@ -167,14 +221,59 @@ const ApplicationDetailPage = () => {
     if (index === 0) {
       // If clicking the application name, reset to asset classes
       if (application) {
-        setCurrentLevels(application.assetClasses.map((assetClass: any) => ({
+        const assetClasses = application.assetClasses.map((assetClass: any) => ({
           id: assetClass.id,
           name: assetClass.name,
           progress: assetClass.progress,
           status: assetClass.status,
           children: assetClass.workflowLevels
-        })));
+        }));
+        
+        setCurrentLevels(assetClasses);
         setBreadcrumbs([{ id: application.id, name: application.name }]);
+        
+        // Reset to application-level statistics
+        let completed = 0;
+        let inProgress = 0;
+        let notStarted = 0;
+        let failed = 0;
+        let total = 0;
+        
+        // Function to count processes recursively
+        const countProcesses = (items: any[]) => {
+          items.forEach(item => {
+            total++;
+            
+            if (item.progress === 100) {
+              completed++;
+            } else if (item.progress === 0) {
+              notStarted++;
+            } else if (item.status === 'rejected' || item.status === 'failed') {
+              failed++;
+            } else {
+              inProgress++;
+            }
+            
+            // Count children if they exist
+            if (item.children && item.children.length > 0) {
+              countProcesses(item.children);
+            }
+            if (item.workflowLevels && item.workflowLevels.length > 0) {
+              countProcesses(item.workflowLevels);
+            }
+          });
+        };
+        
+        // Start counting from asset classes
+        countProcesses(application.assetClasses);
+        
+        setProcessStats({
+          completed,
+          inProgress,
+          notStarted,
+          failed,
+          total
+        });
       }
     } else {
       // Navigate to the selected breadcrumb level
@@ -184,6 +283,7 @@ const ApplicationDetailPage = () => {
       // Find the correct level to display
       let currentApp = application;
       let levels = currentApp.assetClasses;
+      let currentLevel = null;
       
       for (let i = 1; i < newBreadcrumbs.length; i++) {
         const crumbId = newBreadcrumbs[i].id;
@@ -192,6 +292,8 @@ const ApplicationDetailPage = () => {
         const foundLevel = levels.find((level: any) => level.id === crumbId);
         
         if (foundLevel) {
+          currentLevel = foundLevel;
+          
           if (i === newBreadcrumbs.length - 1) {
             // If this is the last breadcrumb, set its children as current levels
             setCurrentLevels(foundLevel.workflowLevels || foundLevel.children || []);
@@ -200,6 +302,11 @@ const ApplicationDetailPage = () => {
             levels = foundLevel.workflowLevels || foundLevel.children || [];
           }
         }
+      }
+      
+      // Update statistics for the current level
+      if (currentLevel) {
+        setProcessStats(calculateLevelStats(currentLevel));
       }
     }
   };
@@ -240,19 +347,53 @@ const ApplicationDetailPage = () => {
         {/* Header with Breadcrumb Navigation and Back Button */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center flex-wrap gap-2">
-            {breadcrumbs.map((crumb, index) => (
-              <React.Fragment key={crumb.id}>
-                {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 px-2"
-                  onClick={() => handleBreadcrumbClick(index)}
-                >
-                  {crumb.name}
-                </Button>
-              </React.Fragment>
-            ))}
+            {breadcrumbs.map((crumb, index) => {
+              // Create the full path for copying
+              const fullPath = breadcrumbs.slice(0, index + 1).map(c => c.name).join(' -> ');
+              
+              return (
+                <React.Fragment key={crumb.id}>
+                  {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  <div className="flex items-center">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-2"
+                      onClick={() => handleBreadcrumbClick(index)}
+                    >
+                      {crumb.name}
+                    </Button>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 ml-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(fullPath);
+                              // Show a temporary tooltip or notification
+                              const button = e.currentTarget;
+                              button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                              setTimeout(() => {
+                                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>';
+                              }, 2000);
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy path</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </React.Fragment>
+              );
+            })}
           </div>
           
           <Button 
@@ -270,7 +411,7 @@ const ApplicationDetailPage = () => {
           <Card className="lg:col-span-2">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle>{application.name}</CardTitle>
+                <CardTitle>{breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 1].name : application.name}</CardTitle>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -288,17 +429,54 @@ const ApplicationDetailPage = () => {
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-medium">Overall Progress</span>
-                  <span className="text-sm font-medium">{application.progress}%</span>
+                  {breadcrumbs.length > 1 ? (
+                    <span className="text-sm font-medium">
+                      {breadcrumbs[breadcrumbs.length - 1].id === application.id 
+                        ? application.progress 
+                        : currentLevels.length > 0 
+                          ? Math.round(currentLevels.reduce((sum, level) => sum + level.progress, 0) / currentLevels.length) 
+                          : 0}%
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium">{application.progress}%</span>
+                  )}
                 </div>
-                <Progress value={application.progress} className="h-2" />
+                <Progress 
+                  value={breadcrumbs.length > 1 
+                    ? (breadcrumbs[breadcrumbs.length - 1].id === application.id 
+                      ? application.progress 
+                      : currentLevels.length > 0 
+                        ? Math.round(currentLevels.reduce((sum, level) => sum + level.progress, 0) / currentLevels.length) 
+                        : 0)
+                    : application.progress} 
+                  className="h-2" 
+                />
               </div>
               
               <div className="flex items-center gap-2">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Badge className={`${application.status === 'in-progress' ? 'bg-blue-500' : 'bg-green-500'} text-white`}>
-                        {application.status}
+                      <Badge 
+                        className={`${
+                          breadcrumbs.length > 1 && breadcrumbs[breadcrumbs.length - 1].id !== application.id
+                            ? currentLevels.some(level => level.status === 'in-progress') 
+                              ? 'bg-blue-500' 
+                              : currentLevels.every(level => level.status === 'completed') 
+                                ? 'bg-green-500' 
+                                : 'bg-yellow-500'
+                            : application.status === 'in-progress' 
+                              ? 'bg-blue-500' 
+                              : 'bg-green-500'
+                        } text-white`}
+                      >
+                        {breadcrumbs.length > 1 && breadcrumbs[breadcrumbs.length - 1].id !== application.id
+                          ? currentLevels.some(level => level.status === 'in-progress') 
+                            ? 'in-progress' 
+                            : currentLevels.every(level => level.status === 'completed') 
+                              ? 'completed' 
+                              : 'pending'
+                          : application.status}
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { ChevronRight, Home, LucideIcon } from 'lucide-react';
+import { ChevronRight, Home, LucideIcon, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Breadcrumb,
@@ -72,6 +72,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
 }) => {
   const router = useRouter();
   const [cachedNodes, setCachedNodes] = useState<HierarchyNode[]>([]);
+  const [copiedNodeIndex, setCopiedNodeIndex] = useState<number | null>(null);
   const config = { ...defaultConfig, ...customConfig };
   
   useEffect(() => {
@@ -133,32 +134,63 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
           
           {cachedNodes.map((node, index) => (
             <React.Fragment key={node.id}>
-              <BreadcrumbItem>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 flex items-center gap-1 hover:bg-secondary/50"
-                  onClick={() => handleNodeClick(node)}
-                >
-                  {config.nodeFormat ? (
-                    config.nodeFormat(node)
-                  ) : (
-                    <>
-                      <span className="font-medium">{node.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({config.idFormat?.(node.id) || node.id})
-                      </span>
-                      {config.showProgress && node.progress !== undefined && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          {config.progressFormat?.(node.progress)}
+              <BreadcrumbItem className="flex items-center">
+                <div className="flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 flex items-center gap-1 hover:bg-secondary/50"
+                    onClick={() => handleNodeClick(node)}
+                  >
+                    {config.nodeFormat ? (
+                      config.nodeFormat(node)
+                    ) : (
+                      <>
+                        <span className="font-medium">{node.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({config.idFormat?.(node.id) || node.id})
                         </span>
-                      )}
-                    </>
-                  )}
-                  {index < cachedNodes.length - 1 && config.separatorIcon && (
-                    <config.separatorIcon className="h-3 w-3 ml-1" />
-                  )}
-                </Button>
+                        {config.showProgress && node.progress !== undefined && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            {config.progressFormat?.(node.progress)}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </Button>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 ml-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Create path string from nodes up to this index
+                            const pathString = cachedNodes
+                              .slice(0, index + 1)
+                              .map(n => n.name)
+                              .join(' -> ');
+                            navigator.clipboard.writeText(pathString);
+                            setCopiedNodeIndex(index);
+                            setTimeout(() => setCopiedNodeIndex(null), 2000);
+                          }}
+                        >
+                          {copiedNodeIndex === index ? (
+                            <Check className="h-3 w-3" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{copiedNodeIndex === index ? "Copied!" : "Copy path"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </BreadcrumbItem>
             </React.Fragment>
           ))}
