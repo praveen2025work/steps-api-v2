@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import AdvancedFilePreview from './files/AdvancedFilePreview';
 
 interface Document {
   id: string;
@@ -28,6 +29,7 @@ interface Document {
 
 interface DocumentsListProps {
   documents: Document[];
+  onPreview?: (document: Document) => void;
 }
 
 // Helper function to get file icon based on file type
@@ -54,8 +56,9 @@ export const getFileIcon = (type: string, fileName: string) => {
   }
 };
 
-const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
+const DocumentsList: React.FC<DocumentsListProps> = ({ documents, onPreview }) => {
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [previewFile, setPreviewFile] = useState<Document | null>(null);
   
   const handleDownload = (documentId: string) => {
     // In a real application, this would trigger a download
@@ -69,33 +72,16 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
 
   const handlePreview = (document: Document) => {
     console.log(`Previewing document ${document.id}`);
+    setPreviewFile(document);
     
-    // In a real application, this would open a preview based on file type
-    const extension = document.name.split('.').pop()?.toLowerCase();
-    
-    switch (extension) {
-      case 'xlsx':
-      case 'xls':
-        console.log('Opening Excel viewer');
-        break;
-      case 'pdf':
-        console.log('Opening PDF viewer');
-        break;
-      case 'html':
-        console.log('Opening HTML preview');
-        break;
-      case 'css':
-        console.log('Opening code viewer');
-        break;
-      case 'msg':
-        console.log('Opening email viewer');
-        break;
-      case 'zip':
-        console.log('Showing zip contents');
-        break;
-      default:
-        console.log('Opening generic file viewer');
+    // If an external preview handler is provided, call it too
+    if (onPreview) {
+      onPreview(document);
     }
+  };
+  
+  const handleClosePreview = () => {
+    setPreviewFile(null);
   };
 
   const downloadDocuments = documents.filter(doc => doc.category === 'download' || !doc.category);
@@ -107,42 +93,52 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
       : uploadDocuments;
 
   return (
-    <div className="space-y-4">
-      <Tabs defaultValue="all" onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all">All Documents ({documents.length})</TabsTrigger>
-          <TabsTrigger value="download">Download ({downloadDocuments.length})</TabsTrigger>
-          <TabsTrigger value="upload">Upload ({uploadDocuments.length})</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="all" className="mt-4">
-          <DocumentsListGrid 
-            documents={displayDocuments} 
-            onDownload={handleDownload} 
-            onUpload={handleUpload} 
-            onPreview={handlePreview} 
-          />
-        </TabsContent>
-        
-        <TabsContent value="download" className="mt-4">
-          <DocumentsListGrid 
-            documents={displayDocuments} 
-            onDownload={handleDownload} 
-            onUpload={handleUpload} 
-            onPreview={handlePreview} 
-          />
-        </TabsContent>
-        
-        <TabsContent value="upload" className="mt-4">
-          <DocumentsListGrid 
-            documents={displayDocuments} 
-            onDownload={handleDownload} 
-            onUpload={handleUpload} 
-            onPreview={handlePreview} 
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
+    <>
+      <div className="space-y-4">
+        <Tabs defaultValue="all" onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="all">All Documents ({documents.length})</TabsTrigger>
+            <TabsTrigger value="download">Download ({downloadDocuments.length})</TabsTrigger>
+            <TabsTrigger value="upload">Upload ({uploadDocuments.length})</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="all" className="mt-4">
+            <DocumentsListGrid 
+              documents={displayDocuments} 
+              onDownload={handleDownload} 
+              onUpload={handleUpload} 
+              onPreview={handlePreview} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="download" className="mt-4">
+            <DocumentsListGrid 
+              documents={displayDocuments} 
+              onDownload={handleDownload} 
+              onUpload={handleUpload} 
+              onPreview={handlePreview} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="upload" className="mt-4">
+            <DocumentsListGrid 
+              documents={displayDocuments} 
+              onDownload={handleDownload} 
+              onUpload={handleUpload} 
+              onPreview={handlePreview} 
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {previewFile && (
+        <AdvancedFilePreview
+          fileId={previewFile.id}
+          fileName={previewFile.name}
+          onClose={handleClosePreview}
+        />
+      )}
+    </>
   );
 };
 

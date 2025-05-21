@@ -20,6 +20,7 @@ import ProcessOverview from './workflow/ProcessOverview';
 import StageOverview from './workflow/StageOverview';
 import WorkflowUnifiedHeader from './workflow/WorkflowUnifiedHeader';
 import { EnhancedFilePreview } from './files/EnhancedFilePreview';
+import AdvancedFilePreview from './files/AdvancedFilePreview';
 import { 
   FileText, 
   Lock, 
@@ -1393,12 +1394,13 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         {/* File Preview Panel - Only shown when a file is selected */}
         {showFilePreview && (
           <div className="flex-1 flex flex-col relative">
-            <EnhancedFilePreview 
-              files={currentSubStageFiles}
-              processId={selectedSubStage || undefined}
-              onClose={handleCloseFilePreview}
-              subStageId={selectedSubStage || undefined}
-            />
+            {currentSubStageFiles.length > 0 && (
+              <AdvancedFilePreview 
+                fileId={currentSubStageFiles[0].id}
+                fileName={currentSubStageFiles[0].name}
+                onClose={handleCloseFilePreview}
+              />
+            )}
           </div>
         )}
         
