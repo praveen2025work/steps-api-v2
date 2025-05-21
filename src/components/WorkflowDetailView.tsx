@@ -863,7 +863,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     subStage.status === 'in-progress' ? 'border-l-[4px] border-l-blue-500' :
                     subStage.status === 'failed' ? 'border-l-[4px] border-l-red-500' :
                     'border-l-[4px] border-l-gray-300'
-                  } ${selectedSubStage === subStage.id ? 'bg-muted/50 ring-1 ring-primary/20' : 'bg-background'} p-2 rounded-sm mb-2 transition-all duration-200 cursor-pointer hover:bg-muted/30`}
+                  } ${selectedSubStage === subStage.id ? 'bg-primary/10 ring-2 ring-primary shadow-sm' : 'bg-background'} p-2 rounded-sm mb-2 transition-all duration-200 cursor-pointer hover:bg-muted/30`}
                   onClick={(e) => {
                     // Prevent event bubbling for buttons inside the row
                     if ((e.target as HTMLElement).closest('button')) {
