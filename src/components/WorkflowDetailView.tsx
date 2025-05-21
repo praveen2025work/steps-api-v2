@@ -952,8 +952,30 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         lastRefreshed={lastRefreshed}
       />
 
-      {/* Control buttons row */}
-      <div className="flex items-center gap-2 mb-2">
+      {/* Modified to include completion percentage */}
+      <WorkflowStagesBar 
+        stages={stages.map(stage => {
+          // Get tasks for this stage
+          const stageTasks = tasks[stage.id] || [];
+          
+          // Calculate completion percentage
+          let completionPercentage = 0;
+          if (stageTasks.length > 0) {
+            const completedTasks = stageTasks.filter(task => task.status === 'completed').length;
+            completionPercentage = Math.round((completedTasks / stageTasks.length) * 100);
+          }
+          
+          return {
+            ...stage,
+            completionPercentage
+          };
+        })} 
+        activeStage={activeStage} 
+        onStageClick={handleStageClick} 
+      />
+
+      {/* Control buttons row - moved below stage cards */}
+      <div className="flex items-center gap-2 my-2">
         {/* Show Process Cards button - far left */}
         <Button
           variant="outline"
@@ -1006,28 +1028,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           {showWorkflowDetail ? "Hide Workflow Detail" : "Show Workflow Detail"}
         </Button>
       </div>
-
-      {/* Modified to include completion percentage */}
-      <WorkflowStagesBar 
-        stages={stages.map(stage => {
-          // Get tasks for this stage
-          const stageTasks = tasks[stage.id] || [];
-          
-          // Calculate completion percentage
-          let completionPercentage = 0;
-          if (stageTasks.length > 0) {
-            const completedTasks = stageTasks.filter(task => task.status === 'completed').length;
-            completionPercentage = Math.round((completedTasks / stageTasks.length) * 100);
-          }
-          
-          return {
-            ...stage,
-            completionPercentage
-          };
-        })} 
-        activeStage={activeStage} 
-        onStageClick={handleStageClick} 
-      />
 
       <div className="flex gap-4">
         {/* Main Content - Only visible when file preview is not shown or explicitly kept visible */}
