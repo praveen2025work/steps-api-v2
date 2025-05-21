@@ -663,35 +663,35 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       
       // Set current sub-stage files
       if (subStage && subStage.files) {
-        setCurrentSubStageFiles(subStage.files.map((file, index) => ({
+        const filesList = subStage.files.map((file, index) => ({
           id: `file-${subStage.id}-${index}`,
           name: file.name,
           type: file.name.split('.').pop() || '',
           size: file.size,
           category: file.type
-        })));
-      }
-      
-      // If file preview is already open, update it for the new process
-      if (showFilePreview && subStage && subStage.files && subStage.files.length > 0) {
-        setSelectedFile(subStage.files[0].name);
+        }));
+        
+        setCurrentSubStageFiles(filesList);
+        
+        // Exception case: When switching to a different sub-stage process card
+        // Automatically show files and preview the first file
+        if (subStage.files.length > 0) {
+          // Navigate to files section
+          setRightPanelContent('documents');
+          
+          // Auto-preview the first file
+          setSelectedFile(subStage.files[0].name);
+          setShowFilePreview(true);
+          // Hide workflow detail to give more space to file preview
+          setShowWorkflowDetail(false);
+          setShowSubStageCards(false);
+        }
       }
     }
   };
   
   const handleFileClick = (file: any, subStageId: string) => {
-    // If clicking the same file that's already selected, close the preview
-    if (selectedFile === file.name && showFilePreview) {
-      setShowFilePreview(false);
-      setSelectedFile(null);
-      return;
-    }
-    
-    setSelectedFile(file.name);
-    setShowFilePreview(true);
-    // Hide both workflow detail view and sub-stage cards to give more space to file preview
-    setShowWorkflowDetail(false);
-    setShowSubStageCards(false);
+    // Set the selected sub-stage
     setSelectedSubStage(subStageId);
     
     // Find the sub-stage
@@ -708,6 +708,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         category: file.type
       })));
     }
+    
+    // Navigate to the workflow detail view's Files section
+    setRightPanelContent('documents');
+    setRightPanelOpen(true);
+    setShowWorkflowDetail(true);
+    
+    // Don't automatically open file preview
+    setShowFilePreview(false);
+    setSelectedFile(null);
   };
   
   const toggleSubStageCards = () => {
@@ -747,11 +756,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       case 'stages':
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
+        
         // Add a custom handler for document preview
         const handleDocumentPreview = (document: any) => {
           // Set the document as the selected file and show the preview
           setSelectedFile(document.name);
           setShowFilePreview(true);
+          // Hide workflow detail view to give more space to file preview
+          setShowWorkflowDetail(false);
+          setShowSubStageCards(false);
           
           // Create a file item for the preview
           const fileItem = {
@@ -770,21 +783,23 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-base font-medium">Files</h3>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-7 text-xs"
-                onClick={() => {
-                  // If there are documents, preview the first one
-                  const docs = stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments;
-                  if (docs.length > 0) {
-                    handleDocumentPreview(docs[0]);
-                  }
-                }}
-              >
-                <Eye className="h-3.5 w-3.5 mr-1" />
-                Preview
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    // If there are documents, preview the first one
+                    const docs = stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments;
+                    if (docs.length > 0) {
+                      handleDocumentPreview(docs[0]);
+                    }
+                  }}
+                >
+                  <Eye className="h-3.5 w-3.5 mr-1" />
+                  Preview
+                </Button>
+              </div>
             </div>
             <DocumentsList 
               documents={stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments} 
@@ -1150,14 +1165,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                className="h-6 w-6 p-0 hover:bg-muted"
+                                className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleFileClick(subStage.files[0], subStage.id);
                                 }}
-                                title={`Files (${subStage.files.length})`}
+                                title={`View Files (${subStage.files.length})`}
                               >
                                 <FileText className="h-3.5 w-3.5" />
+                                <span className="text-xs">Files</span>
                               </Button>
                             )}
                             
