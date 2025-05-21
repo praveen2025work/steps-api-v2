@@ -685,7 +685,8 @@ export function EnhancedFilePreview({
       {/* Footer with actions */}
       <div className="border-t mt-2 pt-2 flex justify-between">
         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onClose}>
-          Back to Process View
+          <X className="h-3.5 w-3.5 mr-1" />
+          Close Preview
         </Button>
         
         <div className="flex gap-2">

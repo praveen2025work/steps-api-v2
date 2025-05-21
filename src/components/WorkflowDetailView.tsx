@@ -645,10 +645,16 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     // If found, use the sub-stage ID, otherwise use the process ID
     const subStageId = subStage ? subStage.id : processId;
     
-    // If clicking the same sub-stage, just toggle the panel
+    // If clicking the same sub-stage, deselect it and hide the preview if it's open
     if (selectedSubStage === subStageId) {
       setSelectedSubStage(null);
       setRightPanelContent('stage-overview');
+      
+      // If file preview is open, close it when deselecting the process
+      if (showFilePreview) {
+        setShowFilePreview(false);
+        setSelectedFile(null);
+      }
     } else {
       setSelectedSubStage(subStageId);
       setRightPanelContent('process-overview');
@@ -665,10 +671,22 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           category: file.type
         })));
       }
+      
+      // If file preview is already open, update it for the new process
+      if (showFilePreview && subStage && subStage.files && subStage.files.length > 0) {
+        setSelectedFile(subStage.files[0].name);
+      }
     }
   };
   
   const handleFileClick = (file: any, subStageId: string) => {
+    // If clicking the same file that's already selected, close the preview
+    if (selectedFile === file.name && showFilePreview) {
+      setShowFilePreview(false);
+      setSelectedFile(null);
+      return;
+    }
+    
     setSelectedFile(file.name);
     setShowFilePreview(true);
     // Hide both workflow detail view and sub-stage cards to give more space to file preview
@@ -704,6 +722,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   };
   
   const toggleWorkflowDetail = () => {
+    // Toggle the workflow detail view visibility
     setShowWorkflowDetail(!showWorkflowDetail);
   };
 
@@ -1276,7 +1295,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         
         {/* Right Panel - 40% width or 30% when file preview is shown */}
         <div className={`bg-background border-l transition-all duration-200 ${
-          !showWorkflowDetail && showFilePreview ? 'flex-[0.3]' : 
+          !showWorkflowDetail && showFilePreview ? 'hidden' : 
           rightPanelContent ? (showFilePreview ? 'flex-[0.3]' : 'flex-[0.4]') : 'w-[200px]'
         }`}>
           {/* Sticky Header and Menu */}
@@ -1284,94 +1303,105 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             <div className="p-1">
               {/* Simplified menu - only show Config and Overview by default */}
               <div className="flex flex-wrap gap-1 items-center">
-                {/* Always show Overview and Config options */}
-                <Button 
-                  variant={rightPanelContent === 'stage-overview' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="h-6 text-xs"
-                  onClick={() => setRightPanelContent('stage-overview')}
-                >
-                  <Layers className="h-3 w-3 mr-1" />
-                  Stage Overview
-                </Button>
-                
-                <Button 
-                  variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="h-6 text-xs"
-                  onClick={() => setRightPanelContent('app-parameters')}
-                >
-                  <Settings className="h-3 w-3 mr-1" />
-                  App Config
-                </Button>
-                
-                <Button 
-                  variant={rightPanelContent === 'global-parameters' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="h-6 text-xs"
-                  onClick={() => setRightPanelContent('global-parameters')}
-                >
-                  <Settings className="h-3 w-3 mr-1" />
-                  Global Config
-                </Button>
-                
-                {/* Show additional options only when a process is selected */}
-                {selectedSubStage && (
+                {/* Only show navigation options when not in preview mode */}
+                {!showFilePreview && (
                   <>
-                    <Separator orientation="vertical" className="h-6 mx-1" />
-                    
+                    {/* Stage-level navigation */}
                     <Button 
-                      variant={rightPanelContent === 'process-overview' ? 'secondary' : 'ghost'}
+                      variant={rightPanelContent === 'stage-overview' ? 'secondary' : 'ghost'}
                       size="sm"
                       className="h-6 text-xs"
-                      onClick={() => setRightPanelContent('process-overview')}
+                      onClick={() => setRightPanelContent('stage-overview')}
                     >
-                      <FileText className="h-3 w-3 mr-1" />
-                      Process Overview
+                      <Layers className="h-3 w-3 mr-1" />
+                      Stage Overview
                     </Button>
                     
                     <Button 
-                      variant={rightPanelContent === 'parameters' ? 'secondary' : 'ghost'}
+                      variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
                       size="sm"
                       className="h-6 text-xs"
-                      onClick={() => setRightPanelContent('parameters')}
+                      onClick={() => setRightPanelContent('app-parameters')}
                     >
                       <Settings className="h-3 w-3 mr-1" />
-                      Process Config
+                      App Config
                     </Button>
                     
                     <Button 
-                      variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
+                      variant={rightPanelContent === 'global-parameters' ? 'secondary' : 'ghost'}
                       size="sm"
                       className="h-6 text-xs"
-                      onClick={() => setRightPanelContent('documents')}
+                      onClick={() => setRightPanelContent('global-parameters')}
                     >
-                      <FileText className="h-3 w-3 mr-1" />
-                      Files
+                      <Settings className="h-3 w-3 mr-1" />
+                      Global Config
                     </Button>
                     
-                    <Button 
-                      variant={rightPanelContent === 'dependencies' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-6 text-xs"
-                      onClick={() => setRightPanelContent('dependencies')}
-                    >
-                      <Network className="h-3 w-3 mr-1" />
-                      Dependencies
-                    </Button>
-                    
-                    <div className="flex items-center ml-auto">
-                      <Button 
-                        variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
-                        size="sm"
-                        className="h-6 text-xs"
-                        onClick={() => setRightPanelContent('queries')}
-                      >
-                        <MessageSquare className="h-3 w-3 mr-1" />
-                        Queries
-                      </Button>
-                    </div>
+                    {/* Show process-level navigation only when a process is selected */}
+                    {selectedSubStage && (
+                      <>
+                        <Separator orientation="vertical" className="h-6 mx-1" />
+                        
+                        <Button 
+                          variant={rightPanelContent === 'process-overview' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('process-overview')}
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          Process Overview
+                        </Button>
+                        
+                        <Button 
+                          variant={rightPanelContent === 'parameters' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('parameters')}
+                        >
+                          <Settings className="h-3 w-3 mr-1" />
+                          Process Config
+                        </Button>
+                        
+                        <Button 
+                          variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('documents')}
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          Files
+                        </Button>
+                        
+                        <Button 
+                          variant={rightPanelContent === 'dependencies' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setRightPanelContent('dependencies')}
+                        >
+                          <Network className="h-3 w-3 mr-1" />
+                          Dependencies
+                        </Button>
+                        
+                        <div className="flex items-center ml-auto">
+                          <Button 
+                            variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => setRightPanelContent('queries')}
+                          >
+                            <MessageSquare className="h-3 w-3 mr-1" />
+                            Queries
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </>
+                )}
+                {/* When in preview mode, show a message */}
+                {showFilePreview && (
+                  <div className="w-full text-center text-xs text-muted-foreground py-1">
+                    Navigation hidden in preview mode
+                  </div>
                 )}
               </div>
             </div>
