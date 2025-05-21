@@ -284,20 +284,7 @@ const ProcessQueries: React.FC<ProcessQueriesProps> = ({ processId, processName 
   return (
     <div className="h-full flex flex-col">
       <div className="mb-4">
-        <div className="flex items-center justify-between">
-          {processId && (
-            <div>
-              <h2 className="text-lg font-semibold">Queries</h2>
-            </div>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2 mt-3">
-          {processId && (
-            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20">
-              Process: {processId}
-            </Badge>
-          )}
+        <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -311,8 +298,8 @@ const ProcessQueries: React.FC<ProcessQueriesProps> = ({ processId, processName 
           <Dialog open={isNewQueryDialogOpen} onOpenChange={setIsNewQueryDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                New Query
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Query
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
@@ -599,7 +586,7 @@ const ProcessQueries: React.FC<ProcessQueriesProps> = ({ processId, processName 
                 {filteredQueries.map((query) => (
                   <Card 
                     key={query.id} 
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-l-4 border-transparent hover:border-l-blue-500"
                     onClick={() => setActiveQueryId(query.id)}
                   >
                     <CardContent className="p-4">
