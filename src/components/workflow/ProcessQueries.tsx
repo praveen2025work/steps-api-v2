@@ -285,15 +285,19 @@ const ProcessQueries: React.FC<ProcessQueriesProps> = ({ processId, processName 
     <div className="h-full flex flex-col">
       <div className="mb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Process Queries</h2>
-            <p className="text-sm text-muted-foreground">
-              {processId} - {processName}
-            </p>
-          </div>
+          {processId && (
+            <div>
+              <h2 className="text-lg font-semibold">Queries</h2>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center gap-2 mt-3">
+          {processId && (
+            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20">
+              Process: {processId}
+            </Badge>
+          )}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -401,13 +405,20 @@ const ProcessQueries: React.FC<ProcessQueriesProps> = ({ processId, processName 
         {activeQuery ? (
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between mb-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveQueryId(null)}
-              >
-                ← Back to Queries
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveQueryId(null)}
+                >
+                  ← Back to Queries
+                </Button>
+                {processId && (
+                  <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20">
+                    Process: {processId}
+                  </Badge>
+                )}
+              </div>
               <div className="flex gap-2">
                 {activeQuery.status === 'open' && (
                   <>
