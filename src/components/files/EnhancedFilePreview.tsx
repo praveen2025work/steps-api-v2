@@ -37,6 +37,7 @@ interface EnhancedFilePreviewProps {
   files: FileItem[]
   processId?: string
   onClose: () => void
+  subStageId?: string
 }
 
 // Mock API call - would be replaced with actual API
@@ -221,7 +222,7 @@ const fetchFileDetails = async (fileId: string): Promise<FileDetails> => {
   return mockFile
 }
 
-export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFilePreviewProps) {
+export function EnhancedFilePreview({ files, processId, onClose, subStageId }: EnhancedFilePreviewProps) {
   const [selectedFileId, setSelectedFileId] = useState<string | null>(files.length > 0 ? files[0].id : null)
   const [fileDetails, setFileDetails] = useState<FileDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -443,7 +444,7 @@ export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFileP
       {/* File List Header */}
       <div className="border-b pb-2 mb-4">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-medium">Available Files</h3>
+          <h3 className="text-lg font-medium">Preview Files</h3>
           <Button 
             variant="ghost" 
             size="sm" 
@@ -480,10 +481,9 @@ export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFileP
             </div>
           ) : (
             <Tabs defaultValue="preview" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="preview">Preview</TabsTrigger>
                 <TabsTrigger value="data">Data Tabs</TabsTrigger>
-                <TabsTrigger value="metadata">Metadata</TabsTrigger>
                 <TabsTrigger value="ai-analysis" className="flex items-center gap-1">
                   <Bot className="h-3 w-3" />
                   AI Analysis
@@ -501,6 +501,7 @@ export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFileP
                       <TabsTrigger value="tab1">Sheet 1</TabsTrigger>
                       <TabsTrigger value="tab2">Sheet 2</TabsTrigger>
                       <TabsTrigger value="tab3">Sheet 3</TabsTrigger>
+                      <TabsTrigger value="pivot">Pivot</TabsTrigger>
                     </TabsList>
                     <TabsContent value="tab1">
                       <div className="bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
@@ -612,6 +613,64 @@ export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFileP
                         </table>
                       </div>
                     </TabsContent>
+                    <TabsContent value="pivot">
+                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
+                        <table className="w-full border-collapse text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left p-2 font-medium">Region</th>
+                              <th className="text-left p-2 font-medium">Q1</th>
+                              <th className="text-left p-2 font-medium">Q2</th>
+                              <th className="text-left p-2 font-medium">Q3</th>
+                              <th className="text-left p-2 font-medium">Q4</th>
+                              <th className="text-left p-2 font-medium">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b">
+                              <td className="p-2 font-medium">EMEA</td>
+                              <td className="p-2">$245,000</td>
+                              <td className="p-2">$267,500</td>
+                              <td className="p-2">$289,300</td>
+                              <td className="p-2">$312,800</td>
+                              <td className="p-2 font-bold">$1,114,600</td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="p-2 font-medium">APAC</td>
+                              <td className="p-2">$187,200</td>
+                              <td className="p-2">$195,400</td>
+                              <td className="p-2">$210,800</td>
+                              <td className="p-2">$225,300</td>
+                              <td className="p-2 font-bold">$818,700</td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="p-2 font-medium">NA</td>
+                              <td className="p-2">$312,500</td>
+                              <td className="p-2">$325,700</td>
+                              <td className="p-2">$342,900</td>
+                              <td className="p-2">$367,800</td>
+                              <td className="p-2 font-bold">$1,348,900</td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="p-2 font-medium">LATAM</td>
+                              <td className="p-2">$98,300</td>
+                              <td className="p-2">$105,600</td>
+                              <td className="p-2">$112,900</td>
+                              <td className="p-2">$124,500</td>
+                              <td className="p-2 font-bold">$441,300</td>
+                            </tr>
+                            <tr className="bg-muted/50">
+                              <td className="p-2 font-bold">Total</td>
+                              <td className="p-2 font-bold">$843,000</td>
+                              <td className="p-2 font-bold">$894,200</td>
+                              <td className="p-2 font-bold">$955,900</td>
+                              <td className="p-2 font-bold">$1,030,400</td>
+                              <td className="p-2 font-bold">$3,723,500</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </TabsContent>
                   </Tabs>
                 ) : (
                   <div className="bg-muted p-4 rounded-md text-center">
@@ -619,10 +678,6 @@ export function EnhancedFilePreview({ files, processId, onClose }: EnhancedFileP
                     <p className="text-sm text-muted-foreground mt-2">Only Excel (.xlsx) and CSV files can display multiple data tabs.</p>
                   </div>
                 )}
-              </TabsContent>
-              
-              <TabsContent value="metadata" className="py-4">
-                {renderMetadata()}
               </TabsContent>
               
               <TabsContent value="ai-analysis" className="py-4">

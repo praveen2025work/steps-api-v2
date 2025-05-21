@@ -666,7 +666,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const handleFileClick = (file: any, subStageId: string) => {
     setSelectedFile(file.name);
     setShowFilePreview(true);
-    setShowWorkflowDetail(false);
+    // Keep workflow detail visible but reduced
+    setShowWorkflowDetail(true);
+    setSelectedSubStage(subStageId);
     
     // Find the sub-stage
     const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
@@ -1153,11 +1155,22 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
         {/* File Preview Panel - Only shown when a file is selected */}
         {showFilePreview && (
-          <div className={`${showWorkflowDetail ? 'flex-[0.4]' : 'flex-[0.7]'} border-l border-r`}>
+          <div className={`${showWorkflowDetail ? 'flex-[0.4]' : 'flex-[0.7]'} border-l border-r flex flex-col`}>
+            {/* Display the selected sub-stage card above the file preview */}
+            {selectedSubStage && (
+              <div className="p-3 border-b">
+                {renderSubStageCard(
+                  (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+                    .find(s => s.id === selectedSubStage) || 
+                    (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)[0]
+                )}
+              </div>
+            )}
             <EnhancedFilePreview 
               files={currentSubStageFiles}
               processId={selectedSubStage || undefined}
               onClose={handleCloseFilePreview}
+              subStageId={selectedSubStage || undefined}
             />
           </div>
         )}
