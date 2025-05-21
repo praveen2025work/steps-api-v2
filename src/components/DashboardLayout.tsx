@@ -60,7 +60,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               <DateSelector 
                 buttonVariant="default" 
                 buttonSize="default" 
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-sm border border-primary/20 ml-2"
+                className="bg-white text-gray-800 hover:bg-slate-50 font-medium shadow-sm border border-gray-200 ml-2"
               />
             </div>
             

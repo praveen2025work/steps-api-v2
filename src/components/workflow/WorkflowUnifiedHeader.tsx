@@ -113,7 +113,7 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
         <div className="flex items-center gap-1">
           <div className="flex items-center mr-3 text-xs text-muted-foreground">
             <Clock className="h-3 w-3 mr-1" />
-            <span>Auto-refresh in: {countdown}s</span>
+            <span>Last refreshed: {secondsSinceRefresh}s | Auto-refresh in: {countdown}s</span>
           </div>
           
           <Button 
