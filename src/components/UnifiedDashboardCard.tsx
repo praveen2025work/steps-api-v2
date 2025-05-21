@@ -39,7 +39,10 @@ const UnifiedDashboardCard = ({
     if (type === 'workflow') {
       router.push(`/workflow/${id}`);
     } else if (type === 'application') {
-      router.push(`/application/${id}`);
+      // Make sure we're using the correct application ID format
+      // The application ID should be in the format "app-1001"
+      const appId = id.startsWith('app-') ? id : `app-${id}`;
+      router.push(`/application/${appId}`);
     } else {
       router.push(`/application/${id}`);
     }

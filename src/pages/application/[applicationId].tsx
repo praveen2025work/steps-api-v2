@@ -50,11 +50,50 @@ const ApplicationDetailPage = () => {
   useEffect(() => {
     if (applicationId) {
       setLoading(true);
+      console.log("Looking for application with ID:", applicationId);
       
-      // Find the application in the hierarchical data
-      const app = mockHierarchicalWorkflows.find(app => app.id === applicationId);
+      // First, try to find the application directly by ID
+      let app = mockHierarchicalWorkflows.find(app => app.id === applicationId);
+      
+      // If not found by direct ID match, try to find by name (case-insensitive)
+      if (!app) {
+        app = mockHierarchicalWorkflows.find(
+          app => app.name.toLowerCase() === String(applicationId).toLowerCase().replace('app-', '')
+        );
+      }
+      
+      // If still not found, check if it's an asset class or workflow level
+      if (!app) {
+        // Search through all applications for the asset class or workflow level
+        for (const application of mockHierarchicalWorkflows) {
+          // Check asset classes
+          const assetClass = application.assetClasses.find(
+            ac => ac.id === applicationId || ac.name.toLowerCase() === String(applicationId).toLowerCase()
+          );
+          
+          if (assetClass) {
+            // If it's an asset class, redirect to the parent application
+            router.push(`/application/${application.id}`);
+            return;
+          }
+          
+          // Check workflow levels
+          for (const ac of application.assetClasses) {
+            const workflowLevel = ac.workflowLevels.find(
+              wf => wf.id === applicationId || wf.name.toLowerCase() === String(applicationId).toLowerCase()
+            );
+            
+            if (workflowLevel) {
+              // If it's a workflow level, redirect to the parent application
+              router.push(`/application/${application.id}`);
+              return;
+            }
+          }
+        }
+      }
       
       if (app) {
+        console.log("Found application:", app.name);
         setApplication(app);
         // Initialize with top-level asset classes
         setCurrentLevels(app.assetClasses.map(assetClass => ({

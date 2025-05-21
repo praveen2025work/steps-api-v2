@@ -11,12 +11,15 @@ import { getAllStages } from '@/data/stageSpecificData';
 
 // Find workflow by ID from hierarchical data
 const findWorkflowById = (id: string) => {
+  console.log("Finding workflow with ID or name:", id);
+  
   // Helper function to search through the hierarchy
   const searchInWorkflowLevels = (levels: any[], targetId: string): any => {
     for (const level of levels) {
       // Case-insensitive ID comparison
       if (level.id.toLowerCase() === targetId.toLowerCase() || 
           (level.name && level.name.toLowerCase() === targetId.toLowerCase())) {
+        console.log(`Found match: ${level.name} (${level.id})`);
         return level;
       }
       
@@ -35,6 +38,7 @@ const findWorkflowById = (id: string) => {
     // Check if the app itself is the target (case-insensitive)
     if (app.id.toLowerCase() === id.toLowerCase() || 
         (app.name && app.name.toLowerCase() === id.toLowerCase())) {
+      console.log(`Found application match: ${app.name} (${app.id})`);
       return app;
     }
     
@@ -42,6 +46,7 @@ const findWorkflowById = (id: string) => {
     for (const assetClass of app.assetClasses) {
       if (assetClass.id.toLowerCase() === id.toLowerCase() || 
           (assetClass.name && assetClass.name.toLowerCase() === id.toLowerCase())) {
+        console.log(`Found asset class match: ${assetClass.name} (${assetClass.id})`);
         return assetClass;
       }
       
@@ -49,6 +54,7 @@ const findWorkflowById = (id: string) => {
       for (const wfLevel of assetClass.workflowLevels) {
         if (wfLevel.id.toLowerCase() === id.toLowerCase() || 
             (wfLevel.name && wfLevel.name.toLowerCase() === id.toLowerCase())) {
+          console.log(`Found workflow level match: ${wfLevel.name} (${wfLevel.id})`);
           return wfLevel;
         }
         
@@ -61,6 +67,7 @@ const findWorkflowById = (id: string) => {
     }
   }
   
+  console.log("No workflow found with ID or name:", id);
   return null;
 };
 
