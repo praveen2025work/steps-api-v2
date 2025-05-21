@@ -19,6 +19,7 @@ import ProcessDependencies from './workflow/ProcessDependencies';
 import ProcessOverview from './workflow/ProcessOverview';
 import StageOverview from './workflow/StageOverview';
 import WorkflowUnifiedHeader from './workflow/WorkflowUnifiedHeader';
+import { EnhancedFilePreview } from './files/EnhancedFilePreview';
 import { 
   FileText, 
   Lock, 
@@ -49,6 +50,7 @@ import {
   AlertCircle,
   MessageSquare
 } from 'lucide-react';
+import { getFileIcon } from './DocumentsList';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
 import DocumentsList from './DocumentsList';
@@ -128,6 +130,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false);
   const [stageSpecificSubStages, setStageSpecificSubStages] = useState<SubStage[]>([]);
   const [stageSpecificDocuments, setStageSpecificDocuments] = useState<any[]>([]);
+  const [showFilePreview, setShowFilePreview] = useState<boolean>(false);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [currentSubStageFiles, setCurrentSubStageFiles] = useState<any[]>([]);
 
   // Build hierarchy path from progressSteps
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([]);
@@ -643,7 +648,43 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       setRightPanelContent('process-overview');
       setRightPanelOpen(true);
       setIsRightPanelExpanded(true);
+      
+      // Set current sub-stage files
+      if (subStage && subStage.files) {
+        setCurrentSubStageFiles(subStage.files.map((file, index) => ({
+          id: `file-${subStage.id}-${index}`,
+          name: file.name,
+          type: file.name.split('.').pop() || '',
+          size: file.size,
+          category: file.type
+        })));
+      }
     }
+  };
+  
+  const handleFileClick = (file: any, subStageId: string) => {
+    setSelectedFile(file.name);
+    setShowFilePreview(true);
+    
+    // Find the sub-stage
+    const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+      .find(s => s.id === subStageId);
+    
+    // Set current sub-stage files
+    if (subStage && subStage.files) {
+      setCurrentSubStageFiles(subStage.files.map((file, index) => ({
+        id: `file-${subStage.id}-${index}`,
+        name: file.name,
+        type: file.name.split('.').pop() || '',
+        size: file.size,
+        category: file.type
+      })));
+    }
+  };
+  
+  const handleCloseFilePreview = () => {
+    setShowFilePreview(false);
+    setSelectedFile(null);
   };
 
   const renderRightPanelContent = () => {
@@ -851,8 +892,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       />
 
       <div className="flex gap-4">
-        {/* Main Content - 60% width */}
-        <div className="flex-[0.6]">
+        {/* Main Content - 60% width, or less when file preview is shown */}
+        <div className={`${showFilePreview ? 'flex-[0.3]' : 'flex-[0.6]'}`}>
           {/* Process Overview removed from main content as it's now in the right panel */}
           <div className="space-y-4">
             {(stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages).map((subStage, index) => (
@@ -915,8 +956,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                                 className="h-6 w-6 p-0 hover:bg-muted"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleProcessIdClick(subStage.processId);
-                                  setRightPanelContent('documents');
+                                  handleFileClick(subStage.files[0], subStage.id);
                                 }}
                                 title={`Files (${subStage.files.length})`}
                               >
@@ -1076,7 +1116,26 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                   </CollapsibleTrigger>
 
                   <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-muted">
-                    {/* Files section removed from here as it's now in the process-level actions */}
+                    {/* Files section */}
+                    {subStage.files && subStage.files.length > 0 && (
+                      <div className="mb-2">
+                        <div className="text-xs font-medium mb-1">Files:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {subStage.files.map((file, fileIndex) => (
+                            <Button 
+                              key={fileIndex}
+                              variant="outline" 
+                              size="sm" 
+                              className="h-6 text-xs flex items-center gap-1"
+                              onClick={() => handleFileClick(file, subStage.id)}
+                            >
+                              {getFileIcon(file.type, file.name)}
+                              <span className="truncate max-w-[100px]">{file.name}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Performance Metrics - Compact */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
@@ -1108,8 +1167,19 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           </div>
         </div>
 
-        {/* Right Panel - 40% width */}
-        <div className={`bg-background border-l transition-all duration-200 ${rightPanelContent ? 'flex-[0.4]' : 'w-[200px]'}`}>
+        {/* File Preview Panel - Only shown when a file is selected */}
+        {showFilePreview && (
+          <div className="flex-[0.4] border-l border-r">
+            <EnhancedFilePreview 
+              files={currentSubStageFiles}
+              processId={selectedSubStage || undefined}
+              onClose={handleCloseFilePreview}
+            />
+          </div>
+        )}
+        
+        {/* Right Panel - 40% width or 30% when file preview is shown */}
+        <div className={`bg-background border-l transition-all duration-200 ${rightPanelContent ? (showFilePreview ? 'flex-[0.3]' : 'flex-[0.4]') : 'w-[200px]'}`}>
           {/* Sticky Header and Menu */}
           <div className="sticky top-0 bg-background border-b z-10">
             <div className="p-1">
