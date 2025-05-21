@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,7 +13,8 @@ import {
   Plus, 
   Unlock,
   Lock,
-  ArrowRight
+  ArrowRight,
+  Clock
 } from 'lucide-react';
 import { HierarchyNode } from '../WorkflowHierarchyBreadcrumb';
 import { showSuccessToast, showInfoToast, showWarningToast } from '@/lib/toast';
@@ -34,6 +35,7 @@ interface WorkflowUnifiedHeaderProps {
     pending: number;
     processing: number;
   };
+  lastRefreshed?: Date;
 }
 
 const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
@@ -45,9 +47,13 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
   isLocked,
   onToggleLock,
   onRefresh,
-  taskCounts
+  taskCounts,
+  lastRefreshed = new Date()
 }) => {
   const router = useRouter();
+  const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
+  const [countdown, setCountdown] = useState<number>(15);
+  
   // Calculate task counts if not provided
   const defaultTaskCounts = taskCounts || {
     completed: 3,
@@ -55,6 +61,30 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
     rejected: 0,
     pending: 2,
     processing: 1
+  };
+  
+  // Update seconds since last refresh
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const seconds = Math.floor((new Date().getTime() - lastRefreshed.getTime()) / 1000);
+      setSecondsSinceRefresh(seconds);
+      
+      setCountdown(prev => {
+        if (prev <= 1) {
+          return 15;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [lastRefreshed]);
+  
+  // Get progress color based on percentage
+  const getProgressColor = (progressValue: number) => {
+    if (progressValue >= 65) return "bg-green-500";
+    if (progressValue >= 50) return "bg-amber-600";
+    return "bg-orange-500";
   };
 
   // Handle action buttons
@@ -80,6 +110,11 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
           </Badge>
         </div>
         <div className="flex items-center gap-1">
+          <div className="flex items-center mr-3 text-xs text-muted-foreground">
+            <Clock className="h-3 w-3 mr-1" />
+            <span>Last refreshed: {secondsSinceRefresh}s | Auto-refresh in: {countdown}s</span>
+          </div>
+          
           <Button 
             variant="ghost" 
             size="icon" 
@@ -138,30 +173,40 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
       
       <CardContent className="pb-3">
         <div className="flex flex-col space-y-3">
-          {/* Hierarchy Path with Progress - Made clickable */}
+          {/* Hierarchy Path with Progress - Made clickable with visual indicators */}
           <div className="flex items-center gap-1 text-sm">
             {hierarchyPath.map((node, index) => (
               <React.Fragment key={node.id}>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 px-2 flex items-center gap-1 hover:bg-secondary/50"
-                  onClick={() => {
-                    // Navigate to the appropriate level
-                    if (node.level === 'app') {
-                      router.push(`/application/${node.id}`);
-                    } else if (index < hierarchyPath.length - 1) {
-                      // If not the last node (current level), navigate to application with this level selected
-                      const appNode = hierarchyPath.find(n => n.level === 'app');
-                      if (appNode) {
-                        router.push(`/application/${appNode.id}`);
+                <div className="flex flex-col">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 px-2 flex items-center gap-1 hover:bg-secondary/50"
+                    onClick={() => {
+                      // Navigate to the appropriate level
+                      if (node.level === 'app') {
+                        router.push(`/application/${node.id}`);
+                      } else if (index < hierarchyPath.length - 1) {
+                        // If not the last node (current level), navigate to application with this level selected
+                        const appNode = hierarchyPath.find(n => n.level === 'app');
+                        if (appNode) {
+                          router.push(`/application/${appNode.id}`);
+                        }
                       }
-                    }
-                  }}
-                >
-                  <span className="font-medium">{node.name}</span>
-                  <span className="ml-1 text-muted-foreground">({node.progress}%)</span>
-                </Button>
+                    }}
+                  >
+                    <span className="font-medium">{node.name}</span>
+                    <span className="ml-1 text-muted-foreground">({node.progress}%)</span>
+                  </Button>
+                  
+                  {/* Visual progress indicator with color coding */}
+                  <div className="h-1 w-full bg-gray-200 rounded-full mt-1 overflow-hidden">
+                    <div 
+                      className={`h-full ${getProgressColor(node.progress)}`} 
+                      style={{ width: `${node.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
                 {index < hierarchyPath.length - 1 && (
                   <ArrowRight className="h-4 w-4 text-muted-foreground mx-1" />
                 )}

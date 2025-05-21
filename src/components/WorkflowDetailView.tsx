@@ -816,11 +816,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         onToggleLock={toggleLock}
         onRefresh={handleRefresh}
         taskCounts={calculateTaskCounts()}
+        lastRefreshed={lastRefreshed}
       />
-      
-      <div className="text-xs text-muted-foreground text-right">
-        Last refreshed: {getSecondsSinceRefresh()} seconds ago | Auto-refresh in: {countdown}s
-      </div>
 
       {/* Modified to include completion percentage */}
       <WorkflowStagesBar 
