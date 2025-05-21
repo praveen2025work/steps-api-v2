@@ -625,27 +625,44 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   };
 
   const handleProcessIdClick = (processId: string) => {
-    setSelectedSubStage(processId);
-    setRightPanelContent('process-overview');
-    setRightPanelOpen(true);
-    setIsRightPanelExpanded(true);
+    // If clicking the same process ID, just toggle the panel
+    if (selectedSubStage === processId) {
+      setSelectedSubStage(null);
+      setRightPanelContent('stage-overview');
+    } else {
+      setSelectedSubStage(processId);
+      setRightPanelContent('process-overview');
+      setRightPanelOpen(true);
+      setIsRightPanelExpanded(true);
+    }
   };
 
   const renderRightPanelContent = () => {
+    // If a specific process is selected, use its ID and name
+    const currentProcessId = selectedSubStage || activeStage;
+    const currentProcessName = selectedSubStage 
+      ? (stageSpecificSubStages.find(s => s.id === selectedSubStage)?.name || 'Unknown Process') 
+      : (activeStageInfo?.name || 'Unknown Process');
+    
+    // Get the process details if a specific process is selected
+    const selectedProcess = selectedSubStage 
+      ? stageSpecificSubStages.find(s => s.id === selectedSubStage) 
+      : null;
+    
     switch (rightPanelContent) {
       case 'overview':
       case 'stage-overview':
         return <StageOverview stageId={activeStage} stageName={activeStageInfo?.name || 'Unknown Stage'} />;
       case 'process-overview':
-        return <ProcessOverview processId={selectedSubStage || activeStage} processName={selectedSubStage ? (stageSpecificSubStages.find(s => s.id === selectedSubStage)?.name || 'Unknown Process') : (activeStageInfo?.name || 'Unknown Process')} />;
+        return <ProcessOverview processId={currentProcessId} processName={currentProcessName} />;
       case 'stages':
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
         return <DocumentsList documents={stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments} />;
       case 'parameters':
-        return <ProcessParameters processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
+        return <ProcessParameters processId={currentProcessId} processName={currentProcessName} />;
       case 'dependencies':
-        return <ProcessDependencies processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
+        return <ProcessDependencies processId={currentProcessId} processName={currentProcessName} />;
       case 'roles':
         return <RoleAssignments roleAssignments={mockRoleAssignments} />;
       case 'activity':
@@ -653,11 +670,11 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       case 'audit':
         return <ActivityLog activities={mockAuditInfo} />;
       case 'app-parameters':
-        return <AppParameters processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
+        return <AppParameters processId={currentProcessId} processName={currentProcessName} />;
       case 'global-parameters':
-        return <GlobalParameters processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
+        return <GlobalParameters processId={currentProcessId} processName={currentProcessName} />;
       case 'queries':
-        return <ProcessQueries processId={activeStage} processName={activeStageInfo?.name || 'Unknown Process'} />;
+        return <ProcessQueries processId={currentProcessId} processName={currentProcessName} />;
       default:
         return null;
     }
@@ -1053,241 +1070,100 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         <div className={`bg-background border-l transition-all duration-200 ${rightPanelContent ? 'flex-[0.4]' : 'w-[200px]'}`}>
           {/* Sticky Header and Menu */}
           <div className="sticky top-0 bg-background border-b z-10">
-            {rightPanelContent ? (
-              // Horizontal Menu when expanded - Tabs style for better organization
-              <div className="p-1">
-                <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="w-full h-auto flex flex-wrap justify-start gap-1 bg-transparent p-0">
-                    <TabsTrigger 
-                      value="overview" 
-                      className={`h-6 px-2 text-xs ${
-                        ['stage-overview', 'process-overview'].includes(rightPanelContent) ? 'bg-secondary' : ''
-                      }`}
-                      onClick={() => setRightPanelContent('stage-overview')}
-                    >
-                      <Layers className="h-3 w-3 mr-1" />
-                      Overview
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="data" 
-                      className={`h-6 px-2 text-xs ${
-                        ['documents', 'parameters', 'dependencies'].includes(rightPanelContent) ? 'bg-secondary' : ''
-                      }`}
-                      onClick={() => setRightPanelContent('documents')}
-                    >
-                      <FileText className="h-3 w-3 mr-1" />
-                      Data
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="config" 
-                      className={`h-6 px-2 text-xs ${
-                        ['app-parameters', 'global-parameters', 'parameters'].includes(rightPanelContent) ? 'bg-secondary' : ''
-                      }`}
-                      onClick={() => setRightPanelContent('parameters')}
-                    >
-                      <Settings className="h-3 w-3 mr-1" />
-                      Config
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="people" 
-                      className={`h-6 px-2 text-xs ${
-                        ['roles', 'activity', 'queries'].includes(rightPanelContent) ? 'bg-secondary' : ''
-                      }`}
-                      onClick={() => setRightPanelContent('activity')}
-                    >
-                      <Users className="h-3 w-3 mr-1" />
-                      People
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  {/* Second level menu based on selected tab */}
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {['stage-overview', 'process-overview'].includes(rightPanelContent) && (
-                      <>
-                        <Button 
-                          variant={rightPanelContent === 'stage-overview' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('stage-overview')}
-                        >
-                          Stage
-                        </Button>
-                        <Button 
-                          variant={rightPanelContent === 'process-overview' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('process-overview')}
-                        >
-                          Process
-                        </Button>
-                      </>
-                    )}
-                    
-                    {['documents', 'parameters', 'dependencies'].includes(rightPanelContent) && (
-                      <>
-                        <Button 
-                          variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('documents')}
-                        >
-                          Files
-                        </Button>
-                        <Button 
-                          variant={rightPanelContent === 'dependencies' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('dependencies')}
-                        >
-                          Dependencies
-                        </Button>
-                      </>
-                    )}
-                    
-                    {['app-parameters', 'global-parameters', 'parameters'].includes(rightPanelContent) && (
-                      <>
-                        <Button 
-                          variant={rightPanelContent === 'parameters' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('parameters')}
-                        >
-                          Process
-                        </Button>
-                        <Button 
-                          variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('app-parameters')}
-                        >
-                          App
-                        </Button>
-                        <Button 
-                          variant={rightPanelContent === 'global-parameters' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('global-parameters')}
-                        >
-                          Global
-                        </Button>
-                      </>
-                    )}
-                    
-                    {['roles', 'activity', 'queries'].includes(rightPanelContent) && (
-                      <>
-                        <Button 
-                          variant={rightPanelContent === 'roles' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('roles')}
-                        >
-                          Roles
-                        </Button>
-                        <Button 
-                          variant={rightPanelContent === 'activity' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('activity')}
-                        >
-                          Activity
-                        </Button>
-                        <Button 
-                          variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('queries')}
-                        >
-                          Queries
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </Tabs>
-              </div>
-            ) : (
-              // Vertical Menu when collapsed - More compact with icons only
-              <div className="p-1 flex flex-col gap-1">
-                <div className="text-xs font-medium text-muted-foreground px-2 py-1">Overview</div>
+            <div className="p-1">
+              {/* Simplified menu - only show Config and Overview by default */}
+              <div className="flex flex-wrap gap-1 items-center">
+                {/* Always show Overview and Config options */}
                 <Button 
-                  variant="ghost"
+                  variant={rightPanelContent === 'stage-overview' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="justify-start h-6 text-xs"
+                  className="h-6 text-xs"
                   onClick={() => setRightPanelContent('stage-overview')}
                 >
                   <Layers className="h-3 w-3 mr-1" />
-                  Stage
-                </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start h-6 text-xs"
-                  onClick={() => setRightPanelContent('process-overview')}
-                >
-                  <FileText className="h-3 w-3 mr-1" />
-                  Process
+                  Stage Overview
                 </Button>
                 
-                <div className="text-xs font-medium text-muted-foreground px-2 py-1 mt-1">Data</div>
                 <Button 
-                  variant="ghost"
+                  variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="justify-start h-6 text-xs"
-                  onClick={() => setRightPanelContent('documents')}
-                >
-                  <FileText className="h-3 w-3 mr-1" />
-                  Files
-                </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start h-6 text-xs"
-                  onClick={() => setRightPanelContent('dependencies')}
-                >
-                  <Network className="h-3 w-3 mr-1" />
-                  Dependencies
-                </Button>
-                
-                <div className="text-xs font-medium text-muted-foreground px-2 py-1 mt-1">Config</div>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start h-6 text-xs"
-                  onClick={() => setRightPanelContent('parameters')}
-                >
-                  <Settings className="h-3 w-3 mr-1" />
-                  Process Params
-                </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start h-6 text-xs"
+                  className="h-6 text-xs"
                   onClick={() => setRightPanelContent('app-parameters')}
                 >
                   <Settings className="h-3 w-3 mr-1" />
-                  App Params
+                  App Config
                 </Button>
                 
-                <div className="text-xs font-medium text-muted-foreground px-2 py-1 mt-1">People</div>
                 <Button 
-                  variant="ghost"
+                  variant={rightPanelContent === 'global-parameters' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="justify-start h-6 text-xs"
-                  onClick={() => setRightPanelContent('roles')}
+                  className="h-6 text-xs"
+                  onClick={() => setRightPanelContent('global-parameters')}
                 >
-                  <Users className="h-3 w-3 mr-1" />
-                  Roles
+                  <Settings className="h-3 w-3 mr-1" />
+                  Global Config
                 </Button>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start h-6 text-xs"
-                  onClick={() => setRightPanelContent('activity')}
-                >
-                  <Activity className="h-3 w-3 mr-1" />
-                  Activity
-                </Button>
+                
+                {/* Show additional options only when a process is selected */}
+                {selectedSubStage && (
+                  <>
+                    <Separator orientation="vertical" className="h-6 mx-1" />
+                    
+                    <Button 
+                      variant={rightPanelContent === 'process-overview' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => setRightPanelContent('process-overview')}
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Process Overview
+                    </Button>
+                    
+                    <Button 
+                      variant={rightPanelContent === 'parameters' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => setRightPanelContent('parameters')}
+                    >
+                      <Settings className="h-3 w-3 mr-1" />
+                      Process Config
+                    </Button>
+                    
+                    <Button 
+                      variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => setRightPanelContent('documents')}
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Files
+                    </Button>
+                    
+                    <Button 
+                      variant={rightPanelContent === 'dependencies' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => setRightPanelContent('dependencies')}
+                    >
+                      <Network className="h-3 w-3 mr-1" />
+                      Dependencies
+                    </Button>
+                    
+                    <div className="flex items-center ml-auto">
+                      <Button 
+                        variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => setRightPanelContent('queries')}
+                      >
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        Queries
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Panel Content */}

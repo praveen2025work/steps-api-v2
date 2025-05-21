@@ -283,112 +283,118 @@ const ProcessQueries: React.FC<ProcessQueriesProps> = ({ processId, processName 
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-lg font-semibold">Process Queries</h2>
-          <p className="text-sm text-muted-foreground">
-            {processId} - {processName}
-          </p>
-        </div>
-        <Dialog open={isNewQueryDialogOpen} onOpenChange={setIsNewQueryDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              New Query
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Create New Query</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <label htmlFor="query-title" className="text-sm font-medium">
-                  Title
-                </label>
-                <Input
-                  id="query-title"
-                  placeholder="Enter query title"
-                  value={newQueryTitle}
-                  onChange={(e) => setNewQueryTitle(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="query-content" className="text-sm font-medium">
-                  Content
-                </label>
-                <Textarea
-                  id="query-content"
-                  placeholder="Describe your query in detail"
-                  rows={5}
-                  value={newQueryContent}
-                  onChange={(e) => setNewQueryContent(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Attachments
-                </label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    id="query-files"
-                    onChange={handleFileChange}
-                  />
-                  <label
-                    htmlFor="query-files"
-                    className="cursor-pointer flex items-center gap-2 px-3 py-2 border rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    <Paperclip className="h-4 w-4" />
-                    <span>Attach Files</span>
-                  </label>
-                </div>
-                {selectedFiles.length > 0 && (
-                  <div className="mt-2 space-y-2">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          <span className="text-sm truncate max-w-[200px]">{file.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({(file.size / 1024).toFixed(0)} KB)
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={() => removeSelectedFile(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsNewQueryDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateQuery}>
-                Create Query
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
       <div className="mb-4">
-        <Input
-          placeholder="Search queries..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full"
-        />
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Process Queries</h2>
+            <p className="text-sm text-muted-foreground">
+              {processId} - {processName}
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2 mt-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search queries..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
+          <Dialog open={isNewQueryDialogOpen} onOpenChange={setIsNewQueryDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                New Query
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Create New Query</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label htmlFor="query-title" className="text-sm font-medium">
+                    Title
+                  </label>
+                  <Input
+                    id="query-title"
+                    placeholder="Enter query title"
+                    value={newQueryTitle}
+                    onChange={(e) => setNewQueryTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="query-content" className="text-sm font-medium">
+                    Content
+                  </label>
+                  <Textarea
+                    id="query-content"
+                    placeholder="Describe your query in detail"
+                    rows={5}
+                    value={newQueryContent}
+                    onChange={(e) => setNewQueryContent(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Attachments
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      id="query-files"
+                      onChange={handleFileChange}
+                    />
+                    <label
+                      htmlFor="query-files"
+                      className="cursor-pointer flex items-center gap-2 px-3 py-2 border rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                      <span>Attach Files</span>
+                    </label>
+                  </div>
+                  {selectedFiles.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span className="text-sm truncate max-w-[200px]">{file.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({(file.size / 1024).toFixed(0)} KB)
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => removeSelectedFile(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsNewQueryDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateQuery}>
+                  Create Query
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="flex flex-col h-full">
