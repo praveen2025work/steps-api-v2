@@ -4,7 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, TrendingUp, Shield, Command, ArrowRight, Wand2, PlayCircle, Library, Zap } from 'lucide-react';
+import { Sparkles, TrendingUp, Shield, Command, ArrowRight, Wand2, PlayCircle, Library, Zap, FileText, AlertTriangle, Network } from 'lucide-react';
 
 const ExperimentalFeaturesPage = () => {
   const router = useRouter();
@@ -24,7 +24,6 @@ const ExperimentalFeaturesPage = () => {
       href: '/experimental/predictive-analytics',
       color: 'bg-green-500/10 text-green-500'
     },
-
     {
       title: 'Natural Language Commands',
       description: 'Control your workflows using natural language commands',
@@ -59,6 +58,27 @@ const ExperimentalFeaturesPage = () => {
       icon: <Zap className="h-6 w-6" />,
       href: '/experimental/business-rules-engine',
       color: 'bg-amber-500/10 text-amber-500'
+    },
+    {
+      title: 'Generative AI Document Processor',
+      description: 'Extract, summarize, and classify financial documents using AI',
+      icon: <FileText className="h-6 w-6" />,
+      href: '/experimental/generative-document-processor',
+      color: 'bg-purple-500/10 text-purple-500'
+    },
+    {
+      title: 'Multimodal Anomaly Detection',
+      description: 'Detect unusual patterns across workflows, transactions, and user behaviors',
+      icon: <AlertTriangle className="h-6 w-6" />,
+      href: '/experimental/multimodal-anomaly-detection',
+      color: 'bg-red-500/10 text-red-500'
+    },
+    {
+      title: 'Digital Twin Workflow Simulation',
+      description: 'Create virtual replicas of workflows to simulate, test, and optimize',
+      icon: <Network className="h-6 w-6" />,
+      href: '/experimental/digital-twin-workflow',
+      color: 'bg-cyan-500/10 text-cyan-500'
     }
   ];
 
@@ -110,6 +130,12 @@ const ExperimentalFeaturesPage = () => {
                     'Build a library of standardized workflow templates with pre-configured stages, parameters, and automation rules to ensure consistency and accelerate workflow creation.'}
                   {feature.title === 'Integrated Business Rules Engine' && 
                     'Create and manage sophisticated business rules and processes with our integrated engine. Combine the best features of Drools, PEGA, and Appian in a single unified interface. Define rules, design process flows, execute and monitor processes, all without external dependencies.'}
+                  {feature.title === 'Generative AI Document Processor' && 
+                    'Automatically extract structured data from financial documents, generate concise summaries of lengthy reports, and classify documents by type, sensitivity, and workflow relevance using state-of-the-art AI models.'}
+                  {feature.title === 'Multimodal Anomaly Detection' && 
+                    'Detect unusual patterns across transaction data, system metrics, and user behaviors simultaneously using neural networks to identify potential issues before they impact your workflows.'}
+                  {feature.title === 'Digital Twin Workflow Simulation' && 
+                    'Create virtual replicas of your workflows to simulate execution under various conditions, identify bottlenecks, and optimize performance before implementing changes in production.'}
                 </p>
               </CardContent>
               <CardFooter>
