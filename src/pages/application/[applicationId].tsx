@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertCircle, ChevronRight, Info, Search, CheckCircle2, Clock, XCircle, PlayCircle, Copy, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AlertCircle, ChevronRight, Info, Search, CheckCircle2, Clock, XCircle, PlayCircle, Copy, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,7 @@ const ApplicationDetailPage = () => {
   const [application, setApplication] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
-  const [breadcrumbs, setBreadcrumbs] = useState<{id: string, name: string}[]>([]);
+  const [breadcrumbs, setBreadcrumbs] = useState<{id: string, name: string, progress?: number}[]>([]);
   const [currentLevels, setCurrentLevels] = useState<WorkflowLevel[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [processStats, setProcessStats] = useState<{
@@ -103,7 +103,7 @@ const ApplicationDetailPage = () => {
           status: assetClass.status,
           children: assetClass.workflowLevels
         })));
-        setBreadcrumbs([{ id: app.id, name: app.name }]);
+        setBreadcrumbs([{ id: app.id, name: app.name, progress: app.progress }]);
         
         // Calculate process statistics
         let completed = 0;
@@ -239,8 +239,12 @@ const ApplicationDetailPage = () => {
   const handleLevelSelect = (level: WorkflowLevel) => {
     setSelectedLevel(level.id);
     
-    // Update breadcrumbs
-    const newBreadcrumbs = [...breadcrumbs, { id: level.id, name: level.name }];
+    // Update breadcrumbs with progress information
+    const newBreadcrumbs = [...breadcrumbs, { 
+      id: level.id, 
+      name: level.name,
+      progress: level.progress 
+    }];
     setBreadcrumbs(newBreadcrumbs);
     
     // If this level has children, navigate to them
@@ -269,7 +273,7 @@ const ApplicationDetailPage = () => {
         }));
         
         setCurrentLevels(assetClasses);
-        setBreadcrumbs([{ id: application.id, name: application.name }]);
+        setBreadcrumbs([{ id: application.id, name: application.name, progress: application.progress }]);
         
         // Reset to application-level statistics
         let completed = 0;
@@ -384,55 +388,61 @@ const ApplicationDetailPage = () => {
       </Head>
       <DashboardLayout>
         {/* Header with Breadcrumb Navigation and Back Button */}
+        {/* Progress Indicator */}
+        <div className="flex items-center flex-wrap gap-2 mb-4">
+          {breadcrumbs.map((crumb, index) => (
+            <React.Fragment key={crumb.id}>
+              <div className="flex items-center">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 px-2 flex items-center gap-1"
+                  onClick={() => handleBreadcrumbClick(index)}
+                >
+                  <span className="font-medium">{crumb.name}</span>
+                  {crumb.progress !== undefined && (
+                    <span className="ml-1 text-muted-foreground">({crumb.progress}%)</span>
+                  )}
+                </Button>
+              </div>
+              {index < breadcrumbs.length - 1 && (
+                <ArrowRight className="h-4 w-4 text-muted-foreground mx-1" />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+        
+        {/* Header with Back Button */}
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center flex-wrap gap-2">
-            {breadcrumbs.map((crumb, index) => {
-              // Create the full path for copying
-              const fullPath = breadcrumbs.slice(0, index + 1).map(c => c.name).join(' -> ');
-              
-              return (
-                <React.Fragment key={crumb.id}>
-                  {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                  <div className="flex items-center">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 px-2"
-                      onClick={() => handleBreadcrumbClick(index)}
-                    >
-                      {crumb.name}
-                    </Button>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 ml-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigator.clipboard.writeText(fullPath);
-                              // Show a temporary tooltip or notification
-                              const button = e.currentTarget;
-                              button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-                              setTimeout(() => {
-                                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>';
-                              }, 2000);
-                            }}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Copy path</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </React.Fragment>
-              );
-            })}
+          <div className="flex items-center">
+            {/* Path copy functionality */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const fullPath = breadcrumbs.map(c => c.name).join(' -> ');
+                      navigator.clipboard.writeText(fullPath);
+                      // Show a temporary tooltip or notification
+                      const button = e.currentTarget;
+                      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                      setTimeout(() => {
+                        button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>';
+                      }, 2000);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Copy full path</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
           <Button 
