@@ -138,6 +138,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [currentSubStageFiles, setCurrentSubStageFiles] = useState<any[]>([]);
   const [showWorkflowDetail, setShowWorkflowDetail] = useState<boolean>(true);
+  const [showSubStageCards, setShowSubStageCards] = useState<boolean>(true);
 
   // Build hierarchy path from progressSteps
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([]);
@@ -670,8 +671,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const handleFileClick = (file: any, subStageId: string) => {
     setSelectedFile(file.name);
     setShowFilePreview(true);
-    // Always hide workflow detail view to give more space to file preview
+    // Hide both workflow detail view and sub-stage cards to give more space to file preview
     setShowWorkflowDetail(false);
+    setShowSubStageCards(false);
     setSelectedSubStage(subStageId);
     
     // Find the sub-stage
@@ -688,6 +690,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         category: file.type
       })));
     }
+  };
+  
+  const toggleSubStageCards = () => {
+    setShowSubStageCards(!showSubStageCards);
   };
   
   const handleCloseFilePreview = () => {
@@ -907,7 +913,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
       <div className="flex gap-4">
         {/* Main Content - Only visible when file preview is not shown or explicitly kept visible */}
-        <div className={`${showFilePreview ? (showWorkflowDetail ? 'flex-[0.3] relative' : 'hidden') : 'flex-[0.6]'}`}>
+        <div className={`${showFilePreview ? (showSubStageCards ? 'flex-[0.3] relative' : 'hidden') : 'flex-[0.6]'}`}>
           {/* Process Overview removed from main content as it's now in the right panel */}
           <div className="space-y-4">
             {(stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages).map((subStage, index) => (
@@ -962,30 +968,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           
                           {/* Process-level actions - Context-aware based on status */}
                           <div className="flex items-center gap-1 ml-1">
-                            {/* Show Detail button - Always visible */}
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-6 px-1.5 text-xs hover:bg-muted flex items-center gap-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedSubStage(subStage.id);
-                                setShowWorkflowDetail(!showWorkflowDetail);
-                              }}
-                              title="Toggle workflow detail view"
-                            >
-                              {showWorkflowDetail ? (
-                                <>
-                                  <EyeOff className="h-3.5 w-3.5" />
-                                  <span className="hidden sm:inline">Hide Detail</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Eye className="h-3.5 w-3.5" />
-                                  <span className="hidden sm:inline">Show Detail</span>
-                                </>
-                              )}
-                            </Button>
                             
                             {/* Files button - Always visible */}
                             {subStage.files && subStage.files.length > 0 && (
@@ -1190,16 +1172,30 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         {/* File Preview Panel - Only shown when a file is selected */}
         {showFilePreview && (
           <div className="flex-1 flex flex-col relative">
-            {/* Always show the toggle button for workflow detail view */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="absolute -left-4 top-2 h-8 w-8 p-0 rounded-full bg-background border shadow-sm z-10"
-              onClick={toggleWorkflowDetail}
-              title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
-            >
-              {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-            </Button>
+            {/* Toggle buttons for workflow detail and sub-stage cards */}
+            <div className="absolute -left-4 top-2 flex flex-col gap-2 z-10">
+              {/* Workflow detail toggle */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full bg-background border shadow-sm"
+                onClick={toggleWorkflowDetail}
+                title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
+              >
+                {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+              </Button>
+              
+              {/* Sub-stage cards toggle */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full bg-background border shadow-sm"
+                onClick={toggleSubStageCards}
+                title={showSubStageCards ? "Hide process cards" : "Show process cards"}
+              >
+                {showSubStageCards ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </Button>
+            </div>
             {/* Display the selected sub-stage card in a horizontal layout above the file preview */}
             {selectedSubStage && (
               <div className="border-b p-2">
@@ -1276,6 +1272,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               subStageId={selectedSubStage || undefined}
               onToggleWorkflowDetail={toggleWorkflowDetail}
               showWorkflowDetail={showWorkflowDetail}
+              onToggleSubStageCards={toggleSubStageCards}
+              showSubStageCards={showSubStageCards}
             />
           </div>
         )}
