@@ -627,12 +627,19 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   };
 
   const handleProcessIdClick = (processId: string) => {
-    // If clicking the same process ID, just toggle the panel
-    if (selectedSubStage === processId) {
+    // Find the sub-stage by process ID
+    const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+      .find(s => s.processId === processId);
+    
+    // If found, use the sub-stage ID, otherwise use the process ID
+    const subStageId = subStage ? subStage.id : processId;
+    
+    // If clicking the same sub-stage, just toggle the panel
+    if (selectedSubStage === subStageId) {
       setSelectedSubStage(null);
       setRightPanelContent('stage-overview');
     } else {
-      setSelectedSubStage(processId);
+      setSelectedSubStage(subStageId);
       setRightPanelContent('process-overview');
       setRightPanelOpen(true);
       setIsRightPanelExpanded(true);
@@ -856,7 +863,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     subStage.status === 'in-progress' ? 'border-l-[4px] border-l-blue-500' :
                     subStage.status === 'failed' ? 'border-l-[4px] border-l-red-500' :
                     'border-l-[4px] border-l-gray-300'
-                  } ${selectedSubStage === subStage.processId ? 'bg-muted/50 ring-1 ring-primary/20' : 'bg-background'} p-2 rounded-sm mb-2 transition-all duration-200`}
+                  } ${selectedSubStage === subStage.id ? 'bg-muted/50 ring-1 ring-primary/20' : 'bg-background'} p-2 rounded-sm mb-2 transition-all duration-200 cursor-pointer hover:bg-muted/30`}
+                  onClick={(e) => {
+                    // Prevent event bubbling for buttons inside the row
+                    if ((e.target as HTMLElement).closest('button')) {
+                      return;
+                    }
+                    handleProcessIdClick(subStage.processId);
+                  }}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -879,7 +893,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           
                           <Button 
                             variant="ghost" 
-                            className={`p-0 h-auto font-mono text-xs ${selectedSubStage === subStage.processId ? 'font-bold text-primary' : ''}`}
+                            className={`p-0 h-auto font-mono text-xs ${selectedSubStage === subStage.id ? 'font-bold text-primary' : ''}`}
                             onClick={() => handleProcessIdClick(subStage.processId)}
                           >
                             {subStage.processId}
