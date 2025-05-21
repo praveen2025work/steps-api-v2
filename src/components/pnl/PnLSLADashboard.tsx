@@ -37,6 +37,9 @@ import {
   AlertTriangle,
   XCircle
 } from "lucide-react";
+import { ProcessingTimeTrends } from "./ProcessingTimeTrends";
+import { SEAComplianceByRegion } from "./SEAComplianceByRegion";
+import { HistoricalSEAPerformance } from "./HistoricalSEAPerformance";
 
 export function PnLSLADashboard() {
   const [timeRange, setTimeRange] = useState("week");
@@ -118,43 +121,8 @@ export function PnLSLADashboard() {
       
       {/* SLA Performance Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div>
-              <CardTitle>Processing Time Trends</CardTitle>
-              <CardDescription>Average processing times by stage</CardDescription>
-            </div>
-            <LineChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-md">
-              <div className="text-center p-6">
-                <LineChart className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">Processing time trend visualization would appear here</p>
-                <p className="text-xs text-muted-foreground mt-2">Showing declining processing times across all stages</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div>
-              <CardTitle>SLA Compliance by Region</CardTitle>
-              <CardDescription>Performance across different regions</CardDescription>
-            </div>
-            <PieChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-md">
-              <div className="text-center p-6">
-                <PieChart className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">SLA compliance by region chart would appear here</p>
-                <p className="text-xs text-muted-foreground mt-2">Asia at 100%, Americas at 94%, India at 92%, Shanghai at 95%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ProcessingTimeTrends />
+        <SEAComplianceByRegion />
       </div>
       
       {/* SLA Breakdown Table */}
@@ -215,23 +183,8 @@ export function PnLSLADashboard() {
         </CardContent>
       </Card>
       
-      {/* Historical SLA Performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Historical SLA Performance</CardTitle>
-          <CardDescription>SLA compliance over time</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-md">
-            <div className="text-center p-6">
-              <BarChart className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground">Historical SLA performance chart would appear here</p>
-              <p className="text-xs text-muted-foreground mt-2">Showing SLA compliance trends over the past 30 days</p>
-              <p className="text-xs text-red-500 mt-2">Note: Major failure on May 15, 2025 with 0% SLA compliance</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Historical SEA Performance */}
+      <HistoricalSEAPerformance />
     </div>
   );
 }
