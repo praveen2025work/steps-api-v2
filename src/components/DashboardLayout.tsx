@@ -49,20 +49,19 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               <MobileNav />
               <Logo />
               
-              {/* Business Date Selector */}
-              <DateSelector 
-                buttonVariant="default" 
-                buttonSize="default" 
-                label="Business Date"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-sm border border-primary/20 ml-2"
-              />
-              
               {/* Page title next to logo - responsive for mobile */}
               {title && (
                 <div className="flex flex-col">
                   <h1 className="text-base md:text-lg font-bold truncate max-w-[150px] md:max-w-none">{title}</h1>
                 </div>
               )}
+              
+              {/* Business Date Selector - moved after title */}
+              <DateSelector 
+                buttonVariant="default" 
+                buttonSize="default" 
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-sm border border-primary/20 ml-2"
+              />
             </div>
             
             <div className="flex items-center gap-4">
