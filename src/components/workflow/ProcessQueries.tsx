@@ -586,7 +586,7 @@ const ProcessQueries: React.FC<ProcessQueriesProps> = ({ processId, processName 
                 {filteredQueries.map((query) => (
                   <Card 
                     key={query.id} 
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-l-4 border-transparent hover:border-l-blue-500"
+                    className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-l-4 ${activeQueryId === query.id ? 'border-l-blue-500' : 'border-transparent hover:border-l-blue-500'}`}
                     onClick={() => setActiveQueryId(query.id)}
                   >
                     <CardContent className="p-4">

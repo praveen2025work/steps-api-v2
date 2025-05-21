@@ -857,7 +857,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     subStage.status === 'in-progress' ? 'border-l-[4px] border-l-blue-500' :
                     subStage.status === 'failed' ? 'border-l-[4px] border-l-red-500' :
                     'border-l-[4px] border-l-gray-300'
-                  } bg-background p-2 rounded-sm mb-2`}
+                  } ${selectedSubStage === subStage.processId ? 'bg-muted/50 ring-1 ring-primary/20' : 'bg-background'} p-2 rounded-sm mb-2 transition-all duration-200`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -880,7 +880,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                           
                           <Button 
                             variant="ghost" 
-                            className="p-0 h-auto font-mono text-xs"
+                            className={`p-0 h-auto font-mono text-xs ${selectedSubStage === subStage.processId ? 'font-bold text-primary' : ''}`}
                             onClick={() => handleProcessIdClick(subStage.processId)}
                           >
                             {subStage.processId}
@@ -996,10 +996,12 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                         )}
                       </div>
 
-                      {/* Messages - Compact */}
+                      {/* Messages - Compact with truncation for long messages */}
                       {subStage.messages && subStage.messages.length > 0 && (
                         <div className="mt-1 text-xs text-muted-foreground">
-                          {subStage.messages[0]}
+                          {subStage.messages[0].length > 60 
+                            ? `${subStage.messages[0].substring(0, 60)}...` 
+                            : subStage.messages[0]}
                         </div>
                       )}
                     </div>
@@ -1013,26 +1015,22 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                   </CollapsibleTrigger>
 
                   <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-muted">
-                    {/* Files Section - Compact */}
+                    {/* Files Section - Just show file icon with count */}
                     {subStage.files && subStage.files.length > 0 && (
-                      <div className="space-y-1">
-                        {subStage.files.map((file, fileIndex) => (
-                          <div key={fileIndex} className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-1">
-                              <FileText className="h-3 w-3" />
-                              <span>{file.name}</span>
-                              <span className="text-muted-foreground">({file.size})</span>
-                            </div>
-                            <div className="flex gap-1">
-                              {file.type !== 'upload' && (
-                                <>
-                                  <Button variant="ghost" size="sm" className="h-6 text-xs">Preview</Button>
-                                  <Button variant="ghost" size="sm" className="h-6 text-xs">Download</Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-6 text-xs flex items-center gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleProcessIdClick(subStage.processId);
+                            setRightPanelContent('documents');
+                          }}
+                        >
+                          <FileText className="h-3 w-3" />
+                          <span>Files ({subStage.files.length})</span>
+                        </Button>
                       </div>
                     )}
 
