@@ -21,13 +21,13 @@ const WorkflowStagesBar: React.FC<WorkflowStagesBarProps> = ({
   onStageClick 
 }) => {
   return (
-    <div className="flex overflow-x-auto pb-1 mb-4 gap-1">
+    <div className="flex overflow-x-auto mb-2 gap-1">
       {stages.map((stage) => (
         <button
           key={stage.id}
           onClick={() => onStageClick(stage.id)}
           className={cn(
-            "px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors border relative",
+            "px-2 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-colors border relative",
             activeStage === stage.id
               ? "bg-primary text-primary-foreground border-primary"
               : "bg-muted hover:bg-muted/80 text-foreground border-muted-foreground/20"

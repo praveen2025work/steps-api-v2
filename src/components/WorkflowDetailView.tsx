@@ -859,7 +859,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Unified Workflow Header Card */}
       <WorkflowUnifiedHeader
         workflowId={hierarchyPath[hierarchyPath.length-1]?.id || ''}
@@ -905,11 +905,11 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               <Collapsible key={subStage.id}>
                 <div 
                   className={`${
-                    subStage.status === 'completed' ? 'border-l-[4px] border-l-green-500' :
-                    subStage.status === 'in-progress' ? 'border-l-[4px] border-l-blue-500' :
-                    subStage.status === 'failed' ? 'border-l-[4px] border-l-red-500' :
-                    'border-l-[4px] border-l-gray-300'
-                  } ${selectedSubStage === subStage.id ? 'bg-primary/5 ring-1 ring-primary/40' : 'bg-background'} p-2 rounded-sm mb-2 transition-all duration-200 cursor-pointer hover:bg-muted/30`}
+                    subStage.status === 'completed' ? 'border-l-[3px] border-l-green-500' :
+                    subStage.status === 'in-progress' ? 'border-l-[3px] border-l-blue-500' :
+                    subStage.status === 'failed' ? 'border-l-[3px] border-l-red-500' :
+                    'border-l-[3px] border-l-gray-300'
+                  } ${selectedSubStage === subStage.id ? 'bg-primary/5 ring-1 ring-primary/40' : 'bg-background'} p-1.5 rounded-sm mb-1 transition-all duration-200 cursor-pointer hover:bg-muted/30`}
                   onClick={(e) => {
                     // Prevent event bubbling for buttons inside the row
                     if ((e.target as HTMLElement).closest('button')) {
@@ -1158,7 +1158,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           <div className="flex-1 flex flex-col">
             {/* Display the selected sub-stage card in a horizontal layout above the file preview */}
             {selectedSubStage && (
-              <div className="border-b p-3">
+              <div className="border-b p-2">
                 <div className="flex items-center">
                   {/* Render a horizontal version of the selected sub-stage card */}
                   {(() => {

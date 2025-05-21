@@ -102,10 +102,10 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
   };
 
   return (
-    <Card className="mb-4">
-      <CardHeader className="pb-2 flex flex-row justify-between items-center">
+    <Card className="mb-2">
+      <CardHeader className="py-1.5 px-3 flex flex-row justify-between items-center">
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-medium">{workflowTitle}</h3>
+          <h3 className="text-sm font-medium">{workflowTitle}</h3>
           <Badge variant="outline" className="text-xs">
             {status}
           </Badge>
@@ -172,17 +172,17 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
         </div>
       </CardHeader>
       
-      <CardContent className="pb-3">
-        <div className="flex flex-col space-y-3">
-          {/* Hierarchy Path with Progress - Made clickable with visual indicators */}
-          <div className="flex items-center gap-1 text-sm">
+      <CardContent className="py-1.5 px-3">
+        <div className="flex flex-col space-y-1">
+          {/* Hierarchy Path with Progress - More compact */}
+          <div className="flex items-center gap-1 text-xs">
             {hierarchyPath.map((node, index) => (
                 <React.Fragment key={node.id}>
                   <div className="flex flex-col">
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-6 px-2 flex items-center gap-1 hover:bg-secondary/50"
+                      className="h-5 px-1.5 flex items-center gap-1 hover:bg-secondary/50"
                       onClick={() => {
                         // Navigate to the appropriate level
                         if (node.level === 'app') {
@@ -201,7 +201,7 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                     </Button>
                     
                     {/* Visual progress indicator with single color */}
-                    <div className="h-1 w-full bg-gray-200 rounded-full mt-1 overflow-hidden">
+                    <div className="h-0.5 w-full bg-gray-200 rounded-full overflow-hidden">
                       <div 
                         className={`h-full ${getProgressColor()}`} 
                         style={{ width: `${node.progress}%` }}
@@ -209,14 +209,13 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                     </div>
                   </div>
                   {index < hierarchyPath.length - 1 && (
-                    <ArrowRight className="h-4 w-4 text-muted-foreground mx-1" />
+                    <ArrowRight className="h-3 w-3 text-muted-foreground mx-0.5" />
                   )}
                 </React.Fragment>
               ))}
             </div>
-
           
-          <div className="flex flex-wrap gap-3 mt-3">
+          <div className="flex flex-wrap gap-2 mt-1">
             {/* Left side: Task Counts in a more compact layout */}
             <div className="flex-1 min-w-[280px]">
               <div className="flex gap-2 text-xs">

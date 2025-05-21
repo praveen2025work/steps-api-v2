@@ -427,16 +427,16 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
   return (
     <div className="flex flex-col h-full">
       {/* File List Header */}
-      <div className="border-b pb-2 mb-4">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-medium">Preview Files</h3>
+      <div className="border-b pb-1.5 mb-2">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-base font-medium">Preview Files</h3>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-7 px-2"
+            className="h-6 px-1.5"
             onClick={onClose}
           >
-            <X className="h-4 w-4 mr-1" />
+            <X className="h-3.5 w-3.5 mr-1" />
             Close
           </Button>
         </div>
@@ -678,15 +678,15 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
       )}
       
       {/* Footer with actions */}
-      <div className="border-t mt-4 pt-4 flex justify-between">
-        <Button variant="outline" onClick={onClose}>
+      <div className="border-t mt-2 pt-2 flex justify-between">
+        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onClose}>
           Back to Process View
         </Button>
         
         <div className="flex gap-2">
           {selectedFileId && (
-            <Button onClick={handleDownload}>
-              <Download className="h-4 w-4 mr-2" />
+            <Button size="sm" className="h-7 text-xs" onClick={handleDownload}>
+              <Download className="h-3.5 w-3.5 mr-1" />
               Download
             </Button>
           )}

@@ -126,10 +126,10 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-8 w-8 p-0 rounded-full"
+                        className="h-6 w-6 p-0 rounded-full"
                         onClick={handleHomeClick}
                       >
-                        <config.homeIcon className="h-4 w-4" />
+                        <config.homeIcon className="h-3 w-3" />
                         <span className="sr-only">Home</span>
                       </Button>
                     </TooltipTrigger>
@@ -150,7 +150,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 flex items-center gap-1 hover:bg-secondary/50"
+                    className="h-6 px-1.5 flex items-center gap-1 hover:bg-secondary/50 text-xs"
                     onClick={() => handleNodeClick(node, index)}
                   >
                     {config.nodeFormat ? (
