@@ -974,60 +974,118 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         onStageClick={handleStageClick} 
       />
 
-      {/* Control buttons row - moved below stage cards */}
-      <div className="flex items-center gap-2 my-2">
-        {/* Show Process Cards button - far left */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 flex items-center gap-1"
-          onClick={toggleSubStageCards}
-          title={showSubStageCards ? "Hide process cards" : "Show process cards"}
-        >
-          {showSubStageCards ? <Eye className="h-4 w-4 mr-1" /> : <EyeOff className="h-4 w-4 mr-1" />}
-          {showSubStageCards ? "Hide Process Cards" : "Show Process Cards"}
-        </Button>
+      {/* Control buttons row - only shown during file preview */}
+      {showFilePreview && (
+        <div className="flex items-center gap-2 my-2">
+          {/* Show Process Cards button - far left */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={toggleSubStageCards}
+            title={showSubStageCards ? "Hide process cards" : "Show process cards"}
+          >
+            {showSubStageCards ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </Button>
 
-        {/* Status ribbon and horizontal sub-stage process would go here */}
-        <div className="flex-1 flex justify-center">
-          {/* Display selected sub-stage info when file preview is open */}
-          {selectedSubStage && showFilePreview && (
-            <div className="flex items-center gap-2">
-              {(() => {
-                const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
-                  .find(s => s.id === selectedSubStage);
-                
-                if (!subStage) return null;
-                
-                return (
-                  <>
-                    <div className={`w-1.5 h-6 rounded-sm ${
-                      subStage.status === 'completed' ? 'bg-green-500' :
-                      subStage.status === 'in-progress' ? 'bg-blue-500' :
-                      subStage.status === 'failed' ? 'bg-red-500' :
-                      'bg-gray-300'
-                    }`} />
-                    <div className="text-sm font-medium">{subStage.name}</div>
-                    <div className="text-xs text-muted-foreground font-mono">{subStage.processId}</div>
-                  </>
-                );
-              })()}
-            </div>
-          )}
+          {/* Status ribbon and horizontal sub-stage process would go here */}
+          <div className="flex-1 flex justify-center">
+            {/* Display enhanced selected sub-stage info when file preview is open */}
+            {selectedSubStage && (
+              <div className="flex items-center gap-3 px-3 py-1 bg-muted/40 rounded-md">
+                {(() => {
+                  const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+                    .find(s => s.id === selectedSubStage);
+                  
+                  if (!subStage) return null;
+                  
+                  return (
+                    <>
+                      <div className={`w-1.5 h-6 rounded-sm ${
+                        subStage.status === 'completed' ? 'bg-green-500' :
+                        subStage.status === 'in-progress' ? 'bg-blue-500' :
+                        subStage.status === 'failed' ? 'bg-red-500' :
+                        'bg-gray-300'
+                      }`} />
+                      <div className="text-sm font-medium">{subStage.name}</div>
+                      <div className="text-xs text-muted-foreground font-mono">{subStage.processId}</div>
+                      
+                      {/* Additional process details */}
+                      <Separator orientation="vertical" className="h-5 mx-1" />
+                      
+                      {/* Status */}
+                      <Badge variant={getStatusVariant(subStage.status as StageStatus)} className="text-xs">
+                        {subStage.status}
+                      </Badge>
+                      
+                      {/* Updated by */}
+                      {subStage.meta.updatedBy && (
+                        <div className="flex items-center gap-1 text-xs">
+                          <UserCircle className="h-3 w-3" />
+                          <span>{subStage.meta.updatedBy}</span>
+                        </div>
+                      )}
+                      
+                      {/* Messages */}
+                      {subStage.messages && subStage.messages.length > 0 && (
+                        <div className="flex items-center gap-1 text-xs">
+                          <MessageSquare className="h-3 w-3" />
+                          <span>{subStage.messages[0].length > 30 
+                            ? `${subStage.messages[0].substring(0, 30)}...` 
+                            : subStage.messages[0]}</span>
+                        </div>
+                      )}
+                      
+                      {/* Lock status */}
+                      {subStage.meta.lockedBy ? (
+                        <div className="flex items-center gap-1 text-xs">
+                          <Lock className="h-3 w-3" />
+                          <span>Locked by {subStage.meta.lockedBy}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-xs">
+                          <Unlock className="h-3 w-3" />
+                          <span>Unlocked</span>
+                        </div>
+                      )}
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 ml-auto">
+                        {subStage.status === 'in-progress' && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Complete">
+                            <ArrowRightCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {(subStage.status === 'completed' || subStage.status === 'failed') && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Rerun">
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {(subStage.status === 'not-started' || subStage.status === 'failed') && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Start">
+                            <PlayCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          {/* Show Workflow Detail button - far right */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={toggleWorkflowDetail}
+            title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
+          >
+            {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+          </Button>
         </div>
-
-        {/* Show Workflow Detail button - far right */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 flex items-center gap-1"
-          onClick={toggleWorkflowDetail}
-          title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
-        >
-          {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4 mr-1" /> : <PanelLeft className="h-4 w-4 mr-1" />}
-          {showWorkflowDetail ? "Hide Workflow Detail" : "Show Workflow Detail"}
-        </Button>
-      </div>
+      )}
 
       <div className="flex gap-4">
         {/* Main Content - Only visible when file preview is not shown or explicitly kept visible */}
