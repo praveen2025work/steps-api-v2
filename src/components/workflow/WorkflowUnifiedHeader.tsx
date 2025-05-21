@@ -175,9 +175,8 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
       <CardContent className="pb-3">
         <div className="flex flex-col space-y-3">
           {/* Hierarchy Path with Progress - Made clickable with visual indicators */}
-          <div className="flex items-center justify-between gap-1 text-sm">
-            <div className="flex items-center gap-1">
-              {hierarchyPath.map((node, index) => (
+          <div className="flex items-center gap-1 text-sm">
+            {hierarchyPath.map((node, index) => (
                 <React.Fragment key={node.id}>
                   <div className="flex flex-col">
                     <Button 
@@ -215,16 +214,9 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                 </React.Fragment>
               ))}
             </div>
-            
-            <DateSelector 
-              buttonVariant="outline" 
-              buttonSize="sm" 
-              label="Business Date"
-              className="ml-auto"
-            />
-          </div>
+
           
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 mt-3">
             {/* Left side: Task Counts in a more compact layout */}
             <div className="flex-1 min-w-[280px]">
               <div className="flex gap-2 text-xs">
