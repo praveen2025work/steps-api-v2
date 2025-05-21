@@ -13,7 +13,6 @@ import {
   Plus, 
   Unlock,
   Lock,
-  ChevronRight,
   ArrowRight
 } from 'lucide-react';
 import { HierarchyNode } from '../WorkflowHierarchyBreadcrumb';
@@ -160,11 +159,11 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                     }
                   }}
                 >
-                  <span>{node.name}</span>
-                  <span className="text-xs text-muted-foreground">{node.progress}%</span>
+                  <span className="font-medium">{node.name}</span>
+                  <span className="ml-1 text-muted-foreground">({node.progress}%)</span>
                 </Button>
                 {index < hierarchyPath.length - 1 && (
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground mx-1" />
                 )}
               </React.Fragment>
             ))}
