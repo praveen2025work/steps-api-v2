@@ -968,11 +968,28 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
         {/* Status ribbon and horizontal sub-stage process would go here */}
         <div className="flex-1 flex justify-center">
-          {/* This space is reserved for the status ribbon and horizontal sub-stage process */}
+          {/* Display selected sub-stage info when file preview is open */}
           {selectedSubStage && showFilePreview && (
-            <div className="text-sm text-muted-foreground">
-              {(stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
-                .find(s => s.id === selectedSubStage)?.name || 'Selected Process'}
+            <div className="flex items-center gap-2">
+              {(() => {
+                const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+                  .find(s => s.id === selectedSubStage);
+                
+                if (!subStage) return null;
+                
+                return (
+                  <>
+                    <div className={`w-1.5 h-6 rounded-sm ${
+                      subStage.status === 'completed' ? 'bg-green-500' :
+                      subStage.status === 'in-progress' ? 'bg-blue-500' :
+                      subStage.status === 'failed' ? 'bg-red-500' :
+                      'bg-gray-300'
+                    }`} />
+                    <div className="text-sm font-medium">{subStage.name}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{subStage.processId}</div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -1273,75 +1290,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         {/* File Preview Panel - Only shown when a file is selected */}
         {showFilePreview && (
           <div className="flex-1 flex flex-col relative">
-            {/* Display the selected sub-stage card in a horizontal layout above the file preview */}
-            {selectedSubStage && (
-              <div className="border-b p-2">
-                <div className="flex items-center">
-                  {/* Render a horizontal version of the selected sub-stage card */}
-                  {(() => {
-                    const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
-                      .find(s => s.id === selectedSubStage) || 
-                      (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)[0];
-                    
-                    return (
-                      <div className="flex-1 flex items-center gap-4">
-                        <div className={`w-2 h-12 rounded-sm ${
-                          subStage.status === 'completed' ? 'bg-green-500' :
-                          subStage.status === 'in-progress' ? 'bg-blue-500' :
-                          subStage.status === 'failed' ? 'bg-red-500' :
-                          'bg-gray-300'
-                        }`} />
-                        
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <div className="font-medium">{subStage.name}</div>
-                            <div className={`px-2 py-1 rounded-full text-xs ${
-                              subStage.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              subStage.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                              subStage.status === 'failed' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {subStage.status}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <span className="font-mono">{subStage.processId}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span>Start: {subStage.timing.start}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span>Duration: {subStage.timing.duration}</span>
-                            </div>
-                            {subStage.meta.updatedBy && (
-                              <div className="flex items-center gap-1">
-                                <UserCircle className="h-3 w-3" />
-                                <span>By: {subStage.meta.updatedBy}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <div className="flex flex-col items-end">
-                            <span className="text-xs text-muted-foreground">Progress</span>
-                            <span>{subStage.progress}%</span>
-                          </div>
-                          <Progress 
-                            value={subStage.progress} 
-                            className="w-20 h-2" 
-                          />
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
             <EnhancedFilePreview 
               files={currentSubStageFiles}
               processId={selectedSubStage || undefined}
