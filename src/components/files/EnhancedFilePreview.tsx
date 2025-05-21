@@ -275,7 +275,7 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
       case 'txt':
       case 'json':
         return (
-          <pre className="bg-muted p-4 rounded-md overflow-auto max-h-[400px] text-sm">
+          <pre className="bg-muted p-4 rounded-md overflow-auto max-h-[500px] text-sm">
             {content}
           </pre>
         )
@@ -307,21 +307,6 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
           </div>
         )
     }
-  }
-  
-  const renderMetadata = () => {
-    if (!fileDetails) return null
-    
-    return (
-      <div className="grid grid-cols-2 gap-4">
-        {Object.entries(fileDetails.metadata).map(([key, value]) => (
-          <div key={key} className="border-b pb-2">
-            <p className="text-sm font-medium text-muted-foreground">{key}</p>
-            <p>{value}</p>
-          </div>
-        ))}
-      </div>
-    )
   }
   
   const renderAiAnalysis = () => {
@@ -484,7 +469,7 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="preview">Preview</TabsTrigger>
                 <TabsTrigger value="data">Data Tabs</TabsTrigger>
-                <TabsTrigger value="ai-analysis" className="flex items-center gap-1">
+                <TabsTrigger value="ai-analysis"className="flex items-center gap-1">
                   <Bot className="h-3 w-3" />
                   AI Analysis
                 </TabsTrigger>
@@ -504,7 +489,7 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
                       <TabsTrigger value="pivot">Pivot</TabsTrigger>
                     </TabsList>
                     <TabsContent value="tab1">
-                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
+                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[500px]">
                         <table className="w-full border-collapse text-sm">
                           <thead>
                             <tr className="border-b">
@@ -546,7 +531,7 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
                       </div>
                     </TabsContent>
                     <TabsContent value="tab2">
-                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
+                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[500px]">
                         <table className="w-full border-collapse text-sm">
                           <thead>
                             <tr className="border-b">
@@ -580,7 +565,7 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
                       </div>
                     </TabsContent>
                     <TabsContent value="tab3">
-                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
+                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[500px]">
                         <table className="w-full border-collapse text-sm">
                           <thead>
                             <tr className="border-b">
@@ -614,7 +599,7 @@ export function EnhancedFilePreview({ files, processId, onClose, subStageId }: E
                       </div>
                     </TabsContent>
                     <TabsContent value="pivot">
-                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[400px]">
+                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[500px]">
                         <table className="w-full border-collapse text-sm">
                           <thead>
                             <tr className="border-b">
