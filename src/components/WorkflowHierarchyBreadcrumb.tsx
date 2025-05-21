@@ -83,13 +83,24 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
   
   if (!cachedNodes || cachedNodes.length === 0) return null;
 
-  const handleNodeClick = (node: HierarchyNode) => {
+  const handleNodeClick = (node: HierarchyNode, index: number) => {
     if (node.onClick) {
       node.onClick(node);
     } else if (config.onNodeClick) {
       config.onNodeClick(node);
     } else if (node.href) {
       router.push(node.href);
+    } else {
+      // Default navigation behavior based on node level
+      if (node.level === 'app') {
+        router.push(`/application/${node.id}`);
+      } else if (index < cachedNodes.length - 1) {
+        // If not the last node (current level), navigate to application with this level selected
+        const appNode = cachedNodes.find(n => n.level === 'app');
+        if (appNode) {
+          router.push(`/application/${appNode.id}`);
+        }
+      }
     }
   };
   
@@ -140,7 +151,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
                     variant="ghost"
                     size="sm"
                     className="h-8 px-2 flex items-center gap-1 hover:bg-secondary/50"
-                    onClick={() => handleNodeClick(node)}
+                    onClick={() => handleNodeClick(node, index)}
                   >
                     {config.nodeFormat ? (
                       config.nodeFormat(node)

@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -12,7 +13,8 @@ import {
   Plus, 
   Unlock,
   Lock,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react';
 import { HierarchyNode } from '../WorkflowHierarchyBreadcrumb';
 import { showSuccessToast, showInfoToast, showWarningToast } from '@/lib/toast';
@@ -46,6 +48,7 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
   onRefresh,
   taskCounts
 }) => {
+  const router = useRouter();
   // Calculate task counts if not provided
   const defaultTaskCounts = taskCounts || {
     completed: 3,
@@ -68,10 +71,40 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
     showInfoToast("Reopen Toll Gate functionality would be implemented here");
   };
 
+  // Navigate back to the parent level (application or group)
+  const handleBackToParent = () => {
+    // If we have a hierarchy path, navigate to the parent level
+    if (hierarchyPath && hierarchyPath.length > 1) {
+      // Get the parent level (second to last item in the hierarchy)
+      const parentIndex = hierarchyPath.length > 2 ? 1 : 0;
+      const parentLevel = hierarchyPath[parentIndex];
+      
+      // Navigate to the appropriate page based on the level
+      if (parentLevel.level === 'app') {
+        router.push(`/application/${parentLevel.id}`);
+      } else {
+        // For other levels, navigate to the application page with the appropriate level selected
+        router.push(`/application/${hierarchyPath[0].id}`);
+      }
+    } else {
+      // If no hierarchy path, just go back to the dashboard
+      router.push('/');
+    }
+  };
+
   return (
     <Card className="mb-4">
       <CardHeader className="pb-2 flex flex-row justify-between items-center">
         <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7 mr-1"
+            onClick={handleBackToParent}
+            title="Back to parent level"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </Button>
           <h3 className="text-lg font-medium">{workflowTitle}</h3>
           <Badge variant="outline" className="text-xs">
             {status}
@@ -136,16 +169,32 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
       
       <CardContent className="pb-3">
         <div className="flex flex-col space-y-3">
-          {/* Hierarchy Path */}
+          {/* Hierarchy Path - Made clickable */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {hierarchyPath.map((node, index) => (
               <React.Fragment key={node.id}>
-                <span className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-2 flex items-center gap-1 hover:bg-secondary/50"
+                  onClick={() => {
+                    // Navigate to the appropriate level
+                    if (node.level === 'app') {
+                      router.push(`/application/${node.id}`);
+                    } else if (index < hierarchyPath.length - 1) {
+                      // If not the last node (current level), navigate to application with this level selected
+                      const appNode = hierarchyPath.find(n => n.level === 'app');
+                      if (appNode) {
+                        router.push(`/application/${appNode.id}`);
+                      }
+                    }
+                  }}
+                >
                   <span>{node.name}</span>
                   <Badge variant="outline" className="text-xs">
                     {node.progress}%
                   </Badge>
-                </span>
+                </Button>
                 {index < hierarchyPath.length - 1 && (
                   <ChevronRight className="h-3 w-3" />
                 )}

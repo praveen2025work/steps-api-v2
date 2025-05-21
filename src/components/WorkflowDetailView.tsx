@@ -127,12 +127,32 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [stageSpecificSubStages, setStageSpecificSubStages] = useState<SubStage[]>([]);
   const [stageSpecificDocuments, setStageSpecificDocuments] = useState<any[]>([]);
 
-  // Mock hierarchy path for the breadcrumb navigation - removing percentages from display
-  const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([
-    { id: 'app-001', name: 'Daily Named PNL', progress: 45, level: 'app' },
-    { id: 'asset-001', name: 'Rates', progress: 60, level: 'workflow' },
-    { id: 'wf-level-001', name: 'eRates', progress: 75, level: 'hierarchy' },
-  ]);
+  // Build hierarchy path from progressSteps
+  const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([]);
+
+  // Initialize hierarchy path from progressSteps
+  useEffect(() => {
+    if (progressSteps && progressSteps.length > 0) {
+      const path = progressSteps.map((step, index) => {
+        // Determine the level based on the index
+        let level = 'hierarchy';
+        if (index === 0) level = 'app';
+        else if (index === 1) level = 'workflow';
+        
+        // Generate an ID based on the name (for navigation purposes)
+        const id = step.name.toLowerCase().replace(/\s+/g, '-');
+        
+        return {
+          id: index === 0 ? `app-${id}` : id,
+          name: step.name,
+          progress: step.progress,
+          level: level
+        };
+      });
+      
+      setHierarchyPath(path);
+    }
+  }, [progressSteps]);
 
   // This function has been replaced with an enhanced version below
 
