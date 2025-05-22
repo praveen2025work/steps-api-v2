@@ -152,20 +152,9 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
         return value ? 'Yes' : 'No';
       }
       
-      // Handle status with badges - use simple spans instead of Badge component
+      // Handle status with simple text instead of components to avoid rendering issues
       if (typeof value === 'string' && ['Completed', 'Processing', 'Pending', 'Failed'].includes(value)) {
-        const statusColors: Record<string, string> = {
-          'Completed': 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium',
-          'Processing': 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium',
-          'Pending': 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium',
-          'Failed': 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium'
-        };
-        
-        return (
-          <span className={statusColors[value] || ''}>
-            {value}
-          </span>
-        );
+        return value;
       }
       
       // Handle dates

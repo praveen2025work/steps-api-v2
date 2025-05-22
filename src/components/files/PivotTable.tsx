@@ -275,12 +275,8 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
         return '$0';
       }
       
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(num);
+      // Use a simpler formatting approach to avoid potential issues
+      return `$${num.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
     } catch (error) {
       console.error("Error formatting number:", error);
       return '$0'; // Return a safe default if formatting fails

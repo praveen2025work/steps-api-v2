@@ -684,7 +684,7 @@ export function UserProcessDashboard() {
                               
                               {selectedFile && typeof selectedFile === 'object' && selectedFile.id ? (
                                 <div className="file-preview-container">
-                                  {/* Wrap in error boundary div */}
+                                  {/* Wrap in error boundary div with additional safeguards */}
                                   <div className="file-preview-wrapper">
                                     {(() => {
                                       try {
@@ -701,22 +701,36 @@ export function UserProcessDashboard() {
                                           );
                                         }
                                         
-                                        return (
-                                          <AdvancedFilePreview 
-                                            key={fileId} // Add key to force re-render on file change
-                                            fileId={fileId} 
-                                            fileName={fileName} 
-                                            onClose={() => {
-                                              try {
-                                                setSelectedFile(null);
-                                                setShowFilePreview(false);
-                                                setShowWorkflowDetail(true);
-                                              } catch (error) {
-                                                console.error("Error in onClose callback:", error);
-                                              }
-                                            }} 
-                                          />
-                                        );
+                                        // Create a simple wrapper component to catch any errors
+                                        const SafeFilePreview = () => {
+                                          try {
+                                            return (
+                                              <AdvancedFilePreview 
+                                                key={fileId} // Add key to force re-render on file change
+                                                fileId={fileId} 
+                                                fileName={fileName} 
+                                                onClose={() => {
+                                                  try {
+                                                    setSelectedFile(null);
+                                                    setShowFilePreview(false);
+                                                    setShowWorkflowDetail(true);
+                                                  } catch (error) {
+                                                    console.error("Error in onClose callback:", error);
+                                                  }
+                                                }} 
+                                              />
+                                            );
+                                          } catch (error) {
+                                            console.error("Error in SafeFilePreview:", error);
+                                            return (
+                                              <div className="p-4 text-center border border-red-200 bg-red-50 text-red-800 rounded-md">
+                                                Error rendering file preview component. Please try again.
+                                              </div>
+                                            );
+                                          }
+                                        };
+                                        
+                                        return <SafeFilePreview />;
                                       } catch (error) {
                                         console.error("Error rendering AdvancedFilePreview:", error);
                                         return (

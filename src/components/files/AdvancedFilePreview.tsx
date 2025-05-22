@@ -284,11 +284,26 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
           </div>
           
           <div className="data-grid-wrapper">
-            {/* Wrap in div for safer rendering */}
-            <FilterableDataGrid 
-              data={safeGridData} 
-              title={`${fileName || 'Unknown File'} - ${activeSheet || 'Sheet'}`} 
-            />
+            {/* Wrap in error boundary div for safer rendering */}
+            <div className="safe-render-container">
+              {(() => {
+                try {
+                  return (
+                    <FilterableDataGrid 
+                      data={safeGridData} 
+                      title={`${fileName || 'Unknown File'} - ${activeSheet || 'Sheet'}`} 
+                    />
+                  );
+                } catch (error) {
+                  console.error("Error rendering FilterableDataGrid:", error);
+                  return (
+                    <div className="p-4 text-center border border-red-200 bg-red-50 text-red-800 rounded-md">
+                      Error displaying data grid. Please try again.
+                    </div>
+                  );
+                }
+              })()}
+            </div>
           </div>
         </div>
       );
@@ -374,8 +389,23 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
           </div>
           
           <div className="pivot-table-wrapper">
-            {/* Wrap in div for safer rendering */}
-            <PivotTable data={safePivotData} />
+            {/* Wrap in error boundary div for safer rendering */}
+            <div className="safe-render-container">
+              {(() => {
+                try {
+                  return (
+                    <PivotTable data={safePivotData} />
+                  );
+                } catch (error) {
+                  console.error("Error rendering PivotTable:", error);
+                  return (
+                    <div className="p-4 text-center border border-red-200 bg-red-50 text-red-800 rounded-md">
+                      Error displaying pivot table. Please try again.
+                    </div>
+                  );
+                }
+              })()}
+            </div>
           </div>
         </div>
       );
