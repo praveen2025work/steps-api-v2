@@ -219,8 +219,8 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
               ))}
             </div>
           
-          <div className="flex flex-wrap gap-2 mt-1 items-center justify-between">
-            {/* Action Buttons with Status Counts */}
+          <div className="flex flex-wrap gap-2 mt-1 items-center justify-end">
+            {/* Status Counts and Action Buttons moved to the right */}
             <div className="flex items-center gap-3">
               {/* Status Counts in a more compact layout */}
               <div className="flex gap-2 text-xs">
