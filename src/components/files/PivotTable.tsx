@@ -27,8 +27,8 @@ interface PivotConfig {
 }
 
 const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
-  // If no data is provided or data is empty, use sample data
-  const sampleData = data && Array.isArray(data) && data.length > 0 ? data : [
+  // If no data is provided or data is empty or invalid, use sample data
+  const sampleData = data && Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' ? data : [
     { date: '2025-05-01', region: 'EMEA', product: 'FX', amount: 1250000, status: 'Completed' },
     { date: '2025-05-01', region: 'APAC', product: 'Rates', amount: 2340000, status: 'Completed' },
     { date: '2025-05-01', region: 'AMER', product: 'FX', amount: 1890000, status: 'Completed' },

@@ -149,71 +149,97 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   };
 
   const renderDataSection = () => {
-    if (!fileData || !activeSheet || !fileData.sheets[activeSheet]) return <div>No data available</div>;
+    if (!fileData || !activeSheet || !fileData.sheets || !fileData.sheets[activeSheet]) {
+      return <div className="p-4 text-center text-muted-foreground">No data available</div>;
+    }
     
-    // Convert sheet data to format expected by FilterableDataGrid
-    const sheetData = fileData.sheets[activeSheet];
-    const gridData = sheetData.rows.map((row, index) => {
-      const rowData: Record<string, any> = {};
-      sheetData.headers.forEach((header, headerIndex) => {
-        rowData[header] = row[headerIndex];
+    try {
+      // Convert sheet data to format expected by FilterableDataGrid
+      const sheetData = fileData.sheets[activeSheet];
+      
+      if (!sheetData || !sheetData.rows || !Array.isArray(sheetData.rows) || !sheetData.headers) {
+        return <div className="p-4 text-center text-muted-foreground">Invalid sheet data format</div>;
+      }
+      
+      const gridData = sheetData.rows.map((row, index) => {
+        const rowData: Record<string, any> = { id: index + 1 };
+        if (Array.isArray(sheetData.headers)) {
+          sheetData.headers.forEach((header, headerIndex) => {
+            if (header) rowData[header] = row[headerIndex];
+          });
+        }
+        return rowData;
       });
-      rowData.id = index + 1;
-      return rowData;
-    });
-    
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-          {Object.keys(fileData.sheets).map(sheetName => (
-            <Button
-              key={sheetName}
-              variant={activeSheet === sheetName ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveSheet(sheetName)}
-            >
-              {sheetName}
-            </Button>
-          ))}
+      
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+            {fileData.sheets && Object.keys(fileData.sheets).map(sheetName => (
+              <Button
+                key={sheetName}
+                variant={activeSheet === sheetName ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveSheet(sheetName)}
+              >
+                {sheetName}
+              </Button>
+            ))}
+          </div>
+          
+          <FilterableDataGrid data={gridData} title={`${fileName} - ${activeSheet}`} />
         </div>
-        
-        <FilterableDataGrid data={gridData} title={`${fileName} - ${activeSheet}`} />
-      </div>
-    );
+      );
+    } catch (error) {
+      console.error("Error rendering data section:", error);
+      return <div className="p-4 text-center text-muted-foreground">Error displaying data</div>;
+    }
   };
 
   const renderPivotSection = () => {
-    if (!fileData || !activeSheet || !fileData.sheets[activeSheet]) return <div>No data available</div>;
+    if (!fileData || !activeSheet || !fileData.sheets || !fileData.sheets[activeSheet]) {
+      return <div className="p-4 text-center text-muted-foreground">No data available</div>;
+    }
     
-    // Convert sheet data to format expected by PivotTable
-    const sheetData = fileData.sheets[activeSheet];
-    const pivotData = sheetData.rows.map((row, index) => {
-      const rowData: Record<string, any> = {};
-      sheetData.headers.forEach((header, headerIndex) => {
-        rowData[header] = row[headerIndex];
+    try {
+      // Convert sheet data to format expected by PivotTable
+      const sheetData = fileData.sheets[activeSheet];
+      
+      if (!sheetData || !sheetData.rows || !Array.isArray(sheetData.rows) || !sheetData.headers) {
+        return <div className="p-4 text-center text-muted-foreground">Invalid sheet data format</div>;
+      }
+      
+      const pivotData = sheetData.rows.map((row, index) => {
+        const rowData: Record<string, any> = { id: index + 1 };
+        if (Array.isArray(sheetData.headers)) {
+          sheetData.headers.forEach((header, headerIndex) => {
+            if (header) rowData[header] = row[headerIndex];
+          });
+        }
+        return rowData;
       });
-      rowData.id = index + 1;
-      return rowData;
-    });
-    
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-          {Object.keys(fileData.sheets).map(sheetName => (
-            <Button
-              key={sheetName}
-              variant={activeSheet === sheetName ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveSheet(sheetName)}
-            >
-              {sheetName}
-            </Button>
-          ))}
+      
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+            {fileData.sheets && Object.keys(fileData.sheets).map(sheetName => (
+              <Button
+                key={sheetName}
+                variant={activeSheet === sheetName ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveSheet(sheetName)}
+              >
+                {sheetName}
+              </Button>
+            ))}
+          </div>
+          
+          <PivotTable data={pivotData} />
         </div>
-        
-        <PivotTable data={pivotData} />
-      </div>
-    );
+      );
+    } catch (error) {
+      console.error("Error rendering pivot section:", error);
+      return <div className="p-4 text-center text-muted-foreground">Error displaying pivot table</div>;
+    }
   };
 
   const renderAISection = () => {
