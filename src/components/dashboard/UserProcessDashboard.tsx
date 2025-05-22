@@ -308,6 +308,10 @@ export function UserProcessDashboard() {
 
   // Handle file click
   const handleFileClick = (file: any) => {
+    if (!file || !file.id) {
+      console.error("Invalid file object:", file);
+      return;
+    }
     setSelectedFile(file);
     setShowFilePreview(true);
     setShowWorkflowDetail(false);
@@ -315,6 +319,10 @@ export function UserProcessDashboard() {
 
   // Handle dependency file click
   const handleDependencyFileClick = (file: any) => {
+    if (!file || !file.id) {
+      console.error("Invalid dependency file object:", file);
+      return;
+    }
     setSelectedFile(file);
     setShowFilePreview(true);
     setShowWorkflowDetail(false);
@@ -362,6 +370,28 @@ export function UserProcessDashboard() {
   
   // Get unique instances for filter
   const uniqueInstances = Array.from(new Set(mockProcesses.map(p => p.instance)));
+
+  // Helper function to safely render file buttons
+  const renderFileButtons = (files: any[] | undefined) => {
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      return <div className="p-2 text-muted-foreground">No files available</div>;
+    }
+
+    return files.map((file: any) => {
+      if (!file || !file.id) return null;
+      return (
+        <Button 
+          key={file.id}
+          variant={selectedFile?.id === file.id ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleFileClick(file)}
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          {file.name || 'Unnamed File'}
+        </Button>
+      );
+    });
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -557,12 +587,12 @@ export function UserProcessDashboard() {
                             <CardHeader className="pb-3">
                               <div className="flex justify-between items-center">
                                 <div>
-                                  <CardTitle className="text-lg">{selectedSubStage.name}</CardTitle>
+                                  <CardTitle className="text-lg">{selectedSubStage.name || 'Unnamed Process'}</CardTitle>
                                   <CardDescription>
                                     ID: <span className="font-medium cursor-pointer" onClick={handleProcessIdClick}>
-                                      {selectedSubStage.id}
+                                      {selectedSubStage.id || 'Unknown ID'}
                                     </span> | Status: <Badge variant={selectedSubStage.status === "In Progress" ? "default" : "outline"}>
-                                      {selectedSubStage.status}
+                                      {selectedSubStage.status || 'Unknown Status'}
                                     </Badge>
                                   </CardDescription>
                                 </div>
@@ -581,19 +611,19 @@ export function UserProcessDashboard() {
                               <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
                                   <p className="text-sm text-muted-foreground">Assigned To</p>
-                                  <p className="font-medium">{selectedSubStage.assignedTo}</p>
+                                  <p className="font-medium">{selectedSubStage.assignedTo || 'Unassigned'}</p>
                                 </div>
                                 <div>
                                   <p className="text-sm text-muted-foreground">Priority</p>
-                                  <p className="font-medium">{selectedSubStage.priority}</p>
+                                  <p className="font-medium">{selectedSubStage.priority || 'None'}</p>
                                 </div>
                                 <div>
                                   <p className="text-sm text-muted-foreground">Start Time</p>
-                                  <p className="font-medium">{selectedSubStage.startTime}</p>
+                                  <p className="font-medium">{selectedSubStage.startTime || 'Not started'}</p>
                                 </div>
                                 <div>
                                   <p className="text-sm text-muted-foreground">Est. Completion</p>
-                                  <p className="font-medium">{selectedSubStage.estimatedCompletion}</p>
+                                  <p className="font-medium">{selectedSubStage.estimatedCompletion || 'Unknown'}</p>
                                 </div>
                               </div>
                               
@@ -602,15 +632,15 @@ export function UserProcessDashboard() {
                                 <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                                   <div 
                                     className="bg-blue-600 h-2.5 rounded-full" 
-                                    style={{ width: `${selectedSubStage.progress}%` }}
+                                    style={{ width: `${selectedSubStage.progress || 0}%` }}
                                   ></div>
                                 </div>
-                                <p className="text-right text-sm mt-1">{selectedSubStage.progress}%</p>
+                                <p className="text-right text-sm mt-1">{selectedSubStage.progress || 0}%</p>
                               </div>
                               
                               <div className="mb-4">
                                 <p className="text-sm text-muted-foreground mb-1">Description</p>
-                                <p className="text-sm">{selectedSubStage.description}</p>
+                                <p className="text-sm">{selectedSubStage.description || 'No description available'}</p>
                               </div>
                             </CardContent>
                           </Card>
@@ -623,7 +653,7 @@ export function UserProcessDashboard() {
                               <div>
                                 <CardTitle>Preview Files</CardTitle>
                                 <CardDescription>
-                                  Viewing: {selectedFile?.name}
+                                  Viewing: {selectedFile?.name || 'No file selected'}
                                 </CardDescription>
                               </div>
                               <Button variant="ghost" size="sm" onClick={() => {
@@ -638,21 +668,10 @@ export function UserProcessDashboard() {
                           <CardContent>
                             <div className="mb-4">
                               <div className="flex space-x-2 mb-4">
-                                {selectedSubStage?.files && Array.isArray(selectedSubStage.files) ? (
-                                  selectedSubStage.files.map((file: any) => (
-                                    <Button 
-                                      key={file.id}
-                                      variant={selectedFile?.id === file.id ? "default" : "outline"}
-                                      size="sm"
-                                      onClick={() => handleFileClick(file)}
-                                    >
-                                      <FileText className="h-4 w-4 mr-2" />
-                                      {file.name || 'Unnamed File'}
-                                    </Button>
-                                  ))
-                                ) : (
+                                {selectedSubStage && selectedSubStage.files && Array.isArray(selectedSubStage.files) ? 
+                                  renderFileButtons(selectedSubStage.files) : 
                                   <div className="p-2 text-muted-foreground">No files available</div>
-                                )}
+                                }
                               </div>
                               
                               {selectedFile && selectedFile.id ? (
@@ -877,23 +896,34 @@ export function UserProcessDashboard() {
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                      {selectedProcess.files.map((file: any) => (
-                                        <TableRow key={file.id}>
-                                          <TableCell>{file.name}</TableCell>
-                                          <TableCell>{file.type}</TableCell>
-                                          <TableCell>{file.size}</TableCell>
-                                          <TableCell>{file.lastModified}</TableCell>
-                                          <TableCell>
-                                            <Button 
-                                              variant="ghost" 
-                                              size="sm"
-                                              onClick={() => handleFileClick(file)}
-                                            >
-                                              <Eye className="h-4 w-4" />
-                                            </Button>
+                                      {selectedProcess.files && Array.isArray(selectedProcess.files) ? (
+                                        selectedProcess.files.map((file: any) => {
+                                          if (!file || !file.id) return null;
+                                          return (
+                                            <TableRow key={file.id}>
+                                              <TableCell>{file.name || 'Unnamed File'}</TableCell>
+                                              <TableCell>{file.type || 'Unknown'}</TableCell>
+                                              <TableCell>{file.size || 'Unknown'}</TableCell>
+                                              <TableCell>{file.lastModified || 'Unknown'}</TableCell>
+                                              <TableCell>
+                                                <Button 
+                                                  variant="ghost" 
+                                                  size="sm"
+                                                  onClick={() => handleFileClick(file)}
+                                                >
+                                                  <Eye className="h-4 w-4" />
+                                                </Button>
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })
+                                      ) : (
+                                        <TableRow>
+                                          <TableCell colSpan={5} className="text-center py-4">
+                                            No files available
                                           </TableCell>
                                         </TableRow>
-                                      ))}
+                                      )}
                                     </TableBody>
                                   </Table>
                                 </div>
@@ -904,41 +934,49 @@ export function UserProcessDashboard() {
                                   {/* Parent Dependencies */}
                                   <div>
                                     <h3 className="text-lg font-medium mb-2">Parent Processes</h3>
-                                    {selectedProcess.dependencies.parent.length > 0 ? (
+                                    {selectedProcess.dependencies?.parent && 
+                                     Array.isArray(selectedProcess.dependencies.parent) && 
+                                     selectedProcess.dependencies.parent.length > 0 ? (
                                       <div className="space-y-4">
-                                        {selectedProcess.dependencies.parent.map((parent: any) => (
-                                          <Card key={parent.id}>
-                                            <CardHeader className="py-3">
-                                              <div className="flex justify-between items-center">
-                                                <div>
-                                                  <CardTitle className="text-base">{parent.name}</CardTitle>
-                                                  <CardDescription>ID: {parent.id}</CardDescription>
+                                        {selectedProcess.dependencies.parent.map((parent: any) => {
+                                          if (!parent || !parent.id) return null;
+                                          return (
+                                            <Card key={parent.id}>
+                                              <CardHeader className="py-3">
+                                                <div className="flex justify-between items-center">
+                                                  <div>
+                                                    <CardTitle className="text-base">{parent.name || 'Unnamed Process'}</CardTitle>
+                                                    <CardDescription>ID: {parent.id}</CardDescription>
+                                                  </div>
+                                                  <Badge variant={parent.status === "Completed" ? "outline" : "default"}>
+                                                    {parent.status || 'Unknown Status'}
+                                                  </Badge>
                                                 </div>
-                                                <Badge variant={parent.status === "Completed" ? "outline" : "default"}>
-                                                  {parent.status}
-                                                </Badge>
-                                              </div>
-                                            </CardHeader>
-                                            {parent.files.length > 0 && (
-                                              <CardContent className="py-0">
-                                                <p className="text-sm font-medium mb-2">Files</p>
-                                                <div className="flex flex-wrap gap-2">
-                                                  {parent.files.map((file: any) => (
-                                                    <Button 
-                                                      key={file.id}
-                                                      variant="outline"
-                                                      size="sm"
-                                                      onClick={() => handleDependencyFileClick(file)}
-                                                    >
-                                                      <FileText className="h-4 w-4 mr-2" />
-                                                      {file.name}
-                                                    </Button>
-                                                  ))}
-                                                </div>
-                                              </CardContent>
-                                            )}
-                                          </Card>
-                                        ))}
+                                              </CardHeader>
+                                              {parent.files && Array.isArray(parent.files) && parent.files.length > 0 && (
+                                                <CardContent className="py-0">
+                                                  <p className="text-sm font-medium mb-2">Files</p>
+                                                  <div className="flex flex-wrap gap-2">
+                                                    {parent.files.map((file: any) => {
+                                                      if (!file || !file.id) return null;
+                                                      return (
+                                                        <Button 
+                                                          key={file.id}
+                                                          variant="outline"
+                                                          size="sm"
+                                                          onClick={() => handleDependencyFileClick(file)}
+                                                        >
+                                                          <FileText className="h-4 w-4 mr-2" />
+                                                          {file.name || 'Unnamed File'}
+                                                        </Button>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </CardContent>
+                                              )}
+                                            </Card>
+                                          );
+                                        })}
                                       </div>
                                     ) : (
                                       <p className="text-muted-foreground">No parent dependencies</p>
@@ -950,45 +988,53 @@ export function UserProcessDashboard() {
                                   {/* Child Dependencies */}
                                   <div>
                                     <h3 className="text-lg font-medium mb-2">Child Processes</h3>
-                                    {selectedProcess.dependencies.child.length > 0 ? (
+                                    {selectedProcess.dependencies?.child && 
+                                     Array.isArray(selectedProcess.dependencies.child) && 
+                                     selectedProcess.dependencies.child.length > 0 ? (
                                       <div className="space-y-4">
-                                        {selectedProcess.dependencies.child.map((child: any) => (
-                                          <Card key={child.id}>
-                                            <CardHeader className="py-3">
-                                              <div className="flex justify-between items-center">
-                                                <div>
-                                                  <CardTitle className="text-base">{child.name}</CardTitle>
-                                                  <CardDescription>ID: {child.id}</CardDescription>
+                                        {selectedProcess.dependencies.child.map((child: any) => {
+                                          if (!child || !child.id) return null;
+                                          return (
+                                            <Card key={child.id}>
+                                              <CardHeader className="py-3">
+                                                <div className="flex justify-between items-center">
+                                                  <div>
+                                                    <CardTitle className="text-base">{child.name || 'Unnamed Process'}</CardTitle>
+                                                    <CardDescription>ID: {child.id}</CardDescription>
+                                                  </div>
+                                                  <Badge variant={
+                                                    child.status === "Completed" ? "outline" : 
+                                                    child.status === "Blocked" ? "destructive" : 
+                                                    "default"
+                                                  }>
+                                                    {child.status || 'Unknown Status'}
+                                                  </Badge>
                                                 </div>
-                                                <Badge variant={
-                                                  child.status === "Completed" ? "outline" : 
-                                                  child.status === "Blocked" ? "destructive" : 
-                                                  "default"
-                                                }>
-                                                  {child.status}
-                                                </Badge>
-                                              </div>
-                                            </CardHeader>
-                                            {child.files.length > 0 && (
-                                              <CardContent className="py-0">
-                                                <p className="text-sm font-medium mb-2">Files</p>
-                                                <div className="flex flex-wrap gap-2">
-                                                  {child.files.map((file: any) => (
-                                                    <Button 
-                                                      key={file.id}
-                                                      variant="outline"
-                                                      size="sm"
-                                                      onClick={() => handleDependencyFileClick(file)}
-                                                    >
-                                                      <FileText className="h-4 w-4 mr-2" />
-                                                      {file.name}
-                                                    </Button>
-                                                  ))}
-                                                </div>
-                                              </CardContent>
-                                            )}
-                                          </Card>
-                                        ))}
+                                              </CardHeader>
+                                              {child.files && Array.isArray(child.files) && child.files.length > 0 && (
+                                                <CardContent className="py-0">
+                                                  <p className="text-sm font-medium mb-2">Files</p>
+                                                  <div className="flex flex-wrap gap-2">
+                                                    {child.files.map((file: any) => {
+                                                      if (!file || !file.id) return null;
+                                                      return (
+                                                        <Button 
+                                                          key={file.id}
+                                                          variant="outline"
+                                                          size="sm"
+                                                          onClick={() => handleDependencyFileClick(file)}
+                                                        >
+                                                          <FileText className="h-4 w-4 mr-2" />
+                                                          {file.name || 'Unnamed File'}
+                                                        </Button>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </CardContent>
+                                              )}
+                                            </Card>
+                                          );
+                                        })}
                                       </div>
                                     ) : (
                                       <p className="text-muted-foreground">No child dependencies</p>
@@ -1085,18 +1131,25 @@ export function UserProcessDashboard() {
                                   ></div>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-3">
-                                  {mockSubStageProcess.files.map((file: any) => (
-                                    <Button 
-                                      key={file.id}
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 text-xs"
-                                      onClick={() => handleFileClick(file)}
-                                    >
-                                      <FileText className="h-3 w-3 mr-1" />
-                                      {file.name}
-                                    </Button>
-                                  ))}
+                                  {mockSubStageProcess.files && Array.isArray(mockSubStageProcess.files) ? (
+                                    mockSubStageProcess.files.map((file: any) => {
+                                      if (!file || !file.id) return null;
+                                      return (
+                                        <Button 
+                                          key={file.id}
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-7 text-xs"
+                                          onClick={() => handleFileClick(file)}
+                                        >
+                                          <FileText className="h-3 w-3 mr-1" />
+                                          {file.name || 'Unnamed File'}
+                                        </Button>
+                                      );
+                                    })
+                                  ) : (
+                                    <div className="text-xs text-muted-foreground">No files available</div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1189,23 +1242,34 @@ export function UserProcessDashboard() {
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                      {selectedProcess.files.map((file: any) => (
-                                        <TableRow key={file.id}>
-                                          <TableCell>{file.name}</TableCell>
-                                          <TableCell>{file.type}</TableCell>
-                                          <TableCell>{file.size}</TableCell>
-                                          <TableCell>{file.lastModified}</TableCell>
-                                          <TableCell>
-                                            <Button 
-                                              variant="ghost" 
-                                              size="sm"
-                                              onClick={() => handleFileClick(file)}
-                                            >
-                                              <Eye className="h-4 w-4" />
-                                            </Button>
+                                      {selectedProcess.files && Array.isArray(selectedProcess.files) ? (
+                                        selectedProcess.files.map((file: any) => {
+                                          if (!file || !file.id) return null;
+                                          return (
+                                            <TableRow key={file.id}>
+                                              <TableCell>{file.name || 'Unnamed File'}</TableCell>
+                                              <TableCell>{file.type || 'Unknown'}</TableCell>
+                                              <TableCell>{file.size || 'Unknown'}</TableCell>
+                                              <TableCell>{file.lastModified || 'Unknown'}</TableCell>
+                                              <TableCell>
+                                                <Button 
+                                                  variant="ghost" 
+                                                  size="sm"
+                                                  onClick={() => handleFileClick(file)}
+                                                >
+                                                  <Eye className="h-4 w-4" />
+                                                </Button>
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })
+                                      ) : (
+                                        <TableRow>
+                                          <TableCell colSpan={5} className="text-center py-4">
+                                            No files available
                                           </TableCell>
                                         </TableRow>
-                                      ))}
+                                      )}
                                     </TableBody>
                                   </Table>
                                 </div>

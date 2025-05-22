@@ -307,7 +307,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
               {sections.map((section, index) => {
                 // Validate section has required properties
                 if (!section || typeof section !== 'object') {
-                  return null;
+                  return <div key={index} className="p-4 text-center text-muted-foreground">Invalid section data</div>;
                 }
                 
                 const sectionTitle = section.title || 'Untitled Section';
@@ -329,7 +329,9 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
                       {sectionType === "insights" && (
                         <ul className="space-y-3">
                           {items.map((item, i) => {
-                            if (!item || typeof item !== 'object') return null;
+                            if (!item || typeof item !== 'object') {
+                              return <li key={i} className="text-muted-foreground">Invalid item data</li>;
+                            }
                             const text = item.text || 'No description';
                             const value = item.value || 'N/A';
                             const sentiment = item.sentiment || 'neutral';
@@ -358,7 +360,9 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
                       {sectionType === "recommendations" && (
                         <ul className="space-y-3">
                           {items.map((item, i) => {
-                            if (!item || typeof item !== 'object') return null;
+                            if (!item || typeof item !== 'object') {
+                              return <li key={i} className="text-muted-foreground">Invalid item data</li>;
+                            }
                             const text = item.text || 'No recommendation';
                             const priority = item.priority || 'low';
                             
@@ -380,7 +384,9 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
                       {sectionType === "anomalies" && (
                         <ul className="space-y-3">
                           {items.map((item, i) => {
-                            if (!item || typeof item !== 'object') return null;
+                            if (!item || typeof item !== 'object') {
+                              return <li key={i} className="text-muted-foreground">Invalid item data</li>;
+                            }
                             const text = item.text || 'No anomaly description';
                             const severity = item.severity || 'none';
                             
@@ -406,16 +412,16 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
                             <div className="flex items-center justify-between mb-2">
                               <span className="font-medium">Data Quality Score</span>
                               <span className={`font-bold text-lg ${
-                                section.score >= 90 ? "text-green-600 dark:text-green-400" : 
-                                section.score >= 70 ? "text-yellow-600 dark:text-yellow-400" : 
+                                (section.score || 0) >= 90 ? "text-green-600 dark:text-green-400" : 
+                                (section.score || 0) >= 70 ? "text-yellow-600 dark:text-yellow-400" : 
                                 "text-red-600 dark:text-red-400"
                               }`}>{section.score || 0}/100</span>
                             </div>
                             <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
                               <div 
                                 className={`h-full ${
-                                  section.score >= 90 ? "bg-green-500" : 
-                                  section.score >= 70 ? "bg-yellow-500" : "bg-red-500"
+                                  (section.score || 0) >= 90 ? "bg-green-500" : 
+                                  (section.score || 0) >= 70 ? "bg-yellow-500" : "bg-red-500"
                                 }`} 
                                 style={{ width: `${section.score || 0}%` }}
                               ></div>
