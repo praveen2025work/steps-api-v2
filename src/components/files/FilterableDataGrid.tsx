@@ -129,12 +129,16 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
       if (typeof value === 'number') {
         // Check if it looks like a currency amount
         if (value > 1000) {
-          return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-          }).format(value);
+          try {
+            return new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0
+            }).format(value);
+          } catch (e) {
+            return `$${value.toLocaleString()}`;
+          }
         }
         return value.toLocaleString();
       }
@@ -153,14 +157,20 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
         };
         
         return (
-          <Badge className={statusColors[value] || ''}>
+          <span className={statusColors[value] || ''}>
             {value}
-          </Badge>
+          </span>
         );
       }
       
       // Safely convert to string
-      return String(value);
+      if (value === null || value === undefined) {
+        return '-';
+      } else if (typeof value === 'object') {
+        return JSON.stringify(value);
+      } else {
+        return String(value);
+      }
     } catch (error) {
       console.error("Error formatting value:", error);
       return '-'; // Return a safe default if formatting fails

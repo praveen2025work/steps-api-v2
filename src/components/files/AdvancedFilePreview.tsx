@@ -202,10 +202,13 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       // Ensure we have valid data for the grid
       const safeGridData = Array.isArray(gridData) && gridData.length > 0 ? gridData : [{ id: 1 }];
       
+      // Safely get sheet names
+      const sheetNames = Object.keys(sheets || {});
+      
       return (
         <div className="space-y-4">
           <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            {Object.keys(sheets).map(sheetName => (
+            {sheetNames.map(sheetName => (
               <Button
                 key={sheetName}
                 variant={activeSheet === sheetName ? "default" : "outline"}
@@ -217,7 +220,9 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
             ))}
           </div>
           
-          <FilterableDataGrid data={safeGridData} title={`${fileName || 'Unknown File'} - ${activeSheet || 'Sheet'}`} />
+          <div>
+            <FilterableDataGrid data={safeGridData} title={`${fileName || 'Unknown File'} - ${activeSheet || 'Sheet'}`} />
+          </div>
         </div>
       );
     } catch (error) {
@@ -261,10 +266,13 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
         { id: 1, category: 'Sample', value: 0 }
       ];
       
+      // Safely get sheet names
+      const sheetNames = Object.keys(sheets || {});
+      
       return (
         <div className="space-y-4">
           <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            {Object.keys(sheets).map(sheetName => (
+            {sheetNames.map(sheetName => (
               <Button
                 key={sheetName}
                 variant={activeSheet === sheetName ? "default" : "outline"}
@@ -276,7 +284,9 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
             ))}
           </div>
           
-          <PivotTable data={safePivotData} />
+          <div>
+            <PivotTable data={safePivotData} />
+          </div>
         </div>
       );
     } catch (error) {

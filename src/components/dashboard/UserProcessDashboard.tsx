@@ -675,15 +675,17 @@ export function UserProcessDashboard() {
                               </div>
                               
                               {selectedFile && typeof selectedFile === 'object' && selectedFile.id ? (
-                                <AdvancedFilePreview 
-                                  fileId={selectedFile.id} 
-                                  fileName={selectedFile.name || 'Unknown File'} 
-                                  onClose={() => {
-                                    setSelectedFile(null);
-                                    setShowFilePreview(false);
-                                    setShowWorkflowDetail(true);
-                                  }} 
-                                />
+                                <div>
+                                  <AdvancedFilePreview 
+                                    fileId={selectedFile.id} 
+                                    fileName={selectedFile.name || 'Unknown File'} 
+                                    onClose={() => {
+                                      setSelectedFile(null);
+                                      setShowFilePreview(false);
+                                      setShowWorkflowDetail(true);
+                                    }} 
+                                  />
+                                </div>
                               ) : (
                                 <div className="p-4 text-center text-muted-foreground">
                                   Select a file to preview

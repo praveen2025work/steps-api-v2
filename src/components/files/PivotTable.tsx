@@ -150,9 +150,24 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
   
   try {
     const result = calculatePivotData();
-    rowCombinations = result.rowCombinations;
-    columnCombinations = result.columnCombinations;
-    pivotData = result.pivotData;
+    rowCombinations = result.rowCombinations || [['Sample']];
+    columnCombinations = result.columnCombinations || [['Data']];
+    pivotData = result.pivotData || { 'Sample': { 'Data': 0 } };
+    
+    // Ensure rowCombinations is valid
+    if (!Array.isArray(rowCombinations) || rowCombinations.length === 0) {
+      rowCombinations = [['Sample']];
+    }
+    
+    // Ensure columnCombinations is valid
+    if (!Array.isArray(columnCombinations) || columnCombinations.length === 0) {
+      columnCombinations = [['Data']];
+    }
+    
+    // Ensure pivotData is valid
+    if (typeof pivotData !== 'object' || pivotData === null) {
+      pivotData = { 'Sample': { 'Data': 0 } };
+    }
   } catch (error) {
     console.error("Error calculating pivot data:", error);
     // Set default values for a minimal working pivot table
@@ -196,6 +211,51 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
     } catch (error) {
       console.error("Error formatting number:", error);
       return '$0'; // Return a safe default if formatting fails
+    }
+  };
+  
+  // Safely get row total
+  const getRowTotal = (rowKey: string) => {
+    try {
+      if (!rowKey || !pivotData[rowKey]) return 0;
+      
+      return columnCombinations.reduce((sum, colComb) => {
+        const colKey = colComb.join('-');
+        const value = pivotData[rowKey]?.[colKey];
+        return sum + (typeof value === 'number' ? value : 0);
+      }, 0);
+    } catch (error) {
+      console.error("Error calculating row total:", error);
+      return 0;
+    }
+  };
+  
+  // Safely get column total
+  const getColumnTotal = (colKey: string) => {
+    try {
+      if (!colKey) return 0;
+      
+      return rowCombinations.reduce((sum, rowComb) => {
+        const rowKey = rowComb.join('-');
+        const value = pivotData[rowKey]?.[colKey];
+        return sum + (typeof value === 'number' ? value : 0);
+      }, 0);
+    } catch (error) {
+      console.error("Error calculating column total:", error);
+      return 0;
+    }
+  };
+  
+  // Safely get grand total
+  const getGrandTotal = () => {
+    try {
+      return rowCombinations.reduce((rowSum, rowComb) => {
+        const rowKey = rowComb.join('-');
+        return rowSum + getRowTotal(rowKey);
+      }, 0);
+    } catch (error) {
+      console.error("Error calculating grand total:", error);
+      return 0;
     }
   };
 
@@ -297,10 +357,6 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
           <TableBody>
             {rowCombinations.map((rowComb, rowIndex) => {
               const rowKey = rowComb.join('-');
-              const rowTotal = columnCombinations.reduce((sum, colComb) => {
-                const colKey = colComb.join('-');
-                return sum + (pivotData[rowKey]?.[colKey] || 0);
-              }, 0);
               
               return (
                 <TableRow key={rowIndex}>
@@ -316,7 +372,7 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
                     );
                   })}
                   <TableCell className="text-right font-bold">
-                    {formatNumber(rowTotal)}
+                    {formatNumber(getRowTotal(rowKey))}
                   </TableCell>
                 </TableRow>
               );
@@ -325,27 +381,15 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
               <TableCell className="font-bold">Total</TableCell>
               {columnCombinations.map((colComb, colIndex) => {
                 const colKey = colComb.join('-');
-                const colTotal = rowCombinations.reduce((sum, rowComb) => {
-                  const rowKey = rowComb.join('-');
-                  return sum + (pivotData[rowKey]?.[colKey] || 0);
-                }, 0);
                 
                 return (
                   <TableCell key={colIndex} className="text-right font-bold">
-                    {formatNumber(colTotal)}
+                    {formatNumber(getColumnTotal(colKey))}
                   </TableCell>
                 );
               })}
               <TableCell className="text-right font-bold">
-                {formatNumber(
-                  rowCombinations.reduce((rowSum, rowComb) => {
-                    const rowKey = rowComb.join('-');
-                    return rowSum + columnCombinations.reduce((colSum, colComb) => {
-                      const colKey = colComb.join('-');
-                      return colSum + (pivotData[rowKey]?.[colKey] || 0);
-                    }, 0);
-                  }, 0)
-                )}
+                {formatNumber(getGrandTotal())}
               </TableCell>
             </TableRow>
           </TableBody>
