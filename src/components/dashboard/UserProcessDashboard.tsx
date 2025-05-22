@@ -651,7 +651,7 @@ export function UserProcessDashboard() {
                                 ))}
                               </div>
                               
-                              {selectedFile ? (
+                              {selectedFile && selectedFile.id && selectedFile.name ? (
                                 <AdvancedFilePreview 
                                   fileId={selectedFile.id} 
                                   fileName={selectedFile.name} 

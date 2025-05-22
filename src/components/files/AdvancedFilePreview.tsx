@@ -149,7 +149,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   };
 
   const renderDataSection = () => {
-    if (!fileData || !activeSheet) return <div>No data available</div>;
+    if (!fileData || !activeSheet || !fileData.sheets[activeSheet]) return <div>No data available</div>;
     
     // Convert sheet data to format expected by FilterableDataGrid
     const sheetData = fileData.sheets[activeSheet];
@@ -183,7 +183,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   };
 
   const renderPivotSection = () => {
-    if (!fileData || !activeSheet) return <div>No data available</div>;
+    if (!fileData || !activeSheet || !fileData.sheets[activeSheet]) return <div>No data available</div>;
     
     // Convert sheet data to format expected by PivotTable
     const sheetData = fileData.sheets[activeSheet];
