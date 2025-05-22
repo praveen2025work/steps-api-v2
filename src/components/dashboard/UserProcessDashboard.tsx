@@ -172,11 +172,11 @@ const UserProcessDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Filter states
-  const [selectedApplication, setSelectedApplication] = useState<string>('');
-  const [selectedGroup, setSelectedGroup] = useState<string>('');
-  const [selectedInstance, setSelectedInstance] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<string>('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [selectedApplication, setSelectedApplication] = useState<string>('all');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [selectedInstance, setSelectedInstance] = useState<string>('all');
+  const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   
   // Filtered options based on selections
   const [filteredGroups, setFilteredGroups] = useState(groups);
@@ -194,13 +194,13 @@ const UserProcessDashboard: React.FC = () => {
   
   // Update filtered groups when application changes
   useEffect(() => {
-    if (selectedApplication) {
+    if (selectedApplication !== 'all') {
       const filtered = groups.filter(group => group.applicationId === selectedApplication);
       setFilteredGroups(filtered);
       
       // Reset group selection if current selection is not valid
-      if (selectedGroup && !filtered.some(g => g.id === selectedGroup)) {
-        setSelectedGroup('');
+      if (selectedGroup !== 'all' && !filtered.some(g => g.id === selectedGroup)) {
+        setSelectedGroup('all');
       }
     } else {
       setFilteredGroups(groups);
@@ -209,13 +209,13 @@ const UserProcessDashboard: React.FC = () => {
   
   // Update filtered instances when group changes
   useEffect(() => {
-    if (selectedGroup) {
+    if (selectedGroup !== 'all') {
       const filtered = instances.filter(instance => instance.groupId === selectedGroup);
       setFilteredInstances(filtered);
       
       // Reset instance selection if current selection is not valid
-      if (selectedInstance && !filtered.some(i => i.id === selectedInstance)) {
-        setSelectedInstance('');
+      if (selectedInstance !== 'all' && !filtered.some(i => i.id === selectedInstance)) {
+        setSelectedInstance('all');
       }
     } else {
       setFilteredInstances(instances);
@@ -239,27 +239,27 @@ const UserProcessDashboard: React.FC = () => {
     }
     
     // Apply application filter
-    if (selectedApplication) {
+    if (selectedApplication !== 'all') {
       filtered = filtered.filter(process => process.applicationId === selectedApplication);
     }
     
     // Apply group filter
-    if (selectedGroup) {
+    if (selectedGroup !== 'all') {
       filtered = filtered.filter(process => process.groupId === selectedGroup);
     }
     
     // Apply instance filter
-    if (selectedInstance) {
+    if (selectedInstance !== 'all') {
       filtered = filtered.filter(process => process.instanceId === selectedInstance);
     }
     
     // Apply role filter
-    if (selectedRole) {
+    if (selectedRole !== 'all') {
       filtered = filtered.filter(process => process.roleName === selectedRole);
     }
     
     // Apply status filter
-    if (selectedStatus) {
+    if (selectedStatus !== 'all') {
       filtered = filtered.filter(process => process.status === selectedStatus);
     }
     
@@ -333,11 +333,11 @@ const UserProcessDashboard: React.FC = () => {
   // Reset all filters
   const resetFilters = () => {
     setSearchQuery('');
-    setSelectedApplication('');
-    setSelectedGroup('');
-    setSelectedInstance('');
-    setSelectedRole('');
-    setSelectedStatus('');
+    setSelectedApplication('all');
+    setSelectedGroup('all');
+    setSelectedInstance('all');
+    setSelectedRole('all');
+    setSelectedStatus('all');
   };
   
   // Refresh data
@@ -394,7 +394,7 @@ const UserProcessDashboard: React.FC = () => {
                     <SelectValue placeholder="Application" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Applications</SelectItem>
+                    <SelectItem value="all">All Applications</SelectItem>
                     {applications.map(app => (
                       <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
                     ))}
@@ -413,7 +413,7 @@ const UserProcessDashboard: React.FC = () => {
                     <SelectValue placeholder="Group" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Groups</SelectItem>
+                    <SelectItem value="all">All Groups</SelectItem>
                     {filteredGroups.map(group => (
                       <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
                     ))}
@@ -432,7 +432,7 @@ const UserProcessDashboard: React.FC = () => {
                     <SelectValue placeholder="Instance" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Instances</SelectItem>
+                    <SelectItem value="all">All Instances</SelectItem>
                     {filteredInstances.map(instance => (
                       <SelectItem key={instance.id} value={instance.id}>{instance.name}</SelectItem>
                     ))}
@@ -449,7 +449,7 @@ const UserProcessDashboard: React.FC = () => {
                     <SelectValue placeholder="Role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Roles</SelectItem>
+                    <SelectItem value="all">All Roles</SelectItem>
                     {roles.map(role => (
                       <SelectItem key={role.id} value={role.name}>{role.name}</SelectItem>
                     ))}
@@ -464,7 +464,7 @@ const UserProcessDashboard: React.FC = () => {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Statuses</SelectItem>
+                    <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="in-progress">In Progress</SelectItem>
                     <SelectItem value="not-started">Not Started</SelectItem>
