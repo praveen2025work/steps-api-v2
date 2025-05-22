@@ -52,6 +52,7 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
+  const [configTab, setConfigTab] = useState("stageOverview");
   
   // Extract tasks from workflow data
   const allTasks = Object.values(workflow.tasks || {}).flat();
@@ -128,6 +129,438 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   const formatStatus = (status: string) => {
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
+  
+  // Render the overview tab content
+  const renderOverviewContent = () => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+      <div className="md:col-span-2 space-y-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Workflow Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Stages</h4>
+                  <p className="text-2xl font-bold">{workflow.stages.length}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Tasks</h4>
+                  <p className="text-2xl font-bold">{totalTasks}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Completed Tasks</h4>
+                  <p className="text-2xl font-bold">{completedTasks}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Pending Tasks</h4>
+                  <p className="text-2xl font-bold">{totalTasks - completedTasks}</p>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h4 className="text-sm font-medium mb-2">Stage Progress</h4>
+                <div className="space-y-3">
+                  {workflow.stages.map((stage: any) => {
+                    // Calculate stage progress
+                    const stageTasks = workflow.tasks[stage.id] || [];
+                    const stageCompletedTasks = stageTasks.filter((task: any) => task.status === 'completed').length;
+                    const stageProgress = stageTasks.length > 0 
+                      ? Math.round((stageCompletedTasks / stageTasks.length) * 100) 
+                      : 0;
+                    
+                    return (
+                      <div key={stage.id} className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">{stage.name}</span>
+                          <span className="text-sm font-medium">{stageProgress}%</span>
+                        </div>
+                        <Progress value={stageProgress} className="h-2" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {allTasks.slice(0, 3).map((task: any) => (
+                <div key={task.id} className="flex items-start gap-3 p-3 rounded-md border">
+                  <div className={`p-2 rounded-full ${
+                    task.status === 'completed' ? 'bg-green-100 text-green-600' :
+                    task.status === 'in_progress' ? 'bg-blue-100 text-blue-600' :
+                    task.status === 'failed' ? 'bg-red-100 text-red-600' :
+                    'bg-amber-100 text-amber-600'
+                  }`}>
+                    {getStatusIcon(task.status)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <h4 className="font-medium">{task.name}</h4>
+                      <Badge variant={getStatusBadgeVariant(task.status)}>
+                        {formatStatus(task.status)}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {task.updatedBy} - {task.updatedAt}
+                    </p>
+                    {task.messages && task.messages.length > 0 && (
+                      <p className="text-sm mt-2 bg-muted/50 p-2 rounded-md">
+                        {task.messages[0]}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full justify-start">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Workflow
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <FileText className="h-4 w-4 mr-2" />
+                Export Report
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Add Comment
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open in Classic View
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Recent Files</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {allTasks.flatMap((task: any) => 
+                (task.documents || []).map((doc: any, index: number) => (
+                  <Button 
+                    key={`${task.id}-${index}`}
+                    variant="ghost" 
+                    className="w-full justify-start"
+                    onClick={() => handleFileClick({
+                      id: `file-${task.id}-${index}`,
+                      name: doc.name
+                    })}
+                  >
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    <div className="flex justify-between items-center w-full">
+                      <span className="truncate">{doc.name}</span>
+                      <span className="text-xs text-muted-foreground">{doc.size}</span>
+                    </div>
+                  </Button>
+                ))
+              ).slice(0, 5)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+  
+  // Render the stages tab content
+  const renderStagesContent = () => (
+    <div className="space-y-4 pt-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Search tasks and stages</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1">
+            <Filter className="h-4 w-4" />
+            <span>Filter</span>
+          </Button>
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        {workflow.stages.map((stage: any) => {
+          const stageTasks = workflow.tasks[stage.id] || [];
+          const isExpanded = expandedStage === stage.id;
+          
+          return (
+            <Card key={stage.id} className="overflow-hidden">
+              <div 
+                className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50"
+                onClick={() => toggleStage(stage.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <span className="text-sm font-medium text-primary">{stage.order}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{stage.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {stageTasks.length} tasks
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div>
+                    {stageTasks.length > 0 && (
+                      <div className="flex -space-x-2">
+                        {stageTasks.slice(0, 3).map((task: any, index: number) => (
+                          <div 
+                            key={index}
+                            className={`h-6 w-6 rounded-full border-2 border-background flex items-center justify-center ${
+                              task.status === 'completed' ? 'bg-green-100' :
+                              task.status === 'in_progress' ? 'bg-blue-100' :
+                              task.status === 'failed' ? 'bg-red-100' :
+                              'bg-amber-100'
+                            }`}
+                          >
+                            {getStatusIcon(task.status)}
+                          </div>
+                        ))}
+                        {stageTasks.length > 3 && (
+                          <div className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center">
+                            <span className="text-xs font-medium">+{stageTasks.length - 3}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {isExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+              
+              {isExpanded && (
+                <div className="px-4 pb-4">
+                  <Separator className="mb-4" />
+                  <div className="space-y-3">
+                    {stageTasks.length > 0 ? (
+                      stageTasks.map((task: any) => (
+                        <div key={task.id} className="relative border rounded-md p-4 hover:bg-muted/30">
+                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusColor(task.status)}`}></div>
+                          <div className="pl-2">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-medium">{task.name}</h4>
+                                <p className="text-sm text-muted-foreground">ID: {task.processId}</p>
+                              </div>
+                              <Badge variant={getStatusBadgeVariant(task.status)}>
+                                {formatStatus(task.status)}
+                              </Badge>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 mt-3">
+                              <div>
+                                <p className="text-sm text-muted-foreground">Duration</p>
+                                <p className="font-medium">{task.duration} minutes</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">Expected Start</p>
+                                <p className="font-medium">{task.expectedStart}</p>
+                              </div>
+                            </div>
+                            
+                            {task.dependencies && task.dependencies.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-sm text-muted-foreground mb-1">Dependencies</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {task.dependencies.map((dep: any, index: number) => (
+                                    <Badge key={index} variant="outline" className="flex items-center gap-1">
+                                      {getStatusIcon(dep.status)}
+                                      <span>{dep.name}</span>
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {task.documents && task.documents.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-sm text-muted-foreground mb-1">Documents</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {task.documents.map((doc: any, index: number) => (
+                                    <Button 
+                                      key={index}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleFileClick({
+                                        id: `file-${task.id}-${index}`,
+                                        name: doc.name
+                                      })}
+                                      className="flex items-center"
+                                    >
+                                      <FileText className="h-4 w-4 mr-2" />
+                                      {doc.name}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {task.messages && task.messages.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-sm text-muted-foreground mb-1">Messages</p>
+                                <div className="space-y-2">
+                                  {task.messages.map((message: string, index: number) => (
+                                    <div key={index} className="bg-muted/50 p-2 rounded-md text-sm">
+                                      {message}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="mt-3 text-right text-xs text-muted-foreground">
+                              Last updated by {task.updatedBy} at {task.updatedAt}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center p-4 text-muted-foreground">
+                        No tasks available for this stage
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+  
+  // Render the files tab content
+  const renderFilesContent = () => (
+    <div className="space-y-4 pt-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">All Files</h3>
+        <Button variant="outline" size="sm">
+          Upload New File
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {allTasks.flatMap((task: any) => 
+          (task.documents || []).map((doc: any, index: number) => (
+            <Card 
+              key={`${task.id}-${index}`}
+              className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => handleFileClick({
+                id: `file-${task.id}-${index}`,
+                name: doc.name
+              })}
+            >
+              <div className="bg-muted/50 p-6 flex items-center justify-center">
+                <FileText className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <CardContent className="p-4">
+                <h4 className="font-medium truncate">{doc.name}</h4>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-sm text-muted-foreground">{doc.size}</span>
+                  <Badge variant="outline">{doc.name.split('.').pop()?.toUpperCase()}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  From: {task.name}
+                </p>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+  
+  // Render the config tab content
+  const renderConfigContent = () => (
+    <div className="pt-4">
+      <Tabs value={configTab} onValueChange={setConfigTab} className="w-full">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="stageOverview">Stage Overview</TabsTrigger>
+          <TabsTrigger value="appConfig">App Config</TabsTrigger>
+          <TabsTrigger value="globalConfig">Global Config</TabsTrigger>
+          <TabsTrigger value="processOverview">Process Overview</TabsTrigger>
+          <TabsTrigger value="processConfig">Process Config</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="stageOverview" className="mt-4">
+          <StageOverview 
+            stageId={workflow.id} 
+            stageName={workflow.title} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="appConfig" className="mt-4">
+          <AppParameters 
+            processId={workflow.id} 
+            processName={workflow.title} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="globalConfig" className="mt-4">
+          <GlobalParameters 
+            processId={workflow.id} 
+            processName={workflow.title} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="processOverview" className="mt-4">
+          <ProcessOverview 
+            processId={workflow.id} 
+            processName={workflow.title} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="processConfig" className="mt-4">
+          <ProcessParameters 
+            processId={workflow.id} 
+            processName={workflow.title} 
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+  
+  // Render the dependencies tab content
+  const renderDependenciesContent = () => (
+    <div className="pt-4">
+      <ProcessDependencies 
+        processId={workflow.id} 
+        processName={workflow.title} 
+        onDependencyClick={(dependency) => {
+          console.log("Dependency clicked:", dependency);
+        }}
+      />
+    </div>
+  );
   
   return (
     <div className="space-y-4">
@@ -288,435 +721,28 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
                   <span>Dependencies</span>
                 </TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="overview" className="mt-0">
+                {renderOverviewContent()}
+              </TabsContent>
+              
+              <TabsContent value="stages" className="mt-0">
+                {renderStagesContent()}
+              </TabsContent>
+              
+              <TabsContent value="files" className="mt-0">
+                {renderFilesContent()}
+              </TabsContent>
+              
+              <TabsContent value="config" className="mt-0">
+                {renderConfigContent()}
+              </TabsContent>
+              
+              <TabsContent value="dependencies" className="mt-0">
+                {renderDependenciesContent()}
+              </TabsContent>
             </Tabs>
           </CardHeader>
-          
-          <CardContent className="pt-4">
-            <TabsContent value="overview" className="mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2 space-y-6">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Workflow Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Stages</h4>
-                            <p className="text-2xl font-bold">{workflow.stages.length}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Tasks</h4>
-                            <p className="text-2xl font-bold">{totalTasks}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-muted-foreground mb-1">Completed Tasks</h4>
-                            <p className="text-2xl font-bold">{completedTasks}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-muted-foreground mb-1">Pending Tasks</h4>
-                            <p className="text-2xl font-bold">{totalTasks - completedTasks}</p>
-                          </div>
-                        </div>
-                        
-                        <Separator />
-                        
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Stage Progress</h4>
-                          <div className="space-y-3">
-                            {workflow.stages.map((stage: any) => {
-                              // Calculate stage progress
-                              const stageTasks = workflow.tasks[stage.id] || [];
-                              const stageCompletedTasks = stageTasks.filter((task: any) => task.status === 'completed').length;
-                              const stageProgress = stageTasks.length > 0 
-                                ? Math.round((stageCompletedTasks / stageTasks.length) * 100) 
-                                : 0;
-                              
-                              return (
-                                <div key={stage.id} className="space-y-1">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-sm">{stage.name}</span>
-                                    <span className="text-sm font-medium">{stageProgress}%</span>
-                                  </div>
-                                  <Progress value={stageProgress} className="h-2" />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Recent Activity</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {allTasks.slice(0, 3).map((task: any) => (
-                          <div key={task.id} className="flex items-start gap-3 p-3 rounded-md border">
-                            <div className={`p-2 rounded-full ${
-                              task.status === 'completed' ? 'bg-green-100 text-green-600' :
-                              task.status === 'in_progress' ? 'bg-blue-100 text-blue-600' :
-                              task.status === 'failed' ? 'bg-red-100 text-red-600' :
-                              'bg-amber-100 text-amber-600'
-                            }`}>
-                              {getStatusIcon(task.status)}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex justify-between">
-                                <h4 className="font-medium">{task.name}</h4>
-                                <Badge variant={getStatusBadgeVariant(task.status)}>
-                                  {formatStatus(task.status)}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {task.updatedBy} - {task.updatedAt}
-                              </p>
-                              {task.messages && task.messages.length > 0 && (
-                                <p className="text-sm mt-2 bg-muted/50 p-2 rounded-md">
-                                  {task.messages[0]}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Quick Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <Button variant="outline" className="w-full justify-start">
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          Refresh Workflow
-                        </Button>
-                        <Button variant="outline" className="w-full justify-start">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Export Report
-                        </Button>
-                        <Button variant="outline" className="w-full justify-start">
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Add Comment
-                        </Button>
-                        <Button variant="outline" className="w-full justify-start">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Open in Classic View
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Recent Files</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {allTasks.flatMap((task: any) => 
-                          (task.documents || []).map((doc: any, index: number) => (
-                            <Button 
-                              key={`${task.id}-${index}`}
-                              variant="ghost" 
-                              className="w-full justify-start"
-                              onClick={() => handleFileClick({
-                                id: `file-${task.id}-${index}`,
-                                name: doc.name
-                              })}
-                            >
-                              <Paperclip className="h-4 w-4 mr-2" />
-                              <div className="flex justify-between items-center w-full">
-                                <span className="truncate">{doc.name}</span>
-                                <span className="text-xs text-muted-foreground">{doc.size}</span>
-                              </div>
-                            </Button>
-                          ))
-                        ).slice(0, 5)}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="stages" className="mt-0">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Search tasks and stages</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="gap-1">
-                      <Filter className="h-4 w-4" />
-                      <span>Filter</span>
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  {workflow.stages.map((stage: any) => {
-                    const stageTasks = workflow.tasks[stage.id] || [];
-                    const isExpanded = expandedStage === stage.id;
-                    
-                    return (
-                      <Card key={stage.id} className="overflow-hidden">
-                        <div 
-                          className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50"
-                          onClick={() => toggleStage(stage.id)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                              <span className="text-sm font-medium text-primary">{stage.order}</span>
-                            </div>
-                            <div>
-                              <h3 className="font-medium">{stage.name}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {stageTasks.length} tasks
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div>
-                              {stageTasks.length > 0 && (
-                                <div className="flex -space-x-2">
-                                  {stageTasks.slice(0, 3).map((task: any, index: number) => (
-                                    <div 
-                                      key={index}
-                                      className={`h-6 w-6 rounded-full border-2 border-background flex items-center justify-center ${
-                                        task.status === 'completed' ? 'bg-green-100' :
-                                        task.status === 'in_progress' ? 'bg-blue-100' :
-                                        task.status === 'failed' ? 'bg-red-100' :
-                                        'bg-amber-100'
-                                      }`}
-                                    >
-                                      {getStatusIcon(task.status)}
-                                    </div>
-                                  ))}
-                                  {stageTasks.length > 3 && (
-                                    <div className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center">
-                                      <span className="text-xs font-medium">+{stageTasks.length - 3}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            {isExpanded ? (
-                              <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                            ) : (
-                              <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </div>
-                        </div>
-                        
-                        {isExpanded && (
-                          <div className="px-4 pb-4">
-                            <Separator className="mb-4" />
-                            <div className="space-y-3">
-                              {stageTasks.length > 0 ? (
-                                stageTasks.map((task: any) => (
-                                  <div key={task.id} className="relative border rounded-md p-4 hover:bg-muted/30">
-                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusColor(task.status)}`}></div>
-                                    <div className="pl-2">
-                                      <div className="flex justify-between items-start">
-                                        <div>
-                                          <h4 className="font-medium">{task.name}</h4>
-                                          <p className="text-sm text-muted-foreground">ID: {task.processId}</p>
-                                        </div>
-                                        <Badge variant={getStatusBadgeVariant(task.status)}>
-                                          {formatStatus(task.status)}
-                                        </Badge>
-                                      </div>
-                                      
-                                      <div className="grid grid-cols-2 gap-4 mt-3">
-                                        <div>
-                                          <p className="text-sm text-muted-foreground">Duration</p>
-                                          <p className="font-medium">{task.duration} minutes</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-sm text-muted-foreground">Expected Start</p>
-                                          <p className="font-medium">{task.expectedStart}</p>
-                                        </div>
-                                      </div>
-                                      
-                                      {task.dependencies && task.dependencies.length > 0 && (
-                                        <div className="mt-3">
-                                          <p className="text-sm text-muted-foreground mb-1">Dependencies</p>
-                                          <div className="flex flex-wrap gap-2">
-                                            {task.dependencies.map((dep: any, index: number) => (
-                                              <Badge key={index} variant="outline" className="flex items-center gap-1">
-                                                {getStatusIcon(dep.status)}
-                                                <span>{dep.name}</span>
-                                              </Badge>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                      
-                                      {task.documents && task.documents.length > 0 && (
-                                        <div className="mt-3">
-                                          <p className="text-sm text-muted-foreground mb-1">Documents</p>
-                                          <div className="flex flex-wrap gap-2">
-                                            {task.documents.map((doc: any, index: number) => (
-                                              <Button 
-                                                key={index}
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleFileClick({
-                                                  id: `file-${task.id}-${index}`,
-                                                  name: doc.name
-                                                })}
-                                                className="flex items-center"
-                                              >
-                                                <FileText className="h-4 w-4 mr-2" />
-                                                {doc.name}
-                                              </Button>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                      
-                                      {task.messages && task.messages.length > 0 && (
-                                        <div className="mt-3">
-                                          <p className="text-sm text-muted-foreground mb-1">Messages</p>
-                                          <div className="space-y-2">
-                                            {task.messages.map((message: string, index: number) => (
-                                              <div key={index} className="bg-muted/50 p-2 rounded-md text-sm">
-                                                {message}
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                      
-                                      <div className="mt-3 text-right text-xs text-muted-foreground">
-                                        Last updated by {task.updatedBy} at {task.updatedAt}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="text-center p-4 text-muted-foreground">
-                                  No tasks available for this stage
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="files" className="mt-0">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">All Files</h3>
-                  <Button variant="outline" size="sm">
-                    Upload New File
-                  </Button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {allTasks.flatMap((task: any) => 
-                    (task.documents || []).map((doc: any, index: number) => (
-                      <Card 
-                        key={`${task.id}-${index}`}
-                        className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => handleFileClick({
-                          id: `file-${task.id}-${index}`,
-                          name: doc.name
-                        })}
-                      >
-                        <div className="bg-muted/50 p-6 flex items-center justify-center">
-                          <FileText className="h-12 w-12 text-muted-foreground" />
-                        </div>
-                        <CardContent className="p-4">
-                          <h4 className="font-medium truncate">{doc.name}</h4>
-                          <div className="flex justify-between items-center mt-1">
-                            <span className="text-sm text-muted-foreground">{doc.size}</span>
-                            <Badge variant="outline">{doc.name.split('.').pop()?.toUpperCase()}</Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            From: {task.name}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="config" className="mt-0">
-              <Tabs defaultValue="stageOverview" className="w-full">
-                <TabsList className="w-full justify-start overflow-x-auto">
-                  <TabsTrigger value="stageOverview">Stage Overview</TabsTrigger>
-                  <TabsTrigger value="appConfig">App Config</TabsTrigger>
-                  <TabsTrigger value="globalConfig">Global Config</TabsTrigger>
-                  <TabsTrigger value="processOverview">Process Overview</TabsTrigger>
-                  <TabsTrigger value="processConfig">Process Config</TabsTrigger>
-                </TabsList>
-                
-                <div className="mt-4">
-                  <TabsContent value="stageOverview" className="mt-0">
-                    <StageOverview 
-                      stageId={workflow.id} 
-                      stageName={workflow.title} 
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="appConfig" className="mt-0">
-                    <AppParameters 
-                      processId={workflow.id} 
-                      processName={workflow.title} 
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="globalConfig" className="mt-0">
-                    <GlobalParameters 
-                      processId={workflow.id} 
-                      processName={workflow.title} 
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="processOverview" className="mt-0">
-                    <ProcessOverview 
-                      processId={workflow.id} 
-                      processName={workflow.title} 
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="processConfig" className="mt-0">
-                    <ProcessParameters 
-                      processId={workflow.id} 
-                      processName={workflow.title} 
-                    />
-                  </TabsContent>
-                </div>
-              </Tabs>
-            </TabsContent>
-            
-            <TabsContent value="dependencies" className="mt-0">
-              <ProcessDependencies 
-                processId={workflow.id} 
-                processName={workflow.title} 
-                onDependencyClick={(dependency) => {
-                  console.log("Dependency clicked:", dependency);
-                }}
-              />
-            </TabsContent>
-          </CardContent>
         </Card>
       )}
     </div>
