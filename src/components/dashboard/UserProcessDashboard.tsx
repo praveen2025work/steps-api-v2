@@ -1,1166 +1,1303 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AdvancedFilePreview } from "@/components/files/AdvancedFilePreview";
 import { 
   Search, 
   Filter, 
   RefreshCw, 
-  CheckCircle, 
-  AlertCircle, 
-  Clock, 
-  SkipForward,
-  Play,
-  RotateCw,
-  ChevronDown,
-  ChevronUp,
-  FileText,
-  MoreHorizontal,
-  Eye,
+  ChevronRight, 
+  Lock, 
+  Unlock, 
+  FileText, 
+  Eye, 
   EyeOff,
-  PanelLeft,
-  PanelLeftClose,
-  Network,
-  Bot,
-  UserCircle,
-  ArrowRightCircle,
-  XCircle,
-  CircleDot,
   X,
-  MessageSquare,
-  Lock,
-  Unlock
-} from 'lucide-react';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { SubStage, StageStatus } from '@/types/workflow';
-import SubStagesList from '@/components/SubStagesList';
-import { useToast } from '@/components/ui/use-toast';
-import { workflowData } from '@/data/workflowData';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { toast as showToast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
-import AdvancedFilePreview from '@/components/files/AdvancedFilePreview';
-import WorkflowDetailView from '@/components/WorkflowDetailView';
+  ArrowLeft,
+  FileIcon,
+  Settings,
+  PanelLeft,
+  PanelLeftClose
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
-// Define the structure for our process item
-interface ProcessItem extends SubStage {
-  applicationName: string;
-  applicationId: string;
-  groupName: string;
-  groupId: string;
-  instanceName: string;
-  instanceId: string;
-  roleName?: string;
-}
-
-// Mock data for applications
-const applications = [
-  { id: 'app-1001', name: 'Daily Named PNL', category: 'Finance' },
-  { id: 'app-1002', name: 'Workspace PNL', category: 'Finance' },
-  { id: 'app-1003', name: 'Monthend PNL', category: 'Finance' },
-  { id: 'app-1004', name: 'Risk Analytics', category: 'Risk' },
-  { id: 'app-1005', name: 'Regulatory Reporting', category: 'Compliance' }
-];
-
-// Mock data for groups
-const groups = [
-  { id: 'group-101', name: 'FICC', applicationId: 'app-1001' },
-  { id: 'group-102', name: 'Equities', applicationId: 'app-1001' },
-  { id: 'group-103', name: 'Investment Banking', applicationId: 'app-1001' },
-  { id: 'group-104', name: 'Rates', applicationId: 'app-1001', parentId: 'group-101' },
-  { id: 'group-105', name: 'FX', applicationId: 'app-1001', parentId: 'group-101' },
-  { id: 'group-106', name: 'Credit', applicationId: 'app-1001', parentId: 'group-101' },
-  { id: 'group-107', name: 'Commodities', applicationId: 'app-1001', parentId: 'group-101' },
-  { id: 'group-108', name: 'Cash Equities', applicationId: 'app-1001', parentId: 'group-102' },
-  { id: 'group-109', name: 'Equity Derivatives', applicationId: 'app-1001', parentId: 'group-102' },
-  { id: 'group-110', name: 'Americas', applicationId: 'app-1002' },
-  { id: 'group-111', name: 'EMEA', applicationId: 'app-1002' },
-  { id: 'group-112', name: 'APAC', applicationId: 'app-1002' }
-];
-
-// Mock data for instances
-const instances = [
-  { id: 'instance-201', name: 'eRates', groupId: 'group-104' },
-  { id: 'instance-202', name: 'Government Bonds', groupId: 'group-104' },
-  { id: 'instance-203', name: 'Inflation', groupId: 'group-104' },
-  { id: 'instance-204', name: 'Spot FX', groupId: 'group-105' },
-  { id: 'instance-205', name: 'FX Options', groupId: 'group-105' },
-  { id: 'instance-206', name: 'US Equities', groupId: 'group-108' },
-  { id: 'instance-207', name: 'European Equities', groupId: 'group-108' },
-  { id: 'instance-208', name: 'Equity Options', groupId: 'group-109' },
-  { id: 'instance-209', name: 'Equity Swaps', groupId: 'group-109' },
-  { id: 'instance-210', name: 'North America', groupId: 'group-110' },
-  { id: 'instance-211', name: 'Latin America', groupId: 'group-110' },
-  { id: 'instance-212', name: 'UK', groupId: 'group-111' },
-  { id: 'instance-213', name: 'Europe', groupId: 'group-111' },
-  { id: 'instance-214', name: 'Japan', groupId: 'group-112' },
-  { id: 'instance-215', name: 'Australia', groupId: 'group-112' }
-];
-
-// Mock data for roles
-const roles = [
-  { id: 'role-301', name: 'Producer' },
-  { id: 'role-302', name: 'Approver' },
-  { id: 'role-303', name: 'Viewer' }
-];
-
-// Generate mock process data
-const generateMockProcesses = (): ProcessItem[] => {
-  const statuses: StageStatus[] = ['completed', 'in-progress', 'not-started', 'failed', 'skipped'];
-  const processes: ProcessItem[] = [];
-  
-  // Generate processes for each instance
-  instances.forEach(instance => {
-    const group = groups.find(g => g.id === instance.groupId);
-    if (!group) return;
-    
-    const application = applications.find(a => a.id === group.applicationId);
-    if (!application) return;
-    
-    // Generate 3-5 processes per instance
-    const processCount = Math.floor(Math.random() * 3) + 3;
-    
-    for (let i = 0; i < processCount; i++) {
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const progress = status === 'completed' ? 100 : 
-                      status === 'not-started' ? 0 : 
-                      Math.floor(Math.random() * 90) + 10;
-      
-      processes.push({
-        id: `process-${instance.id}-${i}`,
-        name: `Process ${i + 1}`,
-        type: Math.random() > 0.5 ? 'manual' : 'auto',
-        status,
-        progress,
-        processId: `PROC-${Math.floor(Math.random() * 1000)}`,
-        applicationName: application.name,
-        applicationId: application.id,
-        groupName: group.name,
-        groupId: group.id,
-        instanceName: instance.name,
-        instanceId: instance.id,
-        roleName: roles[Math.floor(Math.random() * roles.length)].name,
-        timing: {
-          start: new Date(Date.now() - Math.floor(Math.random() * 86400000)).toISOString(),
-        },
-        duration: Math.floor(Math.random() * 120),
-        message: status === 'failed' ? 'Error occurred during processing' : 
-                status === 'in-progress' ? 'Processing data...' : undefined,
-        config: {
-          canRerun: status === 'failed' || status === 'completed',
-          canSkip: status === 'not-started' || status === 'failed',
-          canTrigger: status === 'not-started',
-        },
-        files: status !== 'not-started' ? [
-          {
-            name: `${instance.name.toLowerCase().replace(/\s+/g, '_')}_data.xlsx`,
-            type: 'excel',
-            size: `${Math.floor(Math.random() * 10) + 1}.${Math.floor(Math.random() * 9) + 1} MB`
-          },
-          {
-            name: `${instance.name.toLowerCase().replace(/\s+/g, '_')}_report.pdf`,
-            type: 'pdf',
-            size: `${Math.floor(Math.random() * 5) + 1}.${Math.floor(Math.random() * 9) + 1} MB`
-          }
-        ] : undefined
-      });
+// Mock data for processes
+const mockProcesses = [
+  { 
+    id: "PROC-001", 
+    name: "eRates Validation", 
+    application: "eRates", 
+    instance: "Daily Run", 
+    stage: "Data Validation", 
+    status: "In Progress", 
+    assignedTo: "Praveen Kumar", 
+    priority: "High",
+    dueDate: "2025-05-22",
+    files: [
+      { id: "FILE-001", name: "rates_validation.xlsx", type: "Excel", size: "1.2 MB", lastModified: "2025-05-21" },
+      { id: "FILE-002", name: "market_data.csv", type: "CSV", size: "0.8 MB", lastModified: "2025-05-21" }
+    ],
+    dependencies: {
+      parent: [
+        { id: "PROC-P001", name: "Market Data Collection", status: "Completed", files: [
+          { id: "FILE-P001", name: "market_data_raw.csv", type: "CSV", size: "1.5 MB", lastModified: "2025-05-21" }
+        ]},
+        { id: "PROC-P002", name: "Reference Data Import", status: "Completed", files: [
+          { id: "FILE-P002", name: "reference_rates.xlsx", type: "Excel", size: "0.9 MB", lastModified: "2025-05-21" }
+        ]}
+      ],
+      child: [
+        { id: "PROC-C001", name: "Rate Calculation", status: "Pending", files: [
+          { id: "FILE-C001", name: "calculated_rates.xlsx", type: "Excel", size: "0.7 MB", lastModified: "2025-05-21" }
+        ]},
+        { id: "PROC-C002", name: "Rate Publication", status: "Pending", files: [] }
+      ]
     }
-  });
-  
-  return processes;
+  },
+  { 
+    id: "PROC-002", 
+    name: "PnL Calculation", 
+    application: "PnL", 
+    instance: "Daily Run", 
+    stage: "Calculation", 
+    status: "Pending", 
+    assignedTo: "Unassigned", 
+    priority: "Medium",
+    dueDate: "2025-05-23",
+    files: [
+      { id: "FILE-003", name: "pnl_data.xlsx", type: "Excel", size: "2.1 MB", lastModified: "2025-05-21" }
+    ],
+    dependencies: {
+      parent: [
+        { id: "PROC-P003", name: "Position Data Import", status: "Completed", files: [
+          { id: "FILE-P003", name: "positions.csv", type: "CSV", size: "3.2 MB", lastModified: "2025-05-21" }
+        ]}
+      ],
+      child: [
+        { id: "PROC-C003", name: "PnL Reporting", status: "Pending", files: [] }
+      ]
+    }
+  },
+  { 
+    id: "PROC-003", 
+    name: "Risk Reporting", 
+    application: "Risk", 
+    instance: "Daily Run", 
+    stage: "Reporting", 
+    status: "Completed", 
+    assignedTo: "Praveen Kumar", 
+    priority: "Low",
+    dueDate: "2025-05-21",
+    files: [
+      { id: "FILE-004", name: "risk_report.pdf", type: "PDF", size: "3.5 MB", lastModified: "2025-05-21" },
+      { id: "FILE-005", name: "risk_data.xlsx", type: "Excel", size: "1.8 MB", lastModified: "2025-05-21" }
+    ],
+    dependencies: {
+      parent: [
+        { id: "PROC-P004", name: "Risk Calculation", status: "Completed", files: [
+          { id: "FILE-P004", name: "risk_metrics.xlsx", type: "Excel", size: "1.2 MB", lastModified: "2025-05-21" }
+        ]}
+      ],
+      child: []
+    }
+  },
+  { 
+    id: "PROC-004", 
+    name: "Compliance Check", 
+    application: "Compliance", 
+    instance: "Weekly Run", 
+    stage: "Validation", 
+    status: "Failed", 
+    assignedTo: "Praveen Kumar", 
+    priority: "Critical",
+    dueDate: "2025-05-22",
+    files: [
+      { id: "FILE-006", name: "compliance_report.docx", type: "Word", size: "0.9 MB", lastModified: "2025-05-21" }
+    ],
+    dependencies: {
+      parent: [
+        { id: "PROC-P005", name: "Regulatory Data Collection", status: "Completed", files: [
+          { id: "FILE-P005", name: "regulatory_data.xlsx", type: "Excel", size: "2.5 MB", lastModified: "2025-05-21" }
+        ]}
+      ],
+      child: [
+        { id: "PROC-C004", name: "Compliance Reporting", status: "Blocked", files: [] }
+      ]
+    }
+  },
+  { 
+    id: "PROC-005", 
+    name: "Market Data Import", 
+    application: "Market Data", 
+    instance: "Daily Run", 
+    stage: "Data Import", 
+    status: "In Progress", 
+    assignedTo: "Praveen Kumar", 
+    priority: "High",
+    dueDate: "2025-05-22",
+    files: [
+      { id: "FILE-007", name: "market_feed.csv", type: "CSV", size: "5.2 MB", lastModified: "2025-05-22" },
+      { id: "FILE-008", name: "vendor_data.xlsx", type: "Excel", size: "2.3 MB", lastModified: "2025-05-22" }
+    ],
+    dependencies: {
+      parent: [],
+      child: [
+        { id: "PROC-C005", name: "Market Data Validation", status: "Pending", files: [] },
+        { id: "PROC-C006", name: "Market Data Distribution", status: "Pending", files: [] }
+      ]
+    }
+  }
+];
+
+// Mock data for sub-stage process card
+const mockSubStageProcess = {
+  id: "SUB-001",
+  name: "Market Data Validation",
+  status: "In Progress",
+  startTime: "2025-05-22 09:15",
+  estimatedCompletion: "2025-05-22 10:30",
+  assignedTo: "Praveen Kumar",
+  priority: "High",
+  description: "Validate market data against reference sources and identify anomalies",
+  progress: 65,
+  files: [
+    { id: "FILE-001", name: "rates_validation.xlsx", type: "Excel", size: "1.2 MB", lastModified: "2025-05-21" },
+    { id: "FILE-002", name: "market_data.csv", type: "CSV", size: "0.8 MB", lastModified: "2025-05-21" }
+  ]
 };
 
-const UserProcessDashboard: React.FC = () => {
-  const { toast } = useToast();
-  const [processes, setProcesses] = useState<ProcessItem[]>([]);
-  const [filteredProcesses, setFilteredProcesses] = useState<ProcessItem[]>([]);
-  const [selectedProcesses, setSelectedProcesses] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
+// Mock data for workflow detail sections
+const mockStageOverviewData = {
+  name: "Data Validation",
+  description: "Validates incoming market data against reference sources",
+  owner: "Market Data Team",
+  sla: "T+0 12:00",
+  status: "In Progress",
+  startTime: "2025-05-22 08:30",
+  estimatedCompletion: "2025-05-22 12:00"
+};
+
+const mockAppConfigData = {
+  application: "eRates",
+  version: "2.3.1",
+  environment: "Production",
+  dataSource: "Market Data API",
+  outputDestination: "Rates Database",
+  retryPolicy: "3 attempts, 5 minute intervals",
+  notificationRecipients: "market-data-team@example.com"
+};
+
+const mockGlobalConfigData = {
+  businessDate: "2025-05-22",
+  region: "EMEA",
+  dataRetentionPeriod: "90 days",
+  auditLevel: "Detailed",
+  emergencyContact: "operations@example.com"
+};
+
+// Mock data for process overview
+const mockProcessOverviewData = {
+  id: "SUB-001",
+  name: "Market Data Validation",
+  description: "Validates incoming market data against reference sources",
+  owner: "Praveen Kumar",
+  status: "In Progress",
+  startTime: "2025-05-22 09:15",
+  estimatedCompletion: "2025-05-22 10:30",
+  priority: "High",
+  progress: 65,
+  dependencies: 2,
+  files: 2,
+  queries: 1
+};
+
+// Mock data for process config
+const mockProcessConfigData = {
+  validationRules: "Standard + Extended",
+  toleranceLevel: "Medium",
+  dataSource: "Market Data API",
+  outputFormat: "Excel + Database",
+  notificationThreshold: "Error",
+  retryAttempts: 3,
+  timeoutMinutes: 30
+};
+
+// Mock data for queries
+const mockQueriesData = [
+  {
+    id: "Q-001",
+    title: "Missing USD/EUR rate",
+    status: "Open",
+    createdBy: "System",
+    createdAt: "2025-05-22 09:30",
+    description: "USD/EUR rate is missing in the market data feed for value date 2025-05-23",
+    priority: "High",
+    assignedTo: "Praveen Kumar"
+  }
+];
+
+export function UserProcessDashboard() {
+  const [selectedTab, setSelectedTab] = useState("inProgress");
+  const [selectedProcess, setSelectedProcess] = useState<any>(null);
+  const [selectedSubStage, setSelectedSubStage] = useState<any>(null);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [showFilePreview, setShowFilePreview] = useState(false);
+  const [showSubStageCards, setShowSubStageCards] = useState(true);
+  const [showWorkflowDetail, setShowWorkflowDetail] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["In Progress"]);
+  const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
+  const [selectedInstances, setSelectedInstances] = useState<string[]>([]);
+  const [workflowDetailTab, setWorkflowDetailTab] = useState("stageOverview");
+  const [showAllProcesses, setShowAllProcesses] = useState(true);
   
-  // Filter states
-  const [selectedApplication, setSelectedApplication] = useState<string>('all');
-  const [selectedGroup, setSelectedGroup] = useState<string>('all');
-  const [selectedInstance, setSelectedInstance] = useState<string>('all');
-  const [selectedRole, setSelectedRole] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  
-  // Filtered options based on selections
-  const [filteredGroups, setFilteredGroups] = useState(groups);
-  const [filteredInstances, setFilteredInstances] = useState(instances);
-  
-  // Selected process for detailed view
-  const [selectedProcess, setSelectedProcess] = useState<ProcessItem | null>(null);
-  
-  // File preview and workflow detail states
-  const [showFilePreview, setShowFilePreview] = useState<boolean>(false);
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [currentSubStageFiles, setCurrentSubStageFiles] = useState<any[]>([]);
-  const [showWorkflowDetail, setShowWorkflowDetail] = useState<boolean>(true);
-  const [showSubStageCards, setShowSubStageCards] = useState<boolean>(true);
-  const [selectedSubStage, setSelectedSubStage] = useState<string | null>(null);
-  const [isLocked, setIsLocked] = useState<boolean>(true);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
-  
-  // Load mock data
+  // Filter processes based on search term and selected filters
+  const filteredProcesses = mockProcesses.filter(process => {
+    const matchesSearch = 
+      process.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      process.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      process.application.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(process.status);
+    const matchesApplication = selectedApplications.length === 0 || selectedApplications.includes(process.application);
+    const matchesInstance = selectedInstances.length === 0 || selectedInstances.includes(process.instance);
+    
+    return matchesSearch && matchesStatus && matchesApplication && matchesInstance;
+  });
+
+  // Set default tab to "inProgress" on initial load
   useEffect(() => {
-    const mockProcesses = generateMockProcesses();
-    setProcesses(mockProcesses);
-    setFilteredProcesses(mockProcesses);
+    setSelectedTab("inProgress");
+    setSelectedStatuses(["In Progress"]);
   }, []);
-  
-  // Update filtered groups when application changes
-  useEffect(() => {
-    if (selectedApplication !== 'all') {
-      const filtered = groups.filter(group => group.applicationId === selectedApplication);
-      setFilteredGroups(filtered);
-      
-      // Reset group selection if current selection is not valid
-      if (selectedGroup !== 'all' && !filtered.some(g => g.id === selectedGroup)) {
-        setSelectedGroup('all');
-      }
-    } else {
-      setFilteredGroups(groups);
-    }
-  }, [selectedApplication, selectedGroup]);
-  
-  // Update filtered instances when group changes
-  useEffect(() => {
-    if (selectedGroup !== 'all') {
-      const filtered = instances.filter(instance => instance.groupId === selectedGroup);
-      setFilteredInstances(filtered);
-      
-      // Reset instance selection if current selection is not valid
-      if (selectedInstance !== 'all' && !filtered.some(i => i.id === selectedInstance)) {
-        setSelectedInstance('all');
-      }
-    } else {
-      setFilteredInstances(instances);
-    }
-  }, [selectedGroup, selectedInstance]);
-  
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...processes];
-    
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(process => 
-        process.name.toLowerCase().includes(query) ||
-        process.processId.toLowerCase().includes(query) ||
-        process.applicationName.toLowerCase().includes(query) ||
-        process.groupName.toLowerCase().includes(query) ||
-        process.instanceName.toLowerCase().includes(query)
-      );
-    }
-    
-    // Apply application filter
-    if (selectedApplication !== 'all') {
-      filtered = filtered.filter(process => process.applicationId === selectedApplication);
-    }
-    
-    // Apply group filter
-    if (selectedGroup !== 'all') {
-      filtered = filtered.filter(process => process.groupId === selectedGroup);
-    }
-    
-    // Apply instance filter
-    if (selectedInstance !== 'all') {
-      filtered = filtered.filter(process => process.instanceId === selectedInstance);
-    }
-    
-    // Apply role filter
-    if (selectedRole !== 'all') {
-      filtered = filtered.filter(process => process.roleName === selectedRole);
-    }
-    
-    // Apply status filter
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter(process => process.status === selectedStatus);
-    }
-    
-    setFilteredProcesses(filtered);
-  }, [processes, searchQuery, selectedApplication, selectedGroup, selectedInstance, selectedRole, selectedStatus]);
-  
+
   // Handle process selection
-  const toggleProcessSelection = (processId: string) => {
-    const newSelection = new Set(selectedProcesses);
-    if (newSelection.has(processId)) {
-      newSelection.delete(processId);
-    } else {
-      newSelection.add(processId);
-    }
-    setSelectedProcesses(newSelection);
-  };
-  
-  // Handle bulk actions
-  const handleBulkAction = (action: string) => {
-    if (selectedProcesses.size === 0) {
-      toast({
-        title: "No processes selected",
-        description: "Please select at least one process to perform this action.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Simulate action on selected processes
-    const updatedProcesses = processes.map(process => {
-      if (selectedProcesses.has(process.id)) {
-        switch (action) {
-          case 'trigger':
-            if (process.status === 'not-started') {
-              return { ...process, status: 'in-progress', progress: 10 };
-            }
-            break;
-          case 'rerun':
-            if (process.status === 'failed' || process.status === 'completed') {
-              return { ...process, status: 'in-progress', progress: 10 };
-            }
-            break;
-          case 'skip':
-            if (process.status === 'not-started' || process.status === 'failed') {
-              return { ...process, status: 'skipped', progress: 0 };
-            }
-            break;
-          case 'complete':
-            if (process.status === 'in-progress') {
-              return { ...process, status: 'completed', progress: 100 };
-            }
-            break;
-        }
-      }
-      return process;
-    });
-    
-    setProcesses(updatedProcesses);
-    
-    toast({
-      title: "Action performed",
-      description: `${action.charAt(0).toUpperCase() + action.slice(1)} action performed on ${selectedProcesses.size} processes.`
-    });
-  };
-  
-  // Handle process click
-  const handleProcessClick = (process: ProcessItem) => {
+  const handleProcessClick = (process: any) => {
     setSelectedProcess(process);
-    
-    // Reset file preview and workflow detail states
-    setShowFilePreview(false);
+    setSelectedSubStage(mockSubStageProcess);
     setSelectedFile(null);
-    setSelectedSubStage(null);
-    setShowWorkflowDetail(true);
-    setShowSubStageCards(true);
+    setShowFilePreview(false);
+    setShowAllProcesses(false);
   };
-  
-  // Handle file preview
-  const handlePreviewFile = (fileName: string) => {
-    setSelectedFile(fileName);
+
+  // Handle back to all processes
+  const handleBackToAllProcesses = () => {
+    setShowAllProcesses(true);
+    setSelectedProcess(null);
+    setSelectedSubStage(null);
+    setSelectedFile(null);
+    setShowFilePreview(false);
+  };
+
+  // Handle process ID click (toggle selection)
+  const handleProcessIdClick = () => {
+    if (selectedSubStage) {
+      setSelectedSubStage(null);
+      setSelectedFile(null);
+      setShowFilePreview(false);
+    } else {
+      setSelectedSubStage(mockSubStageProcess);
+    }
+  };
+
+  // Handle file click
+  const handleFileClick = (file: any) => {
+    setSelectedFile(file);
     setShowFilePreview(true);
     setShowWorkflowDetail(false);
   };
-  
+
+  // Handle dependency file click
+  const handleDependencyFileClick = (file: any) => {
+    setSelectedFile(file);
+    setShowFilePreview(true);
+    setShowWorkflowDetail(false);
+  };
+
   // Toggle sub-stage cards visibility
   const toggleSubStageCards = () => {
     setShowSubStageCards(!showSubStageCards);
   };
-  
+
   // Toggle workflow detail visibility
   const toggleWorkflowDetail = () => {
     setShowWorkflowDetail(!showWorkflowDetail);
   };
-  
-  // Handle process ID click
-  const handleProcessIdClick = (processId: string, subStageId: string) => {
-    // If clicking the same sub-stage, deselect it and hide the preview if it's open
-    if (selectedSubStage === subStageId) {
-      setSelectedSubStage(null);
-      
-      // If file preview is open, close it when deselecting the process
-      if (showFilePreview) {
-        setShowFilePreview(false);
-        setSelectedFile(null);
-      }
-    } else {
-      // Switching to a different sub-stage
-      setSelectedSubStage(subStageId);
-      
-      // Set current sub-stage files if available
-      const process = selectedProcess;
-      if (process && process.files) {
-        const filesList = process.files.map((file, index) => ({
-          id: `file-${process.id}-${index}`,
-          name: file.name,
-          type: file.name.split('.').pop() || '',
-          size: file.size,
-          category: 'download'
-        }));
-        
-        setCurrentSubStageFiles(filesList);
-      }
-    }
-  };
-  
-  // Handle close file preview
-  const handleCloseFilePreview = () => {
-    setShowFilePreview(false);
-    setSelectedFile(null);
-  };
-  
-  // Toggle lock state
-  const toggleLock = () => {
-    setIsLocked(!isLocked);
-    if (isLocked) {
-      showInfoToast("Workflow unlocked - changes can now be made");
-    } else {
-      showInfoToast("Workflow locked");
-    }
-  };
-  
-  // Handle refresh
-  const handleRefresh = () => {
-    setLastRefreshed(new Date());
-    refreshData();
-    showSuccessToast("Workflow data refreshed successfully");
-  };
-  
-  // Reset all filters
-  const resetFilters = () => {
-    setSearchQuery('');
-    setSelectedApplication('all');
-    setSelectedGroup('all');
-    setSelectedInstance('all');
-    setSelectedRole('all');
-    setSelectedStatus('all');
-  };
-  
-  // Refresh data
-  const refreshData = () => {
-    const mockProcesses = generateMockProcesses();
-    setProcesses(mockProcesses);
-    toast({
-      title: "Data refreshed",
-      description: "Process data has been refreshed."
-    });
-  };
-  
-  // Render the process list
-  const renderProcessList = () => {
-    return (
-      <ScrollArea className="h-[calc(100vh-400px)]">
-        <div className="space-y-4">
-          {filteredProcesses.length > 0 ? (
-            filteredProcesses.map(process => (
-              <Card 
-                key={process.id}
-                className={`p-4 cursor-pointer transition-all duration-200 ${
-                  selectedProcess?.id === process.id ? 'ring-2 ring-blue-500' : ''
-                } ${
-                  process.status === 'in-progress' ? 'relative overflow-hidden border-l-4 border-blue-500' : ''
-                }`}
-                onClick={() => handleProcessClick(process)}
-              >
-                <div className="flex items-start gap-3">
-                  <Checkbox 
-                    checked={selectedProcesses.has(process.id)}
-                    onCheckedChange={() => toggleProcessSelection(process.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-1"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <h3 className="text-lg font-semibold">{process.name}</h3>
-                        <p className="text-sm text-muted-foreground">{process.processId}</p>
-                      </div>
-                      <Badge variant={
-                        process.status === 'completed' ? 'default' :
-                        process.status === 'in-progress' ? 'secondary' :
-                        process.status === 'failed' ? 'destructive' :
-                        process.status === 'skipped' ? 'outline' : 'default'
-                      }>
-                        {process.status}
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm">
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground">Application:</span>
-                        <span>{process.applicationName}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground">Group:</span>
-                        <span>{process.groupName}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground">Instance:</span>
-                        <span>{process.instanceName}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground">Role:</span>
-                        <span>{process.roleName}</span>
-                      </div>
-                    </div>
-                    
-                    {process.files && process.files.length > 0 && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">
-                          {process.files.length} file{process.files.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
-              <h3 className="mt-4 text-lg font-medium">No processes found</h3>
-              <p className="text-muted-foreground mt-2">
-                Try adjusting your filters or search query
-              </p>
-              <Button variant="outline" className="mt-4" onClick={resetFilters}>
-                Reset Filters
-              </Button>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+
+  // Handle status filter change
+  const handleStatusChange = (status: string) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status) 
+        : [...prev, status]
     );
   };
+
+  // Handle application filter change
+  const handleApplicationChange = (application: string) => {
+    setSelectedApplications(prev => 
+      prev.includes(application) 
+        ? prev.filter(a => a !== application) 
+        : [...prev, application]
+    );
+  };
+
+  // Handle instance filter change
+  const handleInstanceChange = (instance: string) => {
+    setSelectedInstances(prev => 
+      prev.includes(instance) 
+        ? prev.filter(i => i !== instance) 
+        : [...prev, instance]
+    );
+  };
+
+  // Get unique applications for filter
+  const uniqueApplications = Array.from(new Set(mockProcesses.map(p => p.application)));
   
-  // Render the process detail view
-  const renderProcessDetail = () => {
-    if (!selectedProcess) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <Clock className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
-            <h3 className="mt-4 text-lg font-medium">No process selected</h3>
-            <p className="text-muted-foreground mt-2">
-              Select a process from the list to view details
-            </p>
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <Card>
+  // Get unique instances for filter
+  const uniqueInstances = Array.from(new Set(mockProcesses.map(p => p.instance)));
+
+  return (
+    <div className="container mx-auto p-4">
+      <Card className="mb-6">
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle>{selectedProcess.name}</CardTitle>
-              <CardDescription>{selectedProcess.processId}</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={toggleLock}
-                title={isLocked ? "Locked - Click to unlock" : "Unlocked - Click to lock"}
-              >
-                {isLocked ? (
-                  <Lock className="h-3.5 w-3.5" />
-                ) : (
-                  <Unlock className="h-3.5 w-3.5" />
-                )}
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleRefresh}
-                title="Refresh"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setSelectedProcess(null)}
-                className="lg:hidden"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <CardTitle>User Process Dashboard</CardTitle>
+          <CardDescription>
+            Manage and track your assigned processes across all applications
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h4 className="text-sm font-medium mb-1">Status</h4>
-                <Badge variant={
-                  selectedProcess.status === 'completed' ? 'default' :
-                  selectedProcess.status === 'in-progress' ? 'secondary' :
-                  selectedProcess.status === 'failed' ? 'destructive' :
-                  selectedProcess.status === 'skipped' ? 'outline' : 'default'
-                }>
-                  {selectedProcess.status}
-                </Badge>
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center space-x-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search processes..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <div>
-                <h4 className="text-sm font-medium mb-1">Progress</h4>
-                <span>{selectedProcess.progress}%</span>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium mb-1">Application</h4>
-                <span>{selectedProcess.applicationName}</span>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium mb-1">Group</h4>
-                <span>{selectedProcess.groupName}</span>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium mb-1">Instance</h4>
-                <span>{selectedProcess.instanceName}</span>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium mb-1">Role</h4>
-                <span>{selectedProcess.roleName}</span>
-              </div>
-              {selectedProcess.timing?.start && (
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Start Time</h4>
-                  <span>{new Date(selectedProcess.timing.start).toLocaleString()}</span>
-                </div>
-              )}
-              {selectedProcess.duration && (
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Duration</h4>
-                  <span>{selectedProcess.duration}s</span>
-                </div>
-              )}
+              <Select defaultValue="status">
+                <SelectTrigger className="w-[180px]">
+                  <div className="flex items-center">
+                    <Filter className="mr-2 h-4 w-4" />
+                    <span>Filter</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="p-2">
+                    <div className="font-medium mb-2">Status</div>
+                    <div className="space-y-2">
+                      {["In Progress", "Pending", "Completed", "Failed"].map((status) => (
+                        <div key={status} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`status-${status}`} 
+                            checked={selectedStatuses.includes(status)}
+                            onCheckedChange={() => handleStatusChange(status)}
+                          />
+                          <label htmlFor={`status-${status}`}>{status}</label>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="font-medium mb-2 mt-4">Application</div>
+                    <div className="space-y-2">
+                      {uniqueApplications.map((app) => (
+                        <div key={app} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`app-${app}`} 
+                            checked={selectedApplications.includes(app)}
+                            onCheckedChange={() => handleApplicationChange(app)}
+                          />
+                          <label htmlFor={`app-${app}`}>{app}</label>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="font-medium mb-2 mt-4">Instance</div>
+                    <div className="space-y-2">
+                      {uniqueInstances.map((instance) => (
+                        <div key={instance} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`instance-${instance}`} 
+                            checked={selectedInstances.includes(instance)}
+                            onCheckedChange={() => handleInstanceChange(instance)}
+                          />
+                          <label htmlFor={`instance-${instance}`}>{instance}</label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="icon">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </div>
             
-            {selectedProcess.message && (
-              <div>
-                <h4 className="text-sm font-medium mb-1">Message</h4>
-                <p className="text-sm">{selectedProcess.message}</p>
-              </div>
+            {showAllProcesses && (
+              <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="inProgress">In Progress</TabsTrigger>
+                  <TabsTrigger value="pending">Pending</TabsTrigger>
+                  <TabsTrigger value="completed">Completed</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="all" className="mt-4">
+                  <ProcessTable 
+                    processes={filteredProcesses} 
+                    onProcessClick={handleProcessClick}
+                    selectedProcess={selectedProcess}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="inProgress" className="mt-4">
+                  <ProcessTable 
+                    processes={filteredProcesses.filter(p => p.status === "In Progress")} 
+                    onProcessClick={handleProcessClick}
+                    selectedProcess={selectedProcess}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="pending" className="mt-4">
+                  <ProcessTable 
+                    processes={filteredProcesses.filter(p => p.status === "Pending")} 
+                    onProcessClick={handleProcessClick}
+                    selectedProcess={selectedProcess}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="completed" className="mt-4">
+                  <ProcessTable 
+                    processes={filteredProcesses.filter(p => p.status === "Completed")} 
+                    onProcessClick={handleProcessClick}
+                    selectedProcess={selectedProcess}
+                  />
+                </TabsContent>
+              </Tabs>
             )}
             
-            {selectedProcess.files && selectedProcess.files.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-2">Files</h4>
-                <div className="space-y-2">
-                  {selectedProcess.files.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-muted p-2 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        <span>{file.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
+            {selectedProcess && !showAllProcesses && (
+              <div className="grid grid-cols-1 gap-6">
+                {/* Process Detail Header */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
                         <Button 
                           variant="ghost" 
-                          size="sm"
-                          onClick={() => {
-                            // Set current sub-stage files
-                            const filesList = selectedProcess.files.map((f, i) => ({
-                              id: `file-${selectedProcess.id}-${i}`,
-                              name: f.name,
-                              type: f.name.split('.').pop() || '',
-                              size: f.size,
-                              category: 'download'
-                            }));
-                            
-                            setCurrentSubStageFiles(filesList);
-                            handlePreviewFile(file.name);
-                          }}
+                          size="sm" 
+                          onClick={handleBackToAllProcesses}
+                          className="mr-2"
                         >
-                          Preview
+                          <ArrowLeft className="h-4 w-4 mr-1" />
+                          Back to All Processes
                         </Button>
-                        <Button variant="ghost" size="sm">Download</Button>
+                        <div>
+                          <CardTitle>{selectedProcess.name}</CardTitle>
+                          <CardDescription>
+                            {selectedProcess.application} &gt; {selectedProcess.instance} &gt; {selectedProcess.stage}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm">
+                          <Lock className="h-4 w-4 mr-2" />
+                          Lock
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Refresh
+                        </Button>
                       </div>
                     </div>
-                  ))}
+                  </CardHeader>
+                </Card>
+                
+                {/* Main Content Area */}
+                <div className="grid grid-cols-1 gap-6">
+                  {/* File Preview Mode */}
+                  {showFilePreview ? (
+                    <div className="grid grid-cols-1 gap-6">
+                      {/* Toggle Controls */}
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={toggleSubStageCards}
+                          className="flex items-center"
+                        >
+                          {showSubStageCards ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+                          {showSubStageCards ? "Hide Process Card" : "Show Process Card"}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={toggleWorkflowDetail}
+                          className="flex items-center"
+                        >
+                          {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4 mr-2" /> : <PanelLeft className="h-4 w-4 mr-2" />}
+                          {showWorkflowDetail ? "Hide Workflow Detail" : "Show Workflow Detail"}
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        {/* Sub-Stage Process Cards (if visible) */}
+                        {showSubStageCards && selectedSubStage && (
+                          <Card className="md:col-span-3">
+                            <CardHeader className="pb-3">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <CardTitle className="text-lg">{selectedSubStage.name}</CardTitle>
+                                  <CardDescription>
+                                    ID: <span className="font-medium cursor-pointer" onClick={handleProcessIdClick}>
+                                      {selectedSubStage.id}
+                                    </span> | Status: <Badge variant={selectedSubStage.status === "In Progress" ? "default" : "outline"}>
+                                      {selectedSubStage.status}
+                                    </Badge>
+                                  </CardDescription>
+                                </div>
+                                <div>
+                                  <Button variant="ghost" size="sm" onClick={() => {
+                                    setSelectedSubStage(null);
+                                    setSelectedFile(null);
+                                    setShowFilePreview(false);
+                                  }}>
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Assigned To</p>
+                                  <p className="font-medium">{selectedSubStage.assignedTo}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Priority</p>
+                                  <p className="font-medium">{selectedSubStage.priority}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Start Time</p>
+                                  <p className="font-medium">{selectedSubStage.startTime}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Est. Completion</p>
+                                  <p className="font-medium">{selectedSubStage.estimatedCompletion}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="mb-4">
+                                <p className="text-sm text-muted-foreground mb-1">Progress</p>
+                                <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                  <div 
+                                    className="bg-blue-600 h-2.5 rounded-full" 
+                                    style={{ width: `${selectedSubStage.progress}%` }}
+                                  ></div>
+                                </div>
+                                <p className="text-right text-sm mt-1">{selectedSubStage.progress}%</p>
+                              </div>
+                              
+                              <div className="mb-4">
+                                <p className="text-sm text-muted-foreground mb-1">Description</p>
+                                <p className="text-sm">{selectedSubStage.description}</p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                        
+                        {/* File Preview */}
+                        <Card className={`${showSubStageCards ? 'md:col-span-9' : 'md:col-span-12'}`}>
+                          <CardHeader className="pb-3">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <CardTitle>Preview Files</CardTitle>
+                                <CardDescription>
+                                  Viewing: {selectedFile?.name}
+                                </CardDescription>
+                              </div>
+                              <Button variant="ghost" size="sm" onClick={() => {
+                                setSelectedFile(null);
+                                setShowFilePreview(false);
+                              }}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="mb-4">
+                              <div className="flex space-x-2 mb-4">
+                                {selectedSubStage?.files.map((file: any) => (
+                                  <Button 
+                                    key={file.id}
+                                    variant={selectedFile?.id === file.id ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => handleFileClick(file)}
+                                  >
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    {file.name}
+                                  </Button>
+                                ))}
+                              </div>
+                              
+                              {selectedFile && (
+                                <AdvancedFilePreview file={selectedFile} />
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      {/* Workflow Detail View (if visible) */}
+                      {showWorkflowDetail && (
+                        <Card>
+                          <CardHeader>
+                            <div className="flex justify-between items-center">
+                              <CardTitle>Workflow Detail</CardTitle>
+                              <Button variant="ghost" size="sm" onClick={toggleWorkflowDetail}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <Tabs value={workflowDetailTab} onValueChange={setWorkflowDetailTab}>
+                              <TabsList className="grid grid-cols-8 mb-4">
+                                <TabsTrigger value="stageOverview">Stage Overview</TabsTrigger>
+                                <TabsTrigger value="appConfig">App Config</TabsTrigger>
+                                <TabsTrigger value="globalConfig">Global Config</TabsTrigger>
+                                <TabsTrigger value="processOverview">Process Overview</TabsTrigger>
+                                <TabsTrigger value="processConfig">Process Config</TabsTrigger>
+                                <TabsTrigger value="files">Files</TabsTrigger>
+                                <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+                                <TabsTrigger value="queries">Queries</TabsTrigger>
+                              </TabsList>
+                              
+                              <TabsContent value="stageOverview">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Name</p>
+                                    <p className="font-medium">{mockStageOverviewData.name}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Status</p>
+                                    <p className="font-medium">{mockStageOverviewData.status}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Owner</p>
+                                    <p className="font-medium">{mockStageOverviewData.owner}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">SLA</p>
+                                    <p className="font-medium">{mockStageOverviewData.sla}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Start Time</p>
+                                    <p className="font-medium">{mockStageOverviewData.startTime}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Est. Completion</p>
+                                    <p className="font-medium">{mockStageOverviewData.estimatedCompletion}</p>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <p className="text-sm text-muted-foreground">Description</p>
+                                    <p className="font-medium">{mockStageOverviewData.description}</p>
+                                  </div>
+                                </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="appConfig">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Application</p>
+                                    <p className="font-medium">{mockAppConfigData.application}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Version</p>
+                                    <p className="font-medium">{mockAppConfigData.version}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Environment</p>
+                                    <p className="font-medium">{mockAppConfigData.environment}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Data Source</p>
+                                    <p className="font-medium">{mockAppConfigData.dataSource}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Output Destination</p>
+                                    <p className="font-medium">{mockAppConfigData.outputDestination}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Retry Policy</p>
+                                    <p className="font-medium">{mockAppConfigData.retryPolicy}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Notification Recipients</p>
+                                    <p className="font-medium">{mockAppConfigData.notificationRecipients}</p>
+                                  </div>
+                                </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="globalConfig">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Business Date</p>
+                                    <p className="font-medium">{mockGlobalConfigData.businessDate}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Region</p>
+                                    <p className="font-medium">{mockGlobalConfigData.region}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Data Retention Period</p>
+                                    <p className="font-medium">{mockGlobalConfigData.dataRetentionPeriod}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Audit Level</p>
+                                    <p className="font-medium">{mockGlobalConfigData.auditLevel}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Emergency Contact</p>
+                                    <p className="font-medium">{mockGlobalConfigData.emergencyContact}</p>
+                                  </div>
+                                </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="processOverview">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">ID</p>
+                                    <p className="font-medium">{mockProcessOverviewData.id}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Name</p>
+                                    <p className="font-medium">{mockProcessOverviewData.name}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Owner</p>
+                                    <p className="font-medium">{mockProcessOverviewData.owner}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Status</p>
+                                    <p className="font-medium">{mockProcessOverviewData.status}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Start Time</p>
+                                    <p className="font-medium">{mockProcessOverviewData.startTime}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Est. Completion</p>
+                                    <p className="font-medium">{mockProcessOverviewData.estimatedCompletion}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Priority</p>
+                                    <p className="font-medium">{mockProcessOverviewData.priority}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Progress</p>
+                                    <p className="font-medium">{mockProcessOverviewData.progress}%</p>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <p className="text-sm text-muted-foreground">Description</p>
+                                    <p className="font-medium">{mockProcessOverviewData.description}</p>
+                                  </div>
+                                </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="processConfig">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Validation Rules</p>
+                                    <p className="font-medium">{mockProcessConfigData.validationRules}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Tolerance Level</p>
+                                    <p className="font-medium">{mockProcessConfigData.toleranceLevel}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Data Source</p>
+                                    <p className="font-medium">{mockProcessConfigData.dataSource}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Output Format</p>
+                                    <p className="font-medium">{mockProcessConfigData.outputFormat}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Notification Threshold</p>
+                                    <p className="font-medium">{mockProcessConfigData.notificationThreshold}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Retry Attempts</p>
+                                    <p className="font-medium">{mockProcessConfigData.retryAttempts}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Timeout (minutes)</p>
+                                    <p className="font-medium">{mockProcessConfigData.timeoutMinutes}</p>
+                                  </div>
+                                </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="files">
+                                <div className="border rounded-lg overflow-hidden">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Size</TableHead>
+                                        <TableHead>Last Modified</TableHead>
+                                        <TableHead>Actions</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {selectedProcess.files.map((file: any) => (
+                                        <TableRow key={file.id}>
+                                          <TableCell>{file.name}</TableCell>
+                                          <TableCell>{file.type}</TableCell>
+                                          <TableCell>{file.size}</TableCell>
+                                          <TableCell>{file.lastModified}</TableCell>
+                                          <TableCell>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm"
+                                              onClick={() => handleFileClick(file)}
+                                            >
+                                              <Eye className="h-4 w-4" />
+                                            </Button>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="dependencies">
+                                <div className="space-y-6">
+                                  {/* Parent Dependencies */}
+                                  <div>
+                                    <h3 className="text-lg font-medium mb-2">Parent Processes</h3>
+                                    {selectedProcess.dependencies.parent.length > 0 ? (
+                                      <div className="space-y-4">
+                                        {selectedProcess.dependencies.parent.map((parent: any) => (
+                                          <Card key={parent.id}>
+                                            <CardHeader className="py-3">
+                                              <div className="flex justify-between items-center">
+                                                <div>
+                                                  <CardTitle className="text-base">{parent.name}</CardTitle>
+                                                  <CardDescription>ID: {parent.id}</CardDescription>
+                                                </div>
+                                                <Badge variant={parent.status === "Completed" ? "outline" : "default"}>
+                                                  {parent.status}
+                                                </Badge>
+                                              </div>
+                                            </CardHeader>
+                                            {parent.files.length > 0 && (
+                                              <CardContent className="py-0">
+                                                <p className="text-sm font-medium mb-2">Files</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                  {parent.files.map((file: any) => (
+                                                    <Button 
+                                                      key={file.id}
+                                                      variant="outline"
+                                                      size="sm"
+                                                      onClick={() => handleDependencyFileClick(file)}
+                                                    >
+                                                      <FileText className="h-4 w-4 mr-2" />
+                                                      {file.name}
+                                                    </Button>
+                                                  ))}
+                                                </div>
+                                              </CardContent>
+                                            )}
+                                          </Card>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-muted-foreground">No parent dependencies</p>
+                                    )}
+                                  </div>
+                                  
+                                  <Separator />
+                                  
+                                  {/* Child Dependencies */}
+                                  <div>
+                                    <h3 className="text-lg font-medium mb-2">Child Processes</h3>
+                                    {selectedProcess.dependencies.child.length > 0 ? (
+                                      <div className="space-y-4">
+                                        {selectedProcess.dependencies.child.map((child: any) => (
+                                          <Card key={child.id}>
+                                            <CardHeader className="py-3">
+                                              <div className="flex justify-between items-center">
+                                                <div>
+                                                  <CardTitle className="text-base">{child.name}</CardTitle>
+                                                  <CardDescription>ID: {child.id}</CardDescription>
+                                                </div>
+                                                <Badge variant={
+                                                  child.status === "Completed" ? "outline" : 
+                                                  child.status === "Blocked" ? "destructive" : 
+                                                  "default"
+                                                }>
+                                                  {child.status}
+                                                </Badge>
+                                              </div>
+                                            </CardHeader>
+                                            {child.files.length > 0 && (
+                                              <CardContent className="py-0">
+                                                <p className="text-sm font-medium mb-2">Files</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                  {child.files.map((file: any) => (
+                                                    <Button 
+                                                      key={file.id}
+                                                      variant="outline"
+                                                      size="sm"
+                                                      onClick={() => handleDependencyFileClick(file)}
+                                                    >
+                                                      <FileText className="h-4 w-4 mr-2" />
+                                                      {file.name}
+                                                    </Button>
+                                                  ))}
+                                                </div>
+                                              </CardContent>
+                                            )}
+                                          </Card>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-muted-foreground">No child dependencies</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="queries">
+                                <div className="space-y-4">
+                                  {mockQueriesData.map((query) => (
+                                    <Card key={query.id}>
+                                      <CardHeader className="py-3">
+                                        <div className="flex justify-between items-center">
+                                          <div>
+                                            <CardTitle className="text-base">{query.title}</CardTitle>
+                                            <CardDescription>ID: {query.id} | Created: {query.createdAt}</CardDescription>
+                                          </div>
+                                          <Badge variant={query.status === "Open" ? "default" : "outline"}>
+                                            {query.status}
+                                          </Badge>
+                                        </div>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <div className="grid grid-cols-2 gap-4 mb-2">
+                                          <div>
+                                            <p className="text-sm text-muted-foreground">Created By</p>
+                                            <p className="font-medium">{query.createdBy}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-sm text-muted-foreground">Assigned To</p>
+                                            <p className="font-medium">{query.assignedTo}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-sm text-muted-foreground">Priority</p>
+                                            <p className="font-medium">{query.priority}</p>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-muted-foreground">Description</p>
+                                          <p className="text-sm">{query.description}</p>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              </TabsContent>
+                            </Tabs>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Sub-Stage Process Cards */}
+                      <div className="md:col-span-1">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Sub-Stage Processes</CardTitle>
+                            <CardDescription>
+                              Click on a process ID to view details
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <div className="border rounded-lg p-4">
+                                <div className="flex justify-between items-center mb-2">
+                                  <div>
+                                    <p className="font-medium">{mockSubStageProcess.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      ID: <span className="font-medium cursor-pointer" onClick={handleProcessIdClick}>
+                                        {mockSubStageProcess.id}
+                                      </span>
+                                    </p>
+                                  </div>
+                                  <Badge variant={mockSubStageProcess.status === "In Progress" ? "default" : "outline"}>
+                                    {mockSubStageProcess.status}
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                                  <div>
+                                    <p className="text-muted-foreground">Assigned To</p>
+                                    <p>{mockSubStageProcess.assignedTo}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Priority</p>
+                                    <p>{mockSubStageProcess.priority}</p>
+                                  </div>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700 mb-2">
+                                  <div 
+                                    className="bg-blue-600 h-2 rounded-full" 
+                                    style={{ width: `${mockSubStageProcess.progress}%` }}
+                                  ></div>
+                                </div>
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                  {mockSubStageProcess.files.map((file: any) => (
+                                    <Button 
+                                      key={file.id}
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs"
+                                      onClick={() => handleFileClick(file)}
+                                    >
+                                      <FileText className="h-3 w-3 mr-1" />
+                                      {file.name}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      {/* Process Detail */}
+                      <div className="md:col-span-2">
+                        <Card>
+                          <CardHeader>
+                            <div className="flex justify-between items-center">
+                              <CardTitle>Process Detail</CardTitle>
+                              <div className="flex space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setWorkflowDetailTab("stageOverview")}
+                                >
+                                  <Settings className="h-4 w-4 mr-2" />
+                                  Workflow Detail
+                                </Button>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <Tabs defaultValue="info">
+                              <TabsList className="grid w-full grid-cols-3 mb-4">
+                                <TabsTrigger value="info">Information</TabsTrigger>
+                                <TabsTrigger value="files">Files</TabsTrigger>
+                                <TabsTrigger value="actions">Actions</TabsTrigger>
+                              </TabsList>
+                              
+                              <TabsContent value="info">
+                                <div className="space-y-6">
+                                  <div>
+                                    <h3 className="text-lg font-medium mb-2">Process Information</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">ID</p>
+                                        <p className="font-medium">{selectedProcess.id}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">Name</p>
+                                        <p className="font-medium">{selectedProcess.name}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">Application</p>
+                                        <p className="font-medium">{selectedProcess.application}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">Instance</p>
+                                        <p className="font-medium">{selectedProcess.instance}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">Stage</p>
+                                        <p className="font-medium">{selectedProcess.stage}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">Status</p>
+                                        <p className="font-medium">{selectedProcess.status}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">Assigned To</p>
+                                        <p className="font-medium">{selectedProcess.assignedTo}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">Priority</p>
+                                        <p className="font-medium">{selectedProcess.priority}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">Due Date</p>
+                                        <p className="font-medium">{selectedProcess.dueDate}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="files">
+                                <div className="border rounded-lg overflow-hidden">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Size</TableHead>
+                                        <TableHead>Last Modified</TableHead>
+                                        <TableHead>Actions</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {selectedProcess.files.map((file: any) => (
+                                        <TableRow key={file.id}>
+                                          <TableCell>{file.name}</TableCell>
+                                          <TableCell>{file.type}</TableCell>
+                                          <TableCell>{file.size}</TableCell>
+                                          <TableCell>{file.lastModified}</TableCell>
+                                          <TableCell>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm"
+                                              onClick={() => handleFileClick(file)}
+                                            >
+                                              <Eye className="h-4 w-4" />
+                                            </Button>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="actions">
+                                <div className="space-y-6">
+                                  <div>
+                                    <h3 className="text-lg font-medium mb-2">Actions</h3>
+                                    <div className="flex space-x-2">
+                                      <Button>Complete Process</Button>
+                                      <Button variant="outline">Reassign</Button>
+                                      <Button variant="outline">Add Comment</Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </TabsContent>
+                            </Tabs>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
-            
-            <div className="flex flex-wrap gap-2">
-              {selectedProcess.config?.canTrigger && (
-                <Button size="sm">
-                  <Play className="h-4 w-4 mr-1" />
-                  Trigger
-                </Button>
-              )}
-              {selectedProcess.config?.canRerun && (
-                <Button size="sm" variant="outline">
-                  <RotateCw className="h-4 w-4 mr-1" />
-                  Rerun
-                </Button>
-              )}
-              {selectedProcess.config?.canSkip && (
-                <Button size="sm" variant="outline">
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Skip
-                </Button>
-              )}
-            </div>
           </div>
         </CardContent>
       </Card>
-    );
-  };
-  
-  // Render the file preview and workflow detail view
-  const renderFilePreviewAndWorkflowDetail = () => {
-    return (
-      <div>
-        {/* Control buttons row - only shown during file preview */}
-        {showFilePreview && (
-          <div className="flex items-center gap-2 my-2">
-            {/* Show Process Cards button - far left */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={toggleSubStageCards}
-              title={showSubStageCards ? "Hide process cards" : "Show process cards"}
-            >
-              {showSubStageCards ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-            </Button>
-
-            {/* Status ribbon and horizontal sub-stage process would go here */}
-            <div className="flex-1 flex justify-center">
-              {/* Display enhanced selected sub-stage info when file preview is open */}
-              {selectedSubStage && (
-                <div className="flex items-center gap-3 px-3 py-1 bg-muted/40 rounded-md">
-                  <div className={`w-1.5 h-6 rounded-sm ${
-                    selectedProcess?.status === 'completed' ? 'bg-green-500' :
-                    selectedProcess?.status === 'in-progress' ? 'bg-blue-500' :
-                    selectedProcess?.status === 'failed' ? 'bg-red-500' :
-                    'bg-gray-300'
-                  }`} />
-                  <div className="text-sm font-medium">{selectedProcess?.name}</div>
-                  <div className="text-xs text-muted-foreground font-mono">{selectedProcess?.processId}</div>
-                  
-                  {/* Additional process details */}
-                  <Separator orientation="vertical" className="h-5 mx-1" />
-                  
-                  {/* Status */}
-                  <Badge variant={
-                    selectedProcess?.status === 'completed' ? 'default' :
-                    selectedProcess?.status === 'in-progress' ? 'secondary' :
-                    selectedProcess?.status === 'failed' ? 'destructive' :
-                    'outline'
-                  } className="text-xs">
-                    {selectedProcess?.status}
-                  </Badge>
-                </div>
-              )}
-            </div>
-
-            {/* Show Workflow Detail button - far right */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={toggleWorkflowDetail}
-              title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
-            >
-              {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-            </Button>
-          </div>
-        )}
-
-        <div className="flex gap-4">
-          {/* Sub-stage process cards - Only visible when explicitly kept visible */}
-          <div className={`${showFilePreview ? (showSubStageCards ? 'flex-[0.3] relative' : 'hidden') : 'flex-[0.6]'}`}>
-            <div className="space-y-4">
-              {/* Render the selected process as a sub-stage card */}
-              {selectedProcess && (
-                <Collapsible>
-                  <div 
-                    className={`${
-                      selectedProcess.status === 'completed' ? 'border-l-[3px] border-l-green-500' :
-                      selectedProcess.status === 'in-progress' ? 'border-l-[3px] border-l-blue-500' :
-                      selectedProcess.status === 'failed' ? 'border-l-[3px] border-l-red-500' :
-                      'border-l-[3px] border-l-gray-300'
-                    } ${selectedSubStage === selectedProcess.id ? 'bg-primary/5 ring-1 ring-primary/40' : 'bg-background'} p-1.5 rounded-sm mb-1 transition-all duration-200 cursor-pointer hover:bg-muted/30`}
-                    onClick={(e) => {
-                      // Prevent event bubbling for buttons inside the row
-                      if ((e.target as HTMLElement).closest('button')) {
-                        return;
-                      }
-                      handleProcessIdClick(selectedProcess.processId, selectedProcess.id);
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-1">
-                          <span className="text-xs text-muted-foreground font-mono">01</span>
-                          <h3 className="font-medium text-sm">{selectedProcess.name}</h3>
-                          
-                          <div className="flex items-center gap-1 ml-1">
-                            {selectedProcess.status === 'completed' ? (
-                              <CheckCircle className="h-3 w-3 text-green-500" />
-                            ) : selectedProcess.status === 'in-progress' ? (
-                              <CircleDot className="h-3 w-3 text-blue-500" />
-                            ) : selectedProcess.status === 'failed' ? (
-                              <XCircle className="h-3 w-3 text-red-500" />
-                            ) : (
-                              <Clock className="h-3 w-3 text-gray-500" />
-                            )}
-                            
-                            <Button 
-                              variant="ghost" 
-                              className={`p-0 h-auto font-mono text-xs ${selectedSubStage === selectedProcess.id ? 'font-bold text-primary' : ''}`}
-                              onClick={() => handleProcessIdClick(selectedProcess.processId, selectedProcess.id)}
-                            >
-                              {selectedProcess.processId}
-                            </Button>
-                            
-                            {selectedProcess.type === 'auto' ? (
-                              <Bot className="h-3 w-3 text-muted-foreground" />
-                            ) : (
-                              <UserCircle className="h-3 w-3 text-muted-foreground" />
-                            )}
-                            
-                            {/* Process-level actions - Context-aware based on status */}
-                            <div className="flex items-center gap-1 ml-1">
-                              
-                              {/* Files button - Always visible */}
-                              {selectedProcess.files && selectedProcess.files.length > 0 && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
-                                  onClick={(e) => {
-                                    // Ensure event doesn't bubble up to parent elements
-                                    e.stopPropagation();
-                                    
-                                    // Set current sub-stage files
-                                    const filesList = selectedProcess.files.map((file, index) => ({
-                                      id: `file-${selectedProcess.id}-${index}`,
-                                      name: file.name,
-                                      type: file.name.split('.').pop() || '',
-                                      size: file.size,
-                                      category: 'download'
-                                    }));
-                                    
-                                    setCurrentSubStageFiles(filesList);
-                                  }}
-                                  title={`View Files (${selectedProcess.files.length})`}
-                                >
-                                  <FileText className="h-3.5 w-3.5" />
-                                  <span className="text-xs">Files</span>
-                                </Button>
-                              )}
-                              
-                              {/* Preview button - Only for processes with files */}
-                              {selectedProcess.files && selectedProcess.files.length > 0 && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
-                                  onClick={(e) => {
-                                    // Ensure event doesn't bubble up to parent elements
-                                    e.stopPropagation();
-                                    
-                                    // Select this sub-stage
-                                    setSelectedSubStage(selectedProcess.id);
-                                    
-                                    // Set current sub-stage files
-                                    const filesList = selectedProcess.files.map((file, index) => ({
-                                      id: `file-${selectedProcess.id}-${index}`,
-                                      name: file.name,
-                                      type: file.name.split('.').pop() || '',
-                                      size: file.size,
-                                      category: 'download'
-                                    }));
-                                    
-                                    setCurrentSubStageFiles(filesList);
-                                    
-                                    // Preview the first file
-                                    if (selectedProcess.files.length > 0) {
-                                      handlePreviewFile(selectedProcess.files[0].name);
-                                    }
-                                  }}
-                                  title="Preview Files"
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                  <span className="text-xs">Preview</span>
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-1 ml-auto">
-                            <span className="text-xs text-muted-foreground">
-                              {selectedProcess.progress}%
-                            </span>
-                            <Progress 
-                              value={selectedProcess.progress} 
-                              className="w-12 h-1.5"
-                              {...(selectedProcess.status === 'failed' && { 
-                                className: "w-12 h-1.5 bg-destructive" 
-                              })}
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          {selectedProcess.timing?.start && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span>Start: {new Date(selectedProcess.timing.start).toLocaleTimeString()}</span>
-                            </div>
-                          )}
-                          {selectedProcess.duration && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span>Duration: {selectedProcess.duration}s</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Messages - Compact with truncation for long messages */}
-                        {selectedProcess.message && (
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            {selectedProcess.message.length > 60 
-                              ? `${selectedProcess.message.substring(0, 60)}...` 
-                              : selectedProcess.message}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Collapsible>
-              )}
-            </div>
-          </div>
-
-          {/* File Preview Panel - Only shown when a file is selected */}
-          {showFilePreview && (
-            <div className="flex-1 flex flex-col relative">
-              {currentSubStageFiles.length > 0 && (
-                <AdvancedFilePreview 
-                  fileId={currentSubStageFiles[0].id}
-                  fileName={selectedFile || currentSubStageFiles[0].name}
-                  onClose={handleCloseFilePreview}
-                />
-              )}
-            </div>
-          )}
-          
-          {/* Process Detail Panel */}
-          {!showFilePreview && renderProcessDetail()}
-        </div>
-      </div>
-    );
-  };
-  
-  return (
-    <div className="container mx-auto py-6">
-      <div className="flex flex-col space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-2xl">User Process Dashboard</CardTitle>
-                <CardDescription>
-                  Manage and monitor processes across all applications, groups, and instances
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={resetFilters}>
-                  <Filter className="h-4 w-4 mr-2" />
-                  Reset Filters
-                </Button>
-                <Button variant="outline" onClick={refreshData}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-              {/* Search */}
-              <div className="relative lg:col-span-2">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search processes..."
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              
-              {/* Application filter */}
-              <div>
-                <Select value={selectedApplication} onValueChange={setSelectedApplication}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Application" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Applications</SelectItem>
-                    {applications.map(app => (
-                      <SelectItem key={app.id} value={app.id}>{app.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Group filter */}
-              <div>
-                <Select 
-                  value={selectedGroup} 
-                  onValueChange={setSelectedGroup}
-                  disabled={filteredGroups.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Groups</SelectItem>
-                    {filteredGroups.map(group => (
-                      <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Instance filter */}
-              <div>
-                <Select 
-                  value={selectedInstance} 
-                  onValueChange={setSelectedInstance}
-                  disabled={filteredInstances.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Instance" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Instances</SelectItem>
-                    {filteredInstances.map(instance => (
-                      <SelectItem key={instance.id} value={instance.id}>{instance.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-              {/* Role filter */}
-              <div>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    {roles.map(role => (
-                      <SelectItem key={role.id} value={role.name}>{role.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Status filter */}
-              <div>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="not-started">Not Started</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                    <SelectItem value="skipped">Skipped</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Bulk actions */}
-              <div className="lg:col-span-3 flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleBulkAction('trigger')}
-                  disabled={selectedProcesses.size === 0}
-                >
-                  <Play className="h-4 w-4 mr-1" />
-                  Trigger
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleBulkAction('rerun')}
-                  disabled={selectedProcesses.size === 0}
-                >
-                  <RotateCw className="h-4 w-4 mr-1" />
-                  Rerun
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleBulkAction('skip')}
-                  disabled={selectedProcesses.size === 0}
-                >
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Skip
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleBulkAction('complete')}
-                  disabled={selectedProcesses.size === 0}
-                >
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Complete
-                </Button>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {filteredProcesses.length} of {processes.length} processes
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{selectedProcesses.size} selected</Badge>
-              </div>
-            </div>
-            
-            {selectedProcess ? (
-              renderFilePreviewAndWorkflowDetail()
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Process list */}
-                <div>
-                  {renderProcessList()}
-                </div>
-                
-                {/* Empty process detail */}
-                <div className="hidden lg:block">
-                  {renderProcessDetail()}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
-};
+}
 
-export default UserProcessDashboard;
+// Process Table Component
+function ProcessTable({ 
+  processes, 
+  onProcessClick,
+  selectedProcess 
+}: { 
+  processes: any[]; 
+  onProcessClick: (process: any) => void;
+  selectedProcess: any;
+}) {
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ID</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Application</TableHead>
+            <TableHead>Instance</TableHead>
+            <TableHead>Stage</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Priority</TableHead>
+            <TableHead>Due Date</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {processes.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={9} className="text-center py-4">
+                No processes found matching your filters
+              </TableCell>
+            </TableRow>
+          ) : (
+            processes.map((process) => (
+              <TableRow 
+                key={process.id} 
+                className={selectedProcess?.id === process.id ? "bg-muted/50" : ""}
+                onClick={() => onProcessClick(process)}
+              >
+                <TableCell className="font-medium">{process.id}</TableCell>
+                <TableCell>{process.name}</TableCell>
+                <TableCell>{process.application}</TableCell>
+                <TableCell>{process.instance}</TableCell>
+                <TableCell>{process.stage}</TableCell>
+                <TableCell>
+                  <Badge variant={
+                    process.status === "Completed" ? "outline" : 
+                    process.status === "In Progress" ? "default" : 
+                    process.status === "Failed" ? "destructive" : 
+                    "secondary"
+                  }>
+                    {process.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={
+                    process.priority === "Critical" ? "destructive" : 
+                    process.priority === "High" ? "default" : 
+                    process.priority === "Medium" ? "secondary" : 
+                    "outline"
+                  }>
+                    {process.priority}
+                  </Badge>
+                </TableCell>
+                <TableCell>{process.dueDate}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="sm">
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
