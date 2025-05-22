@@ -44,6 +44,8 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
     // Don't fetch if fileId is empty
     if (!fileId) {
       setIsLoading(false);
+      setFileData(null);
+      setActiveSheet(null);
       return;
     }
     
@@ -93,11 +95,15 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
         
         setFileData(mockData);
         // Safely set active sheet only if sheets exist
-        if (mockData.sheets && Object.keys(mockData.sheets).length > 0) {
+        if (mockData && mockData.sheets && Object.keys(mockData.sheets).length > 0) {
           setActiveSheet(Object.keys(mockData.sheets)[0]);
+        } else {
+          setActiveSheet(null);
         }
       } catch (error) {
         console.error('Error fetching file data:', error);
+        setFileData(null);
+        setActiveSheet(null);
       } finally {
         setIsLoading(false);
       }
@@ -107,6 +113,11 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   }, [fileId, fileName]);
 
   const handleRunAIAnalysis = async () => {
+    if (!fileData || !fileId) {
+      console.error('Cannot run AI analysis: No file data available');
+      return;
+    }
+    
     setIsAnalyzing(true);
     try {
       // Simulate AI analysis
@@ -114,7 +125,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       
       // Store as a parsed object directly instead of a string
       setAiAnalysis({
-        title: `File Analysis: ${fileName}`,
+        title: `File Analysis: ${fileName || 'Unknown File'}`,
         timestamp: new Date().toISOString(),
         sections: [
           {
@@ -152,6 +163,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       });
     } catch (error) {
       console.error('Error running AI analysis:', error);
+      setAiAnalysis(null);
     } finally {
       setIsAnalyzing(false);
     }

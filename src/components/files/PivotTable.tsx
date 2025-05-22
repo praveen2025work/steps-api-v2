@@ -31,7 +31,7 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
   const validData = data && Array.isArray(data) && data.length > 0 && data.every(item => item && typeof item === 'object');
   
   // Create a safe copy of the data or use sample data
-  const sampleData = validData ? [...data] : [
+  const sampleData = validData ? JSON.parse(JSON.stringify(data)) : [
     { date: '2025-05-01', region: 'EMEA', product: 'FX', amount: 1250000, status: 'Completed' },
     { date: '2025-05-01', region: 'APAC', product: 'Rates', amount: 2340000, status: 'Completed' },
     { date: '2025-05-01', region: 'AMER', product: 'FX', amount: 1890000, status: 'Completed' },
@@ -47,7 +47,7 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
   ];
 
   // Get all available fields from the data
-  const allFields = Object.keys(sampleData[0] || {});
+  const allFields = sampleData && sampleData.length > 0 ? Object.keys(sampleData[0] || {}) : [];
   
   // Initial pivot configuration
   const [pivotConfig, setPivotConfig] = useState<PivotConfig>({
@@ -59,6 +59,9 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
 
   // Function to get unique values for a field
   const getUniqueValues = (field: string) => {
+    if (!sampleData || !Array.isArray(sampleData) || sampleData.length === 0) {
+      return [];
+    }
     return Array.from(new Set(sampleData.map(item => item[field])));
   };
 

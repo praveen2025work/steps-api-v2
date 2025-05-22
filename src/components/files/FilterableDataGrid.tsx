@@ -29,7 +29,7 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
   const validData = data && Array.isArray(data) && data.length > 0 && data.every(item => item && typeof item === 'object');
   
   // Create a safe copy of the data or use sample data
-  const sampleData = validData ? [...data] : [
+  const sampleData = validData ? JSON.parse(JSON.stringify(data)) : [
     { id: 1, date: '2025-05-01', region: 'EMEA', product: 'FX', amount: 1250000, status: 'Completed' },
     { id: 2, date: '2025-05-01', region: 'APAC', product: 'Rates', amount: 2340000, status: 'Completed' },
     { id: 3, date: '2025-05-01', region: 'AMER', product: 'FX', amount: 1890000, status: 'Completed' },
@@ -45,7 +45,7 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
   ];
 
   // Get all columns from the data
-  const columns = Object.keys(sampleData[0] || {});
+  const columns = sampleData && sampleData.length > 0 ? Object.keys(sampleData[0] || {}) : [];
 
   // State for sorting
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);

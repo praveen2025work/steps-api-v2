@@ -638,17 +638,21 @@ export function UserProcessDashboard() {
                           <CardContent>
                             <div className="mb-4">
                               <div className="flex space-x-2 mb-4">
-                                {selectedSubStage?.files.map((file: any) => (
-                                  <Button 
-                                    key={file.id}
-                                    variant={selectedFile?.id === file.id ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => handleFileClick(file)}
-                                  >
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    {file.name}
-                                  </Button>
-                                ))}
+                                {selectedSubStage?.files && Array.isArray(selectedSubStage.files) ? (
+                                  selectedSubStage.files.map((file: any) => (
+                                    <Button 
+                                      key={file.id}
+                                      variant={selectedFile?.id === file.id ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => handleFileClick(file)}
+                                    >
+                                      <FileText className="h-4 w-4 mr-2" />
+                                      {file.name || 'Unnamed File'}
+                                    </Button>
+                                  ))
+                                ) : (
+                                  <div className="p-2 text-muted-foreground">No files available</div>
+                                )}
                               </div>
                               
                               {selectedFile && selectedFile.id ? (
