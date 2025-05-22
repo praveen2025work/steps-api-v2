@@ -401,9 +401,9 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
             </div>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-200px)]">
+          <div className="overflow-y-auto">
             {renderAnalysisResults()}
-          </ScrollArea>
+          </div>
         )}
       </div>
     );

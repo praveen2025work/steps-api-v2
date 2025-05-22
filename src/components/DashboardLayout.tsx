@@ -36,7 +36,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   }, []);
   
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar for desktop */}
       <Sidebar />
       
@@ -105,8 +105,8 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           </div>
         </header>
         
-        {/* Page content - improved for mobile with vertical scrolling */}
-        <main className="flex-1 container pt-0 pb-4 sm:pb-6 px-2 sm:px-4 md:px-6 overflow-y-auto overflow-x-hidden">
+        {/* Page content */}
+        <main className="flex-1 container pt-0 pb-4 sm:pb-6 px-2 sm:px-4 md:px-6">
           {children}
         </main>
       </div>

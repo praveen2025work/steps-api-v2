@@ -251,7 +251,7 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
         </div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-300px)] rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -320,7 +320,7 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
             </TableRow>
           </TableBody>
         </Table>
-      </ScrollArea>
+      </div>
     </div>
   );
 };
