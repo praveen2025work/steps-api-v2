@@ -410,7 +410,7 @@ function UserProcessDashboard() {
 
   return (
     <div className="container mx-auto p-4">
-      <Card className="mb-6">
+      <Card className="mb-6 w-full">
         <CardHeader className="pb-3">
           <CardTitle>Process Management Dashboard</CardTitle>
           <CardDescription>
@@ -420,7 +420,7 @@ function UserProcessDashboard() {
         <CardContent>
           <div className="flex flex-col space-y-4">
             {/* Filters Bar */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
               <Select value={selectedApplications.length > 0 ? selectedApplications[0] : ""} onValueChange={(value) => {
                 if (value) handleApplicationChange(value);
               }}>
@@ -649,7 +649,7 @@ const ProcessTable: React.FC<ProcessTableProps> = ({
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded-lg overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>

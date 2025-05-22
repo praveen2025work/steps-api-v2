@@ -692,7 +692,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
     <div 
       className={`${isFullscreen ? 'fixed inset-0 bg-background z-50' : 'relative w-full'}`}
     >
-      <Card className={`${isFullscreen ? 'h-screen rounded-none' : 'w-full'}`}>
+      <Card className={`${isFullscreen ? 'h-screen rounded-none' : 'w-full overflow-x-auto'}`}>
         <CardHeader className="pb-2 border-b">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">

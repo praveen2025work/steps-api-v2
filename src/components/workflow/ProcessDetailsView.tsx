@@ -272,7 +272,7 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
   return (
     <div className="space-y-4">
       {/* Horizontal Sub-Stage Card (Always Visible) - Optimized Design */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden overflow-x-auto">
         <div className="flex">
           {/* Status Ribbon */}
           <div className={`w-2 ${
@@ -396,7 +396,7 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
       </Card>
       
       {/* Main Content Area with Dynamic Panels */}
-      <div className={layoutClasses.container}>
+      <div className={`${layoutClasses.container} overflow-x-auto`}>
         {/* Left Panel (Process List or Dependencies) */}
         {showLeftPanel && (
           <Card className={layoutClasses.leftPanel}>
@@ -573,12 +573,135 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-[60vh] text-center p-4 border border-dashed rounded-md">
-              <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No File Selected</h3>
-              <p className="text-muted-foreground max-w-md">
-                Select a file from the horizontal bar above to preview its contents.
-              </p>
+            <div className="workflow-details-container">
+              <Tabs value={workflowDetailTab} onValueChange={setWorkflowDetailTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-0">
+                  <TabsTrigger value="stageOverview">Stage</TabsTrigger>
+                  <TabsTrigger value="processOverview">Process</TabsTrigger>
+                </TabsList>
+                
+                <ScrollArea className="h-[calc(100vh-300px)] p-4">
+                  <TabsContent value="stageOverview" className="mt-0 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">Stage Overview</h3>
+                      <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("appConfig")}>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <StageOverview 
+                      stageId={currentProcess?.id || ''} 
+                      stageName={currentProcess?.stage || ''} 
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="appConfig" className="mt-0 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">App Configuration</h3>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("stageOverview")}>
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("globalConfig")}>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <AppParameters 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="globalConfig" className="mt-0 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">Global Configuration</h3>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("appConfig")}>
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processOverview")}>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <GlobalParameters 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="processOverview" className="mt-0 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">Process Overview</h3>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("globalConfig")}>
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processConfig")}>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <ProcessOverview 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="processConfig" className="mt-0 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">Process Configuration</h3>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processOverview")}>
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("dependencies")}>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <ProcessParameters 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="dependencies" className="mt-0 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">Dependencies</h3>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processConfig")}>
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("queries")}>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <ProcessDependencies 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
+                      onDependencyClick={(dependency) => {
+                        // Handle dependency click - could navigate to the dependency
+                        console.log("Dependency clicked:", dependency);
+                      }}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="queries" className="mt-0 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">Queries</h3>
+                      <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("dependencies")}>
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <ProcessQueries 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
+                    />
+                  </TabsContent>
+                </ScrollArea>
+              </Tabs>
             </div>
           )}
         </Card>
