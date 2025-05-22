@@ -709,13 +709,6 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
                     {progressPercentage === 100 ? 'Completed' : 'In Progress'}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>ID: {workflow.id}</span>
-                  <span>•</span>
-                  <span>Progress: {progressPercentage}%</span>
-                  <span>•</span>
-                  <span>Last Updated: {new Date().toLocaleDateString()}</span>
-                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
