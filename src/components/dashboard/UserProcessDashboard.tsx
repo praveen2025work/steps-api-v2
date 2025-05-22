@@ -242,7 +242,7 @@ const mockQueriesData = [
   }
 ];
 
-export function UserProcessDashboard() {
+function UserProcessDashboard() {
   const [selectedTab, setSelectedTab] = useState("inProgress");
   const [selectedProcess, setSelectedProcess] = useState<any>(null);
   const [selectedSubStage, setSelectedSubStage] = useState<any>(null);
@@ -1362,15 +1362,17 @@ export function UserProcessDashboard() {
 }
 
 // Process Table Component
-function ProcessTable({ 
+interface ProcessTableProps {
+  processes: any[];
+  onProcessClick: (process: any) => void;
+  selectedProcess: any;
+}
+
+const ProcessTable: React.FC<ProcessTableProps> = ({ 
   processes, 
   onProcessClick,
   selectedProcess 
-}: { 
-  processes: any[]; 
-  onProcessClick: (process: any) => void;
-  selectedProcess: any;
-}) {
+}) => {
   return (
     <div className="border rounded-lg overflow-hidden">
       <Table>
@@ -1440,3 +1442,5 @@ function ProcessTable({
     </div>
   );
 }
+
+export default UserProcessDashboard;
