@@ -308,24 +308,32 @@ export function UserProcessDashboard() {
 
   // Handle file click
   const handleFileClick = (file: any) => {
-    if (!file || !file.id) {
-      console.error("Invalid file object:", file);
-      return;
+    try {
+      if (!file || !file.id) {
+        console.error("Invalid file object:", file);
+        return;
+      }
+      setSelectedFile(file);
+      setShowFilePreview(true);
+      setShowWorkflowDetail(false);
+    } catch (error) {
+      console.error("Error in handleFileClick:", error);
     }
-    setSelectedFile(file);
-    setShowFilePreview(true);
-    setShowWorkflowDetail(false);
   };
 
   // Handle dependency file click
   const handleDependencyFileClick = (file: any) => {
-    if (!file || !file.id) {
-      console.error("Invalid dependency file object:", file);
-      return;
+    try {
+      if (!file || !file.id) {
+        console.error("Invalid dependency file object:", file);
+        return;
+      }
+      setSelectedFile(file);
+      setShowFilePreview(true);
+      setShowWorkflowDetail(false);
+    } catch (error) {
+      console.error("Error in handleDependencyFileClick:", error);
     }
-    setSelectedFile(file);
-    setShowFilePreview(true);
-    setShowWorkflowDetail(false);
   };
 
   // Toggle sub-stage cards visibility
@@ -675,16 +683,23 @@ export function UserProcessDashboard() {
                               </div>
                               
                               {selectedFile && typeof selectedFile === 'object' && selectedFile.id ? (
-                                <div>
-                                  <AdvancedFilePreview 
-                                    fileId={selectedFile.id} 
-                                    fileName={selectedFile.name || 'Unknown File'} 
-                                    onClose={() => {
-                                      setSelectedFile(null);
-                                      setShowFilePreview(false);
-                                      setShowWorkflowDetail(true);
-                                    }} 
-                                  />
+                                <div className="file-preview-container">
+                                  {/* Wrap in error boundary div */}
+                                  <div className="file-preview-wrapper">
+                                    <AdvancedFilePreview 
+                                      fileId={selectedFile.id} 
+                                      fileName={selectedFile.name || 'Unknown File'} 
+                                      onClose={() => {
+                                        try {
+                                          setSelectedFile(null);
+                                          setShowFilePreview(false);
+                                          setShowWorkflowDetail(true);
+                                        } catch (error) {
+                                          console.error("Error in onClose callback:", error);
+                                        }
+                                      }} 
+                                    />
+                                  </div>
                                 </div>
                               ) : (
                                 <div className="p-4 text-center text-muted-foreground">

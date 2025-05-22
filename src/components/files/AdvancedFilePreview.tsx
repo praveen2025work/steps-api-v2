@@ -56,54 +56,96 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
         // For now, we'll simulate a response with mock data
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        const mockData: FileData = {
-          id: fileId,
+        // Create a default mock data structure that's guaranteed to be valid
+        const defaultMockData: FileData = {
+          id: fileId || 'unknown',
           name: fileName || 'Unknown File',
           sheets: {
-            'Sheet1': {
-              headers: ['Date', 'Region', 'Product', 'Sales', 'Profit'],
-              rows: [
-                ['2023-01-01', 'North', 'Widget A', 1200, 240],
-                ['2023-01-02', 'South', 'Widget B', 950, 190],
-                ['2023-01-03', 'East', 'Widget A', 1100, 220],
-                ['2023-01-04', 'West', 'Widget C', 1300, 260],
-                ['2023-01-05', 'North', 'Widget B', 1000, 200],
-              ]
-            },
-            'Details': {
-              headers: ['Property', 'Value', 'Description'],
-              rows: [
-                ['File Type', 'Excel', 'Microsoft Excel Spreadsheet'],
-                ['Created Date', '2023-01-15', 'Date the file was created'],
-                ['Modified Date', '2023-05-10', 'Last modification date'],
-                ['Owner', 'John Smith', 'File owner'],
-                ['Size', '256 KB', 'File size in kilobytes'],
-              ]
-            },
-            'Logs': {
-              headers: ['Timestamp', 'User', 'Action', 'Details'],
-              rows: [
-                ['2023-05-10 14:32:45', 'jsmith', 'EDIT', 'Updated sales figures'],
-                ['2023-05-09 11:15:22', 'agarcia', 'VIEW', 'Viewed file contents'],
-                ['2023-05-08 09:45:11', 'jsmith', 'EDIT', 'Added new product data'],
-                ['2023-05-07 16:20:33', 'bwilson', 'VIEW', 'Viewed file contents'],
-                ['2023-05-06 10:05:17', 'jsmith', 'CREATE', 'Created initial file'],
-              ]
+            'Default': {
+              headers: ['Column1', 'Column2'],
+              rows: [['No data', 'available']]
             }
           }
         };
         
-        setFileData(mockData);
+        // Try to create the real mock data, but fall back to default if anything fails
+        try {
+          const mockData: FileData = {
+            id: fileId,
+            name: fileName || 'Unknown File',
+            sheets: {
+              'Sheet1': {
+                headers: ['Date', 'Region', 'Product', 'Sales', 'Profit'],
+                rows: [
+                  ['2023-01-01', 'North', 'Widget A', 1200, 240],
+                  ['2023-01-02', 'South', 'Widget B', 950, 190],
+                  ['2023-01-03', 'East', 'Widget A', 1100, 220],
+                  ['2023-01-04', 'West', 'Widget C', 1300, 260],
+                  ['2023-01-05', 'North', 'Widget B', 1000, 200],
+                ]
+              },
+              'Details': {
+                headers: ['Property', 'Value', 'Description'],
+                rows: [
+                  ['File Type', 'Excel', 'Microsoft Excel Spreadsheet'],
+                  ['Created Date', '2023-01-15', 'Date the file was created'],
+                  ['Modified Date', '2023-05-10', 'Last modification date'],
+                  ['Owner', 'John Smith', 'File owner'],
+                  ['Size', '256 KB', 'File size in kilobytes'],
+                ]
+              },
+              'Logs': {
+                headers: ['Timestamp', 'User', 'Action', 'Details'],
+                rows: [
+                  ['2023-05-10 14:32:45', 'jsmith', 'EDIT', 'Updated sales figures'],
+                  ['2023-05-09 11:15:22', 'agarcia', 'VIEW', 'Viewed file contents'],
+                  ['2023-05-08 09:45:11', 'jsmith', 'EDIT', 'Added new product data'],
+                  ['2023-05-07 16:20:33', 'bwilson', 'VIEW', 'Viewed file contents'],
+                  ['2023-05-06 10:05:17', 'jsmith', 'CREATE', 'Created initial file'],
+                ]
+              }
+            }
+          };
+          
+          // Validate the mock data structure
+          if (mockData && 
+              typeof mockData === 'object' && 
+              mockData.sheets && 
+              typeof mockData.sheets === 'object' && 
+              Object.keys(mockData.sheets).length > 0) {
+            setFileData(mockData);
+          } else {
+            setFileData(defaultMockData);
+          }
+        } catch (innerError) {
+          console.error('Error creating mock data:', innerError);
+          setFileData(defaultMockData);
+        }
+        
         // Safely set active sheet only if sheets exist
-        if (mockData && mockData.sheets && Object.keys(mockData.sheets).length > 0) {
-          setActiveSheet(Object.keys(mockData.sheets)[0]);
+        const currentFileData = fileData || defaultMockData;
+        if (currentFileData && 
+            currentFileData.sheets && 
+            typeof currentFileData.sheets === 'object' && 
+            Object.keys(currentFileData.sheets).length > 0) {
+          setActiveSheet(Object.keys(currentFileData.sheets)[0]);
         } else {
-          setActiveSheet(null);
+          setActiveSheet('Default');
         }
       } catch (error) {
         console.error('Error fetching file data:', error);
-        setFileData(null);
-        setActiveSheet(null);
+        // Set to a minimal valid state instead of null
+        setFileData({
+          id: fileId || 'unknown',
+          name: fileName || 'Unknown File',
+          sheets: {
+            'Error': {
+              headers: ['Status'],
+              rows: [['Failed to load data']]
+            }
+          }
+        });
+        setActiveSheet('Error');
       } finally {
         setIsLoading(false);
       }
@@ -170,8 +212,12 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   };
 
   const renderDataSection = () => {
-    if (!fileData || !activeSheet) {
-      return <div className="p-4 text-center text-muted-foreground">No data available</div>;
+    if (!fileData) {
+      return <div className="p-4 text-center text-muted-foreground">No file data available</div>;
+    }
+    
+    if (!activeSheet) {
+      return <div className="p-4 text-center text-muted-foreground">No active sheet selected</div>;
     }
     
     try {
@@ -179,8 +225,16 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       const sheets = fileData.sheets || {};
       const sheetData = sheets[activeSheet];
       
-      if (!sheetData || !Array.isArray(sheetData.rows) || !Array.isArray(sheetData.headers)) {
-        return <div className="p-4 text-center text-muted-foreground">Invalid sheet data format</div>;
+      if (!sheetData) {
+        return <div className="p-4 text-center text-muted-foreground">Sheet data not found</div>;
+      }
+      
+      if (!Array.isArray(sheetData.rows)) {
+        return <div className="p-4 text-center text-muted-foreground">Invalid rows data format</div>;
+      }
+      
+      if (!Array.isArray(sheetData.headers)) {
+        return <div className="p-4 text-center text-muted-foreground">Invalid headers data format</div>;
       }
       
       // Convert sheet data to format expected by FilterableDataGrid
@@ -213,27 +267,45 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
                 key={sheetName}
                 variant={activeSheet === sheetName ? "default" : "outline"}
                 size="sm"
-                onClick={() => setActiveSheet(sheetName)}
+                onClick={() => {
+                  try {
+                    setActiveSheet(sheetName);
+                  } catch (error) {
+                    console.error("Error setting active sheet:", error);
+                  }
+                }}
               >
                 {sheetName}
               </Button>
             ))}
           </div>
           
-          <div>
-            <FilterableDataGrid data={safeGridData} title={`${fileName || 'Unknown File'} - ${activeSheet || 'Sheet'}`} />
+          <div className="data-grid-wrapper">
+            {/* Wrap in div for safer rendering */}
+            <FilterableDataGrid 
+              data={safeGridData} 
+              title={`${fileName || 'Unknown File'} - ${activeSheet || 'Sheet'}`} 
+            />
           </div>
         </div>
       );
     } catch (error) {
       console.error("Error rendering data section:", error);
-      return <div className="p-4 text-center text-muted-foreground">Error displaying data</div>;
+      return (
+        <div className="p-4 text-center border border-red-200 bg-red-50 text-red-800 rounded-md">
+          Error displaying data. Please try again or select a different file.
+        </div>
+      );
     }
   };
 
   const renderPivotSection = () => {
-    if (!fileData || !activeSheet) {
-      return <div className="p-4 text-center text-muted-foreground">No data available</div>;
+    if (!fileData) {
+      return <div className="p-4 text-center text-muted-foreground">No file data available</div>;
+    }
+    
+    if (!activeSheet) {
+      return <div className="p-4 text-center text-muted-foreground">No active sheet selected</div>;
     }
     
     try {
@@ -241,8 +313,16 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       const sheets = fileData.sheets || {};
       const sheetData = sheets[activeSheet];
       
-      if (!sheetData || !Array.isArray(sheetData.rows) || !Array.isArray(sheetData.headers)) {
-        return <div className="p-4 text-center text-muted-foreground">Invalid sheet data format</div>;
+      if (!sheetData) {
+        return <div className="p-4 text-center text-muted-foreground">Sheet data not found</div>;
+      }
+      
+      if (!Array.isArray(sheetData.rows)) {
+        return <div className="p-4 text-center text-muted-foreground">Invalid rows data format</div>;
+      }
+      
+      if (!Array.isArray(sheetData.headers)) {
+        return <div className="p-4 text-center text-muted-foreground">Invalid headers data format</div>;
       }
       
       // Convert sheet data to format expected by PivotTable
@@ -277,21 +357,32 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
                 key={sheetName}
                 variant={activeSheet === sheetName ? "default" : "outline"}
                 size="sm"
-                onClick={() => setActiveSheet(sheetName)}
+                onClick={() => {
+                  try {
+                    setActiveSheet(sheetName);
+                  } catch (error) {
+                    console.error("Error setting active sheet:", error);
+                  }
+                }}
               >
                 {sheetName}
               </Button>
             ))}
           </div>
           
-          <div>
+          <div className="pivot-table-wrapper">
+            {/* Wrap in div for safer rendering */}
             <PivotTable data={safePivotData} />
           </div>
         </div>
       );
     } catch (error) {
       console.error("Error rendering pivot section:", error);
-      return <div className="p-4 text-center text-muted-foreground">Error displaying pivot table</div>;
+      return (
+        <div className="p-4 text-center border border-red-200 bg-red-50 text-red-800 rounded-md">
+          Error displaying pivot table. Please try again or select a different file.
+        </div>
+      );
     }
   };
 

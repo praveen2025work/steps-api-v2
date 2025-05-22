@@ -127,6 +127,11 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
     
     try {
       if (typeof value === 'number') {
+        // Check if it's a valid number
+        if (isNaN(value)) {
+          return '-';
+        }
+        
         // Check if it looks like a currency amount
         if (value > 1000) {
           try {
@@ -147,13 +152,13 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
         return value ? 'Yes' : 'No';
       }
       
-      // Handle status with badges
+      // Handle status with badges - use simple spans instead of Badge component
       if (typeof value === 'string' && ['Completed', 'Processing', 'Pending', 'Failed'].includes(value)) {
         const statusColors: Record<string, string> = {
-          'Completed': 'bg-green-100 text-green-800',
-          'Processing': 'bg-blue-100 text-blue-800',
-          'Pending': 'bg-yellow-100 text-yellow-800',
-          'Failed': 'bg-red-100 text-red-800'
+          'Completed': 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium',
+          'Processing': 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium',
+          'Pending': 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium',
+          'Failed': 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium'
         };
         
         return (
@@ -163,16 +168,30 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
         );
       }
       
+      // Handle dates
+      if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+        try {
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            return date.toLocaleDateString();
+          }
+        } catch (e) {
+          // If date parsing fails, just return the string
+        }
+      }
+      
       // Safely convert to string
-      if (value === null || value === undefined) {
-        return '-';
-      } else if (typeof value === 'object') {
-        return JSON.stringify(value);
+      if (typeof value === 'object') {
+        try {
+          return JSON.stringify(value);
+        } catch (e) {
+          return '[Object]';
+        }
       } else {
         return String(value);
       }
     } catch (error) {
-      console.error("Error formatting value:", error);
+      console.error("Error formatting value:", error, "type:", typeof value);
       return '-'; // Return a safe default if formatting fails
     }
   };

@@ -67,64 +67,137 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
 
   // Function to calculate pivot data
   const calculatePivotData = () => {
-    // Filter data based on filters
-    let filteredData = [...sampleData];
-    Object.entries(pivotConfig.filters).forEach(([field, value]) => {
-      if (value && value !== 'all') {
-        filteredData = filteredData.filter(item => String(item[field]) === value);
+    try {
+      // Validate input data
+      if (!Array.isArray(sampleData) || sampleData.length === 0) {
+        return {
+          rowCombinations: [['No Data']],
+          columnCombinations: [['No Data']],
+          pivotData: { 'No Data': { 'No Data': 0 } }
+        };
       }
-    });
-
-    // Get unique values for rows and columns
-    const rowValues = pivotConfig.rows.map(field => getUniqueValues(field));
-    const columnValues = pivotConfig.columns.map(field => getUniqueValues(field));
-
-    // Generate row combinations
-    const rowCombinations = generateCombinations(rowValues);
-    
-    // Generate column combinations
-    const columnCombinations = generateCombinations(columnValues);
-
-    // Calculate aggregated values
-    const pivotData: Record<string, Record<string, number>> = {};
-    
-    rowCombinations.forEach(rowComb => {
-      const rowKey = rowComb.join('-');
-      pivotData[rowKey] = {};
       
-      columnCombinations.forEach(colComb => {
-        const colKey = colComb.join('-');
-        
-        // Filter data for this combination
-        const matchingData = filteredData.filter(item => {
-          const rowMatch = pivotConfig.rows.every((field, index) => 
-            item[field] === rowComb[index]
-          );
-          
-          const colMatch = pivotConfig.columns.every((field, index) => 
-            item[field] === colComb[index]
-          );
-          
-          return rowMatch && colMatch;
+      // Validate pivot configuration
+      if (!Array.isArray(pivotConfig.rows) || pivotConfig.rows.length === 0 ||
+          !Array.isArray(pivotConfig.columns) || pivotConfig.columns.length === 0 ||
+          !Array.isArray(pivotConfig.values) || pivotConfig.values.length === 0) {
+        return {
+          rowCombinations: [['Invalid Config']],
+          columnCombinations: [['Invalid Config']],
+          pivotData: { 'Invalid Config': { 'Invalid Config': 0 } }
+        };
+      }
+      
+      // Filter data based on filters
+      let filteredData = [...sampleData];
+      if (pivotConfig.filters && typeof pivotConfig.filters === 'object') {
+        Object.entries(pivotConfig.filters).forEach(([field, value]) => {
+          if (field && value && value !== 'all') {
+            filteredData = filteredData.filter(item => {
+              if (!item || typeof item !== 'object') return false;
+              return String(item[field]) === value;
+            });
+          }
         });
-        
-        // Aggregate values
-        if (matchingData.length > 0) {
-          pivotConfig.values.forEach(valueField => {
-            const sum = matchingData.reduce((acc, item) => acc + (parseFloat(item[valueField]) || 0), 0);
-            pivotData[rowKey][colKey] = sum;
-          });
-        } else {
-          pivotData[rowKey][colKey] = 0;
-        }
-      });
-    });
+      }
 
-    return {
-      rowCombinations,
-      columnCombinations,
-      pivotData
-    };
+      // Get unique values for rows and columns
+      const rowValues = pivotConfig.rows.map(field => {
+        if (!field || typeof field !== 'string') return ['Invalid Field'];
+        return getUniqueValues(field);
+      });
+      
+      const columnValues = pivotConfig.columns.map(field => {
+        if (!field || typeof field !== 'string') return ['Invalid Field'];
+        return getUniqueValues(field);
+      });
+
+      // Generate row combinations
+      const rowCombinations = generateCombinations(rowValues);
+      if (!Array.isArray(rowCombinations) || rowCombinations.length === 0) {
+        return {
+          rowCombinations: [['No Row Data']],
+          columnCombinations: [['No Data']],
+          pivotData: { 'No Row Data': { 'No Data': 0 } }
+        };
+      }
+      
+      // Generate column combinations
+      const columnCombinations = generateCombinations(columnValues);
+      if (!Array.isArray(columnCombinations) || columnCombinations.length === 0) {
+        return {
+          rowCombinations: rowCombinations,
+          columnCombinations: [['No Column Data']],
+          pivotData: { [rowCombinations[0].join('-')]: { 'No Column Data': 0 } }
+        };
+      }
+
+      // Calculate aggregated values
+      const pivotData: Record<string, Record<string, number>> = {};
+      
+      rowCombinations.forEach(rowComb => {
+        if (!Array.isArray(rowComb)) return;
+        
+        const rowKey = rowComb.join('-');
+        pivotData[rowKey] = {};
+        
+        columnCombinations.forEach(colComb => {
+          if (!Array.isArray(colComb)) return;
+          
+          const colKey = colComb.join('-');
+          
+          // Filter data for this combination
+          const matchingData = filteredData.filter(item => {
+            if (!item || typeof item !== 'object') return false;
+            
+            const rowMatch = pivotConfig.rows.every((field, index) => {
+              if (!field || typeof field !== 'string' || index >= rowComb.length) return false;
+              return item[field] === rowComb[index];
+            });
+            
+            const colMatch = pivotConfig.columns.every((field, index) => {
+              if (!field || typeof field !== 'string' || index >= colComb.length) return false;
+              return item[field] === colComb[index];
+            });
+            
+            return rowMatch && colMatch;
+          });
+          
+          // Aggregate values
+          if (matchingData.length > 0) {
+            pivotConfig.values.forEach(valueField => {
+              if (!valueField || typeof valueField !== 'string') return;
+              
+              const sum = matchingData.reduce((acc, item) => {
+                if (!item || typeof item !== 'object') return acc;
+                const value = item[valueField];
+                const numValue = typeof value === 'number' ? value : 
+                                 typeof value === 'string' ? parseFloat(value) : 0;
+                return acc + (isNaN(numValue) ? 0 : numValue);
+              }, 0);
+              
+              pivotData[rowKey][colKey] = sum;
+            });
+          } else {
+            pivotData[rowKey][colKey] = 0;
+          }
+        });
+      });
+
+      return {
+        rowCombinations,
+        columnCombinations,
+        pivotData
+      };
+    } catch (error) {
+      console.error("Error calculating pivot data:", error);
+      // Return a minimal valid structure
+      return {
+        rowCombinations: [['Error']],
+        columnCombinations: [['Error']],
+        pivotData: { 'Error': { 'Error': 0 } }
+      };
+    }
   };
 
   // Helper function to generate combinations
