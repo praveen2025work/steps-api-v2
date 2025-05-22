@@ -64,6 +64,12 @@ const navSections: NavSection[] = [
         href: '/finance',
         icon: <BarChart4 className="h-5 w-5" />,
         pattern: /^\/finance/
+      },
+      {
+        title: 'User Processes',
+        href: '/dashboard/user-processes',
+        icon: <Layers className="h-5 w-5" />,
+        pattern: /^\/dashboard\/user-processes/
       }
     ]
   },
