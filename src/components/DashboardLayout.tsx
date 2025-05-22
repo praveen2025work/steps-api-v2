@@ -92,10 +92,10 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="" />
-                  <AvatarFallback className="bg-primary/10 text-primary">JD</AvatarFallback>
+                  <AvatarFallback className="bg-primary/10 text-primary">PK</AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium">John Doe</p>
+                  <p className="text-sm font-medium">Praveen Kumar</p>
                   <p className="text-xs text-muted-foreground">
                     Last updated: {lastUpdated.toLocaleTimeString()}
                   </p>
