@@ -102,22 +102,45 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
     try {
       // Simulate AI analysis
       await new Promise(resolve => setTimeout(resolve, 2000));
-      setAiAnalysis(`
-        ## File Analysis: ${fileName}
-        
-        ### Key Insights
-        - Sales are trending upward in the North and West regions
-        - Widget A is the top-performing product by volume
-        - Profit margins are consistent across products (approximately 20%)
-        
-        ### Recommendations
-        1. Increase marketing efforts in the South region to boost sales
-        2. Consider expanding the Widget A product line given its popularity
-        3. Investigate opportunities to improve profit margins across all products
-        
-        ### Anomalies Detected
-        - No significant anomalies detected in the current dataset
-      `);
+      
+      // Using a structured object instead of a markdown string for better rendering
+      setAiAnalysis(JSON.stringify({
+        title: `File Analysis: ${fileName}`,
+        timestamp: new Date().toISOString(),
+        sections: [
+          {
+            title: "Key Insights",
+            type: "insights",
+            items: [
+              { text: "Sales are trending upward in the North and West regions", value: "+15%", sentiment: "positive" },
+              { text: "Widget A is the top-performing product by volume", value: "42%", sentiment: "positive" },
+              { text: "Profit margins are consistent across products", value: "~20%", sentiment: "neutral" }
+            ]
+          },
+          {
+            title: "Recommendations",
+            type: "recommendations",
+            items: [
+              { text: "Increase marketing efforts in the South region to boost sales", priority: "high" },
+              { text: "Consider expanding the Widget A product line given its popularity", priority: "medium" },
+              { text: "Investigate opportunities to improve profit margins across all products", priority: "medium" }
+            ]
+          },
+          {
+            title: "Anomalies Detected",
+            type: "anomalies",
+            items: [
+              { text: "No significant anomalies detected in the current dataset", severity: "none" }
+            ]
+          },
+          {
+            title: "Data Quality",
+            type: "quality",
+            score: 92,
+            details: "High quality data with consistent formatting and no missing values"
+          }
+        ]
+      }));
     } catch (error) {
       console.error('Error running AI analysis:', error);
     } finally {
@@ -194,59 +217,193 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   };
 
   const renderAISection = () => {
+    const renderAnalysisResults = () => {
+      if (!aiAnalysis) return null;
+      
+      try {
+        const analysisData = JSON.parse(aiAnalysis);
+        const { title, timestamp, sections } = analysisData;
+        const formattedDate = new Date(timestamp).toLocaleString();
+        
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold">{title}</h2>
+                <p className="text-sm text-muted-foreground">Generated on {formattedDate}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setAiAnalysis(null)}>
+                Reset
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {sections.map((section: any, index: number) => (
+                <Card key={index} className="overflow-hidden border-l-4 border-l-primary shadow-md hover:shadow-lg transition-shadow duration-300">
+                  <CardHeader className="pb-2 bg-muted/50">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {section.type === "insights" && <BarChart2 className="h-5 w-5 text-primary" />}
+                      {section.type === "recommendations" && <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+                      {section.type === "anomalies" && <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
+                      {section.type === "quality" && <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                      {section.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    {section.type === "insights" && (
+                      <ul className="space-y-3">
+                        {section.items.map((item: any, i: number) => (
+                          <li key={i} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                item.sentiment === "positive" ? "bg-green-500" : 
+                                item.sentiment === "negative" ? "bg-red-500" : "bg-yellow-500"
+                              }`}></div>
+                              <span>{item.text}</span>
+                            </div>
+                            <Badge variant={
+                              item.sentiment === "positive" ? "default" : 
+                              item.sentiment === "negative" ? "destructive" : "outline"
+                            }>
+                              {item.value}
+                            </Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    
+                    {section.type === "recommendations" && (
+                      <ul className="space-y-3">
+                        {section.items.map((item: any, i: number) => (
+                          <li key={i} className="flex items-start gap-3">
+                            <Badge variant={
+                              item.priority === "high" ? "destructive" : 
+                              item.priority === "medium" ? "default" : "outline"
+                            } className="mt-0.5">
+                              {item.priority}
+                            </Badge>
+                            <span>{item.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    
+                    {section.type === "anomalies" && (
+                      <ul className="space-y-3">
+                        {section.items.map((item: any, i: number) => (
+                          <li key={i} className="flex items-center gap-2">
+                            {item.severity !== "none" ? (
+                              <Badge variant="destructive">{item.severity}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+                                No anomalies
+                              </Badge>
+                            )}
+                            <span>{item.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    
+                    {section.type === "quality" && (
+                      <div className="space-y-4">
+                        <div className="flex flex-col">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium">Data Quality Score</span>
+                            <span className={`font-bold text-lg ${
+                              section.score >= 90 ? "text-green-600 dark:text-green-400" : 
+                              section.score >= 70 ? "text-yellow-600 dark:text-yellow-400" : 
+                              "text-red-600 dark:text-red-400"
+                            }`}>{section.score}/100</span>
+                          </div>
+                          <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${
+                                section.score >= 90 ? "bg-green-500" : 
+                                section.score >= 70 ? "bg-yellow-500" : "bg-red-500"
+                              }`} 
+                              style={{ width: `${section.score}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-muted/30 p-3 rounded-md border border-border">
+                          <div className="flex items-start gap-2">
+                            <svg className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-sm">{section.details}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                          <div className="flex flex-col items-center p-2 bg-muted/20 rounded-md border border-border">
+                            <span className="text-xs text-muted-foreground">Completeness</span>
+                            <span className="font-medium">98%</span>
+                          </div>
+                          <div className="flex flex-col items-center p-2 bg-muted/20 rounded-md border border-border">
+                            <span className="text-xs text-muted-foreground">Consistency</span>
+                            <span className="font-medium">95%</span>
+                          </div>
+                          <div className="flex flex-col items-center p-2 bg-muted/20 rounded-md border border-border">
+                            <span className="text-xs text-muted-foreground">Accuracy</span>
+                            <span className="font-medium">90%</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+      } catch (error) {
+        console.error("Error parsing AI analysis:", error);
+        return (
+          <div className="p-4 border border-red-300 bg-red-50 text-red-800 rounded-md">
+            Error displaying AI analysis results. Please try again.
+          </div>
+        );
+      }
+    };
+    
     return (
       <div className="space-y-4">
         {!aiAnalysis && !isAnalyzing ? (
-          <div className="bg-muted p-8 rounded-md text-center">
+          <div className="bg-muted/50 p-8 rounded-md text-center border border-dashed">
             <div className="flex flex-col items-center justify-center space-y-4">
-              <Brain className="h-16 w-16 text-muted-foreground" />
+              <div className="p-4 rounded-full bg-primary/10">
+                <Brain className="h-16 w-16 text-primary" />
+              </div>
               <h3 className="text-xl font-medium">AI Analysis</h3>
               <p className="text-muted-foreground max-w-md mx-auto">
                 Generate insights, detect patterns, and receive recommendations based on the file data.
               </p>
-              <Button onClick={handleRunAIAnalysis}>
+              <Button onClick={handleRunAIAnalysis} className="mt-2" size="lg">
                 Run AI Analysis
               </Button>
             </div>
           </div>
         ) : isAnalyzing ? (
-          <div className="bg-muted p-8 rounded-md text-center">
+          <div className="bg-muted/50 p-8 rounded-md text-center border">
             <div className="flex flex-col items-center justify-center space-y-4">
-              <div className="animate-pulse">
+              <div className="animate-pulse p-4 rounded-full bg-primary/10">
                 <Brain className="h-16 w-16 text-primary" />
               </div>
               <h3 className="text-xl font-medium">Analyzing Data...</h3>
+              <div className="w-64 h-2 bg-muted rounded-full overflow-hidden mx-auto">
+                <div className="h-full bg-primary animate-[progress_2s_ease-in-out_infinite]" style={{ width: '60%' }}></div>
+              </div>
               <p className="text-muted-foreground">
                 Our AI is examining patterns and generating insights from your file.
               </p>
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <h3 className="text-xl font-medium">AI Analysis Results</h3>
-              <Button variant="outline" size="sm" onClick={() => setAiAnalysis(null)}>
-                Reset
-              </Button>
-            </div>
-            <div className="prose max-w-none dark:prose-invert">
-              {aiAnalysis?.split('\n').map((line, index) => {
-                if (line.startsWith('##')) {
-                  return <h2 key={index}>{line.replace('##', '').trim()}</h2>;
-                } else if (line.startsWith('###')) {
-                  return <h3 key={index}>{line.replace('###', '').trim()}</h3>;
-                } else if (line.startsWith('-')) {
-                  return <li key={index}>{line.replace('-', '').trim()}</li>;
-                } else if (line.startsWith('1.') || line.startsWith('2.') || line.startsWith('3.')) {
-                  return <div key={index}>{line}</div>;
-                } else if (line.trim() === '') {
-                  return <br key={index} />;
-                } else {
-                  return <p key={index}>{line}</p>;
-                }
-              })}
-            </div>
-          </div>
+          <ScrollArea className="h-[calc(100vh-250px)]">
+            {renderAnalysisResults()}
+          </ScrollArea>
         )}
       </div>
     );
