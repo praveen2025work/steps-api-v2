@@ -3,8 +3,9 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DashboardLayout from '@/components/DashboardLayout';
 import WorkflowDetailView from '@/components/WorkflowDetailView';
+import ProcessDetailsView from '@/components/workflow/ProcessDetailsView';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, LayoutDashboard, Layers } from 'lucide-react';
 import { WorkflowTask } from '@/components/WorkflowTaskItem';
 import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
 import { getAllStages } from '@/data/stageSpecificData';
@@ -206,6 +207,8 @@ const WorkflowDetailPage = () => {
     applications: [],
     categories: {}
   });
+  // State to toggle between classic and alternative view
+  const [viewMode, setViewMode] = useState<'classic' | 'alternative'>('classic');
   
   // Generate hierarchy data for navigation based on the actual workflow structure
   const generateHierarchyData = React.useCallback(() => {
@@ -405,6 +408,26 @@ const WorkflowDetailPage = () => {
     }
   };
 
+  // Create a process object for the alternative view
+  const processForAlternativeView = {
+    id: workflowData.id,
+    name: workflowData.title,
+    status: "In Progress",
+    assignedTo: "System User",
+    files: workflowData.tasks['stage-001']?.flatMap(task => 
+      task.documents?.map((doc, index) => ({
+        id: `file-${task.id}-${index}`,
+        name: doc.name,
+        type: doc.name.split('.').pop() || '',
+        size: doc.size
+      })) || []
+    ) || [],
+    dependencies: {
+      parent: [],
+      child: []
+    }
+  };
+
   return (
     <>
       <Head>
@@ -414,14 +437,45 @@ const WorkflowDetailPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <DashboardLayout title={workflowData.title}>
+        {/* View Toggle */}
+        <div className="flex justify-end mb-4">
+          <div className="bg-muted rounded-lg p-1 flex">
+            <Button
+              variant={viewMode === 'classic' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('classic')}
+              className="flex items-center gap-1"
+            >
+              <Layers className="h-4 w-4" />
+              <span>Classic View</span>
+            </Button>
+            <Button
+              variant={viewMode === 'alternative' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('alternative')}
+              className="flex items-center gap-1"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              <span>Alternative View</span>
+            </Button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4">
           <div>
-            <WorkflowDetailView 
-              workflowTitle={workflowData.title}
-              progressSteps={workflowData.progressSteps}
-              stages={workflowData.stages}
-              tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
-            />
+            {viewMode === 'classic' ? (
+              <WorkflowDetailView 
+                workflowTitle={workflowData.title}
+                progressSteps={workflowData.progressSteps}
+                stages={workflowData.stages}
+                tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
+              />
+            ) : (
+              <ProcessDetailsView 
+                process={processForAlternativeView}
+                onBack={() => setViewMode('classic')}
+              />
+            )}
           </div>
         </div>
       </DashboardLayout>
