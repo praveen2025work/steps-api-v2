@@ -14,7 +14,9 @@ import {
   Unlock,
   Lock,
   ArrowRight,
-  Clock
+  Clock,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import { useDate } from '@/contexts/DateContext';
 import { formatDate } from '@/lib/dateUtils';
@@ -39,6 +41,8 @@ interface WorkflowUnifiedHeaderProps {
     processing: number;
   };
   lastRefreshed?: Date;
+  viewMode?: 'classic' | 'alternative';
+  onViewToggle?: (mode: 'classic' | 'alternative') => void;
 }
 
 const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
@@ -51,7 +55,9 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
   onToggleLock,
   onRefresh,
   taskCounts,
-  lastRefreshed = new Date()
+  lastRefreshed = new Date(),
+  viewMode = 'classic',
+  onViewToggle
 }) => {
   const router = useRouter();
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
@@ -112,6 +118,30 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
             <Badge variant="outline" className="text-xs">
               {status}
             </Badge>
+          )}
+          
+          {/* View toggle buttons */}
+          {onViewToggle && (
+            <div className="bg-muted rounded-lg p-1 flex ml-2">
+              <Button
+                variant={viewMode === 'classic' ? "default" : "ghost"}
+                size="icon"
+                onClick={() => onViewToggle('classic')}
+                title="Classic View"
+                className="h-6 w-6"
+              >
+                <Layers className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant={viewMode === 'alternative' ? "default" : "ghost"}
+                size="icon"
+                onClick={() => onViewToggle('alternative')}
+                title="Modern View"
+                className="h-6 w-6"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           )}
         </div>
         <div className="flex items-center gap-1">

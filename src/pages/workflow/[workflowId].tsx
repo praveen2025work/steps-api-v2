@@ -423,34 +423,14 @@ const WorkflowDetailPage = () => {
           {/* Main Content - Takes full available height */}
           <div className="flex-1">
             {viewMode === 'classic' ? (
-              <>
-                <div className="flex justify-end mb-2">
-                  <div className="bg-muted rounded-lg p-1 flex">
-                    <Button
-                      variant="default"
-                      size="icon"
-                      onClick={() => setViewMode('classic')}
-                      title="Classic View"
-                    >
-                      <Layers className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setViewMode('alternative')}
-                      title="Modern View"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <WorkflowDetailView 
-                  workflowTitle={workflowData.title}
-                  progressSteps={workflowData.progressSteps}
-                  stages={workflowData.stages}
-                  tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
-                />
-              </>
+              <WorkflowDetailView 
+                workflowTitle={workflowData.title}
+                progressSteps={workflowData.progressSteps}
+                stages={workflowData.stages}
+                tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
+                viewMode={viewMode}
+                onViewToggle={(mode) => setViewMode(mode)}
+              />
             ) : (
               <ModernWorkflowView 
                 workflow={workflowData}

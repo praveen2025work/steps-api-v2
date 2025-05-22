@@ -72,6 +72,8 @@ interface WorkflowDetailViewProps {
   progressSteps: { name: string; progress: number }[];
   stages: { id: string; name: string }[];
   tasks: Record<string, WorkflowTask[]>; // Map of stageId to tasks
+  viewMode?: 'classic' | 'alternative';
+  onViewToggle?: (mode: 'classic' | 'alternative') => void;
 }
 
 interface ActivityLogItem {
@@ -119,6 +121,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   progressSteps,
   stages,
   tasks,
+  viewMode = 'classic',
+  onViewToggle
 }) => {
   const { selectedDate } = useDate();
   const [activeStage, setActiveStage] = useState<string>(stages[0]?.id || '');
@@ -1209,6 +1213,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         onRefresh={handleRefresh}
         taskCounts={calculateTaskCounts()}
         lastRefreshed={lastRefreshed}
+        viewMode={viewMode}
+        onViewToggle={onViewToggle}
       />
 
       {/* Modified to include completion percentage */}
