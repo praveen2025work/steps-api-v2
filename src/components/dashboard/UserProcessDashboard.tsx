@@ -629,6 +629,7 @@ export function UserProcessDashboard() {
                               <Button variant="ghost" size="sm" onClick={() => {
                                 setSelectedFile(null);
                                 setShowFilePreview(false);
+                                setShowWorkflowDetail(true);
                               }}>
                                 <X className="h-4 w-4" />
                               </Button>
@@ -657,6 +658,7 @@ export function UserProcessDashboard() {
                                   onClose={() => {
                                     setSelectedFile(null);
                                     setShowFilePreview(false);
+                                    setShowWorkflowDetail(true);
                                   }} 
                                 />
                               )}
