@@ -33,7 +33,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   onClose
 }) => {
   const [activeSection, setActiveSection] = useState<'data' | 'pivot' | 'ai'>('data');
-  const [activeSheet, setActiveSheet] = useState<string>('');
+  const [activeSheet, setActiveSheet] = useState<string | null>(null);
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);

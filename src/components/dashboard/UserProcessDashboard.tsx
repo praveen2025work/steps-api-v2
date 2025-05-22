@@ -651,7 +651,7 @@ export function UserProcessDashboard() {
                                 ))}
                               </div>
                               
-                              {selectedFile && (
+                              {selectedFile ? (
                                 <AdvancedFilePreview 
                                   fileId={selectedFile.id} 
                                   fileName={selectedFile.name} 
@@ -661,6 +661,10 @@ export function UserProcessDashboard() {
                                     setShowWorkflowDetail(true);
                                   }} 
                                 />
+                              ) : (
+                                <div className="p-4 text-center text-muted-foreground">
+                                  Select a file to preview
+                                </div>
                               )}
                             </div>
                           </CardContent>
