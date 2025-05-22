@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import AdvancedFilePreview from "@/components/files/AdvancedFilePreview";
 import ProcessDetailsView from "@/components/workflow/ProcessDetailsView";
 import StageOverview from "@/components/workflow/StageOverview";
@@ -21,7 +22,13 @@ import {
   Filter, 
   RefreshCw, 
   ChevronRight, 
-  FileText
+  FileText,
+  MoreHorizontal,
+  UserCheck,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Users
 } from "lucide-react";
 
 // Mock data for processes
@@ -30,10 +37,12 @@ const mockProcesses = [
     id: "PROC-001", 
     name: "eRates Validation", 
     application: "eRates", 
+    group: "APAC",
     instance: "Daily Run", 
     stage: "Data Validation", 
     status: "In Progress", 
     assignedTo: "Praveen Kumar", 
+    role: "Validator",
     priority: "High",
     dueDate: "2025-05-22",
     files: [
@@ -61,10 +70,12 @@ const mockProcesses = [
     id: "PROC-002", 
     name: "PnL Calculation", 
     application: "PnL", 
+    group: "EMEA",
     instance: "Daily Run", 
     stage: "Calculation", 
     status: "Pending", 
     assignedTo: "Unassigned", 
+    role: "Approver",
     priority: "Medium",
     dueDate: "2025-05-23",
     files: [
@@ -85,10 +96,12 @@ const mockProcesses = [
     id: "PROC-003", 
     name: "Risk Reporting", 
     application: "Risk", 
+    group: "Global",
     instance: "Daily Run", 
     stage: "Reporting", 
     status: "Completed", 
     assignedTo: "Praveen Kumar", 
+    role: "Reviewer",
     priority: "Low",
     dueDate: "2025-05-21",
     files: [
@@ -108,10 +121,12 @@ const mockProcesses = [
     id: "PROC-004", 
     name: "Compliance Check", 
     application: "Compliance", 
+    group: "Americas",
     instance: "Weekly Run", 
     stage: "Validation", 
     status: "Failed", 
     assignedTo: "Praveen Kumar", 
+    role: "Validator",
     priority: "Critical",
     dueDate: "2025-05-22",
     files: [
@@ -132,10 +147,12 @@ const mockProcesses = [
     id: "PROC-005", 
     name: "Market Data Import", 
     application: "Market Data", 
+    group: "APAC",
     instance: "Daily Run", 
     stage: "Data Import", 
     status: "In Progress", 
     assignedTo: "Praveen Kumar", 
+    role: "Operator",
     priority: "High",
     dueDate: "2025-05-22",
     files: [
@@ -148,6 +165,54 @@ const mockProcesses = [
         { id: "PROC-C005", name: "Market Data Validation", status: "Pending", files: [] },
         { id: "PROC-C006", name: "Market Data Distribution", status: "Pending", files: [] }
       ]
+    }
+  },
+  { 
+    id: "PROC-006", 
+    name: "Rates Submission", 
+    application: "eRates", 
+    group: "EMEA",
+    instance: "Daily Run", 
+    stage: "Submission", 
+    status: "Not Started", 
+    assignedTo: "Unassigned", 
+    role: "Submitter",
+    priority: "Medium",
+    dueDate: "2025-05-23",
+    files: [
+      { id: "FILE-009", name: "rates_submission.xlsx", type: "Excel", size: "1.5 MB", lastModified: "2025-05-22" }
+    ],
+    dependencies: {
+      parent: [
+        { id: "PROC-P006", name: "Rates Validation", status: "In Progress", files: [
+          { id: "FILE-P006", name: "validated_rates.xlsx", type: "Excel", size: "1.3 MB", lastModified: "2025-05-22" }
+        ]}
+      ],
+      child: []
+    }
+  },
+  { 
+    id: "PROC-007", 
+    name: "Regulatory Reporting", 
+    application: "Compliance", 
+    group: "Global",
+    instance: "Monthly Run", 
+    stage: "Reporting", 
+    status: "Not Started", 
+    assignedTo: "Unassigned", 
+    role: "Reporter",
+    priority: "Low",
+    dueDate: "2025-05-30",
+    files: [
+      { id: "FILE-010", name: "regulatory_report.xlsx", type: "Excel", size: "2.8 MB", lastModified: "2025-05-22" }
+    ],
+    dependencies: {
+      parent: [
+        { id: "PROC-P007", name: "Compliance Check", status: "Failed", files: [
+          { id: "FILE-P007", name: "compliance_data.xlsx", type: "Excel", size: "2.2 MB", lastModified: "2025-05-22" }
+        ]}
+      ],
+      child: []
     }
   }
 ];
@@ -169,16 +234,38 @@ const mockSubStageProcess = {
   ]
 };
 
+// Mock data for roles
+const mockRoles = [
+  "Validator",
+  "Approver",
+  "Reviewer",
+  "Operator",
+  "Submitter",
+  "Reporter"
+];
+
+// Mock data for groups
+const mockGroups = [
+  "APAC",
+  "EMEA",
+  "Americas",
+  "Global"
+];
+
 function UserProcessDashboard() {
-  const [selectedTab, setSelectedTab] = useState("inProgress");
+  const [selectedTab, setSelectedTab] = useState("userTrigger");
   const [selectedProcess, setSelectedProcess] = useState<any>(null);
   const [selectedSubStage, setSelectedSubStage] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["In Progress"]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [selectedInstances, setSelectedInstances] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [showAllProcesses, setShowAllProcesses] = useState(true);
+  const [selectedProcesses, setSelectedProcesses] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
   
   // Filter processes based on search term and selected filters
   const filteredProcesses = mockProcesses.filter(process => {
@@ -189,15 +276,32 @@ function UserProcessDashboard() {
     
     const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(process.status);
     const matchesApplication = selectedApplications.length === 0 || selectedApplications.includes(process.application);
+    const matchesGroup = selectedGroups.length === 0 || selectedGroups.includes(process.group);
     const matchesInstance = selectedInstances.length === 0 || selectedInstances.includes(process.instance);
+    const matchesRole = selectedRoles.length === 0 || selectedRoles.includes(process.role);
     
-    return matchesSearch && matchesStatus && matchesApplication && matchesInstance;
+    return matchesSearch && matchesStatus && matchesApplication && matchesGroup && matchesInstance && matchesRole;
   });
 
-  // Set default tab to "inProgress" on initial load
+  // Get processes based on tab selection
+  const getProcessesByTab = (tab: string) => {
+    switch (tab) {
+      case "userTrigger":
+        return filteredProcesses.filter(p => p.status === "In Progress" || p.status === "Pending");
+      case "completed":
+        return filteredProcesses.filter(p => p.status === "Completed");
+      case "notStarted":
+        return filteredProcesses.filter(p => p.status === "Not Started");
+      default:
+        return filteredProcesses;
+    }
+  };
+
+  const tabProcesses = getProcessesByTab(selectedTab);
+
+  // Set default tab on initial load
   useEffect(() => {
-    setSelectedTab("inProgress");
-    setSelectedStatuses(["In Progress"]);
+    setSelectedTab("userTrigger");
   }, []);
 
   // Handle process selection
@@ -216,16 +320,6 @@ function UserProcessDashboard() {
     setSelectedFile(null);
   };
 
-  // Handle process ID click (toggle selection)
-  const handleProcessIdClick = () => {
-    if (selectedSubStage) {
-      setSelectedSubStage(null);
-      setSelectedFile(null);
-    } else {
-      setSelectedSubStage(mockSubStageProcess);
-    }
-  };
-
   // Handle file click
   const handleFileClick = (file: any) => {
     try {
@@ -239,7 +333,35 @@ function UserProcessDashboard() {
     }
   };
 
-  // Handle status filter change
+  // Handle checkbox selection
+  const handleProcessSelection = (processId: string) => {
+    setSelectedProcesses(prev => 
+      prev.includes(processId)
+        ? prev.filter(id => id !== processId)
+        : [...prev, processId]
+    );
+  };
+
+  // Handle select all checkbox
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedProcesses([]);
+    } else {
+      setSelectedProcesses(tabProcesses.map(p => p.id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // Update selectAll state when individual selections change
+  useEffect(() => {
+    if (tabProcesses.length > 0 && selectedProcesses.length === tabProcesses.length) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedProcesses, tabProcesses]);
+
+  // Handle filter changes
   const handleStatusChange = (status: string) => {
     setSelectedStatuses(prev => 
       prev.includes(status) 
@@ -248,7 +370,6 @@ function UserProcessDashboard() {
     );
   };
 
-  // Handle application filter change
   const handleApplicationChange = (application: string) => {
     setSelectedApplications(prev => 
       prev.includes(application) 
@@ -257,7 +378,14 @@ function UserProcessDashboard() {
     );
   };
 
-  // Handle instance filter change
+  const handleGroupChange = (group: string) => {
+    setSelectedGroups(prev => 
+      prev.includes(group) 
+        ? prev.filter(g => g !== group) 
+        : [...prev, group]
+    );
+  };
+
   const handleInstanceChange = (instance: string) => {
     setSelectedInstances(prev => 
       prev.includes(instance) 
@@ -266,23 +394,99 @@ function UserProcessDashboard() {
     );
   };
 
-  // Get unique applications for filter
+  const handleRoleChange = (role: string) => {
+    setSelectedRoles(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role) 
+        : [...prev, role]
+    );
+  };
+
+  // Get unique values for filters
   const uniqueApplications = Array.from(new Set(mockProcesses.map(p => p.application)));
-  
-  // Get unique instances for filter
+  const uniqueGroups = Array.from(new Set(mockProcesses.map(p => p.group)));
   const uniqueInstances = Array.from(new Set(mockProcesses.map(p => p.instance)));
+  const uniqueRoles = Array.from(new Set(mockProcesses.map(p => p.role)));
 
   return (
     <div className="container mx-auto p-4">
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>User Process Dashboard</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle>Process Management Dashboard</CardTitle>
           <CardDescription>
-            Manage and track your assigned processes across all applications
+            Manage and track processes across all applications, groups, and instances
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-4">
+            {/* Filters Bar */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <Select value={selectedApplications.length > 0 ? selectedApplications[0] : ""} onValueChange={(value) => {
+                if (value) handleApplicationChange(value);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Application ▼" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueApplications.map((app) => (
+                    <SelectItem key={app} value={app}>{app}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedGroups.length > 0 ? selectedGroups[0] : ""} onValueChange={(value) => {
+                if (value) handleGroupChange(value);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Group ▼" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueGroups.map((group) => (
+                    <SelectItem key={group} value={group}>{group}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedInstances.length > 0 ? selectedInstances[0] : ""} onValueChange={(value) => {
+                if (value) handleInstanceChange(value);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Instance ▼" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueInstances.map((instance) => (
+                    <SelectItem key={instance} value={instance}>{instance}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedStatuses.length > 0 ? selectedStatuses[0] : ""} onValueChange={(value) => {
+                if (value) handleStatusChange(value);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status ▼" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["In Progress", "Pending", "Completed", "Failed", "Not Started"].map((status) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedRoles.length > 0 ? selectedRoles[0] : ""} onValueChange={(value) => {
+                if (value) handleRoleChange(value);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Role ▼" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueRoles.map((role) => (
+                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="flex items-center space-x-4">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -294,107 +498,104 @@ function UserProcessDashboard() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Select defaultValue="status">
-                <SelectTrigger className="w-[180px]">
-                  <div className="flex items-center">
-                    <Filter className="mr-2 h-4 w-4" />
-                    <span>Filter</span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <div className="p-2">
-                    <div className="font-medium mb-2">Status</div>
-                    <div className="space-y-2">
-                      {["In Progress", "Pending", "Completed", "Failed"].map((status) => (
-                        <div key={status} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`status-${status}`} 
-                            checked={selectedStatuses.includes(status)}
-                            onCheckedChange={() => handleStatusChange(status)}
-                          />
-                          <label htmlFor={`status-${status}`}>{status}</label>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="font-medium mb-2 mt-4">Application</div>
-                    <div className="space-y-2">
-                      {uniqueApplications.map((app) => (
-                        <div key={app} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`app-${app}`} 
-                            checked={selectedApplications.includes(app)}
-                            onCheckedChange={() => handleApplicationChange(app)}
-                          />
-                          <label htmlFor={`app-${app}`}>{app}</label>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="font-medium mb-2 mt-4">Instance</div>
-                    <div className="space-y-2">
-                      {uniqueInstances.map((instance) => (
-                        <div key={instance} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`instance-${instance}`} 
-                            checked={selectedInstances.includes(instance)}
-                            onCheckedChange={() => handleInstanceChange(instance)}
-                          />
-                          <label htmlFor={`instance-${instance}`}>{instance}</label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" title="Refresh">
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
             
             {showAllProcesses && (
-              <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="inProgress">In Progress</TabsTrigger>
-                  <TabsTrigger value="pending">Pending</TabsTrigger>
-                  <TabsTrigger value="completed">Completed</TabsTrigger>
-                </TabsList>
+              <>
+                {/* Tabs */}
+                <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="userTrigger" className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4" />
+                      <span>User Trigger/Approval</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="completed" className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Completed</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="notStarted" className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span>Not Started</span>
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  {/* Tab Content */}
+                  <TabsContent value="userTrigger" className="mt-4">
+                    <ProcessTable 
+                      processes={getProcessesByTab("userTrigger")}
+                      onProcessClick={handleProcessClick}
+                      selectedProcess={selectedProcess}
+                      selectedProcesses={selectedProcesses}
+                      onProcessSelection={handleProcessSelection}
+                      selectAll={selectAll}
+                      onSelectAll={handleSelectAll}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="completed" className="mt-4">
+                    <ProcessTable 
+                      processes={getProcessesByTab("completed")}
+                      onProcessClick={handleProcessClick}
+                      selectedProcess={selectedProcess}
+                      selectedProcesses={selectedProcesses}
+                      onProcessSelection={handleProcessSelection}
+                      selectAll={selectAll}
+                      onSelectAll={handleSelectAll}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="notStarted" className="mt-4">
+                    <ProcessTable 
+                      processes={getProcessesByTab("notStarted")}
+                      onProcessClick={handleProcessClick}
+                      selectedProcess={selectedProcess}
+                      selectedProcesses={selectedProcesses}
+                      onProcessSelection={handleProcessSelection}
+                      selectAll={selectAll}
+                      onSelectAll={handleSelectAll}
+                    />
+                  </TabsContent>
+                </Tabs>
                 
-                <TabsContent value="all" className="mt-4">
-                  <ProcessTable 
-                    processes={filteredProcesses} 
-                    onProcessClick={handleProcessClick}
-                    selectedProcess={selectedProcess}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="inProgress" className="mt-4">
-                  <ProcessTable 
-                    processes={filteredProcesses.filter(p => p.status === "In Progress")} 
-                    onProcessClick={handleProcessClick}
-                    selectedProcess={selectedProcess}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="pending" className="mt-4">
-                  <ProcessTable 
-                    processes={filteredProcesses.filter(p => p.status === "Pending")} 
-                    onProcessClick={handleProcessClick}
-                    selectedProcess={selectedProcess}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="completed" className="mt-4">
-                  <ProcessTable 
-                    processes={filteredProcesses.filter(p => p.status === "Completed")} 
-                    onProcessClick={handleProcessClick}
-                    selectedProcess={selectedProcess}
-                  />
-                </TabsContent>
-              </Tabs>
+                {/* Bulk Actions */}
+                {selectedProcesses.length > 0 && (
+                  <div className="flex items-center justify-between bg-muted/30 p-2 rounded-md">
+                    <span className="text-sm font-medium">{selectedProcesses.length} processes selected</span>
+                    <div className="flex items-center space-x-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="default" size="sm">
+                            Bulk Actions
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            <span>Assign to Team</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <AlertCircle className="mr-2 h-4 w-4" />
+                            <span>Mark as Priority</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            <span>Mark as Complete</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button variant="outline" size="sm" onClick={() => setSelectedProcesses([])}>
+                        Clear Selection
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
             
+            {/* Process Details View */}
             {selectedProcess && !showAllProcesses && (
               <ProcessDetailsView 
                 process={selectedProcess}
@@ -414,33 +615,49 @@ interface ProcessTableProps {
   processes: any[];
   onProcessClick: (process: any) => void;
   selectedProcess: any;
+  selectedProcesses: string[];
+  onProcessSelection: (processId: string) => void;
+  selectAll: boolean;
+  onSelectAll: () => void;
 }
 
 const ProcessTable: React.FC<ProcessTableProps> = ({ 
   processes, 
   onProcessClick,
-  selectedProcess 
+  selectedProcess,
+  selectedProcesses,
+  onProcessSelection,
+  selectAll,
+  onSelectAll
 }) => {
   return (
     <div className="border rounded-lg overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[50px]">
+              <Checkbox 
+                checked={selectAll} 
+                onCheckedChange={onSelectAll}
+                aria-label="Select all processes"
+              />
+            </TableHead>
             <TableHead>ID</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Application</TableHead>
+            <TableHead>Group</TableHead>
             <TableHead>Instance</TableHead>
-            <TableHead>Stage</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Priority</TableHead>
             <TableHead>Due Date</TableHead>
+            <TableHead>Role</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {processes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center py-4">
+              <TableCell colSpan={11} className="text-center py-4">
                 No processes found matching your filters
               </TableCell>
             </TableRow>
@@ -449,18 +666,28 @@ const ProcessTable: React.FC<ProcessTableProps> = ({
               <TableRow 
                 key={process.id} 
                 className={selectedProcess?.id === process.id ? "bg-muted/50" : ""}
-                onClick={() => onProcessClick(process)}
               >
+                <TableCell>
+                  <Checkbox 
+                    checked={selectedProcesses.includes(process.id)}
+                    onCheckedChange={() => onProcessSelection(process.id)}
+                    aria-label={`Select ${process.name}`}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{process.id}</TableCell>
-                <TableCell>{process.name}</TableCell>
+                <TableCell onClick={() => onProcessClick(process)} className="cursor-pointer hover:underline">
+                  {process.name}
+                </TableCell>
                 <TableCell>{process.application}</TableCell>
+                <TableCell>{process.group}</TableCell>
                 <TableCell>{process.instance}</TableCell>
-                <TableCell>{process.stage}</TableCell>
                 <TableCell>
                   <Badge variant={
                     process.status === "Completed" ? "outline" : 
                     process.status === "In Progress" ? "default" : 
                     process.status === "Failed" ? "destructive" : 
+                    process.status === "Not Started" ? "secondary" :
                     "secondary"
                   }>
                     {process.status}
@@ -478,7 +705,13 @@ const ProcessTable: React.FC<ProcessTableProps> = ({
                 </TableCell>
                 <TableCell>{process.dueDate}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm">
+                  <Badge variant="outline" className="bg-muted/30">
+                    <Users className="h-3 w-3 mr-1" />
+                    {process.role}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="sm" onClick={() => onProcessClick(process)}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </TableCell>
