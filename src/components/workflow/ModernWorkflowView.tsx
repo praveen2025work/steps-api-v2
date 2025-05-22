@@ -239,6 +239,18 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
                 Refresh Workflow
               </Button>
               <Button variant="outline" className="w-full justify-start">
+                <User className="h-4 w-4 mr-2" />
+                Assign to Team
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Mark as Complete
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Flag as Priority
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
                 <FileText className="h-4 w-4 mr-2" />
                 Export Report
               </Button>
@@ -564,11 +576,11 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   
   return (
     <div className="space-y-4">
-      {/* Header with workflow info and progress */}
+      {/* Compact header with workflow info and key stats */}
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-3">
+        <CardHeader className="pb-2 pt-3">
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            <div className="flex items-center gap-2">
               {onBack && (
                 <Button 
                   variant="ghost" 
@@ -580,10 +592,19 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
                 </Button>
               )}
               <div>
-                <CardTitle className="text-xl">{workflow.title}</CardTitle>
-                <CardDescription>
-                  Workflow ID: {workflow.id}
-                </CardDescription>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-lg">{workflow.title}</CardTitle>
+                  <Badge variant="outline" className="ml-auto">
+                    {progressPercentage === 100 ? 'Completed' : 'In Progress'}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>ID: {workflow.id}</span>
+                  <span>•</span>
+                  <span>Progress: {progressPercentage}%</span>
+                  <span>•</span>
+                  <span>Last Updated: {new Date().toLocaleDateString()}</span>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -597,62 +618,9 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <Card className="bg-muted/40">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Status</span>
-                  </div>
-                  <Badge variant="outline" className="ml-auto">
-                    {progressPercentage === 100 ? 'Completed' : 'In Progress'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-muted/40">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BarChart2 className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Progress</span>
-                  </div>
-                  <span className="font-medium">{progressPercentage}%</span>
-                </div>
-                <Progress value={progressPercentage} className="h-2 mt-2" />
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-muted/40">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Last Updated</span>
-                  </div>
-                  <span>{new Date().toLocaleDateString()}</span>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-muted/40">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Owner</span>
-                  </div>
-                  <span>System User</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Progress Steps */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+        <CardContent className="pt-0 pb-2">
+          {/* Progress Steps - Horizontal scrollable bar */}
+          <div className="flex items-center gap-2 overflow-x-auto py-2">
             {workflow.progressSteps.map((step: any, index: number) => (
               <React.Fragment key={index}>
                 {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}

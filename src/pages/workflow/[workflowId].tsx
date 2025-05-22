@@ -419,32 +419,33 @@ const WorkflowDetailPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <DashboardLayout title={workflowData.title}>
-        {/* View Toggle */}
-        <div className="flex justify-end mb-4">
-          <div className="bg-muted rounded-lg p-1 flex">
-            <Button
-              variant={viewMode === 'classic' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('classic')}
-              className="flex items-center gap-1"
-            >
-              <Layers className="h-4 w-4" />
-              <span>Classic View</span>
-            </Button>
-            <Button
-              variant={viewMode === 'alternative' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('alternative')}
-              className="flex items-center gap-1"
-            >
-              <Sparkles className="h-4 w-4" />
-              <span>Modern View</span>
-            </Button>
+        <div className="flex flex-col h-full">
+          {/* View Toggle - Moved to the top right corner of the content area */}
+          <div className="flex justify-end mb-2">
+            <div className="bg-muted rounded-lg p-1 flex">
+              <Button
+                variant={viewMode === 'classic' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('classic')}
+                className="flex items-center gap-1"
+              >
+                <Layers className="h-4 w-4" />
+                <span>Classic View</span>
+              </Button>
+              <Button
+                variant={viewMode === 'alternative' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('alternative')}
+                className="flex items-center gap-1"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>Modern View</span>
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          <div>
+          {/* Main Content - Takes full available height */}
+          <div className="flex-1">
             {viewMode === 'classic' ? (
               <WorkflowDetailView 
                 workflowTitle={workflowData.title}
