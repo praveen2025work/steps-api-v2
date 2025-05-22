@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { 
   Search, 
   Filter, 
@@ -21,7 +22,21 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
-  MoreHorizontal
+  MoreHorizontal,
+  Eye,
+  EyeOff,
+  PanelLeft,
+  PanelLeftClose,
+  Network,
+  Bot,
+  UserCircle,
+  ArrowRightCircle,
+  XCircle,
+  CircleDot,
+  X,
+  MessageSquare,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -35,6 +50,10 @@ import { SubStage, StageStatus } from '@/types/workflow';
 import SubStagesList from '@/components/SubStagesList';
 import { useToast } from '@/components/ui/use-toast';
 import { workflowData } from '@/data/workflowData';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { toast as showToast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
+import AdvancedFilePreview from '@/components/files/AdvancedFilePreview';
+import WorkflowDetailView from '@/components/WorkflowDetailView';
 
 // Define the structure for our process item
 interface ProcessItem extends SubStage {
@@ -185,6 +204,16 @@ const UserProcessDashboard: React.FC = () => {
   // Selected process for detailed view
   const [selectedProcess, setSelectedProcess] = useState<ProcessItem | null>(null);
   
+  // File preview and workflow detail states
+  const [showFilePreview, setShowFilePreview] = useState<boolean>(false);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [currentSubStageFiles, setCurrentSubStageFiles] = useState<any[]>([]);
+  const [showWorkflowDetail, setShowWorkflowDetail] = useState<boolean>(true);
+  const [showSubStageCards, setShowSubStageCards] = useState<boolean>(true);
+  const [selectedSubStage, setSelectedSubStage] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState<boolean>(true);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  
   // Load mock data
   useEffect(() => {
     const mockProcesses = generateMockProcesses();
@@ -328,6 +357,84 @@ const UserProcessDashboard: React.FC = () => {
   // Handle process click
   const handleProcessClick = (process: ProcessItem) => {
     setSelectedProcess(process);
+    
+    // Reset file preview and workflow detail states
+    setShowFilePreview(false);
+    setSelectedFile(null);
+    setSelectedSubStage(null);
+    setShowWorkflowDetail(true);
+    setShowSubStageCards(true);
+  };
+  
+  // Handle file preview
+  const handlePreviewFile = (fileName: string) => {
+    setSelectedFile(fileName);
+    setShowFilePreview(true);
+    setShowWorkflowDetail(false);
+  };
+  
+  // Toggle sub-stage cards visibility
+  const toggleSubStageCards = () => {
+    setShowSubStageCards(!showSubStageCards);
+  };
+  
+  // Toggle workflow detail visibility
+  const toggleWorkflowDetail = () => {
+    setShowWorkflowDetail(!showWorkflowDetail);
+  };
+  
+  // Handle process ID click
+  const handleProcessIdClick = (processId: string, subStageId: string) => {
+    // If clicking the same sub-stage, deselect it and hide the preview if it's open
+    if (selectedSubStage === subStageId) {
+      setSelectedSubStage(null);
+      
+      // If file preview is open, close it when deselecting the process
+      if (showFilePreview) {
+        setShowFilePreview(false);
+        setSelectedFile(null);
+      }
+    } else {
+      // Switching to a different sub-stage
+      setSelectedSubStage(subStageId);
+      
+      // Set current sub-stage files if available
+      const process = selectedProcess;
+      if (process && process.files) {
+        const filesList = process.files.map((file, index) => ({
+          id: `file-${process.id}-${index}`,
+          name: file.name,
+          type: file.name.split('.').pop() || '',
+          size: file.size,
+          category: 'download'
+        }));
+        
+        setCurrentSubStageFiles(filesList);
+      }
+    }
+  };
+  
+  // Handle close file preview
+  const handleCloseFilePreview = () => {
+    setShowFilePreview(false);
+    setSelectedFile(null);
+  };
+  
+  // Toggle lock state
+  const toggleLock = () => {
+    setIsLocked(!isLocked);
+    if (isLocked) {
+      showInfoToast("Workflow unlocked - changes can now be made");
+    } else {
+      showInfoToast("Workflow locked");
+    }
+  };
+  
+  // Handle refresh
+  const handleRefresh = () => {
+    setLastRefreshed(new Date());
+    refreshData();
+    showSuccessToast("Workflow data refreshed successfully");
   };
   
   // Reset all filters
@@ -348,6 +455,516 @@ const UserProcessDashboard: React.FC = () => {
       title: "Data refreshed",
       description: "Process data has been refreshed."
     });
+  };
+  
+  // Render the process list
+  const renderProcessList = () => {
+    return (
+      <ScrollArea className="h-[calc(100vh-400px)]">
+        <div className="space-y-4">
+          {filteredProcesses.length > 0 ? (
+            filteredProcesses.map(process => (
+              <Card 
+                key={process.id}
+                className={`p-4 cursor-pointer transition-all duration-200 ${
+                  selectedProcess?.id === process.id ? 'ring-2 ring-blue-500' : ''
+                } ${
+                  process.status === 'in-progress' ? 'relative overflow-hidden border-l-4 border-blue-500' : ''
+                }`}
+                onClick={() => handleProcessClick(process)}
+              >
+                <div className="flex items-start gap-3">
+                  <Checkbox 
+                    checked={selectedProcesses.has(process.id)}
+                    onCheckedChange={() => toggleProcessSelection(process.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className="text-lg font-semibold">{process.name}</h3>
+                        <p className="text-sm text-muted-foreground">{process.processId}</p>
+                      </div>
+                      <Badge variant={
+                        process.status === 'completed' ? 'default' :
+                        process.status === 'in-progress' ? 'secondary' :
+                        process.status === 'failed' ? 'destructive' :
+                        process.status === 'skipped' ? 'outline' : 'default'
+                      }>
+                        {process.status}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm">
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Application:</span>
+                        <span>{process.applicationName}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Group:</span>
+                        <span>{process.groupName}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Instance:</span>
+                        <span>{process.instanceName}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Role:</span>
+                        <span>{process.roleName}</span>
+                      </div>
+                    </div>
+                    
+                    {process.files && process.files.length > 0 && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          {process.files.length} file{process.files.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
+              <h3 className="mt-4 text-lg font-medium">No processes found</h3>
+              <p className="text-muted-foreground mt-2">
+                Try adjusting your filters or search query
+              </p>
+              <Button variant="outline" className="mt-4" onClick={resetFilters}>
+                Reset Filters
+              </Button>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    );
+  };
+  
+  // Render the process detail view
+  const renderProcessDetail = () => {
+    if (!selectedProcess) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <Clock className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
+            <h3 className="mt-4 text-lg font-medium">No process selected</h3>
+            <p className="text-muted-foreground mt-2">
+              Select a process from the list to view details
+            </p>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle>{selectedProcess.name}</CardTitle>
+              <CardDescription>{selectedProcess.processId}</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleLock}
+                title={isLocked ? "Locked - Click to unlock" : "Unlocked - Click to lock"}
+              >
+                {isLocked ? (
+                  <Lock className="h-3.5 w-3.5" />
+                ) : (
+                  <Unlock className="h-3.5 w-3.5" />
+                )}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleRefresh}
+                title="Refresh"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setSelectedProcess(null)}
+                className="lg:hidden"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium mb-1">Status</h4>
+                <Badge variant={
+                  selectedProcess.status === 'completed' ? 'default' :
+                  selectedProcess.status === 'in-progress' ? 'secondary' :
+                  selectedProcess.status === 'failed' ? 'destructive' :
+                  selectedProcess.status === 'skipped' ? 'outline' : 'default'
+                }>
+                  {selectedProcess.status}
+                </Badge>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium mb-1">Progress</h4>
+                <span>{selectedProcess.progress}%</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium mb-1">Application</h4>
+                <span>{selectedProcess.applicationName}</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium mb-1">Group</h4>
+                <span>{selectedProcess.groupName}</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium mb-1">Instance</h4>
+                <span>{selectedProcess.instanceName}</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium mb-1">Role</h4>
+                <span>{selectedProcess.roleName}</span>
+              </div>
+              {selectedProcess.timing?.start && (
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Start Time</h4>
+                  <span>{new Date(selectedProcess.timing.start).toLocaleString()}</span>
+                </div>
+              )}
+              {selectedProcess.duration && (
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Duration</h4>
+                  <span>{selectedProcess.duration}s</span>
+                </div>
+              )}
+            </div>
+            
+            {selectedProcess.message && (
+              <div>
+                <h4 className="text-sm font-medium mb-1">Message</h4>
+                <p className="text-sm">{selectedProcess.message}</p>
+              </div>
+            )}
+            
+            {selectedProcess.files && selectedProcess.files.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-2">Files</h4>
+                <div className="space-y-2">
+                  {selectedProcess.files.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-muted p-2 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        <span>{file.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            // Set current sub-stage files
+                            const filesList = selectedProcess.files.map((f, i) => ({
+                              id: `file-${selectedProcess.id}-${i}`,
+                              name: f.name,
+                              type: f.name.split('.').pop() || '',
+                              size: f.size,
+                              category: 'download'
+                            }));
+                            
+                            setCurrentSubStageFiles(filesList);
+                            handlePreviewFile(file.name);
+                          }}
+                        >
+                          Preview
+                        </Button>
+                        <Button variant="ghost" size="sm">Download</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="flex flex-wrap gap-2">
+              {selectedProcess.config?.canTrigger && (
+                <Button size="sm">
+                  <Play className="h-4 w-4 mr-1" />
+                  Trigger
+                </Button>
+              )}
+              {selectedProcess.config?.canRerun && (
+                <Button size="sm" variant="outline">
+                  <RotateCw className="h-4 w-4 mr-1" />
+                  Rerun
+                </Button>
+              )}
+              {selectedProcess.config?.canSkip && (
+                <Button size="sm" variant="outline">
+                  <SkipForward className="h-4 w-4 mr-1" />
+                  Skip
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+  
+  // Render the file preview and workflow detail view
+  const renderFilePreviewAndWorkflowDetail = () => {
+    return (
+      <div>
+        {/* Control buttons row - only shown during file preview */}
+        {showFilePreview && (
+          <div className="flex items-center gap-2 my-2">
+            {/* Show Process Cards button - far left */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={toggleSubStageCards}
+              title={showSubStageCards ? "Hide process cards" : "Show process cards"}
+            >
+              {showSubStageCards ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </Button>
+
+            {/* Status ribbon and horizontal sub-stage process would go here */}
+            <div className="flex-1 flex justify-center">
+              {/* Display enhanced selected sub-stage info when file preview is open */}
+              {selectedSubStage && (
+                <div className="flex items-center gap-3 px-3 py-1 bg-muted/40 rounded-md">
+                  <div className={`w-1.5 h-6 rounded-sm ${
+                    selectedProcess?.status === 'completed' ? 'bg-green-500' :
+                    selectedProcess?.status === 'in-progress' ? 'bg-blue-500' :
+                    selectedProcess?.status === 'failed' ? 'bg-red-500' :
+                    'bg-gray-300'
+                  }`} />
+                  <div className="text-sm font-medium">{selectedProcess?.name}</div>
+                  <div className="text-xs text-muted-foreground font-mono">{selectedProcess?.processId}</div>
+                  
+                  {/* Additional process details */}
+                  <Separator orientation="vertical" className="h-5 mx-1" />
+                  
+                  {/* Status */}
+                  <Badge variant={
+                    selectedProcess?.status === 'completed' ? 'default' :
+                    selectedProcess?.status === 'in-progress' ? 'secondary' :
+                    selectedProcess?.status === 'failed' ? 'destructive' :
+                    'outline'
+                  } className="text-xs">
+                    {selectedProcess?.status}
+                  </Badge>
+                </div>
+              )}
+            </div>
+
+            {/* Show Workflow Detail button - far right */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={toggleWorkflowDetail}
+              title={showWorkflowDetail ? "Hide workflow detail" : "Show workflow detail"}
+            >
+              {showWorkflowDetail ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
+
+        <div className="flex gap-4">
+          {/* Sub-stage process cards - Only visible when explicitly kept visible */}
+          <div className={`${showFilePreview ? (showSubStageCards ? 'flex-[0.3] relative' : 'hidden') : 'flex-[0.6]'}`}>
+            <div className="space-y-4">
+              {/* Render the selected process as a sub-stage card */}
+              {selectedProcess && (
+                <Collapsible>
+                  <div 
+                    className={`${
+                      selectedProcess.status === 'completed' ? 'border-l-[3px] border-l-green-500' :
+                      selectedProcess.status === 'in-progress' ? 'border-l-[3px] border-l-blue-500' :
+                      selectedProcess.status === 'failed' ? 'border-l-[3px] border-l-red-500' :
+                      'border-l-[3px] border-l-gray-300'
+                    } ${selectedSubStage === selectedProcess.id ? 'bg-primary/5 ring-1 ring-primary/40' : 'bg-background'} p-1.5 rounded-sm mb-1 transition-all duration-200 cursor-pointer hover:bg-muted/30`}
+                    onClick={(e) => {
+                      // Prevent event bubbling for buttons inside the row
+                      if ((e.target as HTMLElement).closest('button')) {
+                        return;
+                      }
+                      handleProcessIdClick(selectedProcess.processId, selectedProcess.id);
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className="text-xs text-muted-foreground font-mono">01</span>
+                          <h3 className="font-medium text-sm">{selectedProcess.name}</h3>
+                          
+                          <div className="flex items-center gap-1 ml-1">
+                            {selectedProcess.status === 'completed' ? (
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                            ) : selectedProcess.status === 'in-progress' ? (
+                              <CircleDot className="h-3 w-3 text-blue-500" />
+                            ) : selectedProcess.status === 'failed' ? (
+                              <XCircle className="h-3 w-3 text-red-500" />
+                            ) : (
+                              <Clock className="h-3 w-3 text-gray-500" />
+                            )}
+                            
+                            <Button 
+                              variant="ghost" 
+                              className={`p-0 h-auto font-mono text-xs ${selectedSubStage === selectedProcess.id ? 'font-bold text-primary' : ''}`}
+                              onClick={() => handleProcessIdClick(selectedProcess.processId, selectedProcess.id)}
+                            >
+                              {selectedProcess.processId}
+                            </Button>
+                            
+                            {selectedProcess.type === 'auto' ? (
+                              <Bot className="h-3 w-3 text-muted-foreground" />
+                            ) : (
+                              <UserCircle className="h-3 w-3 text-muted-foreground" />
+                            )}
+                            
+                            {/* Process-level actions - Context-aware based on status */}
+                            <div className="flex items-center gap-1 ml-1">
+                              
+                              {/* Files button - Always visible */}
+                              {selectedProcess.files && selectedProcess.files.length > 0 && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
+                                  onClick={(e) => {
+                                    // Ensure event doesn't bubble up to parent elements
+                                    e.stopPropagation();
+                                    
+                                    // Set current sub-stage files
+                                    const filesList = selectedProcess.files.map((file, index) => ({
+                                      id: `file-${selectedProcess.id}-${index}`,
+                                      name: file.name,
+                                      type: file.name.split('.').pop() || '',
+                                      size: file.size,
+                                      category: 'download'
+                                    }));
+                                    
+                                    setCurrentSubStageFiles(filesList);
+                                  }}
+                                  title={`View Files (${selectedProcess.files.length})`}
+                                >
+                                  <FileText className="h-3.5 w-3.5" />
+                                  <span className="text-xs">Files</span>
+                                </Button>
+                              )}
+                              
+                              {/* Preview button - Only for processes with files */}
+                              {selectedProcess.files && selectedProcess.files.length > 0 && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
+                                  onClick={(e) => {
+                                    // Ensure event doesn't bubble up to parent elements
+                                    e.stopPropagation();
+                                    
+                                    // Select this sub-stage
+                                    setSelectedSubStage(selectedProcess.id);
+                                    
+                                    // Set current sub-stage files
+                                    const filesList = selectedProcess.files.map((file, index) => ({
+                                      id: `file-${selectedProcess.id}-${index}`,
+                                      name: file.name,
+                                      type: file.name.split('.').pop() || '',
+                                      size: file.size,
+                                      category: 'download'
+                                    }));
+                                    
+                                    setCurrentSubStageFiles(filesList);
+                                    
+                                    // Preview the first file
+                                    if (selectedProcess.files.length > 0) {
+                                      handlePreviewFile(selectedProcess.files[0].name);
+                                    }
+                                  }}
+                                  title="Preview Files"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span className="text-xs">Preview</span>
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 ml-auto">
+                            <span className="text-xs text-muted-foreground">
+                              {selectedProcess.progress}%
+                            </span>
+                            <Progress 
+                              value={selectedProcess.progress} 
+                              className="w-12 h-1.5"
+                              {...(selectedProcess.status === 'failed' && { 
+                                className: "w-12 h-1.5 bg-destructive" 
+                              })}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          {selectedProcess.timing?.start && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>Start: {new Date(selectedProcess.timing.start).toLocaleTimeString()}</span>
+                            </div>
+                          )}
+                          {selectedProcess.duration && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>Duration: {selectedProcess.duration}s</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Messages - Compact with truncation for long messages */}
+                        {selectedProcess.message && (
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {selectedProcess.message.length > 60 
+                              ? `${selectedProcess.message.substring(0, 60)}...` 
+                              : selectedProcess.message}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Collapsible>
+              )}
+            </div>
+          </div>
+
+          {/* File Preview Panel - Only shown when a file is selected */}
+          {showFilePreview && (
+            <div className="flex-1 flex flex-col relative">
+              {currentSubStageFiles.length > 0 && (
+                <AdvancedFilePreview 
+                  fileId={currentSubStageFiles[0].id}
+                  fileName={selectedFile || currentSubStageFiles[0].name}
+                  onClose={handleCloseFilePreview}
+                />
+              )}
+            </div>
+          )}
+          
+          {/* Process Detail Panel */}
+          {!showFilePreview && renderProcessDetail()}
+        </div>
+      </div>
+    );
   };
   
   return (
@@ -524,223 +1141,21 @@ const UserProcessDashboard: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Process list */}
-              <div className={selectedProcess ? "hidden lg:block" : ""}>
-                <ScrollArea className="h-[calc(100vh-400px)]">
-                  <div className="space-y-4">
-                    {filteredProcesses.length > 0 ? (
-                      filteredProcesses.map(process => (
-                        <Card 
-                          key={process.id}
-                          className={`p-4 cursor-pointer transition-all duration-200 ${
-                            selectedProcess?.id === process.id ? 'ring-2 ring-blue-500' : ''
-                          } ${
-                            process.status === 'in-progress' ? 'relative overflow-hidden border-l-4 border-blue-500' : ''
-                          }`}
-                          onClick={() => handleProcessClick(process)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <Checkbox 
-                              checked={selectedProcesses.has(process.id)}
-                              onCheckedChange={() => toggleProcessSelection(process.id)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="mt-1"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2">
-                                <div>
-                                  <h3 className="text-lg font-semibold">{process.name}</h3>
-                                  <p className="text-sm text-muted-foreground">{process.processId}</p>
-                                </div>
-                                <Badge variant={
-                                  process.status === 'completed' ? 'default' :
-                                  process.status === 'in-progress' ? 'secondary' :
-                                  process.status === 'failed' ? 'destructive' :
-                                  process.status === 'skipped' ? 'outline' : 'default'
-                                }>
-                                  {process.status}
-                                </Badge>
-                              </div>
-                              
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-muted-foreground">Application:</span>
-                                  <span>{process.applicationName}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-muted-foreground">Group:</span>
-                                  <span>{process.groupName}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-muted-foreground">Instance:</span>
-                                  <span>{process.instanceName}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-muted-foreground">Role:</span>
-                                  <span>{process.roleName}</span>
-                                </div>
-                              </div>
-                              
-                              {process.files && process.files.length > 0 && (
-                                <div className="flex items-center gap-2 mt-2">
-                                  <FileText className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm text-muted-foreground">
-                                    {process.files.length} file{process.files.length !== 1 ? 's' : ''}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      ))
-                    ) : (
-                      <div className="text-center py-12">
-                        <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
-                        <h3 className="mt-4 text-lg font-medium">No processes found</h3>
-                        <p className="text-muted-foreground mt-2">
-                          Try adjusting your filters or search query
-                        </p>
-                        <Button variant="outline" className="mt-4" onClick={resetFilters}>
-                          Reset Filters
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
+            {selectedProcess ? (
+              renderFilePreviewAndWorkflowDetail()
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Process list */}
+                <div>
+                  {renderProcessList()}
+                </div>
+                
+                {/* Empty process detail */}
+                <div className="hidden lg:block">
+                  {renderProcessDetail()}
+                </div>
               </div>
-              
-              {/* Process detail */}
-              <div className={!selectedProcess ? "hidden lg:block" : ""}>
-                {selectedProcess ? (
-                  <Card>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle>{selectedProcess.name}</CardTitle>
-                          <CardDescription>{selectedProcess.processId}</CardDescription>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => setSelectedProcess(null)}
-                          className="lg:hidden"
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">Status</h4>
-                            <Badge variant={
-                              selectedProcess.status === 'completed' ? 'default' :
-                              selectedProcess.status === 'in-progress' ? 'secondary' :
-                              selectedProcess.status === 'failed' ? 'destructive' :
-                              selectedProcess.status === 'skipped' ? 'outline' : 'default'
-                            }>
-                              {selectedProcess.status}
-                            </Badge>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">Progress</h4>
-                            <span>{selectedProcess.progress}%</span>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">Application</h4>
-                            <span>{selectedProcess.applicationName}</span>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">Group</h4>
-                            <span>{selectedProcess.groupName}</span>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">Instance</h4>
-                            <span>{selectedProcess.instanceName}</span>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">Role</h4>
-                            <span>{selectedProcess.roleName}</span>
-                          </div>
-                          {selectedProcess.timing?.start && (
-                            <div>
-                              <h4 className="text-sm font-medium mb-1">Start Time</h4>
-                              <span>{new Date(selectedProcess.timing.start).toLocaleString()}</span>
-                            </div>
-                          )}
-                          {selectedProcess.duration && (
-                            <div>
-                              <h4 className="text-sm font-medium mb-1">Duration</h4>
-                              <span>{selectedProcess.duration}s</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {selectedProcess.message && (
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">Message</h4>
-                            <p className="text-sm">{selectedProcess.message}</p>
-                          </div>
-                        )}
-                        
-                        {selectedProcess.files && selectedProcess.files.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium mb-2">Files</h4>
-                            <div className="space-y-2">
-                              {selectedProcess.files.map((file, index) => (
-                                <div key={index} className="flex items-center justify-between bg-muted p-2 rounded-md">
-                                  <div className="flex items-center gap-2">
-                                    <FileText className="h-4 w-4" />
-                                    <span>{file.name}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Button variant="ghost" size="sm">Preview</Button>
-                                    <Button variant="ghost" size="sm">Download</Button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="flex flex-wrap gap-2">
-                          {selectedProcess.config?.canTrigger && (
-                            <Button size="sm">
-                              <Play className="h-4 w-4 mr-1" />
-                              Trigger
-                            </Button>
-                          )}
-                          {selectedProcess.config?.canRerun && (
-                            <Button size="sm" variant="outline">
-                              <RotateCw className="h-4 w-4 mr-1" />
-                              Rerun
-                            </Button>
-                          )}
-                          {selectedProcess.config?.canSkip && (
-                            <Button size="sm" variant="outline">
-                              <SkipForward className="h-4 w-4 mr-1" />
-                              Skip
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <Clock className="h-12 w-12 mx-auto text-muted-foreground opacity-20" />
-                      <h3 className="mt-4 text-lg font-medium">No process selected</h3>
-                      <p className="text-muted-foreground mt-2">
-                        Select a process from the list to view details
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
