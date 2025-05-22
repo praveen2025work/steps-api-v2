@@ -251,4 +251,19 @@
   html, body, #__next {
     min-height: 100vh;
   }
+  
+  /* Hide scrollbars but keep functionality */
+  * {
+    /* For Firefox */
+    scrollbar-width: none;
+    /* For IE and Edge (legacy) */
+    -ms-overflow-style: none;
+  }
+  
+  /* For WebKit browsers (Chrome, Safari, newer Edge) */
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
 }
