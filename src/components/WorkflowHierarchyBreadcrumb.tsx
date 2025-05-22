@@ -114,7 +114,7 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
   };
   
   return (
-    <div>
+    <div className="bg-card border rounded-md shadow-sm p-2">
       <Breadcrumb>
         <BreadcrumbList>
           {config.showHome && config.homeIcon && (

@@ -106,9 +106,13 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
       <CardHeader className="py-1.5 px-3 flex flex-row justify-between items-center">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium">{workflowTitle}</h3>
-          <Badge variant="outline" className="text-xs">
-            {status}
-          </Badge>
+          {status === "Active" ? (
+            <div className="w-2 h-2 rounded-full bg-green-500" title="Active"></div>
+          ) : (
+            <Badge variant="outline" className="text-xs">
+              {status}
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <div className="flex items-center mr-3 text-xs text-muted-foreground">
@@ -215,9 +219,10 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
               ))}
             </div>
           
-          <div className="flex flex-wrap gap-2 mt-1">
-            {/* Left side: Task Counts in a more compact layout */}
-            <div className="flex-1 min-w-[280px]">
+          <div className="flex flex-wrap gap-2 mt-1 items-center justify-between">
+            {/* Action Buttons with Status Counts */}
+            <div className="flex items-center gap-3">
+              {/* Status Counts in a more compact layout */}
               <div className="flex gap-2 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -236,35 +241,38 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                   <span>Failed: {defaultTaskCounts.failed + defaultTaskCounts.rejected}</span>
                 </div>
               </div>
-            </div>
-            
-            {/* Right side: Action Buttons */}
-            <div className="flex gap-1">
-              <Link 
-                href={`/finance?workflowId=${workflowId}&workflowName=${workflowTitle}`}
-              >
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-7 text-xs"
-                >
-                  <BarChart4 className="h-3.5 w-3.5 mr-1" />
-                  Finance
-                </Button>
-              </Link>
               
-              <Link 
-                href="/support"
-              >
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-7 text-xs"
+              {/* Separator */}
+              <div className="h-5 w-px bg-gray-200"></div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-1">
+                <Link 
+                  href={`/finance?workflowId=${workflowId}&workflowName=${workflowTitle}`}
                 >
-                  <AlertCircle className="h-3.5 w-3.5 mr-1" />
-                  Support
-                </Button>
-              </Link>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="h-7 text-xs"
+                  >
+                    <BarChart4 className="h-3.5 w-3.5 mr-1" />
+                    Finance
+                  </Button>
+                </Link>
+                
+                <Link 
+                  href="/support"
+                >
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="h-7 text-xs"
+                  >
+                    <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                    Support
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
