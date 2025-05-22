@@ -575,12 +575,20 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
           ) : (
             <div className="workflow-details-container">
               <Tabs value={workflowDetailTab} onValueChange={setWorkflowDetailTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-0">
-                  <TabsTrigger value="stageOverview">Stage</TabsTrigger>
-                  <TabsTrigger value="processOverview">Process</TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto">
+                  <TabsList className="mb-0 w-max min-w-full">
+                    <TabsTrigger value="stageOverview">Stage Overview</TabsTrigger>
+                    <TabsTrigger value="appConfig">App Config</TabsTrigger>
+                    <TabsTrigger value="globalConfig">Global Config</TabsTrigger>
+                    <TabsTrigger value="processOverview">Process Overview</TabsTrigger>
+                    <TabsTrigger value="processConfig">Process Config</TabsTrigger>
+                    <TabsTrigger value="files">Files</TabsTrigger>
+                    <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+                    <TabsTrigger value="queries">Queries</TabsTrigger>
+                  </TabsList>
+                </div>
                 
-                <ScrollArea className="h-[calc(100vh-300px)] p-4">
+                <ScrollArea className="h-[calc(100vh-300px)] p-4 overflow-x-auto">
                   <TabsContent value="stageOverview" className="mt-0 space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-sm font-medium">Stage Overview</h3>
@@ -655,7 +663,7 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                         <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processOverview")}>
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("dependencies")}>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("files")}>
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
@@ -666,11 +674,46 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                     />
                   </TabsContent>
                   
+                  <TabsContent value="files" className="mt-0 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">Files</h3>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processConfig")}>
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("dependencies")}>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="border rounded-md p-4">
+                        <h4 className="font-medium mb-2">Process Files</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {(currentSubStage?.files || currentProcess?.files)?.map((file: any) => (
+                            <Button 
+                              key={file.id}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleFileClick(file)}
+                              className="flex items-center"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              {file.name || 'Unnamed File'}
+                            </Button>
+                          )) || (
+                            <div className="text-muted-foreground text-sm">No files available</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
                   <TabsContent value="dependencies" className="mt-0 space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-sm font-medium">Dependencies</h3>
                       <div className="flex space-x-1">
-                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processConfig")}>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("files")}>
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("queries")}>
@@ -683,7 +726,7 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       processName={currentProcess?.name || ''} 
                       onDependencyClick={(dependency) => {
                         // Handle dependency click - could navigate to the dependency
-                        console.log("Dependency clicked:", dependency);
+                        console.log("Dependency clicke:", dependency);
                       }}
                     />
                   </TabsContent>
@@ -719,12 +762,20 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
             </CardHeader>
             <CardContent className="p-0">
               <Tabs value={workflowDetailTab} onValueChange={setWorkflowDetailTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-0">
-                  <TabsTrigger value="stageOverview">Stage</TabsTrigger>
-                  <TabsTrigger value="processOverview">Process</TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto">
+                  <TabsList className="mb-0 w-max min-w-full">
+                    <TabsTrigger value="stageOverview">Stage Overview</TabsTrigger>
+                    <TabsTrigger value="appConfig">App Config</TabsTrigger>
+                    <TabsTrigger value="globalConfig">Global Config</TabsTrigger>
+                    <TabsTrigger value="processOverview">Process Overview</TabsTrigger>
+                    <TabsTrigger value="processConfig">Process Config</TabsTrigger>
+                    <TabsTrigger value="files">Files</TabsTrigger>
+                    <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+                    <TabsTrigger value="queries">Queries</TabsTrigger>
+                  </TabsList>
+                </div>
                 
-                <ScrollArea className="h-[calc(100vh-300px)] p-4">
+                <ScrollArea className="h-[calc(100vh-300px)] p-4 overflow-x-auto">
                   <TabsContent value="stageOverview" className="mt-0 space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-sm font-medium">Stage Overview</h3>
@@ -799,7 +850,7 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                         <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processOverview")}>
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("dependencies")}>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("files")}>
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
@@ -810,11 +861,46 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                     />
                   </TabsContent>
                   
+                  <TabsContent value="files" className="mt-0 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium">Files</h3>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processConfig")}>
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("dependencies")}>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="border rounded-md p-4">
+                        <h4 className="font-medium mb-2">Process Files</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {(currentSubStage?.files || currentProcess?.files)?.map((file: any) => (
+                            <Button 
+                              key={file.id}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleFileClick(file)}
+                              className="flex items-center"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              {file.name || 'Unnamed File'}
+                            </Button>
+                          )) || (
+                            <div className="text-muted-foreground text-sm">No files available</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
                   <TabsContent value="dependencies" className="mt-0 space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-sm font-medium">Dependencies</h3>
                       <div className="flex space-x-1">
-                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("processConfig")}>
+                        <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("files")}>
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setWorkflowDetailTab("queries")}>
