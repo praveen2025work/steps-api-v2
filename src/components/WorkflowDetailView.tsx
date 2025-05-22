@@ -209,7 +209,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const activeStageTasks = tasks[activeStage] || [];
   const activeStageInfo = stages.find(stage => stage.id === activeStage);
 
-  // Updated mock data with different statuses
+  // Enhanced mock data with more processes and different statuses
   const mockSubStages: SubStage[] = [
     { 
       id: 'trigger_file',
@@ -237,7 +237,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         completedOn: '2025-04-12T07:35:00'
       },
       files: [
-        { name: 'trigger.dat', type: 'download', size: '2 KB' }
+        { name: 'trigger.dat', type: 'download', size: '2 KB' },
+        { name: 'trigger_log.txt', type: 'preview', size: '5 KB' },
+        { name: 'trigger_config.json', type: 'preview', size: '1 KB' }
       ],
       messages: ['Successfully created trigger file'],
       dependencies: [
@@ -262,18 +264,20 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         lastRun: null
       },
       meta: {
-        updatedBy: null,
-        updatedOn: null,
-        lockedBy: null,
-        lockedOn: null,
+        updatedBy: 'Jane Smith',
+        updatedOn: '2025-04-12T08:10:00',
+        lockedBy: 'Jane Smith',
+        lockedOn: '2025-04-12T08:05:00',
         completedBy: null,
         completedOn: null
       },
       files: [
         { name: 'recurring_adj.xlsx', type: 'upload', size: '1.8 MB' },
-        { name: 'adj_template.xlsx', type: 'download', size: '250 KB' }
+        { name: 'adj_template.xlsx', type: 'download', size: '250 KB' },
+        { name: 'adj_validation.log', type: 'preview', size: '120 KB' },
+        { name: 'adj_history.csv', type: 'download', size: '450 KB' }
       ],
-      messages: [],
+      messages: ['File upload in progress', 'Validation checks running'],
       dependencies: [
         { name: 'SOD Roll', status: 'completed', id: 'sod_roll' }
       ]
@@ -305,10 +309,79 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       },
       files: [
         { name: 'dod_rules.xlsx', type: 'upload', size: '950 KB' },
-        { name: 'dod_template.xlsx', type: 'download', size: '180 KB' }
+        { name: 'dod_template.xlsx', type: 'download', size: '180 KB' },
+        { name: 'dod_rules_guide.pdf', type: 'download', size: '1.2 MB' }
       ],
-      messages: [],
+      messages: ['Awaiting file upload'],
       dependencies: []
+    },
+    { 
+      id: 'market_data_load',
+      name: 'Market Data Load',
+      type: 'auto',
+      status: 'completed',
+      progress: 100,
+      processId: 'PROC-1240',
+      timing: {
+        start: '08:30:00',
+        duration: '10m',
+        avgDuration: '8m',
+        avgStart: '08:30 AM'
+      },
+      stats: {
+        success: '98%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T08:38:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: 'System',
+        completedOn: '2025-04-12T08:38:00'
+      },
+      files: [
+        { name: 'market_data.csv', type: 'download', size: '5.2 MB' },
+        { name: 'market_summary.xlsx', type: 'download', size: '1.1 MB' },
+        { name: 'market_load.log', type: 'preview', size: '85 KB' }
+      ],
+      messages: ['Market data loaded successfully', 'Processed 15,230 data points'],
+      dependencies: []
+    },
+    { 
+      id: 'fx_rates_update',
+      name: 'FX Rates Update',
+      type: 'auto',
+      status: 'completed',
+      progress: 100,
+      processId: 'PROC-1241',
+      timing: {
+        start: '08:45:00',
+        duration: '5m',
+        avgDuration: '4m',
+        avgStart: '08:45 AM'
+      },
+      stats: {
+        success: '99%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T08:49:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: 'System',
+        completedOn: '2025-04-12T08:49:00'
+      },
+      files: [
+        { name: 'fx_rates.json', type: 'preview', size: '120 KB' },
+        { name: 'fx_rates.xlsx', type: 'download', size: '350 KB' },
+        { name: 'fx_update.log', type: 'preview', size: '45 KB' }
+      ],
+      messages: ['FX rates updated successfully', 'Updated 42 currency pairs'],
+      dependencies: [
+        { name: 'Market Data Load', status: 'completed', id: 'market_data_load' }
+      ]
     },
     { 
       id: 'balance_check',
@@ -337,11 +410,51 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       },
       files: [
         { name: 'balance_report.xlsx', type: 'download', size: '2.2 MB' },
-        { name: 'exceptions.log', type: 'preview', size: '120 KB' }
+        { name: 'exceptions.log', type: 'preview', size: '120 KB' },
+        { name: 'balance_summary.pdf', type: 'download', size: '850 KB' },
+        { name: 'balance_details.csv', type: 'download', size: '3.5 MB' }
       ],
-      messages: [],
+      messages: ['Waiting for dependencies to complete'],
       dependencies: [
-        { name: 'Books Open For Correction', status: 'completed', id: 'books_open' }
+        { name: 'Books Open For Correction', status: 'completed', id: 'books_open' },
+        { name: 'FX Rates Update', status: 'completed', id: 'fx_rates_update' }
+      ]
+    },
+    { 
+      id: 'risk_calculation',
+      name: 'Risk Calculation',
+      type: 'auto',
+      status: 'failed',
+      progress: 65,
+      processId: 'PROC-1242',
+      timing: {
+        start: '09:00:00',
+        duration: '15m',
+        avgDuration: '12m',
+        avgStart: '09:00 AM'
+      },
+      stats: {
+        success: '92%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T09:08:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'risk_report.xlsx', type: 'download', size: '1.8 MB' },
+        { name: 'risk_calculation.log', type: 'preview', size: '250 KB' },
+        { name: 'error_details.json', type: 'preview', size: '35 KB' },
+        { name: 'risk_metrics.csv', type: 'download', size: '1.2 MB' }
+      ],
+      messages: ['Process failed: Missing market data for APAC region', 'Contact support for assistance'],
+      dependencies: [
+        { name: 'Market Data Load', status: 'completed', id: 'market_data_load' },
+        { name: 'FX Rates Update', status: 'completed', id: 'fx_rates_update' }
       ]
     },
     { 
@@ -371,12 +484,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       },
       files: [
         { name: 'rec_adjustments.xlsx', type: 'download', size: '1.8 MB' },
-        { name: 'adj_log.txt', type: 'preview', size: '95 KB' }
+        { name: 'adj_log.txt', type: 'preview', size: '95 KB' },
+        { name: 'adj_summary.pdf', type: 'download', size: '750 KB' },
+        { name: 'adj_details.csv', type: 'download', size: '2.1 MB' }
       ],
-      messages: [],
+      messages: ['Waiting for file availability'],
       dependencies: [
         { name: 'Books Open For Correction', status: 'completed', id: 'books_open' },
-        { name: 'File Availability - Recurring Adjustment', status: 'not-started', id: 'file_rec_adj' }
+        { name: 'File Availability - Recurring Adjustment', status: 'in-progress', id: 'file_rec_adj' }
       ]
     },
     { 
@@ -406,11 +521,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       },
       files: [
         { name: 'non_rec_adj.xlsx', type: 'upload', size: '1.4 MB' },
-        { name: 'adj_template.xlsx', type: 'download', size: '230 KB' }
+        { name: 'adj_template.xlsx', type: 'download', size: '230 KB' },
+        { name: 'adj_guidelines.pdf', type: 'download', size: '1.5 MB' },
+        { name: 'historical_adj.xlsx', type: 'download', size: '2.8 MB' }
       ],
-      messages: [],
+      messages: ['Awaiting manual input'],
       dependencies: [
-        { name: 'SOD Roll', status: 'completed', id: 'sod_roll' }
+        { name: 'SOD Roll', status: 'completed', id: 'sod_roll' },
+        { name: 'Balance in Closed, Central, Default And Other Auto Excluded Books', status: 'not-started', id: 'balance_check' }
       ]
     },
     { 
@@ -440,12 +558,88 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       },
       files: [
         { name: 'dod_movement.xlsx', type: 'download', size: '1.9 MB' },
-        { name: 'movement_log.txt', type: 'preview', size: '110 KB' }
+        { name: 'movement_log.txt', type: 'preview', size: '110 KB' },
+        { name: 'pnl_summary.pdf', type: 'download', size: '1.2 MB' },
+        { name: 'movement_details.csv', type: 'download', size: '3.2 MB' },
+        { name: 'historical_comparison.xlsx', type: 'download', size: '2.5 MB' }
       ],
-      messages: [],
+      messages: ['Waiting for dependencies to complete'],
       dependencies: [
         { name: 'File Availability - DOD Rule', status: 'not-started', id: 'file_dod' },
-        { name: 'Recurring Adjustments', status: 'not-started', id: 'recurring_adj' }
+        { name: 'Recurring Adjustments', status: 'not-started', id: 'recurring_adj' },
+        { name: 'Risk Calculation', status: 'failed', id: 'risk_calculation' }
+      ]
+    },
+    { 
+      id: 'compliance_check',
+      name: 'Compliance Check',
+      type: 'auto',
+      status: 'not-started',
+      progress: 0,
+      processId: 'PROC-1247',
+      timing: {
+        start: '11:00:00',
+        duration: '15m',
+        avgDuration: '12m',
+        avgStart: '11:00 AM'
+      },
+      stats: {
+        success: '97%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'compliance_report.pdf', type: 'download', size: '2.1 MB' },
+        { name: 'compliance_log.txt', type: 'preview', size: '85 KB' },
+        { name: 'regulatory_checks.xlsx', type: 'download', size: '1.8 MB' },
+        { name: 'compliance_details.csv', type: 'download', size: '2.4 MB' }
+      ],
+      messages: ['Waiting for PnL review to complete'],
+      dependencies: [
+        { name: 'Review Daily PnL-Generate DoD Movement', status: 'not-started', id: 'review_pnl_dod' }
+      ]
+    },
+    { 
+      id: 'final_approval',
+      name: 'Final Approval',
+      type: 'manual',
+      status: 'not-started',
+      progress: 0,
+      processId: 'PROC-1248',
+      timing: {
+        start: '11:30:00',
+        duration: '30m',
+        avgDuration: '25m',
+        avgStart: '11:30 AM'
+      },
+      stats: {
+        success: '99%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'approval_form.pdf', type: 'upload', size: '1.2 MB' },
+        { name: 'approval_template.docx', type: 'download', size: '350 KB' },
+        { name: 'signoff_checklist.xlsx', type: 'download', size: '450 KB' }
+      ],
+      messages: ['Awaiting all dependencies to complete'],
+      dependencies: [
+        { name: 'Compliance Check', status: 'not-started', id: 'compliance_check' },
+        { name: 'Post Non-recurring Adjustments', status: 'not-started', id: 'non_rec_adj' }
       ]
     }
   ];
@@ -675,29 +869,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         
         setCurrentSubStageFiles(filesList);
         
-        // Exception case: When switching to a different sub-stage process card
-        // Automatically show files and preview the first file
-        if (subStage.files.length > 0) {
-          // Navigate to files section
-          setRightPanelContent('documents');
-          setRightPanelOpen(true);
-          
-          // Auto-preview the first file
-          setSelectedFile(subStage.files[0].name);
-          setShowFilePreview(true);
-          // Hide workflow detail to give more space to file preview
-          setShowWorkflowDetail(false);
-          setShowSubStageCards(false);
-        } else {
-          // If no files, just show the process overview
-          setRightPanelContent('process-overview');
-          setRightPanelOpen(true);
-          setIsRightPanelExpanded(true);
-          
-          // Ensure file preview is closed
-          setShowFilePreview(false);
-          setSelectedFile(null);
-        }
+        // Only show process overview by default, don't auto-preview files
+        setRightPanelContent('process-overview');
+        setRightPanelOpen(true);
+        setIsRightPanelExpanded(true);
+        
+        // Ensure file preview is closed when just clicking on a process card
+        setShowFilePreview(false);
+        setSelectedFile(null);
       } else {
         // If no sub-stage or no files, just show the process overview
         setRightPanelContent('process-overview');
@@ -734,6 +913,21 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     // Explicitly ensure file preview is closed
     setShowFilePreview(false);
     setSelectedFile(null);
+  };
+  
+  // Function to preview a file from a process
+  const handlePreviewFile = (fileName: string) => {
+    // If we're already in preview mode, update the file
+    setSelectedFile(fileName);
+    setShowFilePreview(true);
+    
+    // In preview mode, hide workflow detail to give more space
+    setShowWorkflowDetail(false);
+    
+    // If sub-stage cards are hidden, show them
+    if (!showSubStageCards) {
+      setShowSubStageCards(true);
+    }
   };
   
   const toggleSubStageCards = () => {
@@ -799,10 +993,34 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           setCurrentSubStageFiles([fileItem]);
         };
         
+        // When in preview mode, show all files from the selected process
+        const allProcessFiles = selectedSubStage 
+          ? (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+              .find(s => s.id === selectedSubStage)?.files || []
+          : [];
+          
+        // Convert process files to document format
+        const processDocuments = allProcessFiles.map((file, index) => ({
+          id: `file-${selectedSubStage}-${index}`,
+          name: file.name,
+          type: file.name.split('.').pop() || '',
+          size: file.size,
+          updatedAt: '2025-04-14 02:30',
+          updatedBy: 'System',
+          category: file.type as 'download' | 'upload'
+        }));
+        
+        // Combine process-specific files with stage documents
+        const combinedDocuments = showFilePreview 
+          ? processDocuments 
+          : (stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments);
+        
         return (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-medium">Files</h3>
+              <h3 className="text-base font-medium">
+                {showFilePreview ? 'Process Files' : 'Files'}
+              </h3>
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
@@ -813,7 +1031,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     e.stopPropagation();
                     
                     // If there are documents, preview the first one
-                    const docs = stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments;
+                    const docs = combinedDocuments;
                     if (docs.length > 0) {
                       handleDocumentPreview(docs[0]);
                     }
@@ -825,7 +1043,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               </div>
             </div>
             <DocumentsList 
-              documents={stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments} 
+              documents={combinedDocuments} 
               onPreview={(document) => {
                 // Ensure we have a clean event handler that won't be affected by other state changes
                 handleDocumentPreview(document);
@@ -1204,6 +1422,43 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                               >
                                 <FileText className="h-3.5 w-3.5" />
                                 <span className="text-xs">Files</span>
+                              </Button>
+                            )}
+                            
+                            {/* Preview button - Only for processes with files */}
+                            {subStage.files && subStage.files.length > 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
+                                onClick={(e) => {
+                                  // Ensure event doesn't bubble up to parent elements
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  
+                                  // Select this sub-stage
+                                  setSelectedSubStage(subStage.id);
+                                  
+                                  // Set current sub-stage files
+                                  const filesList = subStage.files.map((file, index) => ({
+                                    id: `file-${subStage.id}-${index}`,
+                                    name: file.name,
+                                    type: file.name.split('.').pop() || '',
+                                    size: file.size,
+                                    category: file.type
+                                  }));
+                                  
+                                  setCurrentSubStageFiles(filesList);
+                                  
+                                  // Preview the first file
+                                  if (subStage.files.length > 0) {
+                                    handlePreviewFile(subStage.files[0].name);
+                                  }
+                                }}
+                                title="Preview Files"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                <span className="text-xs">Preview</span>
                               </Button>
                             )}
                             

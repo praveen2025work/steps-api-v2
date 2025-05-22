@@ -72,9 +72,14 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents, onPreview }) =
 
   const handlePreview = (document: Document) => {
     console.log(`Previewing document ${document.id}`);
-    setPreviewFile(document);
     
-    // If an external preview handler is provided, call it too
+    // Only set the preview file if no external handler is provided
+    // This prevents double-preview when used in WorkflowDetailView
+    if (!onPreview) {
+      setPreviewFile(document);
+    }
+    
+    // If an external preview handler is provided, call it
     if (onPreview) {
       onPreview(document);
     }
