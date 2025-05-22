@@ -22,14 +22,14 @@ interface FileData {
 }
 
 interface AdvancedFilePreviewProps {
-  fileId: string;
-  fileName: string;
+  fileId?: string;
+  fileName?: string;
   onClose: () => void;
 }
 
 const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
-  fileId,
-  fileName,
+  fileId = '',
+  fileName = 'Unknown File',
   onClose
 }) => {
   const [activeSection, setActiveSection] = useState<'data' | 'pivot' | 'ai'>('data');
@@ -41,6 +41,12 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
 
   useEffect(() => {
+    // Don't fetch if fileId is empty
+    if (!fileId) {
+      setIsLoading(false);
+      return;
+    }
+    
     const fetchFileData = async () => {
       setIsLoading(true);
       try {
@@ -50,7 +56,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
         
         const mockData: FileData = {
           id: fileId,
-          name: fileName,
+          name: fileName || 'Unknown File',
           sheets: {
             'Sheet1': {
               headers: ['Date', 'Region', 'Product', 'Sales', 'Profit'],
@@ -86,7 +92,10 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
         };
         
         setFileData(mockData);
-        setActiveSheet(Object.keys(mockData.sheets)[0]);
+        // Safely set active sheet only if sheets exist
+        if (mockData.sheets && Object.keys(mockData.sheets).length > 0) {
+          setActiveSheet(Object.keys(mockData.sheets)[0]);
+        }
       } catch (error) {
         console.error('Error fetching file data:', error);
       } finally {
@@ -251,12 +260,21 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       if (!aiAnalysis) return null;
       
       try {
-        // No need to parse since we're storing as an object directly
-        const { title, timestamp, sections } = aiAnalysis;
+        // Validate aiAnalysis is an object
+        if (!aiAnalysis || typeof aiAnalysis !== 'object') {
+          return <div className="p-4 text-center text-muted-foreground">Invalid analysis data</div>;
+        }
+        
+        // Safely destructure with defaults
+        const { 
+          title = 'Analysis Results', 
+          timestamp = new Date().toISOString(), 
+          sections = [] 
+        } = aiAnalysis;
         
         // Validate sections is an array
         if (!Array.isArray(sections)) {
-          return <div className="p-4 text-center text-muted-foreground">Invalid analysis data</div>;
+          return <div className="p-4 text-center text-muted-foreground">Invalid analysis data structure</div>;
         }
         
         const formattedDate = timestamp ? new Date(timestamp).toLocaleString() : 'Unknown date';

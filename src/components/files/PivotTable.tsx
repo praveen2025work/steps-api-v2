@@ -29,7 +29,9 @@ interface PivotConfig {
 const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
   // Validate input data and use sample data if invalid
   const validData = data && Array.isArray(data) && data.length > 0 && data.every(item => item && typeof item === 'object');
-  const sampleData = validData ? data : [
+  
+  // Create a safe copy of the data or use sample data
+  const sampleData = validData ? [...data] : [
     { date: '2025-05-01', region: 'EMEA', product: 'FX', amount: 1250000, status: 'Completed' },
     { date: '2025-05-01', region: 'APAC', product: 'Rates', amount: 2340000, status: 'Completed' },
     { date: '2025-05-01', region: 'AMER', product: 'FX', amount: 1890000, status: 'Completed' },
