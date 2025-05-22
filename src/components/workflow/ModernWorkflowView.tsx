@@ -6,7 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import AdvancedFilePreview from "@/components/files/AdvancedFilePreview";
+import { FileUpload } from "@/components/files/FileUpload";
 import StageOverview from "@/components/workflow/StageOverview";
 import AppParameters from "@/components/workflow/AppParameters";
 import GlobalParameters from "@/components/workflow/GlobalParameters";
@@ -36,23 +40,31 @@ import {
   MessageSquare,
   Paperclip,
   Link,
-  ExternalLink
+  ExternalLink,
+  Upload,
+  UserCheck,
+  Sparkles
 } from "lucide-react";
 
 interface ModernWorkflowViewProps {
   workflow: any;
   onBack?: () => void;
+  onViewToggle?: () => void;
 }
 
 const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   workflow,
-  onBack
+  onBack,
+  onViewToggle
 }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
   const [configTab, setConfigTab] = useState("stageOverview");
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const [selectAllTasks, setSelectAllTasks] = useState(false);
+  const [showFileUpload, setShowFileUpload] = useState(false);
   
   // Extract tasks from workflow data
   const allTasks = Object.values(workflow.tasks || {}).flat();
@@ -298,13 +310,53 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
     </div>
   );
   
+  // Handle task selection
+  const handleTaskSelection = (taskId: string) => {
+    setSelectedTasks(prev => 
+      prev.includes(taskId)
+        ? prev.filter(id => id !== taskId)
+        : [...prev, taskId]
+    );
+  };
+
+  // Handle select all tasks
+  const handleSelectAllTasks = () => {
+    if (selectAllTasks) {
+      setSelectedTasks([]);
+    } else {
+      setSelectedTasks(allTasks.map((task: any) => task.id));
+    }
+    setSelectAllTasks(!selectAllTasks);
+  };
+
+  // Update selectAll state when individual selections change
+  useEffect(() => {
+    if (allTasks.length > 0 && selectedTasks.length === allTasks.length) {
+      setSelectAllTasks(true);
+    } else {
+      setSelectAllTasks(false);
+    }
+  }, [selectedTasks, allTasks]);
+
+  // Handle file upload
+  const handleFileUploadComplete = () => {
+    setShowFileUpload(false);
+    // In a real app, you would refresh the file list here
+  };
+
   // Render the stages tab content
   const renderStagesContent = () => (
     <div className="space-y-4 pt-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Search tasks and stages</span>
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search tasks and stages..."
+              className="pl-8 w-[250px]"
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1">
@@ -313,6 +365,43 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Bulk Actions */}
+      {selectedTasks.length > 0 && (
+        <div className="flex items-center justify-between bg-muted/30 p-2 rounded-md">
+          <span className="text-sm font-medium">{selectedTasks.length} tasks selected</span>
+          <div className="flex items-center space-x-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="sm">
+                  Bulk Actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  <span>Assign to Team</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  <span>Mark as Priority</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  <span>Mark as Complete</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Upload className="mr-2 h-4 w-4" />
+                  <span>Upload Files for Selected</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="outline" size="sm" onClick={() => setSelectedTasks([])}>
+              Clear Selection
+            </Button>
+          </div>
+        </div>
+      )}
       
       <div className="space-y-4">
         {workflow.stages.map((stage: any) => {
@@ -379,9 +468,17 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
                           <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusColor(task.status)}`}></div>
                           <div className="pl-2">
                             <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="font-medium">{task.name}</h4>
-                                <p className="text-sm text-muted-foreground">ID: {task.processId}</p>
+                              <div className="flex items-center gap-2">
+                                <Checkbox 
+                                  checked={selectedTasks.includes(task.id)}
+                                  onCheckedChange={() => handleTaskSelection(task.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="mt-1"
+                                />
+                                <div>
+                                  <h4 className="font-medium">{task.name}</h4>
+                                  <p className="text-sm text-muted-foreground">ID: {task.processId}</p>
+                                </div>
                               </div>
                               <Badge variant={getStatusBadgeVariant(task.status)}>
                                 {formatStatus(task.status)}
@@ -475,10 +572,24 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
     <div className="space-y-4 pt-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">All Files</h3>
-        <Button variant="outline" size="sm">
-          Upload New File
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setShowFileUpload(true)}
+          className="flex items-center gap-1"
+        >
+          <Upload className="h-4 w-4" />
+          <span>Upload Files</span>
         </Button>
       </div>
+
+      {/* File Upload Dialog */}
+      <FileUpload
+        processId={workflow.id}
+        isOpen={showFileUpload}
+        onClose={() => setShowFileUpload(false)}
+        onUploadComplete={handleFileUploadComplete}
+      />
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {allTasks.flatMap((task: any) => 
@@ -608,6 +719,26 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* View toggle icons */}
+              <div className="bg-muted rounded-lg p-1 flex mr-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onViewToggle}
+                  title="Classic View"
+                  className="h-8 w-8"
+                >
+                  <Layers className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="default"
+                  size="icon"
+                  title="Modern View"
+                  className="h-8 w-8"
+                >
+                  <Sparkles className="h-4 w-4" />
+                </Button>
+              </div>
               <Button variant="outline" size="sm" className="gap-1">
                 <RefreshCw className="h-4 w-4" />
                 <span>Refresh</span>

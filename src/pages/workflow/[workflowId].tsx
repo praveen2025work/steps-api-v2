@@ -420,43 +420,42 @@ const WorkflowDetailPage = () => {
       </Head>
       <DashboardLayout title={workflowData.title}>
         <div className="flex flex-col h-full">
-          {/* View Toggle - Moved to the top right corner of the content area */}
-          <div className="flex justify-end mb-2">
-            <div className="bg-muted rounded-lg p-1 flex">
-              <Button
-                variant={viewMode === 'classic' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('classic')}
-                className="flex items-center gap-1"
-              >
-                <Layers className="h-4 w-4" />
-                <span>Classic View</span>
-              </Button>
-              <Button
-                variant={viewMode === 'alternative' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('alternative')}
-                className="flex items-center gap-1"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>Modern View</span>
-              </Button>
-            </div>
-          </div>
-
           {/* Main Content - Takes full available height */}
           <div className="flex-1">
             {viewMode === 'classic' ? (
-              <WorkflowDetailView 
-                workflowTitle={workflowData.title}
-                progressSteps={workflowData.progressSteps}
-                stages={workflowData.stages}
-                tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
-              />
+              <>
+                <div className="flex justify-end mb-2">
+                  <div className="bg-muted rounded-lg p-1 flex">
+                    <Button
+                      variant="default"
+                      size="icon"
+                      onClick={() => setViewMode('classic')}
+                      title="Classic View"
+                    >
+                      <Layers className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setViewMode('alternative')}
+                      title="Modern View"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <WorkflowDetailView 
+                  workflowTitle={workflowData.title}
+                  progressSteps={workflowData.progressSteps}
+                  stages={workflowData.stages}
+                  tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
+                />
+              </>
             ) : (
               <ModernWorkflowView 
                 workflow={workflowData}
                 onBack={() => setViewMode('classic')}
+                onViewToggle={() => setViewMode('classic')}
               />
             )}
           </div>
