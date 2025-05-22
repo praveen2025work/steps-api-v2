@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AdvancedFilePreview } from "@/components/files/AdvancedFilePreview";
+import AdvancedFilePreview from "@/components/files/AdvancedFilePreview";
 import { 
   Search, 
   Filter, 
@@ -651,7 +651,14 @@ export function UserProcessDashboard() {
                               </div>
                               
                               {selectedFile && (
-                                <AdvancedFilePreview file={selectedFile} />
+                                <AdvancedFilePreview 
+                                  fileId={selectedFile.id} 
+                                  fileName={selectedFile.name} 
+                                  onClose={() => {
+                                    setSelectedFile(null);
+                                    setShowFilePreview(false);
+                                  }} 
+                                />
                               )}
                             </div>
                           </CardContent>
@@ -671,11 +678,13 @@ export function UserProcessDashboard() {
                           </CardHeader>
                           <CardContent>
                             <Tabs value={workflowDetailTab} onValueChange={setWorkflowDetailTab}>
-                              <TabsList className="grid grid-cols-8 mb-4">
+                              <TabsList className="grid w-full grid-cols-4 mb-4">
                                 <TabsTrigger value="stageOverview">Stage Overview</TabsTrigger>
                                 <TabsTrigger value="appConfig">App Config</TabsTrigger>
                                 <TabsTrigger value="globalConfig">Global Config</TabsTrigger>
                                 <TabsTrigger value="processOverview">Process Overview</TabsTrigger>
+                              </TabsList>
+                              <TabsList className="grid w-full grid-cols-4 mb-4 mt-2">
                                 <TabsTrigger value="processConfig">Process Config</TabsTrigger>
                                 <TabsTrigger value="files">Files</TabsTrigger>
                                 <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
