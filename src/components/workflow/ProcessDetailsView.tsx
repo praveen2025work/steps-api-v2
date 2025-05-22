@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -89,11 +89,15 @@ const ProcessListItem: React.FC<ProcessListItemProps> = ({ process, isSelected, 
 };
 
 const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
-  process,
-  subStage,
+  process: initialProcess,
+  subStage: initialSubStage,
   onBack,
   onClose
 }) => {
+  // State for the current process and sub-stage
+  const [currentProcess, setCurrentProcess] = useState<any>(initialProcess);
+  const [currentSubStage, setCurrentSubStage] = useState<any>(initialSubStage);
+  
   // State for panel visibility
   const [showLeftPanel, setShowLeftPanel] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(false);
@@ -105,6 +109,12 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
   // State for left panel content
   const [leftPanelContent, setLeftPanelContent] = useState<'processes' | 'dependencies'>('processes');
   const [selectedDependencyType, setSelectedDependencyType] = useState<'parent' | 'child'>('parent');
+  
+  // Update current process when initialProcess changes
+  useEffect(() => {
+    setCurrentProcess(initialProcess);
+    setCurrentSubStage(initialSubStage);
+  }, [initialProcess, initialSubStage]);
   
   // Toggle panels
   const toggleLeftPanel = () => setShowLeftPanel(!showLeftPanel);
@@ -124,6 +134,47 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
     setLeftPanelContent('dependencies');
     setSelectedDependencyType(type);
     setShowLeftPanel(true);
+  };
+  
+  // Handle process selection from the left panel
+  const handleProcessSelection = (selectedProcess: any) => {
+    // Update the current process with the selected one
+    if (selectedProcess && selectedProcess.id) {
+      // Create a deep copy of the selected process to avoid reference issues
+      const processData = JSON.parse(JSON.stringify(selectedProcess));
+      
+      // If this is a mock process from the left panel, we need to enhance it with more data
+      if (!processData.files) {
+        // Find the corresponding process in mockProcesses (from UserProcessDashboard)
+        // For now, we'll use mock data since we don't have access to the full data
+        processData.files = [
+          { id: `FILE-${processData.id}-1`, name: `${processData.name.toLowerCase().replace(/\s+/g, '_')}_data.xlsx`, type: "Excel" },
+          { id: `FILE-${processData.id}-2`, name: `${processData.name.toLowerCase().replace(/\s+/g, '_')}_report.pdf`, type: "PDF" }
+        ];
+        
+        processData.dependencies = {
+          parent: [
+            { id: `PARENT-${processData.id}`, name: "Parent Process", status: "Completed", files: [
+              { id: `PARENT-FILE-${processData.id}`, name: "parent_data.xlsx", type: "Excel" }
+            ]}
+          ],
+          child: [
+            { id: `CHILD-${processData.id}`, name: "Child Process", status: "Pending", files: [
+              { id: `CHILD-FILE-${processData.id}`, name: "child_data.xlsx", type: "Excel" }
+            ]}
+          ]
+        };
+        
+        processData.assignedTo = processData.assignedTo || "System User";
+      }
+      
+      // Update the current process state
+      setCurrentProcess(processData);
+      
+      // Reset other states
+      setSelectedFile(null);
+      setWorkflowDetailTab("stageOverview");
+    }
   };
   
   // Determine layout classes based on panel visibility
@@ -225,10 +276,10 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
         <div className="flex">
           {/* Status Ribbon */}
           <div className={`w-2 ${
-            (process?.status === "Completed" || subStage?.status === "Completed") ? "bg-green-500" : 
-            (process?.status === "In Progress" || subStage?.status === "In Progress") ? "bg-blue-500" : 
-            (process?.status === "Pending" || subStage?.status === "Pending") ? "bg-amber-500" : 
-            (process?.status === "Failed" || subStage?.status === "Failed") ? "bg-red-500" : 
+            (currentProcess?.status === "Completed" || currentSubStage?.status === "Completed") ? "bg-green-500" : 
+            (currentProcess?.status === "In Progress" || currentSubStage?.status === "In Progress") ? "bg-blue-500" : 
+            (currentProcess?.status === "Pending" || currentSubStage?.status === "Pending") ? "bg-amber-500" : 
+            (currentProcess?.status === "Failed" || currentSubStage?.status === "Failed") ? "bg-red-500" : 
             "bg-gray-500"
           }`}></div>
           
@@ -250,23 +301,23 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">Process:</span> 
-                      <span>{process?.name || 'Process Details'}</span>
-                      <span className="text-sm text-muted-foreground">ID: {subStage?.id || process?.id || 'Unknown'}</span>
+                      <span>{currentProcess?.name || 'Process Details'}</span>
+                      <span className="text-sm text-muted-foreground">ID: {currentSubStage?.id || currentProcess?.id || 'Unknown'}</span>
                     </div>
                     
                     <div className="flex items-center gap-3 mt-1">
                       <div className="flex items-center">
                         <span className="text-sm font-medium mr-1">Files:</span>
-                        {(subStage?.files || process?.files) && (
+                        {(currentSubStage?.files || currentProcess?.files) && (
                           <div className="flex items-center gap-1">
-                            {renderFileButtons(subStage?.files || process?.files)}
+                            {renderFileButtons(currentSubStage?.files || currentProcess?.files)}
                           </div>
                         )}
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <span className="text-sm">
-                          <span className="font-medium">User:</span> {subStage?.assignedTo?.split(' ')[0] || process?.assignedTo?.split(' ')[0] || 'Unassigned'}
+                          <span className="font-medium">User:</span> {currentSubStage?.assignedTo?.split(' ')[0] || currentProcess?.assignedTo?.split(' ')[0] || 'Unassigned'}
                         </span>
                       </div>
                     </div>
@@ -282,7 +333,7 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       className="text-sm h-8 px-2"
                       onClick={() => handleViewDependencies('parent')}
                     >
-                      Parents({process?.dependencies?.parent?.length || 0})▼
+                      Parents({currentProcess?.dependencies?.parent?.length || 0})▼
                     </Button>
                     <Button 
                       variant="ghost" 
@@ -290,7 +341,7 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       className="text-sm h-8 px-2"
                       onClick={() => handleViewDependencies('child')}
                     >
-                      Children({process?.dependencies?.child?.length || 0})▼
+                      Children({currentProcess?.dependencies?.child?.length || 0})▼
                     </Button>
                   </div>
                   
@@ -379,16 +430,16 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       <ProcessListItem 
                         key={proc.id}
                         process={proc}
-                        isSelected={proc.id === process?.id}
-                        onClick={() => {/* Handle process selection */}}
+                        isSelected={proc.id === currentProcess?.id}
+                        onClick={() => handleProcessSelection(proc)}
                       />
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {selectedDependencyType === 'parent' ? (
-                      process?.dependencies?.parent?.length > 0 ? (
-                        process.dependencies.parent.map((dep: any) => (
+                      currentProcess?.dependencies?.parent?.length > 0 ? (
+                        currentProcess.dependencies.parent.map((dep: any) => (
                           <div key={dep.id} className="border rounded-md p-3 mb-3">
                             <div className="flex justify-between items-center mb-2">
                               <div>
@@ -431,8 +482,8 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                         </div>
                       )
                     ) : (
-                      process?.dependencies?.child?.length > 0 ? (
-                        process.dependencies.child.map((dep: any) => (
+                      currentProcess?.dependencies?.child?.length > 0 ? (
+                        currentProcess.dependencies.child.map((dep: any) => (
                           <div key={dep.id} className="border rounded-md p-3 mb-3">
                             <div className="flex justify-between items-center mb-2">
                               <div>
@@ -559,8 +610,8 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       </Button>
                     </div>
                     <StageOverview 
-                      stageId={process?.id || ''} 
-                      stageName={process?.stage || ''} 
+                      stageId={currentProcess?.id || ''} 
+                      stageName={currentProcess?.stage || ''} 
                     />
                   </TabsContent>
                   
@@ -577,8 +628,8 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       </div>
                     </div>
                     <AppParameters 
-                      processId={process?.id || ''} 
-                      processName={process?.name || ''} 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
                     />
                   </TabsContent>
                   
@@ -595,8 +646,8 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       </div>
                     </div>
                     <GlobalParameters 
-                      processId={process?.id || ''} 
-                      processName={process?.name || ''} 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
                     />
                   </TabsContent>
                   
@@ -613,8 +664,8 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       </div>
                     </div>
                     <ProcessOverview 
-                      processId={process?.id || ''} 
-                      processName={process?.name || ''} 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
                     />
                   </TabsContent>
                   
@@ -631,8 +682,8 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       </div>
                     </div>
                     <ProcessParameters 
-                      processId={process?.id || ''} 
-                      processName={process?.name || ''} 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
                     />
                   </TabsContent>
                   
@@ -649,8 +700,8 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       </div>
                     </div>
                     <ProcessDependencies 
-                      processId={process?.id || ''} 
-                      processName={process?.name || ''} 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
                       onDependencyClick={(dependency) => {
                         // Handle dependency click - could navigate to the dependency
                         console.log("Dependency clicked:", dependency);
@@ -666,8 +717,8 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       </Button>
                     </div>
                     <ProcessQueries 
-                      processId={process?.id || ''} 
-                      processName={process?.name || ''} 
+                      processId={currentProcess?.id || ''} 
+                      processName={currentProcess?.name || ''} 
                     />
                   </TabsContent>
                 </ScrollArea>
