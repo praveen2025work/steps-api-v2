@@ -185,14 +185,22 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       
       // Convert sheet data to format expected by FilterableDataGrid
       const gridData = sheetData.rows.map((row, index) => {
+        if (!row || !Array.isArray(row)) {
+          return { id: index + 1 }; // Return minimal valid row if data is invalid
+        }
+        
         const rowData: Record<string, any> = { id: index + 1 };
         sheetData.headers.forEach((header, headerIndex) => {
           if (header && typeof header === 'string') {
-            rowData[header] = row[headerIndex];
+            // Ensure we don't access out of bounds array elements
+            rowData[header] = headerIndex < row.length ? row[headerIndex] : null;
           }
         });
         return rowData;
       });
+      
+      // Ensure we have valid data for the grid
+      const safeGridData = Array.isArray(gridData) && gridData.length > 0 ? gridData : [{ id: 1 }];
       
       return (
         <div className="space-y-4">
@@ -209,7 +217,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
             ))}
           </div>
           
-          <FilterableDataGrid data={gridData} title={`${fileName} - ${activeSheet}`} />
+          <FilterableDataGrid data={safeGridData} title={`${fileName || 'Unknown File'} - ${activeSheet || 'Sheet'}`} />
         </div>
       );
     } catch (error) {
@@ -234,14 +242,24 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       
       // Convert sheet data to format expected by PivotTable
       const pivotData = sheetData.rows.map((row, index) => {
+        if (!row || !Array.isArray(row)) {
+          return { id: index + 1 }; // Return minimal valid row if data is invalid
+        }
+        
         const rowData: Record<string, any> = { id: index + 1 };
         sheetData.headers.forEach((header, headerIndex) => {
           if (header && typeof header === 'string') {
-            rowData[header] = row[headerIndex];
+            // Ensure we don't access out of bounds array elements
+            rowData[header] = headerIndex < row.length ? row[headerIndex] : null;
           }
         });
         return rowData;
       });
+      
+      // Ensure we have valid data for the pivot table
+      const safePivotData = Array.isArray(pivotData) && pivotData.length > 0 ? pivotData : [
+        { id: 1, category: 'Sample', value: 0 }
+      ];
       
       return (
         <div className="space-y-4">
@@ -258,7 +276,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
             ))}
           </div>
           
-          <PivotTable data={pivotData} />
+          <PivotTable data={safePivotData} />
         </div>
       );
     } catch (error) {

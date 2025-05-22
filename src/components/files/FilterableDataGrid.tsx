@@ -120,44 +120,51 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
 
   // Format value based on type
   const formatValue = (value: any) => {
-    if (typeof value === 'number') {
-      // Check if it looks like a currency amount
-      if (value > 1000) {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        }).format(value);
-      }
-      return value.toLocaleString();
-    }
-    
-    if (typeof value === 'boolean') {
-      return value ? 'Yes' : 'No';
-    }
-    
+    // Handle null/undefined values
     if (value === null || value === undefined) {
       return '-';
     }
     
-    // Handle status with badges
-    if (typeof value === 'string' && ['Completed', 'Processing', 'Pending', 'Failed'].includes(value)) {
-      const statusColors: Record<string, string> = {
-        'Completed': 'bg-green-100 text-green-800',
-        'Processing': 'bg-blue-100 text-blue-800',
-        'Pending': 'bg-yellow-100 text-yellow-800',
-        'Failed': 'bg-red-100 text-red-800'
-      };
+    try {
+      if (typeof value === 'number') {
+        // Check if it looks like a currency amount
+        if (value > 1000) {
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+          }).format(value);
+        }
+        return value.toLocaleString();
+      }
       
-      return (
-        <Badge className={statusColors[value] || ''}>
-          {value}
-        </Badge>
-      );
+      if (typeof value === 'boolean') {
+        return value ? 'Yes' : 'No';
+      }
+      
+      // Handle status with badges
+      if (typeof value === 'string' && ['Completed', 'Processing', 'Pending', 'Failed'].includes(value)) {
+        const statusColors: Record<string, string> = {
+          'Completed': 'bg-green-100 text-green-800',
+          'Processing': 'bg-blue-100 text-blue-800',
+          'Pending': 'bg-yellow-100 text-yellow-800',
+          'Failed': 'bg-red-100 text-red-800'
+        };
+        
+        return (
+          <Badge className={statusColors[value] || ''}>
+            {value}
+          </Badge>
+        );
+      }
+      
+      // Safely convert to string
+      return String(value);
+    } catch (error) {
+      console.error("Error formatting value:", error);
+      return '-'; // Return a safe default if formatting fails
     }
-    
-    return String(value);
   };
 
   return (

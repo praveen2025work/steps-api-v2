@@ -674,7 +674,7 @@ export function UserProcessDashboard() {
                                 }
                               </div>
                               
-                              {selectedFile && selectedFile.id ? (
+                              {selectedFile && typeof selectedFile === 'object' && selectedFile.id ? (
                                 <AdvancedFilePreview 
                                   fileId={selectedFile.id} 
                                   fileName={selectedFile.name || 'Unknown File'} 

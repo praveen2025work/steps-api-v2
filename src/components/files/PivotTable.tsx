@@ -143,8 +143,23 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
     return result;
   };
 
-  // Calculate pivot data
-  const { rowCombinations, columnCombinations, pivotData } = calculatePivotData();
+  // Calculate pivot data with error handling
+  let rowCombinations: any[][] = [[]];
+  let columnCombinations: any[][] = [[]];
+  let pivotData: Record<string, Record<string, number>> = {};
+  
+  try {
+    const result = calculatePivotData();
+    rowCombinations = result.rowCombinations;
+    columnCombinations = result.columnCombinations;
+    pivotData = result.pivotData;
+  } catch (error) {
+    console.error("Error calculating pivot data:", error);
+    // Set default values for a minimal working pivot table
+    rowCombinations = [['Sample']];
+    columnCombinations = [['Data']];
+    pivotData = { 'Sample': { 'Data': 0 } };
+  }
 
   // Handle field selection changes
   const handleFieldChange = (type: 'rows' | 'columns' | 'values', value: string) => {
@@ -167,12 +182,21 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
 
   // Format number for display
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(num);
+    try {
+      if (typeof num !== 'number' || isNaN(num)) {
+        return '$0';
+      }
+      
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(num);
+    } catch (error) {
+      console.error("Error formatting number:", error);
+      return '$0'; // Return a safe default if formatting fails
+    }
   };
 
   return (
