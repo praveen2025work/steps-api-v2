@@ -7,6 +7,8 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, BarChart2, Brain, Table as TableIcon, Maximize2, Minimize2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import PivotTable from './PivotTable';
+import FilterableDataGrid from './FilterableDataGrid';
 
 interface FileData {
   id: string;
@@ -126,7 +128,16 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   const renderDataSection = () => {
     if (!fileData || !activeSheet) return <div>No data available</div>;
     
+    // Convert sheet data to format expected by FilterableDataGrid
     const sheetData = fileData.sheets[activeSheet];
+    const gridData = sheetData.rows.map((row, index) => {
+      const rowData: Record<string, any> = {};
+      sheetData.headers.forEach((header, headerIndex) => {
+        rowData[header] = row[headerIndex];
+      });
+      rowData.id = index + 1;
+      return rowData;
+    });
     
     return (
       <div className="space-y-4">
@@ -143,109 +154,41 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
           ))}
         </div>
         
-        <ScrollArea className="h-[calc(100vh-300px)]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {sheetData.headers.map((header, index) => (
-                  <TableHead key={index}>{header}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sheetData.rows.map((row, rowIndex) => (
-                <TableRow key={rowIndex}>
-                  {row.map((cell, cellIndex) => (
-                    <TableCell key={cellIndex}>{cell}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+        <FilterableDataGrid data={gridData} title={`${fileName} - ${activeSheet}`} />
       </div>
     );
   };
 
   const renderPivotSection = () => {
+    if (!fileData || !activeSheet) return <div>No data available</div>;
+    
+    // Convert sheet data to format expected by PivotTable
+    const sheetData = fileData.sheets[activeSheet];
+    const pivotData = sheetData.rows.map((row, index) => {
+      const rowData: Record<string, any> = {};
+      sheetData.headers.forEach((header, headerIndex) => {
+        rowData[header] = row[headerIndex];
+      });
+      rowData.id = index + 1;
+      return rowData;
+    });
+    
     return (
       <div className="space-y-4">
-        <div className="bg-muted p-4 rounded-md text-center">
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <BarChart2 className="h-12 w-12 text-muted-foreground" />
-            <h3 className="text-lg font-medium">Pivot Table View</h3>
-            <p className="text-sm text-muted-foreground">
-              Interactive pivot table functionality would be implemented here, allowing users to:
-            </p>
-            <ul className="text-sm text-muted-foreground text-left list-disc pl-6">
-              <li>Select dimensions for rows and columns</li>
-              <li>Choose measures to aggregate</li>
-              <li>Apply filters to the dataset</li>
-              <li>Sort and format the results</li>
-            </ul>
-          </div>
+        <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+          {Object.keys(fileData.sheets).map(sheetName => (
+            <Button
+              key={sheetName}
+              variant={activeSheet === sheetName ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveSheet(sheetName)}
+            >
+              {sheetName}
+            </Button>
+          ))}
         </div>
         
-        {/* Mockup of a pivot table */}
-        <div className="border rounded-md">
-          <div className="p-2 bg-muted flex justify-between items-center">
-            <div className="flex space-x-2">
-              <Badge>Rows: Region</Badge>
-              <Badge>Columns: Product</Badge>
-              <Badge>Values: Sum of Sales</Badge>
-            </div>
-            <Button variant="outline" size="sm">Configure</Button>
-          </div>
-          
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Region / Product</TableHead>
-                <TableHead>Widget A</TableHead>
-                <TableHead>Widget B</TableHead>
-                <TableHead>Widget C</TableHead>
-                <TableHead>Grand Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">North</TableCell>
-                <TableCell>1,200</TableCell>
-                <TableCell>1,000</TableCell>
-                <TableCell>0</TableCell>
-                <TableCell>2,200</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">South</TableCell>
-                <TableCell>0</TableCell>
-                <TableCell>950</TableCell>
-                <TableCell>0</TableCell>
-                <TableCell>950</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">East</TableCell>
-                <TableCell>1,100</TableCell>
-                <TableCell>0</TableCell>
-                <TableCell>0</TableCell>
-                <TableCell>1,100</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">West</TableCell>
-                <TableCell>0</TableCell>
-                <TableCell>0</TableCell>
-                <TableCell>1,300</TableCell>
-                <TableCell>1,300</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Grand Total</TableCell>
-                <TableCell>2,300</TableCell>
-                <TableCell>1,950</TableCell>
-                <TableCell>1,300</TableCell>
-                <TableCell>5,550</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
+        <PivotTable data={pivotData} />
       </div>
     );
   };

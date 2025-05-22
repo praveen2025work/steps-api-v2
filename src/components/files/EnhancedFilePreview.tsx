@@ -6,6 +6,8 @@ import { Download, Eye, RefreshCw, Bot, Sparkles, BarChart, FileText, X, PanelLe
 import { getFileIcon } from '@/components/DocumentsList'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import PivotTable from './PivotTable'
+import FilterableDataGrid from './FilterableDataGrid'
 
 interface FileItem {
   id: string
@@ -39,6 +41,22 @@ interface EnhancedFilePreviewProps {
   onClose: () => void
   subStageId?: string
 }
+
+// Sample data for data grid and pivot table
+const sampleData = [
+  { id: 1, date: '2025-05-01', region: 'EMEA', product: 'FX', amount: 1250000, status: 'Completed' },
+  { id: 2, date: '2025-05-01', region: 'APAC', product: 'Rates', amount: 2340000, status: 'Completed' },
+  { id: 3, date: '2025-05-01', region: 'AMER', product: 'FX', amount: 1890000, status: 'Completed' },
+  { id: 4, date: '2025-05-02', region: 'EMEA', product: 'Rates', amount: 1450000, status: 'Completed' },
+  { id: 5, date: '2025-05-02', region: 'APAC', product: 'FX', amount: 1670000, status: 'Pending' },
+  { id: 6, date: '2025-05-02', region: 'AMER', product: 'Rates', amount: 2120000, status: 'Processing' },
+  { id: 7, date: '2025-05-03', region: 'EMEA', product: 'FX', amount: 1340000, status: 'Completed' },
+  { id: 8, date: '2025-05-03', region: 'APAC', product: 'Rates', amount: 1980000, status: 'Failed' },
+  { id: 9, date: '2025-05-03', region: 'AMER', product: 'FX', amount: 2250000, status: 'Completed' },
+  { id: 10, date: '2025-05-04', region: 'EMEA', product: 'Rates', amount: 1560000, status: 'Processing' },
+  { id: 11, date: '2025-05-04', region: 'APAC', product: 'FX', amount: 1890000, status: 'Completed' },
+  { id: 12, date: '2025-05-04', region: 'AMER', product: 'Rates', amount: 2340000, status: 'Pending' },
+];
 
 // Mock API call - would be replaced with actual API
 const fetchFileDetails = async (fileId: string): Promise<FileDetails> => {
@@ -498,172 +516,36 @@ export function EnhancedFilePreview({
                       <TabsTrigger value="pivot">Pivot</TabsTrigger>
                     </TabsList>
                     <TabsContent value="tab1">
-                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[500px]">
-                        <table className="w-full border-collapse text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2 font-medium">Date</th>
-                              <th className="text-left p-2 font-medium">Symbol</th>
-                              <th className="text-left p-2 font-medium">Open</th>
-                              <th className="text-left p-2 font-medium">High</th>
-                              <th className="text-left p-2 font-medium">Low</th>
-                              <th className="text-left p-2 font-medium">Close</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="border-b">
-                              <td className="p-2">2025-05-18</td>
-                              <td className="p-2">AAPL</td>
-                              <td className="p-2">185.23</td>
-                              <td className="p-2">187.45</td>
-                              <td className="p-2">184.90</td>
-                              <td className="p-2">186.75</td>
-                            </tr>
-                            <tr className="border-b">
-                              <td className="p-2">2025-05-18</td>
-                              <td className="p-2">MSFT</td>
-                              <td className="p-2">390.12</td>
-                              <td className="p-2">395.67</td>
-                              <td className="p-2">389.45</td>
-                              <td className="p-2">394.20</td>
-                            </tr>
-                            <tr className="border-b">
-                              <td className="p-2">2025-05-18</td>
-                              <td className="p-2">GOOGL</td>
-                              <td className="p-2">175.34</td>
-                              <td className="p-2">177.89</td>
-                              <td className="p-2">174.56</td>
-                              <td className="p-2">177.23</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
+                      <FilterableDataGrid data={sampleData} title="Sheet 1 Data" />
                     </TabsContent>
                     <TabsContent value="tab2">
-                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[500px]">
-                        <table className="w-full border-collapse text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2 font-medium">Region</th>
-                              <th className="text-left p-2 font-medium">Product</th>
-                              <th className="text-left p-2 font-medium">Sales</th>
-                              <th className="text-left p-2 font-medium">Growth</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="border-b">
-                              <td className="p-2">EMEA</td>
-                              <td className="p-2">Product A</td>
-                              <td className="p-2">$1,245,000</td>
-                              <td className="p-2">5.2%</td>
-                            </tr>
-                            <tr className="border-b">
-                              <td className="p-2">APAC</td>
-                              <td className="p-2">Product B</td>
-                              <td className="p-2">$879,500</td>
-                              <td className="p-2">3.7%</td>
-                            </tr>
-                            <tr className="border-b">
-                              <td className="p-2">AMER</td>
-                              <td className="p-2">Product C</td>
-                              <td className="p-2">$1,567,800</td>
-                              <td className="p-2">7.1%</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
+                      <FilterableDataGrid 
+                        data={[
+                          { id: 1, region: 'EMEA', product: 'Product A', sales: 1245000, growth: 5.2 },
+                          { id: 2, region: 'APAC', product: 'Product B', sales: 879500, growth: 3.7 },
+                          { id: 3, region: 'AMER', product: 'Product C', sales: 1567800, growth: 7.1 },
+                          { id: 4, region: 'EMEA', product: 'Product D', sales: 982300, growth: 4.5 },
+                          { id: 5, region: 'APAC', product: 'Product A', sales: 1123400, growth: 6.2 },
+                          { id: 6, region: 'AMER', product: 'Product B', sales: 1345600, growth: 8.3 },
+                        ]} 
+                        title="Sheet 2 Data" 
+                      />
                     </TabsContent>
                     <TabsContent value="tab3">
-                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[500px]">
-                        <table className="w-full border-collapse text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2 font-medium">Category</th>
-                              <th className="text-left p-2 font-medium">Budget</th>
-                              <th className="text-left p-2 font-medium">Actual</th>
-                              <th className="text-left p-2 font-medium">Variance</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="border-b">
-                              <td className="p-2">Marketing</td>
-                              <td className="p-2">$500,000</td>
-                              <td className="p-2">$487,500</td>
-                              <td className="p-2">-2.5%</td>
-                            </tr>
-                            <tr className="border-b">
-                              <td className="p-2">R&D</td>
-                              <td className="p-2">$1,200,000</td>
-                              <td className="p-2">$1,275,000</td>
-                              <td className="p-2">6.25%</td>
-                            </tr>
-                            <tr className="border-b">
-                              <td className="p-2">Operations</td>
-                              <td className="p-2">$750,000</td>
-                              <td className="p-2">$742,300</td>
-                              <td className="p-2">-1.03%</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
+                      <FilterableDataGrid 
+                        data={[
+                          { id: 1, category: 'Marketing', budget: 500000, actual: 487500, variance: -2.5 },
+                          { id: 2, category: 'R&D', budget: 1200000, actual: 1275000, variance: 6.25 },
+                          { id: 3, category: 'Operations', budget: 750000, actual: 742300, variance: -1.03 },
+                          { id: 4, category: 'Sales', budget: 850000, actual: 892500, variance: 5.0 },
+                          { id: 5, category: 'IT', budget: 450000, actual: 437800, variance: -2.71 },
+                          { id: 6, category: 'HR', budget: 350000, actual: 342900, variance: -2.03 },
+                        ]} 
+                        title="Sheet 3 Data" 
+                      />
                     </TabsContent>
                     <TabsContent value="pivot">
-                      <div className="bg-muted p-4 rounded-md overflow-auto max-h-[500px]">
-                        <table className="w-full border-collapse text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2 font-medium">Region</th>
-                              <th className="text-left p-2 font-medium">Q1</th>
-                              <th className="text-left p-2 font-medium">Q2</th>
-                              <th className="text-left p-2 font-medium">Q3</th>
-                              <th className="text-left p-2 font-medium">Q4</th>
-                              <th className="text-left p-2 font-medium">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="border-b">
-                              <td className="p-2 font-medium">EMEA</td>
-                              <td className="p-2">$245,000</td>
-                              <td className="p-2">$267,500</td>
-                              <td className="p-2">$289,300</td>
-                              <td className="p-2">$312,800</td>
-                              <td className="p-2 font-bold">$1,114,600</td>
-                            </tr>
-                            <tr className="border-b">
-                              <td className="p-2 font-medium">APAC</td>
-                              <td className="p-2">$187,200</td>
-                              <td className="p-2">$195,400</td>
-                              <td className="p-2">$210,800</td>
-                              <td className="p-2">$225,300</td>
-                              <td className="p-2 font-bold">$818,700</td>
-                            </tr>
-                            <tr className="border-b">
-                              <td className="p-2 font-medium">NA</td>
-                              <td className="p-2">$312,500</td>
-                              <td className="p-2">$325,700</td>
-                              <td className="p-2">$342,900</td>
-                              <td className="p-2">$367,800</td>
-                              <td className="p-2 font-bold">$1,348,900</td>
-                            </tr>
-                            <tr className="border-b">
-                              <td className="p-2 font-medium">LATAM</td>
-                              <td className="p-2">$98,300</td>
-                              <td className="p-2">$105,600</td>
-                              <td className="p-2">$112,900</td>
-                              <td className="p-2">$124,500</td>
-                              <td className="p-2 font-bold">$441,300</td>
-                            </tr>
-                            <tr className="bg-muted/50">
-                              <td className="p-2 font-bold">Total</td>
-                              <td className="p-2 font-bold">$843,000</td>
-                              <td className="p-2 font-bold">$894,200</td>
-                              <td className="p-2 font-bold">$955,900</td>
-                              <td className="p-2 font-bold">$1,030,400</td>
-                              <td className="p-2 font-bold">$3,723,500</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
+                      <PivotTable data={sampleData} />
                     </TabsContent>
                   </Tabs>
                 ) : (
