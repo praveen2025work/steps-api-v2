@@ -285,7 +285,8 @@
   /* Specific styles for tables and data grids */
   .overflow-x-auto::-webkit-scrollbar,
   table::-webkit-scrollbar,
-  .data-grid::-webkit-scrollbar {
+  .data-grid::-webkit-scrollbar,
+  .data-grid-container::-webkit-scrollbar {
     height: 8px;
     display: block;
   }
@@ -293,7 +294,20 @@
   /* For Firefox */
   .overflow-x-auto,
   table,
-  .data-grid {
+  .data-grid,
+  .data-grid-container {
     scrollbar-width: thin;
+  }
+  
+  /* Enhanced styling for data grid containers */
+  .data-grid-container {
+    padding-bottom: 4px; /* Add padding to ensure scrollbar is visible */
+    margin-bottom: 8px; /* Add margin to prevent scrollbar from being cut off */
+    overflow-x: auto; /* Ensure horizontal scrolling is enabled */
+  }
+  
+  /* Make horizontal scrollbars more visible in preview mode */
+  .data-grid-container:hover::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.5);
   }
 }

@@ -251,8 +251,8 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
         </div>
       </div>
 
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
+      <div className="rounded-md border overflow-x-auto data-grid-container">
+        <Table className="data-grid">
           <TableHeader>
             <TableRow>
               <TableHead className="font-bold">{pivotConfig.rows[0]}</TableHead>
