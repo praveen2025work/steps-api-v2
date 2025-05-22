@@ -401,7 +401,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
             </div>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-250px)]">
+          <ScrollArea className="h-[calc(100vh-200px)]">
             {renderAnalysisResults()}
           </ScrollArea>
         )}

@@ -247,5 +247,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  html, body, #__next {
+    height: 100%;
   }
 }

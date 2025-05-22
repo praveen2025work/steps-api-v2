@@ -1196,7 +1196,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 h-full overflow-y-auto">
       {/* Unified Workflow Header Card */}
       <WorkflowUnifiedHeader
         workflowId={hierarchyPath[hierarchyPath.length-1]?.id || ''}
@@ -1346,7 +1346,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         </div>
       )}
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 h-[calc(100vh-200px)] overflow-y-auto">
         {/* Main Content - Only visible when file preview is not shown or explicitly kept visible */}
         <div className={`${showFilePreview ? (showSubStageCards ? 'flex-[0.3] relative' : 'hidden') : 'flex-[0.6]'}`}>
           {/* Process Overview removed from main content as it's now in the right panel */}
@@ -1798,7 +1798,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
           {/* Panel Content */}
           {rightPanelContent && (
-            <div className="flex-1 overflow-y-auto p-3 bg-background">
+            <div className="flex-1 overflow-y-auto p-3 bg-background h-[calc(100vh-250px)]">
               {renderRightPanelContent()}
             </div>
           )}

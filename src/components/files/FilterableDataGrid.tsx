@@ -201,7 +201,7 @@ const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) 
       </div>
       
       <div className="rounded-md border">
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[calc(100vh-300px)]">
           <Table>
             <TableHeader>
               <TableRow>
