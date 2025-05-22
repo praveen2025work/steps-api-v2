@@ -678,13 +678,11 @@ export function UserProcessDashboard() {
                           </CardHeader>
                           <CardContent>
                             <Tabs value={workflowDetailTab} onValueChange={setWorkflowDetailTab}>
-                              <TabsList className="grid w-full grid-cols-4 mb-4">
+                              <TabsList className="grid w-full grid-cols-8 mb-4">
                                 <TabsTrigger value="stageOverview">Stage Overview</TabsTrigger>
                                 <TabsTrigger value="appConfig">App Config</TabsTrigger>
                                 <TabsTrigger value="globalConfig">Global Config</TabsTrigger>
                                 <TabsTrigger value="processOverview">Process Overview</TabsTrigger>
-                              </TabsList>
-                              <TabsList className="grid w-full grid-cols-4 mb-4 mt-2">
                                 <TabsTrigger value="processConfig">Process Config</TabsTrigger>
                                 <TabsTrigger value="files">Files</TabsTrigger>
                                 <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
