@@ -64,7 +64,7 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
     // Filter data based on filters
     let filteredData = [...sampleData];
     Object.entries(pivotConfig.filters).forEach(([field, value]) => {
-      if (value) {
+      if (value && value !== 'all') {
         filteredData = filteredData.filter(item => String(item[field]) === value);
       }
     });
@@ -216,16 +216,16 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
         
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Filter:</span>
-          <Select value={Object.keys(pivotConfig.filters)[0] || ''} onValueChange={(field) => {
+          <Select value={Object.keys(pivotConfig.filters)[0] || 'none'} onValueChange={(field) => {
             const newFilters: Record<string, string> = {};
-            if (field) newFilters[field] = '';
+            if (field !== 'none') newFilters[field] = 'all';
             setPivotConfig(prev => ({ ...prev, filters: newFilters }));
           }}>
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select field" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {allFields.map(field => (
                 <SelectItem key={field} value={field}>{field}</SelectItem>
               ))}
@@ -234,14 +234,14 @@ const PivotTable: React.FC<PivotTableProps> = ({ data }) => {
           
           {Object.keys(pivotConfig.filters).length > 0 && (
             <Select 
-              value={pivotConfig.filters[Object.keys(pivotConfig.filters)[0]] || ''} 
+              value={pivotConfig.filters[Object.keys(pivotConfig.filters)[0]] || 'all'} 
               onValueChange={(value) => handleFilterChange(Object.keys(pivotConfig.filters)[0], value)}
             >
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Select value" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 {getUniqueValues(Object.keys(pivotConfig.filters)[0]).map(value => (
                   <SelectItem key={value} value={value}>{value}</SelectItem>
                 ))}
