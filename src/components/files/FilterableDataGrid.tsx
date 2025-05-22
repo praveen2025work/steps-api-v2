@@ -25,8 +25,9 @@ interface FilterableDataGridProps {
 }
 
 const FilterableDataGrid: React.FC<FilterableDataGridProps> = ({ data, title }) => {
-  // If no data is provided or data is empty or invalid, use sample data
-  const sampleData = data && Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' ? data : [
+  // Validate input data and use sample data if invalid
+  const validData = data && Array.isArray(data) && data.length > 0 && data.every(item => item && typeof item === 'object');
+  const sampleData = validData ? data : [
     { id: 1, date: '2025-05-01', region: 'EMEA', product: 'FX', amount: 1250000, status: 'Completed' },
     { id: 2, date: '2025-05-01', region: 'APAC', product: 'Rates', amount: 2340000, status: 'Completed' },
     { id: 3, date: '2025-05-01', region: 'AMER', product: 'FX', amount: 1890000, status: 'Completed' },

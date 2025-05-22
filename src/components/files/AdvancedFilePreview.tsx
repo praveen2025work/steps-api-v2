@@ -37,7 +37,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
 
   useEffect(() => {
@@ -103,8 +103,8 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       // Simulate AI analysis
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Using a structured object instead of a markdown string for better rendering
-      setAiAnalysis(JSON.stringify({
+      // Store as a parsed object directly instead of a string
+      setAiAnalysis({
         title: `File Analysis: ${fileName}`,
         timestamp: new Date().toISOString(),
         sections: [
@@ -140,7 +140,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
             details: "High quality data with consistent formatting and no missing values"
           }
         ]
-      }));
+      });
     } catch (error) {
       console.error('Error running AI analysis:', error);
     } finally {
@@ -149,32 +149,34 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   };
 
   const renderDataSection = () => {
-    if (!fileData || !activeSheet || !fileData.sheets || !fileData.sheets[activeSheet]) {
+    if (!fileData || !activeSheet) {
       return <div className="p-4 text-center text-muted-foreground">No data available</div>;
     }
     
     try {
-      // Convert sheet data to format expected by FilterableDataGrid
-      const sheetData = fileData.sheets[activeSheet];
+      // Safely access sheet data with proper checks
+      const sheets = fileData.sheets || {};
+      const sheetData = sheets[activeSheet];
       
-      if (!sheetData || !sheetData.rows || !Array.isArray(sheetData.rows) || !sheetData.headers) {
+      if (!sheetData || !Array.isArray(sheetData.rows) || !Array.isArray(sheetData.headers)) {
         return <div className="p-4 text-center text-muted-foreground">Invalid sheet data format</div>;
       }
       
+      // Convert sheet data to format expected by FilterableDataGrid
       const gridData = sheetData.rows.map((row, index) => {
         const rowData: Record<string, any> = { id: index + 1 };
-        if (Array.isArray(sheetData.headers)) {
-          sheetData.headers.forEach((header, headerIndex) => {
-            if (header) rowData[header] = row[headerIndex];
-          });
-        }
+        sheetData.headers.forEach((header, headerIndex) => {
+          if (header && typeof header === 'string') {
+            rowData[header] = row[headerIndex];
+          }
+        });
         return rowData;
       });
       
       return (
         <div className="space-y-4">
           <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            {fileData.sheets && Object.keys(fileData.sheets).map(sheetName => (
+            {Object.keys(sheets).map(sheetName => (
               <Button
                 key={sheetName}
                 variant={activeSheet === sheetName ? "default" : "outline"}
@@ -196,32 +198,34 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
   };
 
   const renderPivotSection = () => {
-    if (!fileData || !activeSheet || !fileData.sheets || !fileData.sheets[activeSheet]) {
+    if (!fileData || !activeSheet) {
       return <div className="p-4 text-center text-muted-foreground">No data available</div>;
     }
     
     try {
-      // Convert sheet data to format expected by PivotTable
-      const sheetData = fileData.sheets[activeSheet];
+      // Safely access sheet data with proper checks
+      const sheets = fileData.sheets || {};
+      const sheetData = sheets[activeSheet];
       
-      if (!sheetData || !sheetData.rows || !Array.isArray(sheetData.rows) || !sheetData.headers) {
+      if (!sheetData || !Array.isArray(sheetData.rows) || !Array.isArray(sheetData.headers)) {
         return <div className="p-4 text-center text-muted-foreground">Invalid sheet data format</div>;
       }
       
+      // Convert sheet data to format expected by PivotTable
       const pivotData = sheetData.rows.map((row, index) => {
         const rowData: Record<string, any> = { id: index + 1 };
-        if (Array.isArray(sheetData.headers)) {
-          sheetData.headers.forEach((header, headerIndex) => {
-            if (header) rowData[header] = row[headerIndex];
-          });
-        }
+        sheetData.headers.forEach((header, headerIndex) => {
+          if (header && typeof header === 'string') {
+            rowData[header] = row[headerIndex];
+          }
+        });
         return rowData;
       });
       
       return (
         <div className="space-y-4">
           <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-            {fileData.sheets && Object.keys(fileData.sheets).map(sheetName => (
+            {Object.keys(sheets).map(sheetName => (
               <Button
                 key={sheetName}
                 variant={activeSheet === sheetName ? "default" : "outline"}
@@ -247,15 +251,21 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
       if (!aiAnalysis) return null;
       
       try {
-        const analysisData = JSON.parse(aiAnalysis);
-        const { title, timestamp, sections } = analysisData;
-        const formattedDate = new Date(timestamp).toLocaleString();
+        // No need to parse since we're storing as an object directly
+        const { title, timestamp, sections } = aiAnalysis;
+        
+        // Validate sections is an array
+        if (!Array.isArray(sections)) {
+          return <div className="p-4 text-center text-muted-foreground">Invalid analysis data</div>;
+        }
+        
+        const formattedDate = timestamp ? new Date(timestamp).toLocaleString() : 'Unknown date';
         
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-2xl font-bold">{title}</h2>
+                <h2 className="text-2xl font-bold">{title || 'Analysis Results'}</h2>
                 <p className="text-sm text-muted-foreground">Generated on {formattedDate}</p>
               </div>
               <Button variant="outline" size="sm" onClick={() => setAiAnalysis(null)}>
@@ -264,128 +274,158 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {sections.map((section: any, index: number) => (
-                <Card key={index} className="overflow-hidden border-l-4 border-l-primary shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <CardHeader className="pb-2 bg-muted/50">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {section.type === "insights" && <BarChart2 className="h-5 w-5 text-primary" />}
-                      {section.type === "recommendations" && <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
-                      {section.type === "anomalies" && <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
-                      {section.type === "quality" && <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-                      {section.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-4">
-                    {section.type === "insights" && (
-                      <ul className="space-y-3">
-                        {section.items.map((item: any, i: number) => (
-                          <li key={i} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                item.sentiment === "positive" ? "bg-green-500" : 
-                                item.sentiment === "negative" ? "bg-red-500" : "bg-yellow-500"
-                              }`}></div>
-                              <span>{item.text}</span>
+              {sections.map((section, index) => {
+                // Validate section has required properties
+                if (!section || typeof section !== 'object') {
+                  return null;
+                }
+                
+                const sectionTitle = section.title || 'Untitled Section';
+                const sectionType = section.type || 'unknown';
+                const items = Array.isArray(section.items) ? section.items : [];
+                
+                return (
+                  <Card key={index} className="overflow-hidden border-l-4 border-l-primary shadow-md hover:shadow-lg transition-shadow duration-300">
+                    <CardHeader className="pb-2 bg-muted/50">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {sectionType === "insights" && <BarChart2 className="h-5 w-5 text-primary" />}
+                        {sectionType === "recommendations" && <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+                        {sectionType === "anomalies" && <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
+                        {sectionType === "quality" && <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                        {sectionTitle}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      {sectionType === "insights" && (
+                        <ul className="space-y-3">
+                          {items.map((item, i) => {
+                            if (!item || typeof item !== 'object') return null;
+                            const text = item.text || 'No description';
+                            const value = item.value || 'N/A';
+                            const sentiment = item.sentiment || 'neutral';
+                            
+                            return (
+                              <li key={i} className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-2 h-2 rounded-full ${
+                                    sentiment === "positive" ? "bg-green-500" : 
+                                    sentiment === "negative" ? "bg-red-500" : "bg-yellow-500"
+                                  }`}></div>
+                                  <span>{text}</span>
+                                </div>
+                                <Badge variant={
+                                  sentiment === "positive" ? "default" : 
+                                  sentiment === "negative" ? "destructive" : "outline"
+                                }>
+                                  {value}
+                                </Badge>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                      
+                      {sectionType === "recommendations" && (
+                        <ul className="space-y-3">
+                          {items.map((item, i) => {
+                            if (!item || typeof item !== 'object') return null;
+                            const text = item.text || 'No recommendation';
+                            const priority = item.priority || 'low';
+                            
+                            return (
+                              <li key={i} className="flex items-start gap-3">
+                                <Badge variant={
+                                  priority === "high" ? "destructive" : 
+                                  priority === "medium" ? "default" : "outline"
+                                } className="mt-0.5">
+                                  {priority}
+                                </Badge>
+                                <span>{text}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                      
+                      {sectionType === "anomalies" && (
+                        <ul className="space-y-3">
+                          {items.map((item, i) => {
+                            if (!item || typeof item !== 'object') return null;
+                            const text = item.text || 'No anomaly description';
+                            const severity = item.severity || 'none';
+                            
+                            return (
+                              <li key={i} className="flex items-center gap-2">
+                                {severity !== "none" ? (
+                                  <Badge variant="destructive">{severity}</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+                                    No anomalies
+                                  </Badge>
+                                )}
+                                <span>{text}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                      
+                      {sectionType === "quality" && (
+                        <div className="space-y-4">
+                          <div className="flex flex-col">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium">Data Quality Score</span>
+                              <span className={`font-bold text-lg ${
+                                section.score >= 90 ? "text-green-600 dark:text-green-400" : 
+                                section.score >= 70 ? "text-yellow-600 dark:text-yellow-400" : 
+                                "text-red-600 dark:text-red-400"
+                              }`}>{section.score || 0}/100</span>
                             </div>
-                            <Badge variant={
-                              item.sentiment === "positive" ? "default" : 
-                              item.sentiment === "negative" ? "destructive" : "outline"
-                            }>
-                              {item.value}
-                            </Badge>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    
-                    {section.type === "recommendations" && (
-                      <ul className="space-y-3">
-                        {section.items.map((item: any, i: number) => (
-                          <li key={i} className="flex items-start gap-3">
-                            <Badge variant={
-                              item.priority === "high" ? "destructive" : 
-                              item.priority === "medium" ? "default" : "outline"
-                            } className="mt-0.5">
-                              {item.priority}
-                            </Badge>
-                            <span>{item.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    
-                    {section.type === "anomalies" && (
-                      <ul className="space-y-3">
-                        {section.items.map((item: any, i: number) => (
-                          <li key={i} className="flex items-center gap-2">
-                            {item.severity !== "none" ? (
-                              <Badge variant="destructive">{item.severity}</Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
-                                No anomalies
-                              </Badge>
-                            )}
-                            <span>{item.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    
-                    {section.type === "quality" && (
-                      <div className="space-y-4">
-                        <div className="flex flex-col">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium">Data Quality Score</span>
-                            <span className={`font-bold text-lg ${
-                              section.score >= 90 ? "text-green-600 dark:text-green-400" : 
-                              section.score >= 70 ? "text-yellow-600 dark:text-yellow-400" : 
-                              "text-red-600 dark:text-red-400"
-                            }`}>{section.score}/100</span>
+                            <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${
+                                  section.score >= 90 ? "bg-green-500" : 
+                                  section.score >= 70 ? "bg-yellow-500" : "bg-red-500"
+                                }`} 
+                                style={{ width: `${section.score || 0}%` }}
+                              ></div>
+                            </div>
                           </div>
-                          <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${
-                                section.score >= 90 ? "bg-green-500" : 
-                                section.score >= 70 ? "bg-yellow-500" : "bg-red-500"
-                              }`} 
-                              style={{ width: `${section.score}%` }}
-                            ></div>
+                          
+                          <div className="bg-muted/30 p-3 rounded-md border border-border">
+                            <div className="flex items-start gap-2">
+                              <svg className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <p className="text-sm">{section.details || 'No details available'}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-2 mt-2">
+                            <div className="flex flex-col items-center p-2 bg-muted/20 rounded-md border border-border">
+                              <span className="text-xs text-muted-foreground">Completeness</span>
+                              <span className="font-medium">98%</span>
+                            </div>
+                            <div className="flex flex-col items-center p-2 bg-muted/20 rounded-md border border-border">
+                              <span className="text-xs text-muted-foreground">Consistency</span>
+                              <span className="font-medium">95%</span>
+                            </div>
+                            <div className="flex flex-col items-center p-2 bg-muted/20 rounded-md border border-border">
+                              <span className="text-xs text-muted-foreground">Accuracy</span>
+                              <span className="font-medium">90%</span>
+                            </div>
                           </div>
                         </div>
-                        
-                        <div className="bg-muted/30 p-3 rounded-md border border-border">
-                          <div className="flex items-start gap-2">
-                            <svg className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p className="text-sm">{section.details}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-2 mt-2">
-                          <div className="flex flex-col items-center p-2 bg-muted/20 rounded-md border border-border">
-                            <span className="text-xs text-muted-foreground">Completeness</span>
-                            <span className="font-medium">98%</span>
-                          </div>
-                          <div className="flex flex-col items-center p-2 bg-muted/20 rounded-md border border-border">
-                            <span className="text-xs text-muted-foreground">Consistency</span>
-                            <span className="font-medium">95%</span>
-                          </div>
-                          <div className="flex flex-col items-center p-2 bg-muted/20 rounded-md border border-border">
-                            <span className="text-xs text-muted-foreground">Accuracy</span>
-                            <span className="font-medium">90%</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         );
       } catch (error) {
-        console.error("Error parsing AI analysis:", error);
+        console.error("Error rendering AI analysis:", error);
         return (
           <div className="p-4 border border-red-300 bg-red-50 text-red-800 rounded-md">
             Error displaying AI analysis results. Please try again.

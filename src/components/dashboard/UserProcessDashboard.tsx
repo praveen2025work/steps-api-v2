@@ -651,10 +651,10 @@ export function UserProcessDashboard() {
                                 ))}
                               </div>
                               
-                              {selectedFile && selectedFile.id && selectedFile.name && typeof selectedFile.id === 'string' && typeof selectedFile.name === 'string' ? (
+                              {selectedFile ? (
                                 <AdvancedFilePreview 
-                                  fileId={selectedFile.id} 
-                                  fileName={selectedFile.name} 
+                                  fileId={selectedFile.id || ''} 
+                                  fileName={selectedFile.name || 'Unknown File'} 
                                   onClose={() => {
                                     setSelectedFile(null);
                                     setShowFilePreview(false);
