@@ -3,9 +3,9 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DashboardLayout from '@/components/DashboardLayout';
 import WorkflowDetailView from '@/components/WorkflowDetailView';
-import ProcessDetailsView from '@/components/workflow/ProcessDetailsView';
+import ModernWorkflowView from '@/components/workflow/ModernWorkflowView';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertCircle, LayoutDashboard, Layers } from 'lucide-react';
+import { ArrowLeft, AlertCircle, LayoutDashboard, Layers, Sparkles } from 'lucide-react';
 import { WorkflowTask } from '@/components/WorkflowTaskItem';
 import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
 import { getAllStages } from '@/data/stageSpecificData';
@@ -408,25 +408,7 @@ const WorkflowDetailPage = () => {
     }
   };
 
-  // Create a process object for the alternative view
-  const processForAlternativeView = {
-    id: workflowData.id,
-    name: workflowData.title,
-    status: "In Progress",
-    assignedTo: "System User",
-    files: workflowData.tasks['stage-001']?.flatMap(task => 
-      task.documents?.map((doc, index) => ({
-        id: `file-${task.id}-${index}`,
-        name: doc.name,
-        type: doc.name.split('.').pop() || '',
-        size: doc.size
-      })) || []
-    ) || [],
-    dependencies: {
-      parent: [],
-      child: []
-    }
-  };
+
 
   return (
     <>
@@ -455,8 +437,8 @@ const WorkflowDetailPage = () => {
               onClick={() => setViewMode('alternative')}
               className="flex items-center gap-1"
             >
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Alternative View</span>
+              <Sparkles className="h-4 w-4" />
+              <span>Modern View</span>
             </Button>
           </div>
         </div>
@@ -471,8 +453,8 @@ const WorkflowDetailPage = () => {
                 tasks={workflowData.tasks as Record<string, WorkflowTask[]>}
               />
             ) : (
-              <ProcessDetailsView 
-                process={processForAlternativeView}
+              <ModernWorkflowView 
+                workflow={workflowData}
                 onBack={() => setViewMode('classic')}
               />
             )}
