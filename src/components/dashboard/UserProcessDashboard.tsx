@@ -630,6 +630,24 @@ const ProcessTable: React.FC<ProcessTableProps> = ({
   selectAll,
   onSelectAll
 }) => {
+  // Helper function to get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Completed':
+        return "bg-green-500";
+      case 'In Progress':
+        return "bg-blue-500";
+      case 'Pending':
+        return "bg-amber-500";
+      case 'Failed':
+        return "bg-red-500";
+      case 'Not Started':
+        return "bg-gray-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
   return (
     <div className="border rounded-lg overflow-hidden">
       <Table>
@@ -642,12 +660,10 @@ const ProcessTable: React.FC<ProcessTableProps> = ({
                 aria-label="Select all processes"
               />
             </TableHead>
-            <TableHead>ID</TableHead>
-            <TableHead>Name</TableHead>
+            <TableHead>Process</TableHead>
             <TableHead>Application</TableHead>
             <TableHead>Group</TableHead>
             <TableHead>Instance</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead>Priority</TableHead>
             <TableHead>Due Date</TableHead>
             <TableHead>Role</TableHead>
@@ -657,7 +673,7 @@ const ProcessTable: React.FC<ProcessTableProps> = ({
         <TableBody>
           {processes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={11} className="text-center py-4">
+              <TableCell colSpan={9} className="text-center py-4">
                 No processes found matching your filters
               </TableCell>
             </TableRow>
@@ -665,9 +681,10 @@ const ProcessTable: React.FC<ProcessTableProps> = ({
             processes.map((process) => (
               <TableRow 
                 key={process.id} 
-                className={selectedProcess?.id === process.id ? "bg-muted/50" : ""}
+                className={`relative ${selectedProcess?.id === process.id ? "bg-muted/50" : ""}`}
               >
-                <TableCell>
+                <TableCell className="relative">
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusColor(process.status)}`}></div>
                   <Checkbox 
                     checked={selectedProcesses.includes(process.id)}
                     onCheckedChange={() => onProcessSelection(process.id)}
@@ -675,24 +692,15 @@ const ProcessTable: React.FC<ProcessTableProps> = ({
                     onClick={(e) => e.stopPropagation()}
                   />
                 </TableCell>
-                <TableCell className="font-medium">{process.id}</TableCell>
-                <TableCell onClick={() => onProcessClick(process)} className="cursor-pointer hover:underline">
-                  {process.name}
+                <TableCell onClick={() => onProcessClick(process)} className="cursor-pointer">
+                  <div>
+                    <div className="font-medium">{process.name}</div>
+                    <div className="text-xs text-muted-foreground">ID: {process.id}</div>
+                  </div>
                 </TableCell>
                 <TableCell>{process.application}</TableCell>
                 <TableCell>{process.group}</TableCell>
                 <TableCell>{process.instance}</TableCell>
-                <TableCell>
-                  <Badge variant={
-                    process.status === "Completed" ? "outline" : 
-                    process.status === "In Progress" ? "default" : 
-                    process.status === "Failed" ? "destructive" : 
-                    process.status === "Not Started" ? "secondary" :
-                    "secondary"
-                  }>
-                    {process.status}
-                  </Badge>
-                </TableCell>
                 <TableCell>
                   <Badge variant={
                     process.priority === "Critical" ? "destructive" : 

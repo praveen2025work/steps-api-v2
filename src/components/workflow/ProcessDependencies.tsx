@@ -122,19 +122,31 @@ const ProcessDependencies: React.FC<ProcessDependenciesProps> = ({
   };
 
   const renderDependency = (dependency: Dependency) => {
+    const getStatusColor = (status: string) => {
+      switch (status.toLowerCase()) {
+        case 'completed':
+          return "bg-green-500";
+        case 'in progress':
+          return "bg-blue-500";
+        case 'skipped':
+          return "bg-amber-500";
+        case 'failed':
+          return "bg-red-500";
+        default:
+          return "bg-gray-500";
+      }
+    };
+
     return (
-      <div key={dependency.id} className="mb-4 border rounded-lg overflow-hidden">
-        <div className="p-3 bg-muted/30">
+      <div key={dependency.id} className="mb-3 border rounded-md overflow-hidden relative">
+        <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusColor(dependency.status)}`}></div>
+        <div className="p-2 pl-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {getStatusIcon(dependency.status)}
-              <div>
-                <p className="font-medium">{dependency.name}</p>
-                <p className="text-xs text-muted-foreground">Process ID: {dependency.processId}</p>
-              </div>
+            <div>
+              <p className="font-medium">{dependency.name}</p>
+              <p className="text-xs text-muted-foreground">ID: {dependency.processId}</p>
             </div>
             <div className="flex items-center gap-2">
-              {getStatusBadge(dependency.status)}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -154,26 +166,26 @@ const ProcessDependencies: React.FC<ProcessDependenciesProps> = ({
               </TooltipProvider>
             </div>
           </div>
-        </div>
-        
-        {dependency.files && dependency.files.length > 0 && (
-          <div className="p-3 border-t">
-            <p className="text-sm font-medium mb-2">Associated Files:</p>
-            <div className="flex flex-wrap gap-2">
-              {dependency.files.map(file => (
-                <Button 
-                  key={file.id}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center text-xs"
-                >
-                  <FileText className="h-3 w-3 mr-1" />
-                  {file.name}
-                </Button>
-              ))}
+          
+          {dependency.files && dependency.files.length > 0 && (
+            <div className="mt-2">
+              <p className="text-xs font-medium mb-1">Files:</p>
+              <div className="flex flex-wrap gap-1">
+                {dependency.files.map(file => (
+                  <Button 
+                    key={file.id}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center text-xs h-7 px-2"
+                  >
+                    <FileText className="h-3 w-3 mr-1" />
+                    {file.name}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   };

@@ -32,7 +32,10 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  ArrowRightCircle
+  ArrowRightCircle,
+  Menu,
+  Check,
+  MoreHorizontal
 } from "lucide-react";
 
 interface ProcessDetailsViewProps {
@@ -50,44 +53,36 @@ interface ProcessListItemProps {
 
 // Process List Item Component
 const ProcessListItem: React.FC<ProcessListItemProps> = ({ process, isSelected, onClick }) => {
-  const getStatusIcon = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return "bg-green-500";
       case 'In Progress':
-        return <Clock className="h-4 w-4 text-blue-500" />;
+        return "bg-blue-500";
       case 'Pending':
-        return <Clock className="h-4 w-4 text-amber-500" />;
+        return "bg-amber-500";
       case 'Failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return "bg-red-500";
       case 'Not Started':
-        return <ArrowRightCircle className="h-4 w-4 text-muted-foreground" />;
+        return "bg-gray-500";
       default:
-        return <Clock className="h-4 w-4 text-muted-foreground" />;
+        return "bg-gray-500";
     }
   };
 
   return (
     <div 
-      className={`p-3 border rounded-md mb-2 cursor-pointer hover:bg-accent/10 ${isSelected ? 'bg-accent/20 border-primary' : ''}`}
+      className={`relative border rounded-md mb-2 cursor-pointer hover:bg-accent/10 overflow-hidden ${isSelected ? 'border-primary' : ''}`}
       onClick={onClick}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {getStatusIcon(process.status)}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusColor(process.status)}`}></div>
+      <div className="p-2 pl-3">
+        <div className="flex items-center justify-between">
           <div>
             <p className="font-medium text-sm">{process.name}</p>
-            <p className="text-xs text-muted-foreground">{process.id}</p>
+            <p className="text-xs text-muted-foreground">{process.id} | {process.assignedTo || 'Unassigned'}</p>
           </div>
         </div>
-        <Badge variant={
-          process.status === "Completed" ? "outline" : 
-          process.status === "In Progress" ? "default" : 
-          process.status === "Failed" ? "destructive" : 
-          "secondary"
-        }>
-          {process.status}
-        </Badge>
       </div>
     </div>
   );
@@ -225,114 +220,69 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
   
   return (
     <div className="space-y-4">
-      {/* Horizontal Sub-Stage Card (Always Visible) */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col space-y-3">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-                {onBack && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={onBack}
-                    className="mr-2"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Back
-                  </Button>
-                )}
-                <div>
-                  <CardTitle>{process?.name || 'Process Details'}</CardTitle>
-                  <CardDescription>
-                    {process?.application || 'Unknown'} &gt; {process?.instance || 'Unknown'} &gt; {process?.stage || 'Unknown'}
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                {/* Action Buttons */}
-                <Button variant="outline" size="sm">
-                  <Lock className="h-4 w-4 mr-2" />
-                  Lock
-                </Button>
-                <Button variant="outline" size="sm">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
-                
-                {/* Panel Toggle Buttons */}
-                <Button 
-                  variant={showLeftPanel ? "default" : "outline"} 
-                  size="icon"
-                  onClick={toggleLeftPanel}
-                  title={showLeftPanel ? "Hide left panel" : "Show left panel"}
-                >
-                  {showLeftPanel ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-                </Button>
-                <Button 
-                  variant={showRightPanel ? "default" : "outline"} 
-                  size="icon"
-                  onClick={toggleRightPanel}
-                  title={showRightPanel ? "Hide right panel" : "Show right panel"}
-                >
-                  {showRightPanel ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
-                </Button>
-                
-                {onClose && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={onClose}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-            
-            {/* Process Status Information */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center">
-                  <span className="text-sm font-medium mr-1">Files:</span>
-                  {(subStage?.files || process?.files) && (
-                    <div className="flex items-center gap-2">
-                      {renderFileButtons(subStage?.files || process?.files)}
-                    </div>
+      {/* Horizontal Sub-Stage Card (Always Visible) - Optimized Design */}
+      <Card className="overflow-hidden">
+        <div className="flex">
+          {/* Status Ribbon */}
+          <div className={`w-2 ${
+            (process?.status === "Completed" || subStage?.status === "Completed") ? "bg-green-500" : 
+            (process?.status === "In Progress" || subStage?.status === "In Progress") ? "bg-blue-500" : 
+            (process?.status === "Pending" || subStage?.status === "Pending") ? "bg-amber-500" : 
+            (process?.status === "Failed" || subStage?.status === "Failed") ? "bg-red-500" : 
+            "bg-gray-500"
+          }`}></div>
+          
+          <div className="flex-1">
+            <div className="p-3">
+              <div className="flex justify-between items-center">
+                {/* Process Info */}
+                <div className="flex items-center gap-3">
+                  {onBack && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={onBack}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
                   )}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Process:</span> 
+                      <span>{process?.name || 'Process Details'}</span>
+                      <span className="text-sm text-muted-foreground">ID: {subStage?.id || process?.id || 'Unknown'}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 mt-1">
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium mr-1">Files:</span>
+                        {(subStage?.files || process?.files) && (
+                          <div className="flex items-center gap-1">
+                            {renderFileButtons(subStage?.files || process?.files)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">
+                          <span className="font-medium">User:</span> {subStage?.assignedTo?.split(' ')[0] || process?.assignedTo?.split(' ')[0] || 'Unassigned'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
-                <Badge className="ml-2" variant={subStage?.status === "In Progress" ? "default" : "outline"}>
-                  Status: {subStage?.status || process?.status || 'Unknown'}
-                </Badge>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <span className="text-sm">
-                  <span className="font-medium">Assigned:</span> {subStage?.assignedTo || process?.assignedTo || 'Unassigned'}
-                </span>
-                
-                <Badge variant="outline">
-                  <Clock className="h-3 w-3 mr-1" />
-                  {subStage?.priority || process?.priority || 'No Priority'}
-                </Badge>
-              </div>
-            </div>
-            
-            {/* Process ID and Dependencies */}
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center">
-                <span className="mr-4">ID: <span className="font-medium">{subStage?.id || process?.id || 'Unknown'}</span></span>
-                
-                {process?.dependencies && (
-                  <>
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       className="text-sm h-8 px-2"
                       onClick={() => handleViewDependencies('parent')}
                     >
-                      Parents ({process.dependencies.parent?.length || 0})
+                      Parents({process?.dependencies?.parent?.length || 0})▼
                     </Button>
                     <Button 
                       variant="ghost" 
@@ -340,23 +290,58 @@ const ProcessDetailsView: React.FC<ProcessDetailsViewProps> = ({
                       className="text-sm h-8 px-2"
                       onClick={() => handleViewDependencies('child')}
                     >
-                      Children ({process.dependencies.child?.length || 0})
+                      Children({process?.dependencies?.child?.length || 0})▼
                     </Button>
-                  </>
-                )}
-              </div>
-              
-              <div className="flex items-center">
-                {process?.dueDate && (
-                  <span className="flex items-center text-muted-foreground">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Due: <span className="font-medium ml-1">{process.dueDate}</span>
-                  </span>
-                )}
+                  </div>
+                  
+                  <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Lock className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {/* Panel Toggle Buttons */}
+                    <Button 
+                      variant={showLeftPanel ? "default" : "outline"} 
+                      size="icon"
+                      onClick={toggleLeftPanel}
+                      title={showLeftPanel ? "Hide left panel" : "Show left panel"}
+                      className="h-8 w-8"
+                    >
+                      {showLeftPanel ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+                    </Button>
+                    <Button 
+                      variant={showRightPanel ? "default" : "outline"} 
+                      size="icon"
+                      onClick={toggleRightPanel}
+                      title={showRightPanel ? "Hide right panel" : "Show right panel"}
+                      className="h-8 w-8"
+                    >
+                      {showRightPanel ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="border-l h-6 mx-1"></div>
+                    
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                      <ArrowRightCircle className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </CardHeader>
+        </div>
       </Card>
       
       {/* Main Content Area with Dynamic Panels */}
