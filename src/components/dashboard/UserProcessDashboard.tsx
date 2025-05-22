@@ -8,6 +8,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import AdvancedFilePreview from "@/components/files/AdvancedFilePreview";
+import StageOverview from "@/components/workflow/StageOverview";
+import AppParameters from "@/components/workflow/AppParameters";
+import GlobalParameters from "@/components/workflow/GlobalParameters";
+import ProcessOverview from "@/components/workflow/ProcessOverview";
+import ProcessParameters from "@/components/workflow/ProcessParameters";
+import ProcessDependencies from "@/components/workflow/ProcessDependencies";
+import ProcessQueries from "@/components/workflow/ProcessQueries";
 import { 
   Search, 
   Filter, 
@@ -529,34 +536,69 @@ function UserProcessDashboard() {
                 {/* Process Detail Header */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={handleBackToAllProcesses}
-                          className="mr-2"
-                        >
-                          <ArrowLeft className="h-4 w-4 mr-1" />
-                          Back to All Processes
-                        </Button>
-                        <div>
-                          <CardTitle>{selectedProcess.name}</CardTitle>
-                          <CardDescription>
-                            {selectedProcess.application} &gt; {selectedProcess.instance} &gt; {selectedProcess.stage}
-                          </CardDescription>
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={handleBackToAllProcesses}
+                            className="mr-2"
+                          >
+                            <ArrowLeft className="h-4 w-4 mr-1" />
+                            Back to All Processes
+                          </Button>
+                          <div>
+                            <CardTitle>{selectedProcess.name}</CardTitle>
+                            <CardDescription>
+                              {selectedProcess.application} &gt; {selectedProcess.instance} &gt; {selectedProcess.stage}
+                            </CardDescription>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          {selectedSubStage && (
+                            <div className="flex items-center mr-4">
+                              <Badge className="mr-2" variant={selectedSubStage.status === "In Progress" ? "default" : "outline"}>
+                                {selectedSubStage.status || 'Unknown Status'}
+                              </Badge>
+                              <Badge variant="outline" className="mr-2">
+                                {selectedSubStage.priority || 'No Priority'}
+                              </Badge>
+                              <span className="text-sm mr-2">
+                                <span className="text-muted-foreground">Assigned:</span> {selectedSubStage.assignedTo || 'Unassigned'}
+                              </span>
+                            </div>
+                          )}
+                          <Button variant="outline" size="sm">
+                            <Lock className="h-4 w-4 mr-2" />
+                            Lock
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Refresh
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                          <Lock className="h-4 w-4 mr-2" />
-                          Lock
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          Refresh
-                        </Button>
-                      </div>
+                      
+                      {/* File buttons in header */}
+                      {selectedSubStage && selectedSubStage.files && Array.isArray(selectedSubStage.files) && selectedSubStage.files.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedSubStage.files.map((file: any) => {
+                            if (!file || !file.id) return null;
+                            return (
+                              <Button 
+                                key={file.id}
+                                variant={selectedFile?.id === file.id ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleFileClick(file)}
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                {file.name || 'Unnamed File'}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </CardHeader>
                 </Card>
@@ -777,168 +819,38 @@ function UserProcessDashboard() {
                               </TabsList>
                               
                               <TabsContent value="stageOverview">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Name</p>
-                                    <p className="font-medium">{mockStageOverviewData.name}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Status</p>
-                                    <p className="font-medium">{mockStageOverviewData.status}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Owner</p>
-                                    <p className="font-medium">{mockStageOverviewData.owner}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">SLA</p>
-                                    <p className="font-medium">{mockStageOverviewData.sla}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Start Time</p>
-                                    <p className="font-medium">{mockStageOverviewData.startTime}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Est. Completion</p>
-                                    <p className="font-medium">{mockStageOverviewData.estimatedCompletion}</p>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <p className="text-sm text-muted-foreground">Description</p>
-                                    <p className="font-medium">{mockStageOverviewData.description}</p>
-                                  </div>
-                                </div>
+                                <StageOverview 
+                                  stageId={selectedProcess.id} 
+                                  stageName={selectedProcess.stage} 
+                                />
                               </TabsContent>
                               
                               <TabsContent value="appConfig">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Application</p>
-                                    <p className="font-medium">{mockAppConfigData.application}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Version</p>
-                                    <p className="font-medium">{mockAppConfigData.version}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Environment</p>
-                                    <p className="font-medium">{mockAppConfigData.environment}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Data Source</p>
-                                    <p className="font-medium">{mockAppConfigData.dataSource}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Output Destination</p>
-                                    <p className="font-medium">{mockAppConfigData.outputDestination}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Retry Policy</p>
-                                    <p className="font-medium">{mockAppConfigData.retryPolicy}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Notification Recipients</p>
-                                    <p className="font-medium">{mockAppConfigData.notificationRecipients}</p>
-                                  </div>
-                                </div>
+                                <AppParameters 
+                                  processId={selectedProcess.id} 
+                                  processName={selectedProcess.name} 
+                                />
                               </TabsContent>
                               
                               <TabsContent value="globalConfig">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Business Date</p>
-                                    <p className="font-medium">{mockGlobalConfigData.businessDate}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Region</p>
-                                    <p className="font-medium">{mockGlobalConfigData.region}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Data Retention Period</p>
-                                    <p className="font-medium">{mockGlobalConfigData.dataRetentionPeriod}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Audit Level</p>
-                                    <p className="font-medium">{mockGlobalConfigData.auditLevel}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Emergency Contact</p>
-                                    <p className="font-medium">{mockGlobalConfigData.emergencyContact}</p>
-                                  </div>
-                                </div>
+                                <GlobalParameters 
+                                  processId={selectedProcess.id} 
+                                  processName={selectedProcess.name} 
+                                />
                               </TabsContent>
                               
                               <TabsContent value="processOverview">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">ID</p>
-                                    <p className="font-medium">{mockProcessOverviewData.id}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Name</p>
-                                    <p className="font-medium">{mockProcessOverviewData.name}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Owner</p>
-                                    <p className="font-medium">{mockProcessOverviewData.owner}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Status</p>
-                                    <p className="font-medium">{mockProcessOverviewData.status}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Start Time</p>
-                                    <p className="font-medium">{mockProcessOverviewData.startTime}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Est. Completion</p>
-                                    <p className="font-medium">{mockProcessOverviewData.estimatedCompletion}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Priority</p>
-                                    <p className="font-medium">{mockProcessOverviewData.priority}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Progress</p>
-                                    <p className="font-medium">{mockProcessOverviewData.progress}%</p>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <p className="text-sm text-muted-foreground">Description</p>
-                                    <p className="font-medium">{mockProcessOverviewData.description}</p>
-                                  </div>
-                                </div>
+                                <ProcessOverview 
+                                  processId={selectedProcess.id} 
+                                  processName={selectedProcess.name} 
+                                />
                               </TabsContent>
                               
                               <TabsContent value="processConfig">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Validation Rules</p>
-                                    <p className="font-medium">{mockProcessConfigData.validationRules}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Tolerance Level</p>
-                                    <p className="font-medium">{mockProcessConfigData.toleranceLevel}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Data Source</p>
-                                    <p className="font-medium">{mockProcessConfigData.dataSource}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Output Format</p>
-                                    <p className="font-medium">{mockProcessConfigData.outputFormat}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Notification Threshold</p>
-                                    <p className="font-medium">{mockProcessConfigData.notificationThreshold}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Retry Attempts</p>
-                                    <p className="font-medium">{mockProcessConfigData.retryAttempts}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">Timeout (minutes)</p>
-                                    <p className="font-medium">{mockProcessConfigData.timeoutMinutes}</p>
-                                  </div>
-                                </div>
+                                <ProcessParameters 
+                                  processId={selectedProcess.id} 
+                                  processName={selectedProcess.name} 
+                                />
                               </TabsContent>
                               
                               <TabsContent value="files">
@@ -1013,22 +925,49 @@ function UserProcessDashboard() {
                                               </CardHeader>
                                               {parent.files && Array.isArray(parent.files) && parent.files.length > 0 && (
                                                 <CardContent className="py-0">
-                                                  <p className="text-sm font-medium mb-2">Files</p>
-                                                  <div className="flex flex-wrap gap-2">
-                                                    {parent.files.map((file: any) => {
-                                                      if (!file || !file.id) return null;
-                                                      return (
-                                                        <Button 
-                                                          key={file.id}
-                                                          variant="outline"
-                                                          size="sm"
-                                                          onClick={() => handleDependencyFileClick(file)}
-                                                        >
-                                                          <FileText className="h-4 w-4 mr-2" />
-                                                          {file.name || 'Unnamed File'}
-                                                        </Button>
-                                                      );
-                                                    })}
+                                                  <div className="space-y-4">
+                                                    <div>
+                                                      <p className="text-sm font-medium mb-2">Files</p>
+                                                      <div className="flex flex-wrap gap-2">
+                                                        {parent.files.map((file: any) => {
+                                                          if (!file || !file.id) return null;
+                                                          return (
+                                                            <Button 
+                                                              key={file.id}
+                                                              variant="outline"
+                                                              size="sm"
+                                                              onClick={() => handleDependencyFileClick(file)}
+                                                            >
+                                                              <FileText className="h-4 w-4 mr-2" />
+                                                              {file.name || 'Unnamed File'}
+                                                            </Button>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    </div>
+                                                    
+                                                    {/* Preview of selected parent file */}
+                                                    {selectedFile && parent.files.some((f: any) => f.id === selectedFile.id) && (
+                                                      <div className="mt-4 border rounded-lg p-4">
+                                                        <div className="flex justify-between items-center mb-3">
+                                                          <h4 className="text-sm font-medium">Viewing Parent File: {selectedFile.name}</h4>
+                                                          <div className="flex gap-2">
+                                                            <Button size="sm" variant="outline">Approve</Button>
+                                                            <Button size="sm" variant="outline">Reject</Button>
+                                                          </div>
+                                                        </div>
+                                                        <div className="h-[300px] overflow-auto bg-gray-50 dark:bg-gray-900 rounded-md">
+                                                          <AdvancedFilePreview 
+                                                            fileId={selectedFile.id} 
+                                                            fileName={selectedFile.name} 
+                                                            onClose={() => {
+                                                              setSelectedFile(null);
+                                                              setShowFilePreview(false);
+                                                            }} 
+                                                          />
+                                                        </div>
+                                                      </div>
+                                                    )}
                                                   </div>
                                                 </CardContent>
                                               )}
@@ -1102,43 +1041,10 @@ function UserProcessDashboard() {
                               </TabsContent>
                               
                               <TabsContent value="queries">
-                                <div className="space-y-4">
-                                  {mockQueriesData.map((query) => (
-                                    <Card key={query.id}>
-                                      <CardHeader className="py-3">
-                                        <div className="flex justify-between items-center">
-                                          <div>
-                                            <CardTitle className="text-base">{query.title}</CardTitle>
-                                            <CardDescription>ID: {query.id} | Created: {query.createdAt}</CardDescription>
-                                          </div>
-                                          <Badge variant={query.status === "Open" ? "default" : "outline"}>
-                                            {query.status}
-                                          </Badge>
-                                        </div>
-                                      </CardHeader>
-                                      <CardContent>
-                                        <div className="grid grid-cols-2 gap-4 mb-2">
-                                          <div>
-                                            <p className="text-sm text-muted-foreground">Created By</p>
-                                            <p className="font-medium">{query.createdBy}</p>
-                                          </div>
-                                          <div>
-                                            <p className="text-sm text-muted-foreground">Assigned To</p>
-                                            <p className="font-medium">{query.assignedTo}</p>
-                                          </div>
-                                          <div>
-                                            <p className="text-sm text-muted-foreground">Priority</p>
-                                            <p className="font-medium">{query.priority}</p>
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <p className="text-sm text-muted-foreground">Description</p>
-                                          <p className="text-sm">{query.description}</p>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-                                  ))}
-                                </div>
+                                <ProcessQueries 
+                                  processId={selectedProcess.id} 
+                                  processName={selectedProcess.name} 
+                                />
                               </TabsContent>
                             </Tabs>
                           </CardContent>
