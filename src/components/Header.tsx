@@ -90,7 +90,7 @@ const Header = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>Praveen Kumar</DropdownMenuLabel>
               <div className="px-2 py-1 text-xs text-muted-foreground">
                 Last updated: {lastUpdated.toLocaleTimeString()}
               </div>
