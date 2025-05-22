@@ -69,6 +69,7 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
         };
         
         // Try to create the real mock data, but fall back to default if anything fails
+        let finalData: FileData;
         try {
           const mockData: FileData = {
             id: fileId,
@@ -113,22 +114,24 @@ const AdvancedFilePreview: React.FC<AdvancedFilePreviewProps> = ({
               mockData.sheets && 
               typeof mockData.sheets === 'object' && 
               Object.keys(mockData.sheets).length > 0) {
-            setFileData(mockData);
+            finalData = mockData;
           } else {
-            setFileData(defaultMockData);
+            finalData = defaultMockData;
           }
         } catch (innerError) {
           console.error('Error creating mock data:', innerError);
-          setFileData(defaultMockData);
+          finalData = defaultMockData;
         }
         
+        // Set the file data
+        setFileData(finalData);
+        
         // Safely set active sheet only if sheets exist
-        const currentFileData = fileData || defaultMockData;
-        if (currentFileData && 
-            currentFileData.sheets && 
-            typeof currentFileData.sheets === 'object' && 
-            Object.keys(currentFileData.sheets).length > 0) {
-          setActiveSheet(Object.keys(currentFileData.sheets)[0]);
+        if (finalData && 
+            finalData.sheets && 
+            typeof finalData.sheets === 'object' && 
+            Object.keys(finalData.sheets).length > 0) {
+          setActiveSheet(Object.keys(finalData.sheets)[0]);
         } else {
           setActiveSheet('Default');
         }

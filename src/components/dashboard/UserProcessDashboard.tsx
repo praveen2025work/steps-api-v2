@@ -686,19 +686,46 @@ export function UserProcessDashboard() {
                                 <div className="file-preview-container">
                                   {/* Wrap in error boundary div */}
                                   <div className="file-preview-wrapper">
-                                    <AdvancedFilePreview 
-                                      fileId={selectedFile.id} 
-                                      fileName={selectedFile.name || 'Unknown File'} 
-                                      onClose={() => {
-                                        try {
-                                          setSelectedFile(null);
-                                          setShowFilePreview(false);
-                                          setShowWorkflowDetail(true);
-                                        } catch (error) {
-                                          console.error("Error in onClose callback:", error);
+                                    {(() => {
+                                      try {
+                                        // Safely extract file properties
+                                        const fileId = selectedFile?.id || '';
+                                        const fileName = selectedFile?.name || 'Unknown File';
+                                        
+                                        // Only render if we have valid data
+                                        if (!fileId) {
+                                          return (
+                                            <div className="p-4 text-center text-muted-foreground">
+                                              Invalid file data
+                                            </div>
+                                          );
                                         }
-                                      }} 
-                                    />
+                                        
+                                        return (
+                                          <AdvancedFilePreview 
+                                            key={fileId} // Add key to force re-render on file change
+                                            fileId={fileId} 
+                                            fileName={fileName} 
+                                            onClose={() => {
+                                              try {
+                                                setSelectedFile(null);
+                                                setShowFilePreview(false);
+                                                setShowWorkflowDetail(true);
+                                              } catch (error) {
+                                                console.error("Error in onClose callback:", error);
+                                              }
+                                            }} 
+                                          />
+                                        );
+                                      } catch (error) {
+                                        console.error("Error rendering AdvancedFilePreview:", error);
+                                        return (
+                                          <div className="p-4 text-center border border-red-200 bg-red-50 text-red-800 rounded-md">
+                                            Error loading file preview. Please try again.
+                                          </div>
+                                        );
+                                      }
+                                    })()}
                                   </div>
                                 </div>
                               ) : (
