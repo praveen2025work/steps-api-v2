@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Clock,
   Layers,
-  Sparkles
+  Sparkles,
+  GitBranch
 } from 'lucide-react';
 import { useDate } from '@/contexts/DateContext';
 import { formatDate } from '@/lib/dateUtils';
@@ -41,8 +42,8 @@ interface WorkflowUnifiedHeaderProps {
     processing: number;
   };
   lastRefreshed?: Date;
-  viewMode?: 'classic' | 'alternative';
-  onViewToggle?: (mode: 'classic' | 'alternative') => void;
+  viewMode?: 'classic' | 'alternative' | 'stepfunction';
+  onViewToggle?: (mode: 'classic' | 'alternative' | 'stepfunction') => void;
 }
 
 const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
@@ -140,6 +141,15 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                 className="h-6 w-6"
               >
                 <Sparkles className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant={viewMode === 'stepfunction' ? "default" : "ghost"}
+                size="icon"
+                onClick={() => onViewToggle('stepfunction')}
+                title="Step Function View"
+                className="h-6 w-6"
+              >
+                <GitBranch className="h-3.5 w-3.5" />
               </Button>
             </div>
           )}

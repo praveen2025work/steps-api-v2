@@ -4,8 +4,9 @@ import Head from 'next/head';
 import DashboardLayout from '@/components/DashboardLayout';
 import WorkflowDetailView from '@/components/WorkflowDetailView';
 import ModernWorkflowView from '@/components/workflow/ModernWorkflowView';
+import StepFunctionView from '@/components/workflow/StepFunctionView';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertCircle, LayoutDashboard, Layers, Sparkles } from 'lucide-react';
+import { ArrowLeft, AlertCircle, LayoutDashboard, Layers, Sparkles, GitBranch } from 'lucide-react';
 import { WorkflowTask } from '@/components/WorkflowTaskItem';
 import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
 import { getAllStages } from '@/data/stageSpecificData';
@@ -207,8 +208,8 @@ const WorkflowDetailPage = () => {
     applications: [],
     categories: {}
   });
-  // State to toggle between classic and alternative view
-  const [viewMode, setViewMode] = useState<'classic' | 'alternative'>('classic');
+  // State to toggle between different views
+  const [viewMode, setViewMode] = useState<'classic' | 'alternative' | 'stepfunction'>('classic');
   
   // Generate hierarchy data for navigation based on the actual workflow structure
   const generateHierarchyData = React.useCallback(() => {
@@ -431,11 +432,16 @@ const WorkflowDetailPage = () => {
                 viewMode={viewMode}
                 onViewToggle={(mode) => setViewMode(mode)}
               />
-            ) : (
+            ) : viewMode === 'alternative' ? (
               <ModernWorkflowView 
                 workflow={workflowData}
                 onBack={() => setViewMode('classic')}
                 onViewToggle={() => setViewMode('classic')}
+              />
+            ) : (
+              <StepFunctionView 
+                workflow={workflowData}
+                onBack={() => setViewMode('classic')}
               />
             )}
           </div>
