@@ -353,9 +353,22 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
     }
   };
 
+  // State for file preview
+  const [showFilePreview, setShowFilePreview] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [showActionPanel, setShowActionPanel] = useState(false);
+
   // Handle node click with improved selection behavior
   const handleNodeClick = (nodeId: string) => {
+    // Prevent the diagram from repositioning by not changing the pan state
     setSelectedNode(nodeId === selectedNode ? null : nodeId);
+    
+    // Close file preview when selecting a different node
+    if (nodeId !== selectedNode) {
+      setShowFilePreview(false);
+      setSelectedFile(null);
+    }
+    
     if (onNodeClick) {
       onNodeClick(nodeId);
     }
@@ -374,6 +387,24 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
         connectedNodeIds.add(edge.target);
       });
     }
+  };
+  
+  // Handle file preview
+  const handleViewFile = (file: any) => {
+    setSelectedFile(file);
+    setShowFilePreview(true);
+  };
+  
+  // Handle action on node
+  const handleNodeAction = (action: string) => {
+    const node = nodes.find(n => n.id === selectedNode);
+    if (!node) return;
+    
+    console.log(`Performing action "${action}" on node:`, node);
+    // In a real app, you would dispatch an action to update the workflow
+    
+    // Show a temporary success message
+    alert(`Action "${action}" performed on "${node.label}"`);
   };
   
   // Check if a node is in the search results
@@ -751,8 +782,108 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
         {renderMinimap()}
       </div>
       
+      {/* File Preview Panel */}
+      {showFilePreview && selectedFile && (
+        <div className="absolute inset-0 bg-white z-10 flex flex-col">
+          <div className="flex justify-between items-center p-4 border-b">
+            <div>
+              <h3 className="text-lg font-medium">{selectedFile.name || 'File Preview'}</h3>
+              <p className="text-sm text-muted-foreground">
+                {nodes.find(n => n.id === selectedNode)?.label || 'Document'} • {selectedFile.type || 'File'}
+              </p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => {
+                setShowFilePreview(false);
+                setSelectedFile(null);
+              }}
+            >
+              Close Preview
+            </Button>
+          </div>
+          <div className="flex-1 overflow-auto p-4">
+            <div className="border rounded-md p-4 h-full flex items-center justify-center">
+              <div className="text-center">
+                <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">{selectedFile.name}</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Preview not available in this view. Please use the Modern View for full file preview functionality.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowFilePreview(false);
+                    setSelectedFile(null);
+                  }}
+                >
+                  Close Preview
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Panel */}
+      {showActionPanel && selectedNode && (
+        <div className="absolute top-16 right-4 bg-white border rounded-md shadow-lg z-10 w-64">
+          <div className="p-3 border-b">
+            <h3 className="font-medium">Actions</h3>
+          </div>
+          <div className="p-2 space-y-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-start"
+              onClick={() => handleNodeAction('approve')}
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Approve
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-start"
+              onClick={() => handleNodeAction('reject')}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Reject
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-start"
+              onClick={() => handleNodeAction('reassign')}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Reassign
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-start"
+              onClick={() => handleNodeAction('message')}
+            >
+              <Info className="h-4 w-4 mr-2" />
+              Add Message
+            </Button>
+            <Separator className="my-2" />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-start"
+              onClick={() => setShowActionPanel(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Node details panel with improved layout and tabs */}
-      {selectedNode && (
+      {selectedNode && !showFilePreview && (
         <div className="absolute bottom-0 left-0 right-0 bg-white border-t rounded-t-md shadow-lg max-h-[300px] overflow-auto">
           <div className="flex justify-between items-center p-2 border-b">
             <div className="flex items-center gap-2">
@@ -774,14 +905,24 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
                 return null;
               })()}
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-6 w-6 p-0" 
-              onClick={() => setSelectedNode(null)}
-            >
-              ×
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7"
+                onClick={() => setShowActionPanel(!showActionPanel)}
+              >
+                Actions
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 w-6 p-0" 
+                onClick={() => setSelectedNode(null)}
+              >
+                ×
+              </Button>
+            </div>
           </div>
           
           {(() => {
@@ -907,7 +1048,17 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
                                 <FileText className="h-4 w-4 text-blue-500" />
                                 <span>{doc.name}</span>
                               </div>
-                              <span className="text-muted-foreground">{doc.size}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">{doc.size}</span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => handleViewFile(doc)}
+                                >
+                                  <Search className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -933,10 +1084,28 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
                             </div>
                           ))}
                         </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full mt-2"
+                          onClick={() => handleNodeAction('message')}
+                        >
+                          Add Message
+                        </Button>
                       </div>
                     ) : (
-                      <div className="text-xs text-muted-foreground p-4 text-center">
-                        No messages found for this task.
+                      <div className="space-y-4">
+                        <div className="text-xs text-muted-foreground p-4 text-center">
+                          No messages found for this task.
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => handleNodeAction('message')}
+                        >
+                          Add Message
+                        </Button>
                       </div>
                     )}
                   </TabsContent>
@@ -979,6 +1148,28 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
                           <span>{node.data.progress || 0}%</span>
                         </div>
                         <Progress value={node.data.progress || 0} className="h-2" />
+                      </div>
+                      
+                      {/* Action buttons for stage */}
+                      <div className="mt-3 flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleNodeAction('refresh')}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Refresh
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleNodeAction('details')}
+                        >
+                          <Info className="h-4 w-4 mr-1" />
+                          Details
+                        </Button>
                       </div>
                     </div>
                   </TabsContent>
