@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import WorkflowStepFunctionDiagram from './WorkflowStepFunctionDiagram';
+import WorkflowFlowchartDiagram from './WorkflowFlowchartDiagram';
+import WorkflowNetworkDiagram from './WorkflowNetworkDiagram';
 import { convertWorkflowToDiagram } from '@/lib/workflowDiagramUtils';
 import StageOverview from './StageOverview';
 import AppParameters from './AppParameters';
@@ -286,43 +288,23 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
                   )}
                   
                   {visualizationType === "flowchart" && (
-                    <div className="h-full border rounded-md bg-white p-4 flex flex-col">
-                      <h3 className="text-lg font-medium mb-4">Flowchart View</h3>
-                      <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-md border">
-                        <div className="text-center p-8">
-                          <Share2 className="h-16 w-16 mx-auto text-blue-500 mb-4" />
-                          <h3 className="text-lg font-medium mb-2">Traditional Flowchart</h3>
-                          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-                            This view shows the workflow as a traditional top-down flowchart with improved readability and simpler navigation.
-                          </p>
-                          <div className="flex justify-center">
-                            <Button onClick={() => setVisualizationType("stepFunction")}>
-                              Switch to Step Function View
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <WorkflowFlowchartDiagram 
+                      workflowId={workflow.id || 'workflow-1'}
+                      workflowTitle={workflow.title}
+                      nodes={diagramData.nodes}
+                      edges={diagramData.edges}
+                      onNodeClick={handleNodeClick}
+                    />
                   )}
                   
                   {visualizationType === "network" && (
-                    <div className="h-full border rounded-md bg-white p-4 flex flex-col">
-                      <h3 className="text-lg font-medium mb-4">Network View</h3>
-                      <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-md border">
-                        <div className="text-center p-8">
-                          <Network className="h-16 w-16 mx-auto text-purple-500 mb-4" />
-                          <h3 className="text-lg font-medium mb-2">Network Diagram</h3>
-                          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-                            This view shows the workflow as an interactive network diagram with nodes and connections, optimized for complex workflows.
-                          </p>
-                          <div className="flex justify-center">
-                            <Button onClick={() => setVisualizationType("stepFunction")}>
-                              Switch to Step Function View
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <WorkflowNetworkDiagram 
+                      workflowId={workflow.id || 'workflow-1'}
+                      workflowTitle={workflow.title}
+                      nodes={diagramData.nodes}
+                      edges={diagramData.edges}
+                      onNodeClick={handleNodeClick}
+                    />
                   )}
                 </div>
                 
