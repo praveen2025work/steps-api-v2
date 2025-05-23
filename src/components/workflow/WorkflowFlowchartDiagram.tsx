@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   CheckCircle, 
   XCircle, 
@@ -10,9 +10,13 @@ import {
   RefreshCw,
   FileText,
   ArrowDown,
-  ArrowRight
+  ArrowRight,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface DiagramNode {
   id: string;
@@ -57,8 +61,8 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
 
-  // Reorganize nodes for a top-down flowchart layout
-  const reorganizedNodes = React.useMemo(() => {
+  // Reorganize nodes for a top-down flowchart layout - optimized with better memoization
+  const reorganizedNodes = useMemo(() => {
     // Create a deep copy of nodes to avoid mutating the original
     const nodesCopy = JSON.parse(JSON.stringify(nodes));
     
@@ -75,7 +79,7 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
     // Calculate positions for a top-down flowchart
     const CANVAS_WIDTH = 1200;
     const CENTER_X = CANVAS_WIDTH / 2;
-    const NODE_VERTICAL_SPACING = 100;
+    const NODE_VERTICAL_SPACING = 120; // Increased for better spacing
     const STAGE_HORIZONTAL_SPACING = 250;
     
     // Position start node at the top center
@@ -90,7 +94,7 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
       stage.y = (index + 1) * NODE_VERTICAL_SPACING + 100;
     });
     
-    // Group substage nodes by their parent stage
+    // Group substage nodes by their parent stage - optimized to avoid multiple iterations
     const substagesByStage: Record<string, DiagramNode[]> = {};
     
     substageNodes.forEach((substage: DiagramNode) => {
@@ -107,7 +111,6 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
     Object.entries(substagesByStage).forEach(([stageId, substages]) => {
       const parentStage = stageNodes.find((s: DiagramNode) => s.data?.stageId === stageId);
       if (parentStage) {
-        const stageIndex = stageNodes.indexOf(parentStage);
         const stageY = parentStage.y;
         
         // Calculate total width needed for substages
@@ -122,63 +125,93 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
       }
     });
     
-    // Position end node at the bottom
+    // Position end node at the bottom with better spacing calculation
     if (endNode) {
       endNode.x = CENTER_X - endNode.width / 2;
-      endNode.y = (stageNodes.length + 1) * NODE_VERTICAL_SPACING + 150;
+      
+      // Calculate the maximum y-coordinate of all substage nodes
+      const maxSubstageY = substageNodes.length > 0 
+        ? Math.max(...substageNodes.map((node: DiagramNode) => node.y + node.height))
+        : 0;
+      
+      // Calculate the maximum y-coordinate of all stage nodes
+      const maxStageY = stageNodes.length > 0
+        ? Math.max(...stageNodes.map((node: DiagramNode) => node.y + node.height))
+        : 0;
+      
+      // Position end node below the lowest node
+      const lowestY = Math.max(maxSubstageY, maxStageY);
+      endNode.y = lowestY + NODE_VERTICAL_SPACING;
     }
     
     return nodesCopy;
   }, [nodes]);
 
-  // Calculate diagram dimensions
-  const diagramDimensions = React.useMemo(() => {
+  // Calculate diagram dimensions with better padding and minimum size
+  const diagramDimensions = useMemo(() => {
     if (!reorganizedNodes.length) return { width: 800, height: 600 };
     
     const maxX = Math.max(...reorganizedNodes.map((node: DiagramNode) => node.x + node.width));
     const maxY = Math.max(...reorganizedNodes.map((node: DiagramNode) => node.y + node.height));
+    const minX = Math.min(...reorganizedNodes.map((node: DiagramNode) => node.x));
+    const minY = Math.min(...reorganizedNodes.map((node: DiagramNode) => node.y));
     
+    // Add more padding and ensure minimum dimensions
     return {
-      width: Math.max(maxX + 100, 800),
-      height: Math.max(maxY + 100, 600)
+      width: Math.max(maxX - minX + 300, 1000),
+      height: Math.max(maxY - minY + 300, 800)
     };
   }, [reorganizedNodes]);
 
-  // Handle mouse events for panning
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // Handle mouse events for panning - optimized with useCallback
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 0) { // Left mouse button
       setIsDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
       document.body.classList.add('cursor-grabbing');
     }
-  };
+  }, []);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (isDragging) {
       const dx = e.clientX - dragStart.x;
       const dy = e.clientY - dragStart.y;
       setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
       setDragStart({ x: e.clientX, y: e.clientY });
     }
-  };
+  }, [isDragging, dragStart]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     document.body.classList.remove('cursor-grabbing');
-  };
+  }, []);
 
-  // Handle zoom
-  const handleWheel = (e: React.WheelEvent) => {
+  // Handle zoom with smoother behavior
+  const handleWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const delta = e.deltaY * -0.01;
       const newZoom = Math.max(0.3, Math.min(3, zoom + delta));
       setZoom(newZoom);
     }
-  };
+  }, [zoom]);
 
-  // Handle node click
-  const handleNodeClick = (nodeId: string, event?: React.MouseEvent) => {
+  // Zoom controls
+  const handleZoomIn = useCallback(() => {
+    setZoom(prev => Math.min(3, prev + 0.1));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(prev => Math.max(0.3, prev - 0.1));
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  // Handle node click with improved event handling
+  const handleNodeClick = useCallback((nodeId: string, event?: React.MouseEvent) => {
     if (event) {
       event.stopPropagation();
     }
@@ -188,10 +221,10 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
     if (onNodeClick) {
       onNodeClick(nodeId);
     }
-  };
+  }, [selectedNode, onNodeClick]);
 
-  // Get node color based on status
-  const getNodeColor = (status: string, type: string) => {
+  // Get node color based on status - memoized for consistency
+  const getNodeColor = useCallback((status: string, type: string) => {
     const colors = {
       completed: '#059669', // Green
       'in-progress': '#2563eb', // Blue
@@ -201,10 +234,10 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
     };
     
     return colors[status as keyof typeof colors] || colors.default;
-  };
+  }, []);
 
-  // Get node icon based on type and status
-  const getNodeIcon = (type: string, status: string) => {
+  // Get node icon based on type and status - memoized for consistency
+  const getNodeIcon = useCallback((type: string, status: string) => {
     if (status === 'completed') {
       return <CheckCircle className="h-5 w-5 text-green-500" />;
     } else if (status === 'in-progress') {
@@ -225,10 +258,10 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
       default:
         return <Cog className="h-5 w-5 text-gray-500" />;
     }
-  };
+  }, []);
 
-  // Render nodes
-  const renderNodes = () => {
+  // Render nodes - memoized for better performance
+  const renderNodes = useMemo(() => {
     return reorganizedNodes.map((node: DiagramNode) => {
       const isSelected = node.id === selectedNode;
       const nodeColor = getNodeColor(node.status, node.type);
@@ -324,10 +357,10 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
         </g>
       );
     });
-  };
+  }, [reorganizedNodes, selectedNode, getNodeColor, getNodeIcon, handleNodeClick]);
 
-  // Render edges with a simpler, more direct style for flowchart
-  const renderEdges = () => {
+  // Render edges with a simpler, more direct style for flowchart - memoized for better performance
+  const renderEdges = useMemo(() => {
     return edges.map(edge => {
       const sourceNode = reorganizedNodes.find((n: DiagramNode) => n.id === edge.source);
       const targetNode = reorganizedNodes.find((n: DiagramNode) => n.id === edge.target);
@@ -344,7 +377,7 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
       let path;
       
       // If nodes are aligned vertically
-      if (Math.abs(sourceX - targetX) < 10) {
+      if (Math.abs(sourceX - targetX) <  10) {
         // Direct vertical line
         path = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
       } else {
@@ -403,7 +436,7 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
         </g>
       );
     });
-  };
+  }, [edges, reorganizedNodes]);
 
   return (
     <div 
@@ -425,6 +458,40 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
             <ArrowDown className="h-3 w-3" />
             Flowchart View
           </Badge>
+          
+          {/* Zoom controls */}
+          <div className="flex items-center gap-1 ml-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-7 w-7" 
+              onClick={handleZoomOut}
+              title="Zoom out"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <span className="text-xs font-medium w-12 text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-7 w-7" 
+              onClick={handleZoomIn}
+              title="Zoom in"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-7 w-7 ml-1" 
+              onClick={handleResetView}
+              title="Reset view"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -454,14 +521,19 @@ const WorkflowFlowchartDiagram: React.FC<WorkflowFlowchartDiagramProps> = ({
               <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
                 <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="1" />
               </pattern>
+              <linearGradient id="flowchartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#f9fafb" />
+                <stop offset="100%" stopColor="#f3f4f6" />
+              </linearGradient>
             </defs>
+            <rect width="100%" height="100%" fill="url(#flowchartGradient)" />
             <rect width="100%" height="100%" fill="url(#grid)" />
             
             {/* Render edges first so they appear behind nodes */}
-            {renderEdges()}
+            {renderEdges}
             
             {/* Render nodes */}
-            {renderNodes()}
+            {renderNodes}
           </svg>
         </div>
       </div>
