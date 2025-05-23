@@ -262,26 +262,26 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
     }
   }, [searchTerm, nodes]);
 
-  // Get node color based on status with improved accessibility
+  // Get node color based on status with improved accessibility and contrast
   const getNodeColor = (status: string, type: string) => {
-    // Base colors
+    // Base colors with improved contrast
     const colors = {
-      completed: '#10b981', // Green
-      'in-progress': '#3b82f6', // Blue
-      pending: '#f59e0b', // Amber
-      failed: '#ef4444', // Red
-      default: '#6b7280', // Gray
+      completed: '#059669', // Darker green for better contrast
+      'in-progress': '#2563eb', // Darker blue for better contrast
+      pending: '#d97706', // Darker amber for better contrast
+      failed: '#dc2626', // Darker red for better contrast
+      default: '#4b5563', // Darker gray for better contrast
     };
     
     // Adjust color based on node type
     if (type === 'parallel' || type === 'map') {
       // Use slightly different shades for container nodes
       return {
-        completed: '#059669', // Darker green
-        'in-progress': '#2563eb', // Darker blue
-        pending: '#d97706', // Darker amber
-        failed: '#dc2626', // Darker red
-        default: '#4b5563', // Darker gray
+        completed: '#047857', // Even darker green
+        'in-progress': '#1d4ed8', // Even darker blue
+        pending: '#b45309', // Even darker amber
+        failed: '#b91c1c', // Even darker red
+        default: '#374151', // Even darker gray
       }[status] || colors.default;
     }
     
@@ -358,9 +358,14 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showActionPanel, setShowActionPanel] = useState(false);
 
-  // Handle node click with improved selection behavior
-  const handleNodeClick = (nodeId: string) => {
-    // Prevent the diagram from repositioning by not changing the pan state
+  // Handle node click with improved selection behavior and fixed positioning
+  const handleNodeClick = (nodeId: string, event?: React.MouseEvent) => {
+    // If event is provided, stop propagation to prevent diagram panning
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    // Toggle selection without changing pan state
     setSelectedNode(nodeId === selectedNode ? null : nodeId);
     
     // Close file preview when selecting a different node
@@ -452,7 +457,7 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
         <g 
           key={node.id} 
           transform={`translate(${node.x}, ${node.y})`}
-          onClick={() => handleNodeClick(node.id)}
+          onClick={(e) => handleNodeClick(node.id, e)}
           style={{ cursor: 'pointer', opacity }}
           className={`transition-all duration-200 ${isSelected ? 'scale-105' : ''}`}
         >
@@ -497,25 +502,30 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
             </div>
           </foreignObject>
           
-          {/* Node label with improved typography and layout */}
+          {/* Node label with improved typography, layout and contrast */}
           <foreignObject x="8" y="32" width={node.width - 16} height={node.height - 40}>
             <div className="flex flex-col items-center justify-center h-full">
-              <div className="text-xs font-medium text-center line-clamp-2">{node.label}</div>
+              {/* Process name with improved visibility */}
+              <div className="text-xs font-semibold text-center line-clamp-2 px-1 py-0.5 bg-white/90 rounded border border-gray-200 shadow-sm">
+                {node.label}
+              </div>
+              
+              {/* Status badge with improved contrast */}
               {node.status && (
-                <div className={`text-xs mt-1 px-1.5 py-0.5 rounded-full ${
-                  node.status === 'completed' ? 'bg-green-100 text-green-800' :
-                  node.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                  node.status === 'failed' ? 'bg-red-100 text-red-800' :
-                  'bg-amber-100 text-amber-800'
+                <div className={`text-xs mt-1 px-2 py-0.5 rounded-full font-medium shadow-sm ${
+                  node.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-200' :
+                  node.status === 'in-progress' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                  node.status === 'failed' ? 'bg-red-100 text-red-800 border border-red-200' :
+                  'bg-amber-100 text-amber-800 border border-amber-200'
                 }`}>
                   {node.status}
                 </div>
               )}
               
-              {/* Show process ID if available */}
+              {/* Process ID with improved visibility */}
               {node.data?.processId && (
-                <div className="text-[10px] text-muted-foreground mt-1">
-                  {node.data.processId}
+                <div className="text-[10px] font-medium bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded mt-1 border border-gray-200">
+                  ID: {node.data.processId}
                 </div>
               )}
             </div>
@@ -694,11 +704,14 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
         isFullscreen ? 'fixed inset-0 z-50 p-4' : 'h-[700px]'
       }`}
     >
-      {/* Top toolbar with improve controls */}
+      {/* Top toolbar with improved controls and workflow info */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between bg-white border-b p-2">
         <div className="flex items-center gap-2">
           <Workflow className="h-5 w-5 text-blue-600" />
-          <h2 className="text-sm font-medium">{workflowTitle}</h2>
+          <div>
+            <h2 className="text-sm font-medium">{workflowTitle}</h2>
+            <div className="text-xs text-muted-foreground">ID: {workflowId}</div>
+          </div>
         </div>
         
         <div className="flex items-center gap-2">

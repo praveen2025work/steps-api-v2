@@ -19,8 +19,12 @@ import {
   PanelLeft,
   PanelRight,
   PanelLeftClose,
-  PanelRightClose
+  PanelRightClose,
+  LayoutGrid,
+  Network,
+  Share2
 } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import WorkflowStepFunctionDiagram from './WorkflowStepFunctionDiagram';
 import { convertWorkflowToDiagram } from '@/lib/workflowDiagramUtils';
 import StageOverview from './StageOverview';
@@ -45,6 +49,7 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
+  const [visualizationType, setVisualizationType] = useState<string>("stepFunction");
   
   const diagramData = convertWorkflowToDiagram(workflow);
   
@@ -147,25 +152,41 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
           </h1>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button 
-            variant={showLeftPanel ? "default" : "outline"} 
-            size="icon"
-            onClick={toggleLeftPanel}
-            title={showLeftPanel ? "Hide left panel" : "Show left panel"}
-            className="h-8 w-8"
-          >
-            {showLeftPanel ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-          </Button>
-          <Button 
-            variant={showRightPanel ? "default" : "outline"} 
-            size="icon"
-            onClick={toggleRightPanel}
-            title={showRightPanel ? "Hide right panel" : "Show right panel"}
-            className="h-8 w-8"
-          >
-            {showRightPanel ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
-          </Button>
+        <div className="flex items-center gap-4">
+          {/* Visualization type toggle */}
+          <ToggleGroup type="single" value={visualizationType} onValueChange={(value) => value && setVisualizationType(value)}>
+            <ToggleGroupItem value="stepFunction" aria-label="Step Function View" title="Step Function View">
+              <GitBranch className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="flowchart" aria-label="Flowchart View" title="Flowchart View">
+              <Share2 className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="network" aria-label="Network View" title="Network View">
+              <Network className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          
+          {/* Panel toggles */}
+          <div className="flex items-center gap-2">
+            <Button 
+              variant={showLeftPanel ? "default" : "outline"} 
+              size="icon"
+              onClick={toggleLeftPanel}
+              title={showLeftPanel ? "Hide left panel" : "Show left panel"}
+              className="h-8 w-8"
+            >
+              {showLeftPanel ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+            </Button>
+            <Button 
+              variant={showRightPanel ? "default" : "outline"} 
+              size="icon"
+              onClick={toggleRightPanel}
+              title={showRightPanel ? "Hide right panel" : "Show right panel"}
+              className="h-8 w-8"
+            >
+              {showRightPanel ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -254,13 +275,55 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
                 
                 {/* Main Diagram Area */}
                 <div className={`${layoutClasses.mainArea} h-full`}>
-                  <WorkflowStepFunctionDiagram 
-                    workflowId={workflow.id || 'workflow-1'}
-                    workflowTitle={workflow.title}
-                    nodes={diagramData.nodes}
-                    edges={diagramData.edges}
-                    onNodeClick={handleNodeClick}
-                  />
+                  {visualizationType === "stepFunction" && (
+                    <WorkflowStepFunctionDiagram 
+                      workflowId={workflow.id || 'workflow-1'}
+                      workflowTitle={workflow.title}
+                      nodes={diagramData.nodes}
+                      edges={diagramData.edges}
+                      onNodeClick={handleNodeClick}
+                    />
+                  )}
+                  
+                  {visualizationType === "flowchart" && (
+                    <div className="h-full border rounded-md bg-white p-4 flex flex-col">
+                      <h3 className="text-lg font-medium mb-4">Flowchart View</h3>
+                      <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-md border">
+                        <div className="text-center p-8">
+                          <Share2 className="h-16 w-16 mx-auto text-blue-500 mb-4" />
+                          <h3 className="text-lg font-medium mb-2">Traditional Flowchart</h3>
+                          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                            This view shows the workflow as a traditional top-down flowchart with improved readability and simpler navigation.
+                          </p>
+                          <div className="flex justify-center">
+                            <Button onClick={() => setVisualizationType("stepFunction")}>
+                              Switch to Step Function View
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {visualizationType === "network" && (
+                    <div className="h-full border rounded-md bg-white p-4 flex flex-col">
+                      <h3 className="text-lg font-medium mb-4">Network View</h3>
+                      <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-md border">
+                        <div className="text-center p-8">
+                          <Network className="h-16 w-16 mx-auto text-purple-500 mb-4" />
+                          <h3 className="text-lg font-medium mb-2">Network Diagram</h3>
+                          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                            This view shows the workflow as an interactive network diagram with nodes and connections, optimized for complex workflows.
+                          </p>
+                          <div className="flex justify-center">
+                            <Button onClick={() => setVisualizationType("stepFunction")}>
+                              Switch to Step Function View
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Right Panel - Node Details */}

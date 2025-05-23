@@ -228,15 +228,15 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
   const nodes: DiagramNode[] = [];
   const edges: DiagramEdge[] = [];
   
-  // Constants for layout
+  // Constants for layout with improved spacing
   const CANVAS_WIDTH = 1200;
   const CANVAS_CENTER_X = CANVAS_WIDTH / 2;
-  const VERTICAL_SPACING = 150;
-  const NODE_WIDTH = 160;
-  const NODE_HEIGHT = 80;
-  const SUBSTAGE_NODE_WIDTH = 140;
-  const SUBSTAGE_NODE_HEIGHT = 70;
-  const HORIZONTAL_SPACING = 200;
+  const VERTICAL_SPACING = 180; // Increased for better readability
+  const NODE_WIDTH = 180; // Wider nodes for better text display
+  const NODE_HEIGHT = 90; // Taller nodes for better text display
+  const SUBSTAGE_NODE_WIDTH = 160; // Wider substage nodes
+  const SUBSTAGE_NODE_HEIGHT = 80; // Taller substage nodes
+  const HORIZONTAL_SPACING = 220; // More horizontal space
   
   // Start node
   nodes.push({
@@ -262,7 +262,7 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
     const totalStages = workflow.stages.length;
     
     workflow.stages.forEach((stage: any, stageIndex: number) => {
-      // Create stage node
+      // Create stage node with improved data
       const stageNode: DiagramNode = {
         id: `stage-${stage.id}`,
         type: 'parallel',
@@ -274,6 +274,7 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
         height: NODE_HEIGHT,
         data: { 
           stageId: stage.id,
+          processId: `S-${stage.id}`, // Add a process ID for the stage
           description: stage.description || `Stage ${stageIndex + 1} of the workflow process`,
           progress: stage.progress || 0,
           order: stageIndex + 1,
@@ -319,7 +320,7 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
           let taskStatus = task.status;
           if (taskStatus === 'in_progress') taskStatus = 'in-progress';
           
-          // Create substage node
+          // Create substage node with improved data
           const substageNode: DiagramNode = {
             id: `substage-${task.id}`,
             type: 'task',
@@ -331,7 +332,7 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
             height: SUBSTAGE_NODE_HEIGHT,
             data: { 
               taskId: task.id,
-              processId: task.processId,
+              processId: task.processId || `T-${task.id}`, // Ensure process ID is always available
               duration: task.duration,
               expectedStart: task.expectedStart,
               updatedBy: task.updatedBy,
@@ -340,7 +341,11 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
               documents: task.documents,
               messages: task.messages,
               stageId: stage.id,
-              stageName: stage.name
+              stageName: stage.name,
+              // Add more descriptive information
+              description: task.description || `Task in ${stage.name} stage`,
+              priority: task.priority || 'Normal',
+              type: task.type || 'Standard'
             }
           };
           
