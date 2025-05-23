@@ -19,6 +19,8 @@ import ProcessDependencies from './workflow/ProcessDependencies';
 import ProcessOverview from './workflow/ProcessOverview';
 import StageOverview from './workflow/StageOverview';
 import WorkflowUnifiedHeader from './workflow/WorkflowUnifiedHeader';
+import WorkflowStepFunctionDiagram from './workflow/WorkflowStepFunctionDiagram';
+import { generateSampleWorkflowDiagram } from '@/lib/workflowDiagramUtils';
 import { EnhancedFilePreview } from './files/EnhancedFilePreview';
 import AdvancedFilePreview from './files/AdvancedFilePreview';
 import { 
@@ -134,7 +136,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [countdown, setCountdown] = useState<number>(15);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
-  const [rightPanelContent, setRightPanelContent] = useState<'overview' | 'stage-overview' | 'process-overview' | 'stages' | 'documents' | 'parameters' | 'dependencies' | 'roles' | 'activity' | 'audit' | 'app-parameters' | 'global-parameters' | 'queries'>('stage-overview');
+  const [rightPanelContent, setRightPanelContent] = useState<'overview' | 'stage-overview' | 'process-overview' | 'stages' | 'documents' | 'parameters' | 'dependencies' | 'roles' | 'activity' | 'audit' | 'app-parameters' | 'global-parameters' | 'queries' | 'diagram'>('stage-overview');
   const [selectedSubStage, setSelectedSubStage] = useState<string | null>(null);
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false);
   const [stageSpecificSubStages, setStageSpecificSubStages] = useState<SubStage[]>([]);
@@ -966,6 +968,20 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       case 'overview':
       case 'stage-overview':
         return <StageOverview stageId={activeStage} stageName={activeStageInfo?.name || 'Unknown Stage'} />;
+      case 'diagram':
+        return (
+          <div className="h-full">
+            <WorkflowStepFunctionDiagram
+              workflowId={workflowTitle.toLowerCase().replace(/\s+/g, '-')}
+              workflowTitle={workflowTitle}
+              {...generateSampleWorkflowDiagram()}
+              onNodeClick={(nodeId) => {
+                console.log("Node clicked:", nodeId);
+                // Handle node click if needed
+              }}
+            />
+          </div>
+        );
       case 'process-overview':
         return <ProcessOverview processId={currentProcessId} processName={currentProcessName} />;
       case 'stages':
@@ -1687,6 +1703,16 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     >
                       <Layers className="h-3 w-3 mr-1" />
                       Stage Overview
+                    </Button>
+                    
+                    <Button 
+                      variant={rightPanelContent === 'diagram' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => setRightPanelContent('diagram')}
+                    >
+                      <GitBranch className="h-3 w-3 mr-1" />
+                      Step Function View
                     </Button>
                     
                     <Button 

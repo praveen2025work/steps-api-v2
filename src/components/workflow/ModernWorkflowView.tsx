@@ -18,6 +18,8 @@ import ProcessOverview from "@/components/workflow/ProcessOverview";
 import ProcessParameters from "@/components/workflow/ProcessParameters";
 import ProcessDependencies from "@/components/workflow/ProcessDependencies";
 import ProcessQueries from "@/components/workflow/ProcessQueries";
+import WorkflowStepFunctionDiagram from "@/components/workflow/WorkflowStepFunctionDiagram";
+import { generateSampleWorkflowDiagram, convertWorkflowToDiagram } from "@/lib/workflowDiagramUtils";
 import { 
   FileText, 
   ArrowLeft,
@@ -43,7 +45,8 @@ import {
   ExternalLink,
   Upload,
   UserCheck,
-  Sparkles
+  Sparkles,
+  GitBranch
 } from "lucide-react";
 
 interface ModernWorkflowViewProps {
@@ -796,6 +799,10 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
                   <Layers className="h-4 w-4" />
                   <span>Overview</span>
                 </TabsTrigger>
+                <TabsTrigger value="diagram" className="flex items-center gap-1">
+                  <GitBranch className="h-4 w-4" />
+                  <span>Step Function View</span>
+                </TabsTrigger>
                 <TabsTrigger value="stages" className="flex items-center gap-1">
                   <BarChart2 className="h-4 w-4" />
                   <span>Stages & Tasks</span>
@@ -816,6 +823,39 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
               
               <TabsContent value="overview" className="mt-0">
                 {renderOverviewContent()}
+              </TabsContent>
+              
+              <TabsContent value="diagram" className="mt-0">
+                <div className="pt-4">
+                  <WorkflowStepFunctionDiagram
+                    workflowId={workflow.id || 'workflow-1'}
+                    workflowTitle={workflow.title}
+                    {...generateSampleWorkflowDiagram()}
+                    onNodeClick={(nodeId) => {
+                      console.log("Node clicked:", nodeId);
+                      // If node is a stage or substage, we could navigate to it
+                      if (nodeId.startsWith('stage-')) {
+                        const stageId = nodeId.replace('stage-', '');
+                        const stage = workflow.stages.find(s => s.id === stageId);
+                        if (stage) {
+                          setActiveTab('stages');
+                          setExpandedStage(stageId);
+                        }
+                      } else if (nodeId.startsWith('substage-')) {
+                        const substageId = nodeId.replace('substage-', '');
+                        setActiveTab('stages');
+                        // Find the stage containing this substage
+                        workflow.stages.forEach(stage => {
+                          const tasks = workflow.tasks[stage.id] || [];
+                          const task = tasks.find(t => t.id === substageId);
+                          if (task) {
+                            setExpandedStage(stage.id);
+                          }
+                        });
+                      }
+                    }}
+                  />
+                </div>
               </TabsContent>
               
               <TabsContent value="stages" className="mt-0">
