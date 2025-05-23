@@ -55,7 +55,8 @@ import {
   PanelLeft,
   PanelLeftClose,
   Eye,
-  EyeOff
+  EyeOff,
+  GitBranch
 } from 'lucide-react';
 import { getFileIcon } from './DocumentsList';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -977,7 +978,28 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               {...generateSampleWorkflowDiagram()}
               onNodeClick={(nodeId) => {
                 console.log("Node clicked:", nodeId);
-                // Handle node click if needed
+                // If node is a stage or substage, we could navigate to it
+                if (nodeId.startsWith('stage-')) {
+                  const stageId = nodeId.replace('stage-', '');
+                  const stage = stages.find(s => s.id === stageId);
+                  if (stage) {
+                    setActiveStage(stageId);
+                    setRightPanelContent('stage-overview');
+                  }
+                } else if (nodeId.startsWith('substage-')) {
+                  const substageId = nodeId.replace('substage-', '');
+                  // Find the stage containing this substage
+                  for (const stage of stages) {
+                    const stageTasks = tasks[stage.id] || [];
+                    const task = stageTasks.find(t => t.id === substageId);
+                    if (task) {
+                      setActiveStage(stage.id);
+                      setSelectedSubStage(substageId);
+                      setRightPanelContent('process-overview');
+                      break;
+                    }
+                  }
+                }
               }}
             />
           </div>

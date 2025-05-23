@@ -1,11 +1,16 @@
-import { WorkflowStage, SubStage } from '@/types/workflow';
+/**
+ * Utility functions for generating workflow diagrams in AWS Step Function style
+ */
 
 interface DiagramNode {
   id: string;
-  name: string;
-  type: 'start' | 'task' | 'choice' | 'parallel' | 'end';
-  status: 'completed' | 'in-progress' | 'not-started' | 'failed' | 'skipped';
-  position: { x: number; y: number };
+  type: 'task' | 'choice' | 'parallel' | 'map' | 'wait' | 'pass' | 'fail' | 'succeed';
+  label: string;
+  status: 'completed' | 'in-progress' | 'pending' | 'failed';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   data?: any;
 }
 
@@ -14,323 +19,379 @@ interface DiagramEdge {
   source: string;
   target: string;
   label?: string;
+  type?: 'default' | 'success' | 'failure' | 'condition';
+}
+
+interface WorkflowDiagram {
+  nodes: DiagramNode[];
+  edges: DiagramEdge[];
 }
 
 /**
- * Converts workflow stages and substages to diagram nodes and edges
+ * Generate a sample workflow diagram for demonstration purposes
  */
-export const convertWorkflowToDiagram = (
-  stages: WorkflowStage[],
-  tasks: Record<string, any[]> = {}
-): { nodes: DiagramNode[], edges: DiagramEdge[] } => {
-  const nodes: DiagramNode[] = [];
-  const edges: DiagramEdge[] = [];
-  
-  // Add start node
-  nodes.push({
-    id: 'start',
-    name: 'Start',
-    type: 'start',
-    status: 'completed',
-    position: { x: 100, y: 300 }
-  });
-  
-  let lastNodeId = 'start';
-  let xPosition = 250;
-  const yBase = 300;
-  const xIncrement = 200;
-  
-  // Process each stage
-  stages.forEach((stage, stageIndex) => {
-    // Create stage node
-    const stageNodeId = `stage-${stage.id}`;
-    nodes.push({
-      id: stageNodeId,
-      name: stage.name,
-      type: 'task',
-      status: stage.status,
-      position: { x: xPosition, y: yBase },
-      data: { stageId: stage.id }
-    });
-    
-    // Connect previous node to this stage
-    edges.push({
-      id: `edge-${lastNodeId}-${stageNodeId}`,
-      source: lastNodeId,
-      target: stageNodeId
-    });
-    
-    lastNodeId = stageNodeId;
-    xPosition += xIncrement;
-    
-    // If stage has substages, process them
-    if (stage.substages && stage.substages.length > 0) {
-      // Create a parallel node for substages
-      const parallelNodeId = `parallel-${stage.id}`;
-      nodes.push({
-        id: parallelNodeId,
-        name: 'Substages',
-        type: 'parallel',
-        status: stage.status,
-        position: { x: xPosition, y: yBase },
-        data: { stageId: stage.id }
-      });
-      
-      // Connect stage to parallel node
-      edges.push({
-        id: `edge-${lastNodeId}-${parallelNodeId}`,
-        source: lastNodeId,
-        target: parallelNodeId
-      });
-      
-      lastNodeId = parallelNodeId;
-      xPosition += xIncrement;
-      
-      // Process substages
-      const substageYOffset = 150;
-      const substageYIncrement = 100;
-      let substageYPosition = yBase - ((stage.substages.length - 1) * substageYIncrement / 2);
-      
-      stage.substages.forEach((substage, substageIndex) => {
-        const substageNodeId = `substage-${substage.id}`;
-        nodes.push({
-          id: substageNodeId,
-          name: substage.name,
-          type: 'task',
-          status: substage.status,
-          position: { x: xPosition, y: substageYPosition },
-          data: { 
-            stageId: stage.id,
-            substageId: substage.id,
-            substage: substage
-          }
-        });
-        
-        // Connect parallel node to substage
-        edges.push({
-          id: `edge-${parallelNodeId}-${substageNodeId}`,
-          source: parallelNodeId,
-          target: substageNodeId
-        });
-        
-        substageYPosition += substageYIncrement;
-        
-        // If this is the last substage, update lastNodeId
-        if (substageIndex === stage.substages.length - 1) {
-          lastNodeId = substageNodeId;
-        }
-      });
-      
-      // Create a join node after substages
-      const joinNodeId = `join-${stage.id}`;
-      nodes.push({
-        id: joinNodeId,
-        name: 'Join',
-        type: 'parallel',
-        status: stage.status,
-        position: { x: xPosition + xIncrement, y: yBase },
-        data: { stageId: stage.id }
-      });
-      
-      // Connect all substages to join node
-      stage.substages.forEach((substage) => {
-        const substageNodeId = `substage-${substage.id}`;
-        edges.push({
-          id: `edge-${substageNodeId}-${joinNodeId}`,
-          source: substageNodeId,
-          target: joinNodeId
-        });
-      });
-      
-      lastNodeId = joinNodeId;
-      xPosition += xIncrement;
-    }
-  });
-  
-  // Add end node
-  nodes.push({
-    id: 'end',
-    name: 'End',
-    type: 'end',
-    status: stages.every(stage => stage.status === 'completed') ? 'completed' : 'not-started',
-    position: { x: xPosition, y: yBase }
-  });
-  
-  // Connect last node to end
-  edges.push({
-    id: `edge-${lastNodeId}-end`,
-    source: lastNodeId,
-    target: 'end'
-  });
-  
-  return { nodes, edges };
-};
-
-/**
- * Generates a sample workflow diagram for demonstration
- */
-export const generateSampleWorkflowDiagram = () => {
+export function generateSampleWorkflowDiagram(): WorkflowDiagram {
+  // Create nodes
   const nodes: DiagramNode[] = [
     {
       id: 'start',
-      name: 'Start',
-      type: 'start',
-      status: 'completed',
-      position: { x: 100, y: 300 }
-    },
-    {
-      id: 'validate',
-      name: 'Validate Input',
       type: 'task',
+      label: 'Start Process',
       status: 'completed',
-      position: { x: 250, y: 300 }
+      x: 350,
+      y: 50,
+      width: 120,
+      height: 80,
+      data: { description: 'Initiates the workflow process' }
     },
     {
-      id: 'check',
-      name: 'Check Conditions',
-      type: 'choice',
+      id: 'validate-input',
+      type: 'task',
+      label: 'Validate Input',
       status: 'completed',
-      position: { x: 450, y: 300 }
+      x: 350,
+      y: 180,
+      width: 120,
+      height: 80,
+      data: { description: 'Validates the input data' }
+    },
+    {
+      id: 'check-conditions',
+      type: 'choice',
+      label: 'Check Conditions',
+      status: 'completed',
+      x: 350,
+      y: 310,
+      width: 120,
+      height: 80,
+      data: { description: 'Checks conditions for processing' }
     },
     {
       id: 'process-a',
-      name: 'Process A',
       type: 'task',
+      label: 'Process A',
       status: 'completed',
-      position: { x: 650, y: 200 }
+      x: 200,
+      y: 440,
+      width: 120,
+      height: 80,
+      data: { description: 'Executes Process A' }
     },
     {
       id: 'process-b',
-      name: 'Process B',
       type: 'task',
+      label: 'Process B',
       status: 'in-progress',
-      position: { x: 650, y: 400 }
+      x: 500,
+      y: 440,
+      width: 120,
+      height: 80,
+      data: { description: 'Executes Process B' }
     },
     {
-      id: 'parallel',
-      name: 'Parallel Tasks',
+      id: 'parallel-tasks',
       type: 'parallel',
+      label: 'Parallel Tasks',
       status: 'in-progress',
-      position: { x: 850, y: 300 }
+      x: 350,
+      y: 570,
+      width: 120,
+      height: 80,
+      data: { description: 'Executes tasks in parallel' }
     },
     {
       id: 'task-1',
-      name: 'Task 1',
       type: 'task',
+      label: 'Task 1',
       status: 'completed',
-      position: { x: 1050, y: 200 }
+      x: 200,
+      y: 700,
+      width: 120,
+      height: 80,
+      data: { description: 'Executes Task 1' }
     },
     {
       id: 'task-2',
-      name: 'Task 2',
       type: 'task',
-      status: 'in-progress',
-      position: { x: 1050, y: 300 }
+      label: 'Task 2',
+      status: 'pending',
+      x: 500,
+      y: 700,
+      width: 120,
+      height: 80,
+      data: { description: 'Executes Task 2' }
     },
     {
-      id: 'task-3',
-      name: 'Task 3',
+      id: 'finalize',
       type: 'task',
-      status: 'not-started',
-      position: { x: 1050, y: 400 }
-    },
-    {
-      id: 'join',
-      name: 'Join',
-      type: 'parallel',
-      status: 'not-started',
-      position: { x: 1250, y: 300 }
-    },
-    {
-      id: 'final',
-      name: 'Final Processing',
-      type: 'task',
-      status: 'not-started',
-      position: { x: 1450, y: 300 }
+      label: 'Finalize',
+      status: 'pending',
+      x: 350,
+      y: 830,
+      width: 120,
+      height: 80,
+      data: { description: 'Finalizes the workflow' }
     },
     {
       id: 'end',
-      name: 'End',
-      type: 'end',
-      status: 'not-started',
-      position: { x: 1600, y: 300 }
+      type: 'succeed',
+      label: 'End Process',
+      status: 'pending',
+      x: 350,
+      y: 960,
+      width: 120,
+      height: 80,
+      data: { description: 'Ends the workflow process' }
     }
   ];
-  
+
+  // Create edges
   const edges: DiagramEdge[] = [
     {
       id: 'edge-start-validate',
       source: 'start',
-      target: 'validate'
+      target: 'validate-input',
+      type: 'default'
     },
     {
       id: 'edge-validate-check',
-      source: 'validate',
-      target: 'check'
+      source: 'validate-input',
+      target: 'check-conditions',
+      type: 'default'
     },
     {
       id: 'edge-check-process-a',
-      source: 'check',
+      source: 'check-conditions',
       target: 'process-a',
-      label: 'Condition A'
+      label: 'Condition A',
+      type: 'condition'
     },
     {
       id: 'edge-check-process-b',
-      source: 'check',
+      source: 'check-conditions',
       target: 'process-b',
-      label: 'Condition B'
+      label: 'Condition B',
+      type: 'condition'
     },
     {
       id: 'edge-process-a-parallel',
       source: 'process-a',
-      target: 'parallel'
+      target: 'parallel-tasks',
+      type: 'success'
     },
     {
       id: 'edge-process-b-parallel',
       source: 'process-b',
-      target: 'parallel'
+      target: 'parallel-tasks',
+      type: 'success'
     },
     {
       id: 'edge-parallel-task-1',
-      source: 'parallel',
-      target: 'task-1'
+      source: 'parallel-tasks',
+      target: 'task-1',
+      type: 'default'
     },
     {
       id: 'edge-parallel-task-2',
-      source: 'parallel',
-      target: 'task-2'
+      source: 'parallel-tasks',
+      target: 'task-2',
+      type: 'default'
     },
     {
-      id: 'edge-parallel-task-3',
-      source: 'parallel',
-      target: 'task-3'
-    },
-    {
-      id: 'edge-task-1-join',
+      id: 'edge-task-1-finalize',
       source: 'task-1',
-      target: 'join'
+      target: 'finalize',
+      type: 'success'
     },
     {
-      id: 'edge-task-2-join',
+      id: 'edge-task-2-finalize',
       source: 'task-2',
-      target: 'join'
+      target: 'finalize',
+      type: 'success'
     },
     {
-      id: 'edge-task-3-join',
-      source: 'task-3',
-      target: 'join'
-    },
-    {
-      id: 'edge-join-final',
-      source: 'join',
-      target: 'final'
-    },
-    {
-      id: 'edge-final-end',
-      source: 'final',
-      target: 'end'
+      id: 'edge-finalize-end',
+      source: 'finalize',
+      target: 'end',
+      type: 'success'
     }
   ];
+
+  return { nodes, edges };
+}
+
+/**
+ * Convert a workflow object to a diagram representation
+ * @param workflow The workflow object to convert
+ */
+export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
+  const nodes: DiagramNode[] = [];
+  const edges: DiagramEdge[] = [];
+  
+  // Start node
+  nodes.push({
+    id: 'start',
+    type: 'task',
+    label: 'Start Process',
+    status: 'completed',
+    x: 350,
+    y: 50,
+    width: 120,
+    height: 80
+  });
+  
+  // Process stages as nodes
+  if (workflow.stages && Array.isArray(workflow.stages)) {
+    workflow.stages.forEach((stage: any, index: number) => {
+      // Create stage node
+      const stageNode: DiagramNode = {
+        id: `stage-${stage.id}`,
+        type: 'task',
+        label: stage.name,
+        status: getStageStatus(stage, workflow),
+        x: 350,
+        y: 180 + index * 130,
+        width: 120,
+        height: 80,
+        data: { stageId: stage.id }
+      };
+      
+      nodes.push(stageNode);
+      
+      // Connect to previous node
+      const sourceId = index === 0 ? 'start' : `stage-${workflow.stages[index - 1].id}`;
+      edges.push({
+        id: `edge-${sourceId}-${stageNode.id}`,
+        source: sourceId,
+        target: stageNode.id,
+        type: 'default'
+      });
+      
+      // Process substages if available
+      const stageTasks = workflow.tasks?.[stage.id] || [];
+      if (stageTasks.length > 0) {
+        // Create a choice node for the stage
+        const choiceNode: DiagramNode = {
+          id: `choice-${stage.id}`,
+          type: 'choice',
+          label: `${stage.name} Tasks`,
+          status: getStageStatus(stage, workflow),
+          x: 350,
+          y: 180 + index * 130 + 130,
+          width: 120,
+          height: 80
+        };
+        
+        nodes.push(choiceNode);
+        
+        // Connect stage to choice
+        edges.push({
+          id: `edge-${stageNode.id}-${choiceNode.id}`,
+          source: stageNode.id,
+          target: choiceNode.id,
+          type: 'default'
+        });
+        
+        // Process substages
+        stageTasks.forEach((task: any, taskIndex: number) => {
+          // Calculate position for substage
+          const xOffset = taskIndex % 2 === 0 ? -150 : 150;
+          const yOffset = Math.floor(taskIndex / 2) * 130;
+          
+          // Create substage node
+          const substageNode: DiagramNode = {
+            id: `substage-${task.id}`,
+            type: 'task',
+            label: task.name,
+            status: task.status,
+            x: 350 + xOffset,
+            y: 180 + index * 130 + 260 + yOffset,
+            width: 120,
+            height: 80,
+            data: { taskId: task.id }
+          };
+          
+          nodes.push(substageNode);
+          
+          // Connect choice to substage
+          edges.push({
+            id: `edge-${choiceNode.id}-${substageNode.id}`,
+            source: choiceNode.id,
+            target: substageNode.id,
+            type: 'condition',
+            label: task.name
+          });
+          
+          // If this is the last stage and last task, connect to end
+          if (index === workflow.stages.length - 1 && taskIndex === stageTasks.length - 1) {
+            // Add end node
+            const endNode: DiagramNode = {
+              id: 'end',
+              type: 'succeed',
+              label: 'End Process',
+              status: workflow.status === 'completed' ? 'completed' : 'pending',
+              x: 350,
+              y: 180 + index * 130 + 390 + yOffset,
+              width: 120,
+              height: 80
+            };
+            
+            nodes.push(endNode);
+            
+            // Connect last substage to end
+            edges.push({
+              id: `edge-${substageNode.id}-end`,
+              source: substageNode.id,
+              target: 'end',
+              type: 'success'
+            });
+          }
+        });
+      }
+    });
+  }
+  
+  // If no stages, just connect start to end
+  if (!workflow.stages || workflow.stages.length === 0) {
+    // Add end node
+    nodes.push({
+      id: 'end',
+      type: 'succeed',
+      label: 'End Process',
+      status: 'pending',
+      x: 350,
+      y: 180,
+      width: 120,
+      height: 80
+    });
+    
+    // Connect start to end
+    edges.push({
+      id: 'edge-start-end',
+      source: 'start',
+      target: 'end',
+      type: 'default'
+    });
+  }
   
   return { nodes, edges };
-};
+}
+
+/**
+ * Determine the status of a stage based on its tasks
+ */
+function getStageStatus(stage: any, workflow: any): 'completed' | 'in-progress' | 'pending' | 'failed' {
+  const stageTasks = workflow.tasks?.[stage.id] || [];
+  
+  if (stageTasks.length === 0) return 'pending';
+  
+  const completedTasks = stageTasks.filter((task: any) => task.status === 'completed').length;
+  const failedTasks = stageTasks.filter((task: any) => task.status === 'failed').length;
+  const inProgressTasks = stageTasks.filter((task: any) => task.status === 'in-progress' || task.status === 'in_progress').length;
+  
+  if (failedTasks > 0) return 'failed';
+  if (completedTasks === stageTasks.length) return 'completed';
+  if (inProgressTasks > 0) return 'in-progress';
+  
+  return 'pending';
+}
