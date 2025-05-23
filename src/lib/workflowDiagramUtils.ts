@@ -228,45 +228,63 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
   const nodes: DiagramNode[] = [];
   const edges: DiagramEdge[] = [];
   
+  // Constants for layout
+  const CANVAS_WIDTH = 1200;
+  const CANVAS_CENTER_X = CANVAS_WIDTH / 2;
+  const VERTICAL_SPACING = 150;
+  const NODE_WIDTH = 160;
+  const NODE_HEIGHT = 80;
+  const SUBSTAGE_NODE_WIDTH = 140;
+  const SUBSTAGE_NODE_HEIGHT = 70;
+  const HORIZONTAL_SPACING = 200;
+  
   // Start node
   nodes.push({
     id: 'start',
     type: 'task',
     label: 'Start Process',
     status: 'completed',
-    x: 350,
+    x: CANVAS_CENTER_X - NODE_WIDTH / 2,
     y: 50,
-    width: 120,
-    height: 80,
-    data: { description: 'Initiates the workflow process' }
+    width: NODE_WIDTH,
+    height: NODE_HEIGHT,
+    data: { 
+      description: 'Initiates the workflow process',
+      startTime: workflow.startTime || new Date().toISOString(),
+      workflowId: workflow.id
+    }
   });
+  
+  let currentY = 50 + NODE_HEIGHT + VERTICAL_SPACING;
   
   // Process stages as nodes
   if (workflow.stages && Array.isArray(workflow.stages)) {
-    // Calculate total height needed for all stages and their tasks
     const totalStages = workflow.stages.length;
     
-    workflow.stages.forEach((stage: any, index: number) => {
+    workflow.stages.forEach((stage: any, stageIndex: number) => {
       // Create stage node
       const stageNode: DiagramNode = {
         id: `stage-${stage.id}`,
         type: 'parallel',
         label: stage.name,
         status: getStageStatus(stage, workflow),
-        x: 350,
-        y: 180 + index * 250, // Increase vertical spacing between stages
-        width: 150, // Make stage nodes wider
-        height: 80,
+        x: CANVAS_CENTER_X - NODE_WIDTH / 2,
+        y: currentY,
+        width: NODE_WIDTH,
+        height: NODE_HEIGHT,
         data: { 
           stageId: stage.id,
-          description: stage.description || `Stage ${index + 1} of the workflow process`
+          description: stage.description || `Stage ${stageIndex + 1} of the workflow process`,
+          progress: stage.progress || 0,
+          order: stageIndex + 1,
+          totalSubtasks: workflow.tasks?.[stage.id]?.length || 0
         }
       };
       
       nodes.push(stageNode);
       
       // Connect to previous node
-      const sourceId = index === 0 ? 'start' : `stage-${workflow.stages[index - 1].id}`;
+      const sourceId = stageIndex === 0 ? 'start' : `stage-${workflow.stages[stageIndex - 1].id}`;
       edges.push({
         id: `edge-${sourceId}-${stageNode.id}`,
         source: sourceId,
@@ -278,44 +296,24 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
       const stageTasks = workflow.tasks?.[stage.id] || [];
       
       if (stageTasks.length > 0) {
-        // For better visualization, we'll use a map node instead of a choice node
-        const mapNode: DiagramNode = {
-          id: `map-${stage.id}`,
-          type: 'map',
-          label: `${stage.name} Tasks`,
-          status: getStageStatus(stage, workflow),
-          x: 350,
-          y: 180 + index * 250 + 100, // Position below the stage node
-          width: 150,
-          height: 60,
-          data: { stageId: stage.id }
-        };
-        
-        nodes.push(mapNode);
-        
-        // Connect stage to map
-        edges.push({
-          id: `edge-${stageNode.id}-${mapNode.id}`,
-          source: stageNode.id,
-          target: mapNode.id,
-          type: 'default'
-        });
+        currentY += NODE_HEIGHT + 80; // Space for stage node and some padding
         
         // Calculate layout for substage nodes
-        const tasksPerRow = 3; // Number of tasks to display per row
-        const horizontalSpacing = 180; // Spacing between tasks horizontally
-        const verticalSpacing = 100; // Spacing between rows
+        const tasksPerRow = Math.min(stageTasks.length, 5); // Max 5 tasks per row
+        const rows = Math.ceil(stageTasks.length / tasksPerRow);
+        
+        // Calculate total width needed for this row of tasks
+        const totalRowWidth = tasksPerRow * SUBSTAGE_NODE_WIDTH + (tasksPerRow - 1) * 40; // 40px spacing between nodes
+        const startX = CANVAS_CENTER_X - totalRowWidth / 2;
         
         // Process substages
         stageTasks.forEach((task: any, taskIndex: number) => {
           // Calculate position for substage
           const row = Math.floor(taskIndex / tasksPerRow);
           const col = taskIndex % tasksPerRow;
-          const centerX = 350; // Center position
-          const startX = centerX - ((Math.min(stageTasks.length, tasksPerRow) - 1) * horizontalSpacing) / 2;
           
-          const x = startX + col * horizontalSpacing;
-          const y = 180 + index * 250 + 180 + row * verticalSpacing;
+          const x = startX + col * (SUBSTAGE_NODE_WIDTH + 40);
+          const y = currentY + row * (SUBSTAGE_NODE_HEIGHT + 40);
           
           // Normalize task status
           let taskStatus = task.status;
@@ -329,8 +327,8 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
             status: taskStatus as 'completed' | 'in-progress' | 'pending' | 'failed',
             x: x,
             y: y,
-            width: 140,
-            height: 80,
+            width: SUBSTAGE_NODE_WIDTH,
+            height: SUBSTAGE_NODE_HEIGHT,
             data: { 
               taskId: task.id,
               processId: task.processId,
@@ -340,19 +338,20 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
               updatedAt: task.updatedAt,
               dependencies: task.dependencies,
               documents: task.documents,
-              messages: task.messages
+              messages: task.messages,
+              stageId: stage.id,
+              stageName: stage.name
             }
           };
           
           nodes.push(substageNode);
           
-          // Connect map to substage
+          // Connect stage to substage
           edges.push({
-            id: `edge-${mapNode.id}-${substageNode.id}`,
-            source: mapNode.id,
+            id: `edge-${stageNode.id}-${substageNode.id}`,
+            source: stageNode.id,
             target: substageNode.id,
-            type: 'condition',
-            label: task.processId
+            type: 'default'
           });
           
           // If task has dependencies, add edges from dependency tasks
@@ -372,60 +371,64 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
             });
           }
         });
-      }
-      
-      // If this is the last stage, connect to end
-      if (index === workflow.stages.length - 1) {
-        // Add end node
-        const endNode: DiagramNode = {
-          id: 'end',
-          type: 'succeed',
-          label: 'End Process',
-          status: workflow.status === 'completed' ? 'completed' : 'pending',
-          x: 350,
-          y: 180 + (index + 1) * 250 + 50,
-          width: 120,
-          height: 80,
-          data: { description: 'Completes the workflow process' }
-        };
         
-        nodes.push(endNode);
-        
-        // If there are tasks, connect the map node to end
-        if (workflow.tasks?.[stage.id]?.length > 0) {
-          edges.push({
-            id: `edge-map-${stage.id}-end`,
-            source: `map-${stage.id}`,
-            target: 'end',
-            type: 'success'
-          });
-        } else {
-          // Otherwise connect the stage directly to end
-          edges.push({
-            id: `edge-${stageNode.id}-end`,
-            source: stageNode.id,
-            target: 'end',
-            type: 'success'
-          });
-        }
+        // Update currentY for next stage
+        currentY += rows * (SUBSTAGE_NODE_HEIGHT + 40) + 40; // Add extra padding after substages
+      } else {
+        // If no tasks, just add spacing for the next stage
+        currentY += NODE_HEIGHT + VERTICAL_SPACING;
       }
     });
-  } else {
-    // If no stages, just connect start to end
+    
     // Add end node
     nodes.push({
       id: 'end',
       type: 'succeed',
       label: 'End Process',
+      status: workflow.status === 'completed' ? 'completed' : 'pending',
+      x: CANVAS_CENTER_X - NODE_WIDTH / 2,
+      y: currentY,
+      width: NODE_WIDTH,
+      height: NODE_HEIGHT,
+      data: { 
+        description: 'Completes the workflow process',
+        endTime: workflow.endTime || null,
+        estimatedCompletion: workflow.estimatedCompletion || null
+      }
+    });
+    
+    // Connect last stage to end
+    if (workflow.stages.length > 0) {
+      const lastStage = workflow.stages[workflow.stages.length - 1];
+      edges.push({
+        id: `edge-stage-${lastStage.id}-end`,
+        source: `stage-${lastStage.id}`,
+        target: 'end',
+        type: 'default'
+      });
+    } else {
+      // If no stages, connect start to end
+      edges.push({
+        id: 'edge-start-end',
+        source: 'start',
+        target: 'end',
+        type: 'default'
+      });
+    }
+  } else {
+    // If no stages, just connect start to end
+    nodes.push({
+      id: 'end',
+      type: 'succeed',
+      label: 'End Process',
       status: 'pending',
-      x: 350,
-      y: 180,
-      width: 120,
-      height: 80,
+      x: CANVAS_CENTER_X - NODE_WIDTH / 2,
+      y: currentY,
+      width: NODE_WIDTH,
+      height: NODE_HEIGHT,
       data: { description: 'Completes the workflow process' }
     });
     
-    // Connect start to end
     edges.push({
       id: 'edge-start-end',
       source: 'start',
