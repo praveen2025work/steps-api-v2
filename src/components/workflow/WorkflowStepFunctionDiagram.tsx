@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -9,8 +8,6 @@ import {
   CheckCircle, 
   XCircle, 
   Clock, 
-  AlertTriangle, 
-  ArrowRight, 
   GitBranch, 
   GitMerge, 
   Workflow, 
@@ -20,23 +17,13 @@ import {
   Minimize2,
   ZoomIn,
   ZoomOut,
-  MoveHorizontal,
   FileText,
   Info,
   Users,
-  Calendar,
-  BarChart,
   Search,
-  Filter,
   Home,
-  Layers,
   Clock3,
-  Activity,
-  Eye,
-  EyeOff,
-  Zap,
-  RotateCcw,
-  Lightbulb
+  RotateCcw
 } from 'lucide-react';
 
 interface DiagramNode {
@@ -100,10 +87,98 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
   const [showMinimap, setShowMinimap] = useState(true);
   const [minimapPosition, setMinimapPosition] = useState({ x: 0, y: 0 });
   const [activeTab, setActiveTab] = useState<string>("overview");
-  const [viewMode, setViewMode] = useState<'flat' | 'perspective' | 'timeline'>('flat');
-  const [showAnimation, setShowAnimation] = useState<boolean>(true);
-  const [highlightPath, setHighlightPath] = useState<boolean>(true);
-  const [showLabels, setShowLabels] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<'flat' | 'timeline'>('flat');
+=======>>> REPLACE
+
+<<<<<<< SEARCH
+          {/* View mode selector */}
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
+            <Button 
+              variant={viewMode === 'flat' ? "default" : "outline"} 
+              size="sm" 
+              className="h-7 px-2 text-xs"
+              onClick={() => setViewMode('flat')}
+              title="Flat View"
+            >
+              <GitBranch className="h-3.5 w-3.5 mr-1" />
+              Flat
+            </Button>
+            <Button 
+              variant={viewMode === 'perspective' ? "default" : "outline"} 
+              size="sm" 
+              className="h-7 px-2 text-xs"
+              onClick={() => setViewMode('perspective')}
+              title="3D Perspective View"
+            >
+              <Layers className="h-3.5 w-3.5 mr-1" />
+              3D
+            </Button>
+            <Button 
+              variant={viewMode === 'timeline' ? "default" : "outline"} 
+              size="sm" 
+              className="h-7 px-2 text-xs"
+              onClick={() => setViewMode('timeline')}
+              title="Timeline View"
+            >
+              <Clock3 className="h-3.5 w-3.5 mr-1" />
+              Timeline
+            </Button>
+          </div>
+          
+          {/* View options */}
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
+            <Button 
+              variant={showAnimation ? "default" : "outline"} 
+              size="icon" 
+              className="h-7 w-7"
+              onClick={() => setShowAnimation(!showAnimation)}
+              title={showAnimation ? "Disable Animations" : "Enable Animations"}
+            >
+              <Zap className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant={highlightPath ? "default" : "outline"} 
+              size="icon" 
+              className="h-7 w-7"
+              onClick={() => setHighlightPath(!highlightPath)}
+              title={highlightPath ? "Disable Path Highlighting" : "Enable Path Highlighting"}
+            >
+              <Activity className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant={showLabels ? "default" : "outline"} 
+              size="icon" 
+              className="h-7 w-7"
+              onClick={() => setShowLabels(!showLabels)}
+              title={showLabels ? "Hide Labels" : "Show Labels"}
+            >
+              {showLabels ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </Button>
+          </div>
+=======
+          {/* View mode selector */}
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
+            <Button 
+              variant={viewMode === 'flat' ? "default" : "outline"} 
+              size="sm" 
+              className="h-7 px-2 text-xs"
+              onClick={() => setViewMode('flat')}
+              title="Flat View"
+            >
+              <GitBranch className="h-3.5 w-3.5 mr-1" />
+              Flat
+            </Button>
+            <Button 
+              variant={viewMode === 'timeline' ? "default" : "outline"} 
+              size="sm" 
+              className="h-7 px-2 text-xs"
+              onClick={() => setViewMode('timeline')}
+              title="Timeline View"
+            >
+              <Clock3 className="h-3.5 w-3.5 mr-1" />
+              Timeline
+            </Button>
+          </div>
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredNodes, setFilteredNodes] = useState<string[]>([]);
   
@@ -899,48 +974,7 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
             </svg>
           )}
           
-          {viewMode === 'perspective' && (
-            <div 
-              className="w-full h-full" 
-              style={{ 
-                perspective: '1000px',
-                transformStyle: 'preserve-3d'
-              }}
-            >
-              <div 
-                style={{ 
-                  transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px) rotateX(20deg)`,
-                  transformOrigin: 'center center',
-                  transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-                  width: diagramDimensions.width,
-                  height: diagramDimensions.height,
-                  position: 'relative'
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-lg">
-                  {/* 3D perspective nodes would be rendered here */}
-                  <div className="p-8 text-center">
-                    <Layers className="h-12 w-12 mx-auto mb-4 text-blue-500 opacity-50" />
-                    <h3 className="text-lg font-medium mb-2">3D Perspective View</h3>
-                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                      This view provides a 3D perspective of your workflow, making it easier to visualize the relationships between different stages and tasks.
-                    </p>
-                    <div className="mt-4 flex justify-center">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setViewMode('flat')}
-                        className="flex items-center"
-                      >
-                        <GitBranch className="h-4 w-4 mr-2" />
-                        Switch to Flat View
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
           
           {viewMode === 'timeline' && (
             <div className="w-full h-full overflow-auto p-6">

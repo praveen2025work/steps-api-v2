@@ -19,8 +19,7 @@ import {
   PanelLeft,
   PanelRight,
   PanelLeftClose,
-  PanelRightClose,
-  LayoutGrid
+  PanelRightClose
 } from 'lucide-react';
 import WorkflowStepFunctionDiagram from './WorkflowStepFunctionDiagram';
 import { convertWorkflowToDiagram } from '@/lib/workflowDiagramUtils';
