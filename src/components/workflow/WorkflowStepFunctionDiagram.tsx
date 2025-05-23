@@ -394,7 +394,7 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
       
       {/* Node details panel */}
       {selectedNode && (
-        <div className="absolute bottom-2 left-2 right-2 bg-white border rounded-md p-2 shadow-md max-h-[200px] overflow-auto">
+        <div className="absolute bottom-2 left-2 right-2 bg-white border rounded-md p-2 shadow-md max-h-[300px] overflow-auto">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-medium">Node Details</h3>
             <Button 
@@ -410,15 +410,13 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
             const node = nodes.find(n => n.id === selectedNode);
             if (!node) return null;
             
-            return (
-              <div className="space-y-2 text-xs">
-                <div className="grid grid-cols-2 gap-1">
-                  <div className="font-medium">ID:</div>
-                  <div>{node.id}</div>
-                  <div className="font-medium">Type:</div>
-                  <div className="capitalize">{node.type}</div>
-                  <div className="font-medium">Status:</div>
-                  <div>
+            // Format node details based on type
+            if (node.id.startsWith('substage-') && node.data) {
+              // This is a substage/task node
+              return (
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-semibold">{node.label}</h4>
                     <Badge variant={
                       node.status === 'completed' ? 'default' :
                       node.status === 'in-progress' ? 'secondary' :
@@ -428,19 +426,152 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
                       {node.status}
                     </Badge>
                   </div>
+                  
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {node.data.processId && (
+                      <>
+                        <div className="font-medium">Process ID:</div>
+                        <div>{node.data.processId}</div>
+                      </>
+                    )}
+                    
+                    {node.data.duration && (
+                      <>
+                        <div className="font-medium">Duration:</div>
+                        <div>{node.data.duration} min</div>
+                      </>
+                    )}
+                    
+                    {node.data.expectedStart && (
+                      <>
+                        <div className="font-medium">Expected Start:</div>
+                        <div>{node.data.expectedStart}</div>
+                      </>
+                    )}
+                    
+                    {node.data.updatedBy && (
+                      <>
+                        <div className="font-medium">Updated By:</div>
+                        <div>{node.data.updatedBy}</div>
+                      </>
+                    )}
+                    
+                    {node.data.updatedAt && (
+                      <>
+                        <div className="font-medium">Updated At:</div>
+                        <div>{node.data.updatedAt}</div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {node.data.dependencies && node.data.dependencies.length > 0 && (
+                    <>
+                      <Separator className="my-1" />
+                      <div className="font-medium mb-1">Dependencies:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {node.data.dependencies.map((dep: any, i: number) => (
+                          <Badge key={i} variant={dep.status === 'completed' ? 'default' : 'outline'}>
+                            {dep.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  
+                  {node.data.documents && node.data.documents.length > 0 && (
+                    <>
+                      <Separator className="my-1" />
+                      <div className="font-medium mb-1">Documents:</div>
+                      <div className="space-y-1">
+                        {node.data.documents.map((doc: any, i: number) => (
+                          <div key={i} className="flex justify-between">
+                            <span>{doc.name}</span>
+                            <span className="text-muted-foreground">{doc.size}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  
+                  {node.data.messages && node.data.messages.length > 0 && (
+                    <>
+                      <Separator className="my-1" />
+                      <div className="font-medium mb-1">Messages:</div>
+                      <div className="space-y-1">
+                        {node.data.messages.map((msg: string, i: number) => (
+                          <div key={i} className="text-xs bg-muted p-1 rounded">
+                            {msg}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
-                
-                {node.data && (
-                  <>
-                    <Separator className="my-1" />
-                    <div className="font-medium">Additional Data:</div>
-                    <pre className="bg-muted p-1 rounded text-[10px] overflow-auto max-h-[80px]">
-                      {JSON.stringify(node.data, null, 2)}
-                    </pre>
-                  </>
-                )}
-              </div>
-            );
+              );
+            } else if (node.id.startsWith('stage-') && node.data) {
+              // This is a stage node
+              return (
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-semibold">{node.label}</h4>
+                    <Badge variant={
+                      node.status === 'completed' ? 'default' :
+                      node.status === 'in-progress' ? 'secondary' :
+                      node.status === 'failed' ? 'destructive' :
+                      'outline'
+                    }>
+                      {node.status}
+                    </Badge>
+                  </div>
+                  
+                  {node.data.description && (
+                    <div className="text-muted-foreground">{node.data.description}</div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 gap-1">
+                    <div className="font-medium">Stage ID:</div>
+                    <div>{node.data.stageId}</div>
+                  </div>
+                </div>
+              );
+            } else {
+              // Default node details
+              return (
+                <div className="space-y-2 text-xs">
+                  <div className="grid grid-cols-2 gap-1">
+                    <div className="font-medium">ID:</div>
+                    <div>{node.id}</div>
+                    <div className="font-medium">Type:</div>
+                    <div className="capitalize">{node.type}</div>
+                    <div className="font-medium">Status:</div>
+                    <div>
+                      <Badge variant={
+                        node.status === 'completed' ? 'default' :
+                        node.status === 'in-progress' ? 'secondary' :
+                        node.status === 'failed' ? 'destructive' :
+                        'outline'
+                      }>
+                        {node.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  {node.data && node.data.description && (
+                    <div className="mt-1 text-muted-foreground">{node.data.description}</div>
+                  )}
+                  
+                  {node.data && Object.keys(node.data).length > 0 && !node.data.description && (
+                    <>
+                      <Separator className="my-1" />
+                      <div className="font-medium">Additional Data:</div>
+                      <pre className="bg-muted p-1 rounded text-[10px] overflow-auto max-h-[80px]">
+                        {JSON.stringify(node.data, null, 2)}
+                      </pre>
+                    </>
+                  )}
+                </div>
+              );
+            }
           })()}
         </div>
       )}

@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import WorkflowStepFunctionDiagram from './WorkflowStepFunctionDiagram';
-import { generateSampleWorkflowDiagram } from '@/lib/workflowDiagramUtils';
+import { convertWorkflowToDiagram } from '@/lib/workflowDiagramUtils';
 
 interface StepFunctionViewProps {
   workflow: any;
@@ -23,7 +23,7 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
         <WorkflowStepFunctionDiagram 
           workflowId={workflow.id || 'workflow-1'}
           workflowTitle={workflow.title}
-          {...generateSampleWorkflowDiagram()}
+          {...convertWorkflowToDiagram(workflow)}
           onNodeClick={(nodeId) => {
             console.log("Node clicked:", nodeId);
             // If node is a stage or substage, we could navigate to it

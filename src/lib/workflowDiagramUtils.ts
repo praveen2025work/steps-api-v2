@@ -237,23 +237,30 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
     x: 350,
     y: 50,
     width: 120,
-    height: 80
+    height: 80,
+    data: { description: 'Initiates the workflow process' }
   });
   
   // Process stages as nodes
   if (workflow.stages && Array.isArray(workflow.stages)) {
+    // Calculate total height needed for all stages and their tasks
+    const totalStages = workflow.stages.length;
+    
     workflow.stages.forEach((stage: any, index: number) => {
       // Create stage node
       const stageNode: DiagramNode = {
         id: `stage-${stage.id}`,
-        type: 'task',
+        type: 'parallel',
         label: stage.name,
         status: getStageStatus(stage, workflow),
         x: 350,
-        y: 180 + index * 130,
-        width: 120,
+        y: 180 + index * 250, // Increase vertical spacing between stages
+        width: 150, // Make stage nodes wider
         height: 80,
-        data: { stageId: stage.id }
+        data: { 
+          stageId: stage.id,
+          description: stage.description || `Stage ${index + 1} of the workflow process`
+        }
       };
       
       nodes.push(stageNode);
@@ -269,90 +276,142 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
       
       // Process substages if available
       const stageTasks = workflow.tasks?.[stage.id] || [];
+      
       if (stageTasks.length > 0) {
-        // Create a choice node for the stage
-        const choiceNode: DiagramNode = {
-          id: `choice-${stage.id}`,
-          type: 'choice',
+        // For better visualization, we'll use a map node instead of a choice node
+        const mapNode: DiagramNode = {
+          id: `map-${stage.id}`,
+          type: 'map',
           label: `${stage.name} Tasks`,
           status: getStageStatus(stage, workflow),
           x: 350,
-          y: 180 + index * 130 + 130,
-          width: 120,
-          height: 80
+          y: 180 + index * 250 + 100, // Position below the stage node
+          width: 150,
+          height: 60,
+          data: { stageId: stage.id }
         };
         
-        nodes.push(choiceNode);
+        nodes.push(mapNode);
         
-        // Connect stage to choice
+        // Connect stage to map
         edges.push({
-          id: `edge-${stageNode.id}-${choiceNode.id}`,
+          id: `edge-${stageNode.id}-${mapNode.id}`,
           source: stageNode.id,
-          target: choiceNode.id,
+          target: mapNode.id,
           type: 'default'
         });
+        
+        // Calculate layout for substage nodes
+        const tasksPerRow = 3; // Number of tasks to display per row
+        const horizontalSpacing = 180; // Spacing between tasks horizontally
+        const verticalSpacing = 100; // Spacing between rows
         
         // Process substages
         stageTasks.forEach((task: any, taskIndex: number) => {
           // Calculate position for substage
-          const xOffset = taskIndex % 2 === 0 ? -150 : 150;
-          const yOffset = Math.floor(taskIndex / 2) * 130;
+          const row = Math.floor(taskIndex / tasksPerRow);
+          const col = taskIndex % tasksPerRow;
+          const centerX = 350; // Center position
+          const startX = centerX - ((Math.min(stageTasks.length, tasksPerRow) - 1) * horizontalSpacing) / 2;
+          
+          const x = startX + col * horizontalSpacing;
+          const y = 180 + index * 250 + 180 + row * verticalSpacing;
+          
+          // Normalize task status
+          let taskStatus = task.status;
+          if (taskStatus === 'in_progress') taskStatus = 'in-progress';
           
           // Create substage node
           const substageNode: DiagramNode = {
             id: `substage-${task.id}`,
             type: 'task',
             label: task.name,
-            status: task.status,
-            x: 350 + xOffset,
-            y: 180 + index * 130 + 260 + yOffset,
-            width: 120,
+            status: taskStatus as 'completed' | 'in-progress' | 'pending' | 'failed',
+            x: x,
+            y: y,
+            width: 140,
             height: 80,
-            data: { taskId: task.id }
+            data: { 
+              taskId: task.id,
+              processId: task.processId,
+              duration: task.duration,
+              expectedStart: task.expectedStart,
+              updatedBy: task.updatedBy,
+              updatedAt: task.updatedAt,
+              dependencies: task.dependencies,
+              documents: task.documents,
+              messages: task.messages
+            }
           };
           
           nodes.push(substageNode);
           
-          // Connect choice to substage
+          // Connect map to substage
           edges.push({
-            id: `edge-${choiceNode.id}-${substageNode.id}`,
-            source: choiceNode.id,
+            id: `edge-${mapNode.id}-${substageNode.id}`,
+            source: mapNode.id,
             target: substageNode.id,
             type: 'condition',
-            label: task.name
+            label: task.processId
           });
           
-          // If this is the last stage and last task, connect to end
-          if (index === workflow.stages.length - 1 && taskIndex === stageTasks.length - 1) {
-            // Add end node
-            const endNode: DiagramNode = {
-              id: 'end',
-              type: 'succeed',
-              label: 'End Process',
-              status: workflow.status === 'completed' ? 'completed' : 'pending',
-              x: 350,
-              y: 180 + index * 130 + 390 + yOffset,
-              width: 120,
-              height: 80
-            };
-            
-            nodes.push(endNode);
-            
-            // Connect last substage to end
-            edges.push({
-              id: `edge-${substageNode.id}-end`,
-              source: substageNode.id,
-              target: 'end',
-              type: 'success'
+          // If task has dependencies, add edges from dependency tasks
+          if (task.dependencies && Array.isArray(task.dependencies)) {
+            task.dependencies.forEach((dep: any) => {
+              // Find the dependency task node
+              const depTask = stageTasks.find((t: any) => t.name === dep.name);
+              if (depTask) {
+                edges.push({
+                  id: `edge-dep-${depTask.id}-${task.id}`,
+                  source: `substage-${depTask.id}`,
+                  target: `substage-${task.id}`,
+                  type: dep.status === 'completed' ? 'success' : 'default',
+                  label: 'depends on'
+                });
+              }
             });
           }
         });
       }
+      
+      // If this is the last stage, connect to end
+      if (index === workflow.stages.length - 1) {
+        // Add end node
+        const endNode: DiagramNode = {
+          id: 'end',
+          type: 'succeed',
+          label: 'End Process',
+          status: workflow.status === 'completed' ? 'completed' : 'pending',
+          x: 350,
+          y: 180 + (index + 1) * 250 + 50,
+          width: 120,
+          height: 80,
+          data: { description: 'Completes the workflow process' }
+        };
+        
+        nodes.push(endNode);
+        
+        // If there are tasks, connect the map node to end
+        if (workflow.tasks?.[stage.id]?.length > 0) {
+          edges.push({
+            id: `edge-map-${stage.id}-end`,
+            source: `map-${stage.id}`,
+            target: 'end',
+            type: 'success'
+          });
+        } else {
+          // Otherwise connect the stage directly to end
+          edges.push({
+            id: `edge-${stageNode.id}-end`,
+            source: stageNode.id,
+            target: 'end',
+            type: 'success'
+          });
+        }
+      }
     });
-  }
-  
-  // If no stages, just connect start to end
-  if (!workflow.stages || workflow.stages.length === 0) {
+  } else {
+    // If no stages, just connect start to end
     // Add end node
     nodes.push({
       id: 'end',
@@ -362,7 +421,8 @@ export function convertWorkflowToDiagram(workflow: any): WorkflowDiagram {
       x: 350,
       y: 180,
       width: 120,
-      height: 80
+      height: 80,
+      data: { description: 'Completes the workflow process' }
     });
     
     // Connect start to end
