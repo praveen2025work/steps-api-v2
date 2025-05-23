@@ -20,14 +20,9 @@ import {
   PanelRight,
   PanelLeftClose,
   PanelRightClose,
-  LayoutGrid,
-  Network,
-  Share2
+  LayoutGrid
 } from 'lucide-react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import WorkflowStepFunctionDiagram from './WorkflowStepFunctionDiagram';
-import WorkflowFlowchartDiagram from './WorkflowFlowchartDiagram';
-import WorkflowNetworkDiagram from './WorkflowNetworkDiagram';
 import { convertWorkflowToDiagram } from '@/lib/workflowDiagramUtils';
 import StageOverview from './StageOverview';
 import AppParameters from './AppParameters';
@@ -51,7 +46,7 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
-  const [visualizationType, setVisualizationType] = useState<string>("stepFunction");
+  // No visualization type needed as we only have one view now
   
   const diagramData = convertWorkflowToDiagram(workflow);
   
@@ -155,19 +150,6 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
         </div>
         
         <div className="flex items-center gap-4">
-          {/* Visualization type toggle */}
-          <ToggleGroup type="single" value={visualizationType} onValueChange={(value) => value && setVisualizationType(value)}>
-            <ToggleGroupItem value="stepFunction" aria-label="Step Function View" title="Step Function View">
-              <GitBranch className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="flowchart" aria-label="Flowchart View" title="Flowchart View">
-              <Share2 className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="network" aria-label="Network View" title="Network View">
-              <Network className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
-          
           {/* Panel toggles */}
           <div className="flex items-center gap-2">
             <Button 
@@ -277,35 +259,13 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
                 
                 {/* Main Diagram Area */}
                 <div className={`${layoutClasses.mainArea} h-full`}>
-                  {visualizationType === "stepFunction" && (
-                    <WorkflowStepFunctionDiagram 
-                      workflowId={workflow.id || 'workflow-1'}
-                      workflowTitle={workflow.title}
-                      nodes={diagramData.nodes}
-                      edges={diagramData.edges}
-                      onNodeClick={handleNodeClick}
-                    />
-                  )}
-                  
-                  {visualizationType === "flowchart" && (
-                    <WorkflowFlowchartDiagram 
-                      workflowId={workflow.id || 'workflow-1'}
-                      workflowTitle={workflow.title}
-                      nodes={diagramData.nodes}
-                      edges={diagramData.edges}
-                      onNodeClick={handleNodeClick}
-                    />
-                  )}
-                  
-                  {visualizationType === "network" && (
-                    <WorkflowNetworkDiagram 
-                      workflowId={workflow.id || 'workflow-1'}
-                      workflowTitle={workflow.title}
-                      nodes={diagramData.nodes}
-                      edges={diagramData.edges}
-                      onNodeClick={handleNodeClick}
-                    />
-                  )}
+                  <WorkflowStepFunctionDiagram 
+                    workflowId={workflow.id || 'workflow-1'}
+                    workflowTitle={workflow.title}
+                    nodes={diagramData.nodes}
+                    edges={diagramData.edges}
+                    onNodeClick={handleNodeClick}
+                  />
                 </div>
                 
                 {/* Right Panel - Node Details */}
