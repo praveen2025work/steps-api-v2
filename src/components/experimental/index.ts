@@ -10,3 +10,4 @@ export * from './IntegratedBusinessRulesEngine';
 export * from './GenerativeAIDocumentProcessor';
 export * from './MultimodalAnomalyDetection';
 export * from './DigitalTwinWorkflow';
+export * from './JBPMWorkflowEngine';

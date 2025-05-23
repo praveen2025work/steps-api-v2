@@ -4,7 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, TrendingUp, Shield, Command, ArrowRight, Wand2, PlayCircle, Library, Zap, FileText, AlertTriangle, Network } from 'lucide-react';
+import { Sparkles, TrendingUp, Shield, Command, ArrowRight, Wand2, PlayCircle, Library, Zap, FileText, AlertTriangle, Network, Workflow } from 'lucide-react';
 
 const ExperimentalFeaturesPage = () => {
   const router = useRouter();
@@ -51,6 +51,13 @@ const ExperimentalFeaturesPage = () => {
       icon: <Library className="h-6 w-6" />,
       href: '/experimental/template-library',
       color: 'bg-teal-500/10 text-teal-500'
+    },
+    {
+      title: 'jBPM Workflow Engine',
+      description: 'Comprehensive workflow automation platform with BPMN, DMN, CMMN, and OptaPlanner',
+      icon: <Workflow className="h-6 w-6" />,
+      href: '/experimental/jbpm-workflow',
+      color: 'bg-orange-500/10 text-orange-500'
     },
     {
       title: 'Integrated Business Rules Engine',
@@ -136,6 +143,8 @@ const ExperimentalFeaturesPage = () => {
                     'Detect unusual patterns across transaction data, system metrics, and user behaviors simultaneously using neural networks to identify potential issues before they impact your workflows.'}
                   {feature.title === 'Digital Twin Workflow Simulation' && 
                     'Create virtual replicas of your workflows to simulate execution under various conditions, identify bottlenecks, and optimize performance before implementing changes in production.'}
+                  {feature.title === 'jBPM Workflow Engine' && 
+                    'Comprehensive workflow automation platform with BPMN process modeling, DMN decision tables, CMMN case management, and OptaPlanner for resource optimization - all integrated in a single powerful engine.'}
                 </p>
               </CardContent>
               <CardFooter>
