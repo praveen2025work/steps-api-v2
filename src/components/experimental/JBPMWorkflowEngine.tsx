@@ -41,7 +41,17 @@ import {
   LayoutGrid,
   ListChecks,
   Gauge,
-  Network
+  Network,
+  UserCheck,
+  Pencil,
+  Copy,
+  Pause,
+  Loader2,
+  ExternalLink,
+  SkipForward,
+  UserMinus,
+  FormInput,
+  Tags
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
