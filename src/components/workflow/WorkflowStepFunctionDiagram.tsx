@@ -85,100 +85,8 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
 
   // State for minimap
   const [showMinimap, setShowMinimap] = useState(true);
-  const [minimapPosition, setMinimapPosition] = useState({ x: 0, y: 0 });
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [viewMode, setViewMode] = useState<'flat' | 'timeline'>('flat');
-=======>>> REPLACE
-
-<<<<<<< SEARCH
-          {/* View mode selector */}
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
-            <Button 
-              variant={viewMode === 'flat' ? "default" : "outline"} 
-              size="sm" 
-              className="h-7 px-2 text-xs"
-              onClick={() => setViewMode('flat')}
-              title="Flat View"
-            >
-              <GitBranch className="h-3.5 w-3.5 mr-1" />
-              Flat
-            </Button>
-            <Button 
-              variant={viewMode === 'perspective' ? "default" : "outline"} 
-              size="sm" 
-              className="h-7 px-2 text-xs"
-              onClick={() => setViewMode('perspective')}
-              title="3D Perspective View"
-            >
-              <Layers className="h-3.5 w-3.5 mr-1" />
-              3D
-            </Button>
-            <Button 
-              variant={viewMode === 'timeline' ? "default" : "outline"} 
-              size="sm" 
-              className="h-7 px-2 text-xs"
-              onClick={() => setViewMode('timeline')}
-              title="Timeline View"
-            >
-              <Clock3 className="h-3.5 w-3.5 mr-1" />
-              Timeline
-            </Button>
-          </div>
-          
-          {/* View options */}
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
-            <Button 
-              variant={showAnimation ? "default" : "outline"} 
-              size="icon" 
-              className="h-7 w-7"
-              onClick={() => setShowAnimation(!showAnimation)}
-              title={showAnimation ? "Disable Animations" : "Enable Animations"}
-            >
-              <Zap className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={highlightPath ? "default" : "outline"} 
-              size="icon" 
-              className="h-7 w-7"
-              onClick={() => setHighlightPath(!highlightPath)}
-              title={highlightPath ? "Disable Path Highlighting" : "Enable Path Highlighting"}
-            >
-              <Activity className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={showLabels ? "default" : "outline"} 
-              size="icon" 
-              className="h-7 w-7"
-              onClick={() => setShowLabels(!showLabels)}
-              title={showLabels ? "Hide Labels" : "Show Labels"}
-            >
-              {showLabels ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-            </Button>
-          </div>
-=======
-          {/* View mode selector */}
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
-            <Button 
-              variant={viewMode === 'flat' ? "default" : "outline"} 
-              size="sm" 
-              className="h-7 px-2 text-xs"
-              onClick={() => setViewMode('flat')}
-              title="Flat View"
-            >
-              <GitBranch className="h-3.5 w-3.5 mr-1" />
-              Flat
-            </Button>
-            <Button 
-              variant={viewMode === 'timeline' ? "default" : "outline"} 
-              size="sm" 
-              className="h-7 px-2 text-xs"
-              onClick={() => setViewMode('timeline')}
-              title="Timeline View"
-            >
-              <Clock3 className="h-3.5 w-3.5 mr-1" />
-              Timeline
-            </Button>
-          </div>
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredNodes, setFilteredNodes] = useState<string[]>([]);
   
@@ -830,16 +738,6 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
               Flat
             </Button>
             <Button 
-              variant={viewMode === 'perspective' ? "default" : "outline"} 
-              size="sm" 
-              className="h-7 px-2 text-xs"
-              onClick={() => setViewMode('perspective')}
-              title="3D Perspective View"
-            >
-              <Layers className="h-3.5 w-3.5 mr-1" />
-              3D
-            </Button>
-            <Button 
               variant={viewMode === 'timeline' ? "default" : "outline"} 
               size="sm" 
               className="h-7 px-2 text-xs"
@@ -848,37 +746,6 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
             >
               <Clock3 className="h-3.5 w-3.5 mr-1" />
               Timeline
-            </Button>
-          </div>
-          
-          {/* View options */}
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
-            <Button 
-              variant={showAnimation ? "default" : "outline"} 
-              size="icon" 
-              className="h-7 w-7"
-              onClick={() => setShowAnimation(!showAnimation)}
-              title={showAnimation ? "Disable Animations" : "Enable Animations"}
-            >
-              <Zap className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={highlightPath ? "default" : "outline"} 
-              size="icon" 
-              className="h-7 w-7"
-              onClick={() => setHighlightPath(!highlightPath)}
-              title={highlightPath ? "Disable Path Highlighting" : "Enable Path Highlighting"}
-            >
-              <Activity className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={showLabels ? "default" : "outline"} 
-              size="icon" 
-              className="h-7 w-7"
-              onClick={() => setShowLabels(!showLabels)}
-              title={showLabels ? "Hide Labels" : "Show Labels"}
-            >
-              {showLabels ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
             </Button>
           </div>
           
@@ -973,8 +840,6 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
               {renderNodes()}
             </svg>
           )}
-          
-
           
           {viewMode === 'timeline' && (
             <div className="w-full h-full overflow-auto p-6">
