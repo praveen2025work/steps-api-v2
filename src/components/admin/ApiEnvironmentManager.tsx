@@ -110,6 +110,10 @@ const ApiEnvironmentManager: React.FC = () => {
     window.location.hostname.includes('127.0.0.1')
   );
 
+  // Check if real API is forced
+  const isRealApiForced = process.env.NEXT_PUBLIC_FORCE_REAL_API === 'true';
+  const isUsingMockData = isDevelopmentMode && !isRealApiForced;
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'connected':
@@ -178,16 +182,24 @@ const ApiEnvironmentManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Development Mode Banner */}
-      {isDevelopmentMode && (
+      {/* API Mode Banner */}
+      {isUsingMockData ? (
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            <strong>Development Mode:</strong> This application is running in preview/development mode and using mock data. 
+            <strong>Mock Data Mode:</strong> This application is running in preview/development mode and using mock data. 
             In your office environment with Windows authentication, it will connect to your actual API endpoints.
           </AlertDescription>
         </Alert>
-      )}
+      ) : isRealApiForced ? (
+        <Alert variant="default" className="border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            <strong>Real API Mode:</strong> The application is configured to use real API endpoints. 
+            It will attempt to connect to your configured API URLs with Windows authentication.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {/* Environment Selection */}
       <Card>

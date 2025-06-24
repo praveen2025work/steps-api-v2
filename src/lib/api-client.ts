@@ -111,6 +111,11 @@ const MOCK_PARAMETERS: ApplicationParameter[] = [
 
 // Check if we're in a development/preview environment
 const isDevelopmentMode = (): boolean => {
+  // Allow forcing real API calls via environment variable
+  if (process.env.NEXT_PUBLIC_FORCE_REAL_API === 'true') {
+    return false;
+  }
+  
   if (typeof window === 'undefined') return false;
   
   const hostname = window.location.hostname;
