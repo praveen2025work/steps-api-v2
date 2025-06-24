@@ -49,7 +49,9 @@ const ApiEnvironmentManager: React.FC = () => {
       <Alert variant="destructive">
         <XCircle className="h-4 w-4" />
         <AlertDescription>
-          Failed to load API environment configuration. Please refresh the page.
+          Failed to load API environment configuration. Error: {error instanceof Error ? error.message : 'Unknown error'}
+          <br />
+          Please check the console for more details and refresh the page.
         </AlertDescription>
       </Alert>
     );
@@ -62,7 +64,7 @@ const ApiEnvironmentManager: React.FC = () => {
     applicationsData = {
       applications: [],
       isLoading: false,
-      error: 'Failed to load applications data',
+      error: `Failed to load applications data: ${error instanceof Error ? error.message : 'Unknown error'}`,
       lastFetch: null,
       fetchApplications: () => {},
       refetch: () => {},
