@@ -36,6 +36,38 @@ const formatDistanceToNow = (date: Date, options?: { addSuffix?: boolean }) => {
 };
 
 const ApiEnvironmentManager: React.FC = () => {
+  // Wrap the hooks in try-catch to prevent crashes
+  let environmentData;
+  let applicationsData;
+  
+  try {
+    environmentData = useApiEnvironment();
+  } catch (error) {
+    console.error('Error loading API environment context:', error);
+    return (
+      <Alert variant="destructive">
+        <XCircle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load API environment configuration. Please refresh the page.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  try {
+    applicationsData = useApplicationsData();
+  } catch (error) {
+    console.error('Error loading applications data:', error);
+    applicationsData = {
+      applications: [],
+      isLoading: false,
+      error: 'Failed to load applications data',
+      lastFetch: null,
+      fetchApplications: () => {},
+      refetch: () => {},
+    };
+  }
+
   const {
     currentEnvironment,
     availableEnvironments,
@@ -44,7 +76,7 @@ const ApiEnvironmentManager: React.FC = () => {
     connectionStatus,
     testConnection,
     lastConnectionTest,
-  } = useApiEnvironment();
+  } = environmentData;
 
   const {
     applications,
@@ -52,7 +84,7 @@ const ApiEnvironmentManager: React.FC = () => {
     error: applicationsError,
     lastFetch,
     fetchApplications,
-  } = useApplicationsData();
+  } = applicationsData;
 
   const [showApplications, setShowApplications] = useState(false);
   const [includeInactive, setIncludeInactive] = useState(false);

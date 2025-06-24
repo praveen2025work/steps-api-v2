@@ -95,11 +95,18 @@ export class ApiClient {
 
     while (retryCount <= maxRetries) {
       try {
-        const response = await fetch(url, {
-          ...defaultOptions,
-          // Add timeout handling
-          signal: AbortSignal.timeout(this.environment.timeout),
+        // Create a timeout promise that rejects after the specified timeout
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(`Request timeout after ${this.environment.timeout}ms`));
+          }, this.environment.timeout);
         });
+
+        // Race between the fetch request and timeout
+        const response = await Promise.race([
+          fetch(url, defaultOptions),
+          timeoutPromise
+        ]);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);

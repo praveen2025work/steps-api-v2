@@ -36,7 +36,13 @@ export const ApiEnvironmentProvider: React.FC<ApiEnvironmentProviderProps> = ({ 
     setConnectionStatus('unknown');
     
     // Store the selected environment in localStorage for persistence
-    localStorage.setItem('selectedApiEnvironment', environment.name);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('selectedApiEnvironment', environment.name);
+      }
+    } catch (error) {
+      console.warn('Failed to save environment to localStorage:', error);
+    }
   };
 
   // Test connection to current environment
@@ -58,19 +64,27 @@ export const ApiEnvironmentProvider: React.FC<ApiEnvironmentProviderProps> = ({ 
 
   // Load saved environment on mount
   useEffect(() => {
-    const savedEnvironment = localStorage.getItem('selectedApiEnvironment');
-    if (savedEnvironment) {
-      const environment = availableEnvironments.find(env => env.name === savedEnvironment);
-      if (environment) {
-        switchEnvironment(environment);
+    try {
+      if (typeof window !== 'undefined') {
+        const savedEnvironment = localStorage.getItem('selectedApiEnvironment');
+        if (savedEnvironment) {
+          const environment = availableEnvironments.find(env => env.name === savedEnvironment);
+          if (environment) {
+            switchEnvironment(environment);
+          }
+        }
       }
+    } catch (error) {
+      console.warn('Failed to load saved environment from localStorage:', error);
     }
   }, []);
 
   // Auto-test connection when environment changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      testConnection();
+      testConnection().catch(error => {
+        console.warn('Auto connection test failed:', error);
+      });
     }, 1000); // Delay to avoid immediate API calls
 
     return () => clearTimeout(timer);
