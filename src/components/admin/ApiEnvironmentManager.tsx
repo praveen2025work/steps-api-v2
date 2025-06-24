@@ -100,6 +100,14 @@ const ApiEnvironmentManager: React.FC = () => {
 
   const apiClient = useApiClient(currentEnvironment);
 
+  // Check if we're in development mode
+  const isDevelopmentMode = typeof window !== 'undefined' && (
+    window.location.hostname.includes('localhost') || 
+    window.location.hostname.includes('preview.co.dev') || 
+    window.location.hostname.includes('vercel.app') ||
+    window.location.hostname.includes('127.0.0.1')
+  );
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'connected':
@@ -168,6 +176,17 @@ const ApiEnvironmentManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Development Mode Banner */}
+      {isDevelopmentMode && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Development Mode:</strong> This application is running in preview/development mode and using mock data. 
+            In your office environment with Windows authentication, it will connect to your actual API endpoints.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Environment Selection */}
       <Card>
         <CardHeader>
