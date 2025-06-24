@@ -21,7 +21,8 @@ import {
   Settings,
   Eye,
   EyeOff,
-  Search
+  Search,
+  Info
 } from 'lucide-react';
 
 // Simple time ago function as fallback

@@ -18,6 +18,108 @@ export interface WorkflowApplication {
   isRunOnWeekDayOnly: boolean;
 }
 
+// Mock data for development/preview environments
+const MOCK_APPLICATIONS: WorkflowApplication[] = [
+  {
+    applicationId: 1,
+    name: "eRates Processing",
+    category: "Finance",
+    serviceUrl: "http://internal-service/erates",
+    description: "Electronic rates processing and validation system",
+    entitlementMapping: 101,
+    isActive: true,
+    cronExpression: "0 6 * * 1-5",
+    isLockingEnabled: true,
+    lockingRole: 1,
+    useRunCalendar: true,
+    createdon: "2024-01-15T08:00:00Z",
+    runDateOffSet: 0,
+    isRunOnWeekDayOnly: true
+  },
+  {
+    applicationId: 17,
+    name: "Risk Analytics",
+    category: "Risk Management",
+    serviceUrl: "http://internal-service/risk",
+    description: "Risk calculation and reporting system",
+    entitlementMapping: 102,
+    isActive: true,
+    cronExpression: "0 7 * * 1-5",
+    isLockingEnabled: true,
+    lockingRole: 2,
+    useRunCalendar: false,
+    createdon: "2024-02-01T09:00:00Z",
+    runDateOffSet: 1,
+    isRunOnWeekDayOnly: true
+  },
+  {
+    applicationId: 25,
+    name: "Compliance Reporting",
+    category: "Compliance",
+    serviceUrl: null,
+    description: "Automated compliance report generation",
+    entitlementMapping: 103,
+    isActive: false,
+    cronExpression: "0 22 * * *",
+    isLockingEnabled: false,
+    lockingRole: 3,
+    useRunCalendar: true,
+    createdon: "2024-01-20T10:00:00Z",
+    runDateOffSet: 0,
+    isRunOnWeekDayOnly: false
+  }
+];
+
+const MOCK_PARAMETERS: ApplicationParameter[] = [
+  {
+    appId: 17,
+    paramId: 1,
+    name: "MAX_RETRY_ATTEMPTS",
+    value: "3",
+    active: "Y",
+    updatedBy: "system.admin",
+    ignore: "N"
+  },
+  {
+    appId: 17,
+    paramId: 2,
+    name: "TIMEOUT_SECONDS",
+    value: "300",
+    active: "Y",
+    updatedBy: "john.doe",
+    ignore: "N"
+  },
+  {
+    appId: 17,
+    paramId: 3,
+    name: "DEBUG_MODE",
+    value: "false",
+    active: "N",
+    updatedBy: "system.admin",
+    ignore: "Y"
+  },
+  {
+    appId: 17,
+    paramId: 4,
+    name: "EMAIL_NOTIFICATIONS",
+    value: "admin@company.com,ops@company.com",
+    active: "Y",
+    updatedBy: "jane.smith",
+    ignore: "N"
+  }
+];
+
+// Check if we're in a development/preview environment
+const isDevelopmentMode = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  
+  const hostname = window.location.hostname;
+  return hostname.includes('localhost') || 
+         hostname.includes('preview.co.dev') || 
+         hostname.includes('vercel.app') ||
+         hostname.includes('127.0.0.1');
+};
+
 // Application Parameter interface based on your API response
 export interface ApplicationParameter {
   appId: number;
@@ -151,18 +253,66 @@ export class ApiClient {
 
   // Get all workflow applications
   async getWorkflowApplications(includeInactive: boolean = false): Promise<ApiResponse<WorkflowApplication[]>> {
+    // Use mock data in development/preview environments
+    if (isDevelopmentMode()) {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const filteredApps = includeInactive 
+        ? MOCK_APPLICATIONS 
+        : MOCK_APPLICATIONS.filter(app => app.isActive);
+      
+      return {
+        data: filteredApps,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `${this.environment.name} (Mock Data)`,
+      };
+    }
+
     const endpoint = `${CORE_API_ENDPOINTS.GET_WORKFLOW_APPLICATIONS}/${includeInactive}`;
     return this.makeRequest<WorkflowApplication[]>(endpoint);
   }
 
   // Get application parameters by application ID
   async getApplicationParameters(appId: number): Promise<ApiResponse<ApplicationParameter[]>> {
+    // Use mock data in development/preview environments
+    if (isDevelopmentMode()) {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const filteredParams = MOCK_PARAMETERS.filter(param => param.appId === appId);
+      
+      return {
+        data: filteredParams,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `${this.environment.name} (Mock Data)`,
+      };
+    }
+
     const endpoint = `${CORE_API_ENDPOINTS.GET_APPLICATION_PARAMETERS}/${appId}`;
     return this.makeRequest<ApplicationParameter[]>(endpoint);
   }
 
   // Test connection to the API
   async testConnection(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
+    // Use mock connection in development/preview environments
+    if (isDevelopmentMode()) {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      return {
+        data: {
+          status: 'Connected (Mock)',
+          timestamp: new Date().toISOString(),
+        },
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `${this.environment.name} (Mock Data)`,
+      };
+    }
+
     try {
       const response = await this.getWorkflowApplications(false);
       if (response.success) {
