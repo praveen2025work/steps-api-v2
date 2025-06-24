@@ -61,7 +61,7 @@ export const CORE_API_ENDPOINTS = {
 } as const;
 
 // Default environment (can be overridden by environment variable)
-export const DEFAULT_ENVIRONMENT = process.env.NEXT_PUBLIC_DEFAULT_API_ENV || 'dev';
+export const DEFAULT_ENVIRONMENT = process.env.NEXT_PUBLIC_DEFAULT_API_ENV || 'prod';
 
 // Get current environment configuration
 export const getCurrentEnvironment = (): ApiEnvironment => {
