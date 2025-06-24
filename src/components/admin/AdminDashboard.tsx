@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, RefreshCw, AlertCircle, CheckCircle, Clock, Play, FileText, BarChart3, Calendar as CalendarIcon } from 'lucide-react';
+import { Search, RefreshCw, AlertCircle, CheckCircle, Clock, Play, FileText, BarChart3, Calendar as CalendarIcon, Settings, Globe } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import { WorkflowRun, AuditLog } from '@/types/workflow-types';
@@ -194,8 +194,64 @@ const AdminDashboard: React.FC = () => {
   };
   
   return (
-    <Tabs defaultValue="workflow-runs" className="space-y-4" onValueChange={setActiveTab}>
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Quick Access Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/admin/api-environments'}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">API Environments</CardTitle>
+            <Globe className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">4</div>
+            <p className="text-xs text-muted-foreground">
+              Dev, UAT, Demo, Prod
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Workflows</CardTitle>
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{workflowRuns.filter(r => r.status === 'running').length}</div>
+            <p className="text-xs text-muted-foreground">
+              Currently running
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Failed Today</CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{workflowRuns.filter(r => r.status === 'failed').length}</div>
+            <p className="text-xs text-muted-foreground">
+              Require attention
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">System Health</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">Good</div>
+            <p className="text-xs text-muted-foreground">
+              All systems operational
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="workflow-runs" className="space-y-4" onValueChange={setActiveTab}>
+        <div className="flex justify-between items-center">
         <TabsList>
           <TabsTrigger value="workflow-runs" className="flex items-center gap-1">
             <RefreshCw className="h-4 w-4" />
@@ -423,7 +479,8 @@ const AdminDashboard: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Tabs>
+      </Tabs>
+    </div>
   );
 };
 
