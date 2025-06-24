@@ -18,6 +18,17 @@ export interface WorkflowApplication {
   isRunOnWeekDayOnly: boolean;
 }
 
+// Application Parameter interface based on your API response
+export interface ApplicationParameter {
+  appId: number;
+  paramId: number;
+  name: string;
+  value: string;
+  active: string; // 'Y' or 'N'
+  updatedBy: string;
+  ignore: string; // 'Y' or 'N'
+}
+
 // API Response wrapper
 export interface ApiResponse<T> {
   data: T;
@@ -135,6 +146,12 @@ export class ApiClient {
   async getWorkflowApplications(includeInactive: boolean = false): Promise<ApiResponse<WorkflowApplication[]>> {
     const endpoint = `${CORE_API_ENDPOINTS.GET_WORKFLOW_APPLICATIONS}/${includeInactive}`;
     return this.makeRequest<WorkflowApplication[]>(endpoint);
+  }
+
+  // Get application parameters by application ID
+  async getApplicationParameters(appId: number): Promise<ApiResponse<ApplicationParameter[]>> {
+    const endpoint = `${CORE_API_ENDPOINTS.GET_APPLICATION_PARAMETERS}/${appId}`;
+    return this.makeRequest<ApplicationParameter[]>(endpoint);
   }
 
   // Test connection to the API
