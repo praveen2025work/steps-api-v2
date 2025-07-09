@@ -144,6 +144,20 @@ const EnhancedRoleManagement: React.FC = () => {
     );
   };
   
+  // Debug function to log mapping data
+  const debugMappings = () => {
+    console.log('Current tempMappings:', tempMappings);
+    console.log('Unique applications:', uniqueApplications);
+    console.log('Roles:', roles);
+  };
+  
+  // Call debug on component mount and when data changes
+  useEffect(() => {
+    if (tempMappings.length > 0 && uniqueApplications.length > 0 && roles.length > 0) {
+      debugMappings();
+    }
+  }, [tempMappings, uniqueApplications, roles]);
+  
   // Toggle role-application assignment
   const toggleRoleApplicationAssignment = (roleId: number, applicationId: number, assign: boolean) => {
     const role = roles.find(r => r.roleId === roleId);
@@ -669,6 +683,16 @@ const EnhancedRoleManagement: React.FC = () => {
                         const applicationId = parseInt(app.configId);
                         const isAssigned = isRoleAssignedToApplication(role.roleId, applicationId);
                         
+                        // Debug logging
+                        if (role.roleId === 38 && applicationId === 17) {
+                          console.log(`Debug: Role ${role.roleId} -> App ${applicationId}:`, {
+                            isAssigned,
+                            mappings: tempMappings.filter(m => m.roleId === role.roleId && m.applicationId === applicationId),
+                            allMappingsForRole: tempMappings.filter(m => m.roleId === role.roleId),
+                            allMappingsForApp: tempMappings.filter(m => m.applicationId === applicationId)
+                          });
+                        }
+                        
                         return (
                           <div key={app.configId} className="flex items-center space-x-2">
                             <Checkbox
@@ -682,7 +706,7 @@ const EnhancedRoleManagement: React.FC = () => {
                               htmlFor={`role-${role.roleId}-app-${applicationId}`}
                               className="text-sm cursor-pointer"
                             >
-                              {app.configName}
+                              {app.configName} {isAssigned && <span className="text-green-600">✓</span>}
                             </Label>
                           </div>
                         );
