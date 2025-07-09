@@ -590,6 +590,30 @@ export const useApplicationRoleMappings = () => {
     }
   }, []);
 
+  // Save application-role mappings
+  const saveMappings = useCallback(async (mappingsToSave: ApplicationRoleMapping[]): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await workflowService.saveApplicationRoleMappings(mappingsToSave);
+      
+      if (response.success && response.data === 1) {
+        setMappings(mappingsToSave);
+        setLastFetch(new Date());
+        return true;
+      } else {
+        setError(response.error || 'Failed to save application-role mappings');
+        return false;
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Refresh mappings
   const refresh = useCallback(() => {
     fetchMappings();
@@ -606,6 +630,7 @@ export const useApplicationRoleMappings = () => {
     error,
     lastFetch,
     fetchMappings,
+    saveMappings,
     refresh,
   };
 };

@@ -95,6 +95,18 @@ export interface ApplicationRoleMapping {
   roleName: string;
 }
 
+// Role-Application Assignment interface for saving
+export interface RoleApplicationAssignment {
+  roleId: number;
+  applicationIds: number[];
+}
+
+// Application-Role Assignment interface for saving
+export interface ApplicationRoleAssignment {
+  applicationId: number;
+  roleIds: number[];
+}
+
 // Form interface for role management UI
 export interface RoleForm {
   roleId?: number;

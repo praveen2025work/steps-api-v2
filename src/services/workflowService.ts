@@ -675,6 +675,36 @@ class WorkflowService {
     }
   }
 
+  // Save application-role mappings
+  async saveApplicationRoleMappings(mappings: ApplicationRoleMapping[]): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for application-role mappings');
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data
+        MOCK_APPLICATION_ROLE_MAPPINGS.length = 0; // Clear existing mappings
+        MOCK_APPLICATION_ROLE_MAPPINGS.push(...mappings);
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      console.log('[Workflow Service] Saving application-role mappings to API:', mappings);
+      const response = await this.axiosInstance.post<number>('/SetApplicationToRoleMap', mappings);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving application-role mappings:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save application-role mappings'
+      );
+    }
+  }
+
   // Get current environment info
   getEnvironmentInfo(): { mode: string; baseUrl: string; isMock: boolean } {
     return {
