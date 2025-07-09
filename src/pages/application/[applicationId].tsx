@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
 import applicationsData from '@/data/applications.json';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import AppParameters from '@/components/workflow/AppParameters';
 
 // Define types for our workflow hierarchy
 interface WorkflowLevel {
@@ -604,106 +605,125 @@ const ApplicationDetailPage = () => {
           </Card>
         </div>
         
-        {/* Search and Workflow Levels */}
-        {currentLevels.length > 0 ? (
-          <>
-            <div className="mb-4 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search workflow levels..." 
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            {/* Display count of filtered items */}
-            {searchTerm && (
-              <p className="text-sm text-muted-foreground mb-4">
-                Found {currentLevels.filter(level => 
-                  level.name.toLowerCase().includes(searchTerm.toLowerCase())
-                ).length} matching items
-              </p>
+        {/* Tabbed Interface */}
+        <Tabs defaultValue="workflows" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="workflows">Workflow Levels</TabsTrigger>
+            <TabsTrigger value="parameters">Application Parameters</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="workflows" className="mt-6">
+            {/* Search and Workflow Levels */}
+            {currentLevels.length > 0 ? (
+              <>
+                <div className="mb-4 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search workflow levels..." 
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                
+                {/* Display count of filtered items */}
+                {searchTerm && (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Found {currentLevels.filter(level => 
+                      level.name.toLowerCase().includes(searchTerm.toLowerCase())
+                    ).length} matching items
+                  </p>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {currentLevels
+                    .filter(level => searchTerm ? 
+                      level.name.toLowerCase().includes(searchTerm.toLowerCase()) : true)
+                    .map((level) => (
+                    <Card 
+                      key={level.id} 
+                      className="cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => handleLevelSelect(level)}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-lg">{level.name}</CardTitle>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-xs">
+                                  {level.status}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Status: {level.status}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="mb-4">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-medium">Progress</span>
+                            <span className="text-sm font-medium">{level.progress}%</span>
+                          </div>
+                          <Progress value={level.progress} className="h-2 bg-gray-200">
+                            <div className="h-full bg-blue-500" style={{ width: `${level.progress}%` }}></div>
+                          </Progress>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">
+                            {level.children ? `${level.children.length} sub-levels` : 'View details'}
+                          </span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>View {level.name} details</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="py-8">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-medium mb-2">No Data Available</h3>
+                    <p className="text-muted-foreground max-w-md">
+                      This application doesn't have any workflow levels defined yet or you don't have access to view them.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => router.push('/')}
+                    >
+                      Return to Dashboard
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentLevels
-                .filter(level => searchTerm ? 
-                  level.name.toLowerCase().includes(searchTerm.toLowerCase()) : true)
-                .map((level) => (
-                <Card 
-                  key={level.id} 
-                  className="cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => handleLevelSelect(level)}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">{level.name}</CardTitle>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge variant="outline" className="text-xs">
-                              {level.status}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Status: {level.status}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-4">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium">Progress</span>
-                        <span className="text-sm font-medium">{level.progress}%</span>
-                      </div>
-                      <Progress value={level.progress} className="h-2 bg-gray-200">
-                        <div className="h-full bg-blue-500" style={{ width: `${level.progress}%` }}></div>
-                      </Progress>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">
-                        {level.children ? `${level.children.length} sub-levels` : 'View details'}
-                      </span>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>View {level.name} details</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </>
-        ) : (
-          <Card>
-            <CardContent className="py-8">
-              <div className="flex flex-col items-center justify-center text-center">
-                <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-medium mb-2">No Data Available</h3>
-                <p className="text-muted-foreground max-w-md">
-                  This application doesn't have any workflow levels defined yet or you don't have access to view them.
-                </p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => router.push('/')}
-                >
-                  Return to Dashboard
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          </TabsContent>
+          
+          <TabsContent value="parameters" className="mt-6">
+            {application && (
+              <AppParameters 
+                applicationId={parseInt(application.id.replace('app-', '')) || 1}
+                applicationName={application.name}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </DashboardLayout>
     </>
   );

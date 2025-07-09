@@ -42,6 +42,28 @@ export interface ApiResponse<T> {
   environment: string;
 }
 
+// Application Parameter interface matching the API payload structure
+export interface ApplicationParameter {
+  appId: number;
+  paramId: number;
+  name: string;
+  value: string;
+  active: string; // "Y" or "N"
+  updatedBy: string;
+  ignore: string; // "Y" or "N"
+}
+
+// Form interface for application parameters
+export interface ApplicationParameterForm {
+  paramId?: number;
+  name: string;
+  value: string;
+  active: boolean; // Convert to/from "Y"/"N"
+  ignore: boolean; // Convert to/from "Y"/"N"
+}
+
 // Service response types
 export interface GetApplicationsResponse extends ApiResponse<Application[]> {}
 export interface SaveApplicationsResponse extends ApiResponse<Application[]> {}
+export interface GetApplicationParametersResponse extends ApiResponse<ApplicationParameter[]> {}
+export interface SaveApplicationParameterResponse extends ApiResponse<ApplicationParameter[]> {}

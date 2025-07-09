@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { Application, ApiResponse } from '@/types/application-types';
+import { Application, ApiResponse, ApplicationParameter } from '@/types/application-types';
 
 // Mock data for development/demo environments
 const MOCK_APPLICATIONS: Application[] = [
@@ -52,6 +52,28 @@ const MOCK_APPLICATIONS: Application[] = [
     isRunOnWeekDayOnly: true
   }
 ];
+
+// Mock data for application parameters
+const MOCK_APPLICATION_PARAMETERS: Record<number, ApplicationParameter[]> = {
+  1: [
+    { appId: 1, paramId: 101, name: "APP_TIMEOUT", value: "3600", active: "Y", updatedBy: "system", ignore: "N" },
+    { appId: 1, paramId: 102, name: "MAX_RETRIES", value: "3", active: "Y", updatedBy: "admin", ignore: "N" },
+    { appId: 1, paramId: 103, name: "DATA_REFRESH_INTERVAL", value: "15", active: "Y", updatedBy: "system", ignore: "N" },
+    { appId: 1, paramId: 104, name: "NOTIFICATION_ENABLED", value: "true", active: "Y", updatedBy: "admin", ignore: "N" },
+    { appId: 1, paramId: 105, name: "ERROR_THRESHOLD", value: "5", active: "Y", updatedBy: "system", ignore: "N" }
+  ],
+  17: [
+    { appId: 17, paramId: 623, name: "test", value: "asdsa", active: "Y", updatedBy: "system", ignore: "N" },
+    { appId: 17, paramId: 624, name: "BASEL_TIMEOUT", value: "7200", active: "Y", updatedBy: "admin", ignore: "N" },
+    { appId: 17, paramId: 625, name: "CALCULATION_MODE", value: "advanced", active: "Y", updatedBy: "system", ignore: "N" },
+    { appId: 17, paramId: 626, name: "DEBUG_ENABLED", value: "false", active: "N", updatedBy: "admin", ignore: "Y" }
+  ],
+  25: [
+    { appId: 25, paramId: 301, name: "RISK_THRESHOLD", value: "0.95", active: "Y", updatedBy: "risk_admin", ignore: "N" },
+    { appId: 25, paramId: 302, name: "CALCULATION_FREQUENCY", value: "hourly", active: "Y", updatedBy: "system", ignore: "N" },
+    { appId: 25, paramId: 303, name: "ALERT_RECIPIENTS", value: "risk-team@company.com", active: "Y", updatedBy: "admin", ignore: "N" }
+  ]
+};
 
 class WorkflowService {
   private axiosInstance: AxiosInstance;
@@ -311,6 +333,75 @@ class WorkflowService {
         },
         false,
         error.message || 'Connection test failed'
+      );
+    }
+  }
+
+  // Get application parameters for a specific application
+  async getApplicationParameters(appId: number): Promise<ApiResponse<ApplicationParameter[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for application parameters');
+        await this.simulateNetworkDelay();
+        
+        const parameters = MOCK_APPLICATION_PARAMETERS[appId] || [];
+        return this.createApiResponse(parameters);
+      }
+
+      console.log('[Workflow Service] Fetching application parameters from API for appId:', appId);
+      const response = await this.axiosInstance.get<ApplicationParameter[]>(`/appparam/${appId}`);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching application parameters:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch application parameters'
+      );
+    }
+  }
+
+  // Save/update an application parameter
+  async saveApplicationParameter(parameter: ApplicationParameter): Promise<ApiResponse<ApplicationParameter[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for application parameter');
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data
+        const appId = parameter.appId;
+        if (!MOCK_APPLICATION_PARAMETERS[appId]) {
+          MOCK_APPLICATION_PARAMETERS[appId] = [];
+        }
+        
+        const existingIndex = MOCK_APPLICATION_PARAMETERS[appId].findIndex(p => p.paramId === parameter.paramId);
+        if (existingIndex >= 0) {
+          MOCK_APPLICATION_PARAMETERS[appId][existingIndex] = parameter;
+        } else {
+          // Generate new paramId if not provided
+          if (!parameter.paramId) {
+            parameter.paramId = Date.now();
+          }
+          MOCK_APPLICATION_PARAMETERS[appId].push(parameter);
+        }
+        
+        // Return the updated parameter as an array (matching API response format)
+        return this.createApiResponse([parameter]);
+      }
+
+      console.log('[Workflow Service] Saving application parameter to API:', parameter);
+      const response = await this.axiosInstance.post<ApplicationParameter[]>('/WorkflowAppParam', parameter);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving application parameter:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to save application parameter'
       );
     }
   }

@@ -87,6 +87,7 @@ export const CORE_API_ENDPOINTS = {
   GET_WORKFLOW_APPLICATIONS: '/GetWorkflowApplicationDetails',
   SET_APPLICATION: '/SetApplication', // For saving/updating applications
   GET_APPLICATION_PARAMETERS: '/appparam', // For /appparam/{appId}
+  SET_APPLICATION_PARAMETER: '/WorkflowAppParam', // For saving/updating application parameters
   // Add more endpoints as you provide them
 } as const;
 
