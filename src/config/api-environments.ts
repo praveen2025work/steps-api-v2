@@ -85,6 +85,7 @@ export const API_ENVIRONMENTS: Record<string, ApiEnvironment> = {
 // Core API Endpoints
 export const CORE_API_ENDPOINTS = {
   GET_WORKFLOW_APPLICATIONS: '/GetWorkflowApplicationDetails',
+  SET_APPLICATION: '/SetApplication', // For saving/updating applications
   GET_APPLICATION_PARAMETERS: '/appparam', // For /appparam/{appId}
   // Add more endpoints as you provide them
 } as const;

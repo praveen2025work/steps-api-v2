@@ -212,7 +212,33 @@ class WorkflowService {
     }
   }
 
-  // Save/update applications
+  // Save/update a single application
+  async saveApplication(application: Application): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for application');
+        await this.simulateNetworkDelay(800);
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      console.log('[Workflow Service] Saving application to API:', application);
+      const response = await this.axiosInstance.post<number>('/SetApplication', application);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving application:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save application'
+      );
+    }
+  }
+
+  // Save/update applications (batch operation - calls saveApplication for each)
   async saveApplications(applications: Application[]): Promise<ApiResponse<Application[]>> {
     try {
       if (this.isMockMode()) {
@@ -220,28 +246,32 @@ class WorkflowService {
         await this.simulateNetworkDelay(800);
         
         // Simulate successful save by returning the input data
-        // In a real mock, you might want to update the MOCK_APPLICATIONS array
         return this.createApiResponse(applications);
       }
 
-      console.log('[Workflow Service] Saving applications to API');
-      const response = await this.axiosInstance.post<Application[]>('/SetWorkflowApplicationDetails', applications);
+      console.log('[Workflow Service] Saving multiple applications to API');
       
-      return this.createApiResponse(response.data);
+      // Save each application individually
+      const savedApplications: Application[] = [];
+      for (const application of applications) {
+        const response = await this.saveApplication(application);
+        if (response.success && response.data === 1) {
+          savedApplications.push(application);
+        } else {
+          throw new Error(`Failed to save application ${application.name}: ${response.error}`);
+        }
+      }
+      
+      return this.createApiResponse(savedApplications);
     } catch (error: any) {
       console.error('[Workflow Service] Error saving applications:', error);
       
       return this.createApiResponse(
         [],
         false,
-        error.response?.data?.message || error.message || 'Failed to save applications'
+        error.message || 'Failed to save applications'
       );
     }
-  }
-
-  // Save a single application (convenience method)
-  async saveApplication(application: Application): Promise<ApiResponse<Application[]>> {
-    return this.saveApplications([application]);
   }
 
   // Test connection to the API

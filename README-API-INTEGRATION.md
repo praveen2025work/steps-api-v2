@@ -66,7 +66,7 @@ NEXT_PUBLIC_FORCE_REAL_API=true
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `${BASE_URL}/api/WF/GetWorkflowApplicationDetails/false` | Get all applications |
-| POST | `${BASE_URL}/api/WF/SetWorkflowApplicationDetails` | Save/update applications |
+| POST | `${BASE_URL}/api/WF/SetApplication` | Save/update single application |
 
 ### Request/Response Format
 
@@ -111,6 +111,12 @@ NEXT_PUBLIC_FORCE_REAL_API=true
   "isRunOnWeekDayOnly": true
 }
 ```
+
+#### Save Application Response
+```json
+1
+```
+*Returns 1 if successful, 0 or error if failed*
 
 ## Service Layer Architecture
 

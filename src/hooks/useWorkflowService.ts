@@ -58,8 +58,39 @@ export const useApplications = () => {
 
   // Save a single application
   const saveApplication = useCallback(async (app: Application): Promise<boolean> => {
-    return saveApplications([app]);
-  }, [saveApplications]);
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await workflowService.saveApplication(app);
+      
+      if (response.success && response.data === 1) {
+        // Update local state with the saved application
+        setApplications(prevApps => {
+          const existingIndex = prevApps.findIndex(a => a.applicationId === app.applicationId);
+          if (existingIndex >= 0) {
+            // Update existing application
+            const updated = [...prevApps];
+            updated[existingIndex] = app;
+            return updated;
+          } else {
+            // Add new application
+            return [...prevApps, app];
+          }
+        });
+        setLastFetch(new Date());
+        return true;
+      } else {
+        setError(response.error || 'Failed to save application');
+        return false;
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Add a new application
   const addApplication = useCallback(async (app: Omit<Application, 'applicationId'>): Promise<boolean> => {
@@ -68,24 +99,32 @@ export const useApplications = () => {
       applicationId: Date.now(), // Temporary ID, server should assign real ID
     };
     
-    const updatedApps = [...applications, newApp];
-    return saveApplications(updatedApps);
-  }, [applications, saveApplications]);
+    return saveApplication(newApp);
+  }, [saveApplication]);
 
   // Update an existing application
   const updateApplication = useCallback(async (updatedApp: Application): Promise<boolean> => {
-    const updatedApps = applications.map(app => 
-      app.applicationId === updatedApp.applicationId ? updatedApp : app
-    );
-    
-    return saveApplications(updatedApps);
-  }, [applications, saveApplications]);
+    return saveApplication(updatedApp);
+  }, [saveApplication]);
 
   // Delete an application
   const deleteApplication = useCallback(async (applicationId: number): Promise<boolean> => {
-    const updatedApps = applications.filter(app => app.applicationId !== applicationId);
-    return saveApplications(updatedApps);
-  }, [applications, saveApplications]);
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // For delete, we'll need to implement a delete endpoint later
+      // For now, we'll simulate by removing from local state
+      setApplications(prevApps => prevApps.filter(app => app.applicationId !== applicationId));
+      setLastFetch(new Date());
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Refresh applications
   const refresh = useCallback(() => {
