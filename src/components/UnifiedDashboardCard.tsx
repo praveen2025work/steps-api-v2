@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -6,9 +6,12 @@ import { useRouter } from "next/router";
 import { 
   ChevronRight, 
   BarChart, 
-  AlertCircle
+  AlertCircle,
+  Settings
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import AppParameters from "@/components/workflow/AppParameters";
 
 interface UnifiedDashboardCardProps {
   id: string;
@@ -34,6 +37,7 @@ const UnifiedDashboardCard = ({
   taskCounts
 }: UnifiedDashboardCardProps) => {
   const router = useRouter();
+  const [isParametersDialogOpen, setIsParametersDialogOpen] = useState(false);
   
   const handleViewDetails = () => {
     if (type === 'workflow') {
@@ -54,6 +58,18 @@ const UnifiedDashboardCard = ({
 
   const handleSupportDashboard = () => {
     router.push('/support');
+  };
+
+  const handleApplicationParameters = () => {
+    setIsParametersDialogOpen(true);
+  };
+
+  // Extract numeric application ID from the id string
+  const getApplicationId = () => {
+    if (id.startsWith('app-')) {
+      return parseInt(id.replace('app-', ''));
+    }
+    return parseInt(id) || 1;
   };
   
   return (
@@ -116,6 +132,19 @@ const UnifiedDashboardCard = ({
               <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
             
+            {/* Show Application Parameters button only for applications */}
+            {type === 'application' && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 px-2"
+                onClick={handleApplicationParameters}
+                title="Application Parameters"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            
             <Button 
               variant="outline" 
               size="sm" 
@@ -138,6 +167,21 @@ const UnifiedDashboardCard = ({
           </div>
         </div>
       </CardContent>
+
+      {/* Application Parameters Dialog */}
+      {type === 'application' && (
+        <Dialog open={isParametersDialogOpen} onOpenChange={setIsParametersDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Application Parameters - {title}</DialogTitle>
+            </DialogHeader>
+            <AppParameters 
+              applicationId={getApplicationId()}
+              applicationName={title}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 };
