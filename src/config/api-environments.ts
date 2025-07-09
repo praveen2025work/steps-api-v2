@@ -101,7 +101,7 @@ export const CORE_API_ENDPOINTS = {
   SET_ROLES: '/SetRoles', // For saving/updating roles
   GET_UNIQUE_APPLICATIONS: '/GetWorkflowUniqueApplications', // For unique applications
   GET_UNIQUE_ROLES: '/GetWorkflowUniqueRoles', // For unique roles
-  GET_APPLICATION_ROLE_MAP: '/GetApplicationToRoleMap', // For application-role mappings
+  GET_APPLICATION_ROLE_MAP: '/GetWorkflowApplicationToRoleMap', // For application-role mappings
   SET_APPLICATION_ROLE_MAP: '/SetApplicationToRoleMap', // For saving application-role mappings
   
   // Add more endpoints as you provide them

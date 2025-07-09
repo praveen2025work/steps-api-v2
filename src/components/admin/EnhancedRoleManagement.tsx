@@ -183,7 +183,7 @@ const EnhancedRoleManagement: React.FC = () => {
   // Toggle role-application assignment
   const toggleRoleApplicationAssignment = (roleId: number, applicationId: number, assign: boolean) => {
     const role = roles.find(r => r.roleId === roleId);
-    const application = uniqueApplications.find(a => parseInt(a.configId) === applicationId);
+    const application = uniqueApplications.find(a => parseInt(a.configId, 10) === applicationId);
     
     if (!role || !application) return;
     
@@ -702,16 +702,21 @@ const EnhancedRoleManagement: React.FC = () => {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {uniqueApplications.map((app) => {
-                        const applicationId = parseInt(app.configId);
+                        const applicationId = parseInt(app.configId, 10);
                         const isAssigned = isRoleAssignedToApplication(role.roleId, applicationId);
                         
-                        // Debug logging
-                        if (role.roleId === 38 && applicationId === 17) {
-                          console.log(`Debug: Role ${role.roleId} -> App ${applicationId}:`, {
+                        // Enhanced debug logging for specific combinations
+                        if ((role.roleId === 38 && applicationId === 17) || (role.roleId === 31 && applicationId === 16)) {
+                          console.log(`[DEBUG] Role ${role.roleId} -> App ${applicationId} (${app.configName}):`, {
                             isAssigned,
+                            configId: app.configId,
+                            configIdType: typeof app.configId,
+                            parsedApplicationId: applicationId,
+                            parsedApplicationIdType: typeof applicationId,
                             mappings: tempMappings.filter(m => m.roleId === role.roleId && m.applicationId === applicationId),
                             allMappingsForRole: tempMappings.filter(m => m.roleId === role.roleId),
-                            allMappingsForApp: tempMappings.filter(m => m.applicationId === applicationId)
+                            allMappingsForApp: tempMappings.filter(m => m.applicationId === applicationId),
+                            tempMappingsLength: tempMappings.length
                           });
                         }
                         
@@ -742,7 +747,7 @@ const EnhancedRoleManagement: React.FC = () => {
             // Application to Roles View
             <div className="grid gap-4">
               {uniqueApplications.map((app) => {
-                const applicationId = parseInt(app.configId);
+                const applicationId = parseInt(app.configId, 10);
                 
                 return (
                   <Card key={app.configId}>

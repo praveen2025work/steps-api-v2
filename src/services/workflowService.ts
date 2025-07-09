@@ -655,7 +655,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching application-role mappings from API');
-      const response = await this.axiosInstance.get<ApplicationRoleMapping[]>('/GetApplicationToRoleMap');
+      const response = await this.axiosInstance.get<ApplicationRoleMapping[]>('/GetWorkflowApplicationToRoleMap');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
