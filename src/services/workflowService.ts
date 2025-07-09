@@ -127,12 +127,12 @@ const MOCK_WORKFLOW_ROLES: WorkflowRole[] = [
   }
 ];
 
-// Mock data for unique applications
+// Mock data for unique applications - matching your API specification
 const MOCK_UNIQUE_APPLICATIONS: UniqueApplication[] = [
   {
-    configType: "Basel",
-    configId: "17",
-    configName: "Basel"
+    configType: "Basel", // hierarchy name 
+    configId: "17", // app id
+    configName: "Basel" //app name 
   },
   {
     configType: "Finance",
@@ -151,31 +151,31 @@ const MOCK_UNIQUE_APPLICATIONS: UniqueApplication[] = [
   }
 ];
 
-// Mock data for unique roles
+// Mock data for unique roles - matching your API specification
 const MOCK_UNIQUE_ROLES: UniqueRole[] = [
   {
-    configId: 31,
-    configName: "G4-AUTOMATION-USER-RW"
+    configId: 31, // roleId
+    configName: "G4-AUTOMATION-USER-RW" // role name 
   },
   {
-    configId: 32,
-    configName: "G4-AUTOMATION-APPROVER-SME-RW"
+    configId: 32, // roleId
+    configName: "G4-AUTOMATION-APPROVER-SME-RW" // role name 
   },
   {
-    configId: 38,
-    configName: "BASEL_4-REGCAP-USER-RW"
+    configId: 38, // roleId
+    configName: "BASEL_4-REGCAP-USER-RW" // role name 
   },
   {
-    configId: 5,
-    configName: "FINANCIAL CONTROL-APPROVER-SME-RW"
+    configId: 5, // roleId
+    configName: "FINANCIAL CONTROL-APPROVER-SME-RW" // role name 
   },
   {
-    configId: 37,
-    configName: "FINANCIAL CONTROL-HR-SME-RW"
+    configId: 37, // roleId
+    configName: "FINANCIAL CONTROL-HR-SME-RW" // role name 
   }
 ];
 
-// Mock data for application-role mappings
+// Mock data for application-role mappings - matching your exact API response
 const MOCK_APPLICATION_ROLE_MAPPINGS: ApplicationRoleMapping[] = [
   {
     applicationId: 17,
@@ -200,12 +200,6 @@ const MOCK_APPLICATION_ROLE_MAPPINGS: ApplicationRoleMapping[] = [
     roleId: 32,
     applicationName: "G4 Automation",
     roleName: "G4-AUTOMATION-APPROVER-SME-RW"
-  },
-  {
-    applicationId: 13,
-    roleId: 37,
-    applicationName: "Finance Hiring Workflow",
-    roleName: "FINANCIAL CONTROL-HR-SME-RW"
   }
 ];
 

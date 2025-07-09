@@ -139,16 +139,38 @@ const EnhancedRoleManagement: React.FC = () => {
   
   // Check if role is assigned to application
   const isRoleAssignedToApplication = (roleId: number, applicationId: number): boolean => {
-    return tempMappings.some(mapping => 
+    const isAssigned = tempMappings.some(mapping => 
       mapping.roleId === roleId && mapping.applicationId === applicationId
     );
+    
+    // Enhanced debug logging for specific combinations
+    if ((roleId === 38 && applicationId === 17) || (roleId === 31 && applicationId === 16)) {
+      console.log(`[DEBUG] isRoleAssignedToApplication(${roleId}, ${applicationId}):`, {
+        isAssigned,
+        tempMappings: tempMappings.length,
+        relevantMappings: tempMappings.filter(m => m.roleId === roleId && m.applicationId === applicationId),
+        allMappingsForRole: tempMappings.filter(m => m.roleId === roleId),
+        allMappingsForApp: tempMappings.filter(m => m.applicationId === applicationId)
+      });
+    }
+    
+    return isAssigned;
   };
   
   // Debug function to log mapping data
   const debugMappings = () => {
-    console.log('Current tempMappings:', tempMappings);
-    console.log('Unique applications:', uniqueApplications);
-    console.log('Roles:', roles);
+    console.log('[DEBUG] Current tempMappings:', tempMappings);
+    console.log('[DEBUG] Unique applications:', uniqueApplications);
+    console.log('[DEBUG] Roles:', roles);
+    console.log('[DEBUG] Original applicationRoleMappings:', applicationRoleMappings);
+    
+    // Test specific combinations
+    console.log('[DEBUG] Test Basel (17) + Role 38:', {
+      tempMappingsCheck: tempMappings.some(m => m.roleId === 38 && m.applicationId === 17),
+      originalMappingsCheck: applicationRoleMappings.some(m => m.roleId === 38 && m.applicationId === 17),
+      baselApp: uniqueApplications.find(a => a.configId === "17"),
+      role38: roles.find(r => r.roleId === 38)
+    });
   };
   
   // Call debug on component mount and when data changes
