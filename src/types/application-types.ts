@@ -62,8 +62,58 @@ export interface ApplicationParameterForm {
   ignore: boolean; // Convert to/from "Y"/"N"
 }
 
+// Role interface matching the API payload structure
+export interface WorkflowRole {
+  roleId: number;
+  department: string;
+  role: string;
+  userType: string;
+  isReadWrite: string; // "RO" or "RW"
+  isActive: boolean;
+  action?: number; // For save operations
+  isReadWriteChecked?: boolean; // For save operations
+}
+
+// Unique Application interface for role management
+export interface UniqueApplication {
+  configType: string;
+  configId: string;
+  configName: string;
+}
+
+// Unique Role interface for role management
+export interface UniqueRole {
+  configId: number;
+  configName: string;
+}
+
+// Application-Role Mapping interface
+export interface ApplicationRoleMapping {
+  applicationId: number;
+  roleId: number;
+  applicationName: string;
+  roleName: string;
+}
+
+// Form interface for role management UI
+export interface RoleForm {
+  roleId?: number;
+  department: string;
+  role: string;
+  userType: string;
+  isReadWrite: 'RO' | 'RW';
+  isActive: boolean;
+}
+
 // Service response types
 export interface GetApplicationsResponse extends ApiResponse<Application[]> {}
 export interface SaveApplicationsResponse extends ApiResponse<Application[]> {}
 export interface GetApplicationParametersResponse extends ApiResponse<ApplicationParameter[]> {}
 export interface SaveApplicationParameterResponse extends ApiResponse<ApplicationParameter[]> {}
+
+// Role service response types
+export interface GetWorkflowRolesResponse extends ApiResponse<WorkflowRole[]> {}
+export interface SaveRolesResponse extends ApiResponse<number> {}
+export interface GetUniqueApplicationsResponse extends ApiResponse<UniqueApplication[]> {}
+export interface GetUniqueRolesResponse extends ApiResponse<UniqueRole[]> {}
+export interface GetApplicationRoleMappingResponse extends ApiResponse<ApplicationRoleMapping[]> {}

@@ -1,5 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { Application, ApiResponse, ApplicationParameter } from '@/types/application-types';
+import { 
+  Application, 
+  ApiResponse, 
+  ApplicationParameter,
+  WorkflowRole,
+  UniqueApplication,
+  UniqueRole,
+  ApplicationRoleMapping
+} from '@/types/application-types';
 
 // Mock data for development/demo environments
 const MOCK_APPLICATIONS: Application[] = [
@@ -74,6 +82,132 @@ const MOCK_APPLICATION_PARAMETERS: Record<number, ApplicationParameter[]> = {
     { appId: 25, paramId: 303, name: "ALERT_RECIPIENTS", value: "risk-team@company.com", active: "Y", updatedBy: "admin", ignore: "N" }
   ]
 };
+
+// Mock data for workflow roles
+const MOCK_WORKFLOW_ROLES: WorkflowRole[] = [
+  {
+    roleId: 38,
+    department: "Basel_4",
+    role: "Regiap",
+    userType: "User",
+    isReadWrite: "RW",
+    isActive: true
+  },
+  {
+    roleId: 5,
+    department: "Financial Control",
+    role: "Approver",
+    userType: "SME",
+    isReadWrite: "RW",
+    isActive: true
+  },
+  {
+    roleId: 37,
+    department: "Financial Control",
+    role: "HR",
+    userType: "SME",
+    isReadWrite: "RW",
+    isActive: true
+  },
+  {
+    roleId: 31,
+    department: "G4",
+    role: "Automation User",
+    userType: "User",
+    isReadWrite: "RW",
+    isActive: true
+  },
+  {
+    roleId: 32,
+    department: "G4",
+    role: "Automation Approver",
+    userType: "SME",
+    isReadWrite: "RW",
+    isActive: true
+  }
+];
+
+// Mock data for unique applications
+const MOCK_UNIQUE_APPLICATIONS: UniqueApplication[] = [
+  {
+    configType: "Basel",
+    configId: "17",
+    configName: "Basel"
+  },
+  {
+    configType: "Finance",
+    configId: "13",
+    configName: "Finance Hiring Workflow"
+  },
+  {
+    configType: "G4",
+    configId: "16",
+    configName: "G4 Automation"
+  },
+  {
+    configType: "NPL ID",
+    configId: "1",
+    configName: "Daily Named Pnl"
+  }
+];
+
+// Mock data for unique roles
+const MOCK_UNIQUE_ROLES: UniqueRole[] = [
+  {
+    configId: 31,
+    configName: "G4-AUTOMATION-USER-RW"
+  },
+  {
+    configId: 32,
+    configName: "G4-AUTOMATION-APPROVER-SME-RW"
+  },
+  {
+    configId: 38,
+    configName: "BASEL_4-REGCAP-USER-RW"
+  },
+  {
+    configId: 5,
+    configName: "FINANCIAL CONTROL-APPROVER-SME-RW"
+  },
+  {
+    configId: 37,
+    configName: "FINANCIAL CONTROL-HR-SME-RW"
+  }
+];
+
+// Mock data for application-role mappings
+const MOCK_APPLICATION_ROLE_MAPPINGS: ApplicationRoleMapping[] = [
+  {
+    applicationId: 17,
+    roleId: 38,
+    applicationName: "Basel",
+    roleName: "BASEL_4-REGCAP-USER-RW"
+  },
+  {
+    applicationId: 13,
+    roleId: 5,
+    applicationName: "Finance Hiring Workflow",
+    roleName: "FINANCIAL CONTROL-APPROVER-SME-RW"
+  },
+  {
+    applicationId: 16,
+    roleId: 31,
+    applicationName: "G4 Automation",
+    roleName: "G4-AUTOMATION-USER-RW"
+  },
+  {
+    applicationId: 16,
+    roleId: 32,
+    applicationName: "G4 Automation",
+    roleName: "G4-AUTOMATION-APPROVER-SME-RW"
+  },
+  {
+    applicationId: 13,
+    roleId: 37,
+    applicationName: "Finance Hiring Workflow",
+    roleName: "FINANCIAL CONTROL-HR-SME-RW"
+  }
+];
 
 class WorkflowService {
   private axiosInstance: AxiosInstance;
@@ -399,6 +533,144 @@ class WorkflowService {
         [],
         false,
         error.response?.data?.message || error.message || 'Failed to save application parameter'
+      );
+    }
+  }
+
+  // ===== ROLE MANAGEMENT METHODS =====
+
+  // Get all workflow roles
+  async getWorkflowRoles(): Promise<ApiResponse<WorkflowRole[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for workflow roles');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_WORKFLOW_ROLES);
+      }
+
+      console.log('[Workflow Service] Fetching workflow roles from API');
+      const response = await this.axiosInstance.get<WorkflowRole[]>('/GetWorkflowRoleDetails/false');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching workflow roles:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch workflow roles'
+      );
+    }
+  }
+
+  // Save/update roles
+  async saveRoles(roles: WorkflowRole[]): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for roles');
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data
+        roles.forEach(role => {
+          const existingIndex = MOCK_WORKFLOW_ROLES.findIndex(r => r.roleId === role.roleId);
+          if (existingIndex >= 0) {
+            MOCK_WORKFLOW_ROLES[existingIndex] = role;
+          } else {
+            // Generate new roleId if not provided
+            if (!role.roleId) {
+              role.roleId = Date.now();
+            }
+            MOCK_WORKFLOW_ROLES.push(role);
+          }
+        });
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      console.log('[Workflow Service] Saving roles to API:', roles);
+      const response = await this.axiosInstance.post<number>('/SetRoles', roles);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving roles:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save roles'
+      );
+    }
+  }
+
+  // Get unique applications for role management
+  async getUniqueApplications(): Promise<ApiResponse<UniqueApplication[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for unique applications');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_UNIQUE_APPLICATIONS);
+      }
+
+      console.log('[Workflow Service] Fetching unique applications from API');
+      const response = await this.axiosInstance.get<UniqueApplication[]>('/GetWorkflowUniqueApplications');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching unique applications:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch unique applications'
+      );
+    }
+  }
+
+  // Get unique roles for role management
+  async getUniqueRoles(): Promise<ApiResponse<UniqueRole[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for unique roles');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_UNIQUE_ROLES);
+      }
+
+      console.log('[Workflow Service] Fetching unique roles from API');
+      const response = await this.axiosInstance.get<UniqueRole[]>('/GetWorkflowUniqueRoles');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching unique roles:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch unique roles'
+      );
+    }
+  }
+
+  // Get application-role mappings
+  async getApplicationRoleMappings(): Promise<ApiResponse<ApplicationRoleMapping[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for application-role mappings');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_APPLICATION_ROLE_MAPPINGS);
+      }
+
+      console.log('[Workflow Service] Fetching application-role mappings from API');
+      const response = await this.axiosInstance.get<ApplicationRoleMapping[]>('/GetApplicationToRoleMap');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching application-role mappings:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch application-role mappings'
       );
     }
   }

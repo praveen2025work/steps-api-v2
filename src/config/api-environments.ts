@@ -95,6 +95,14 @@ export const CORE_API_ENDPOINTS = {
   SET_APPLICATION: '/SetApplication', // For saving/updating applications
   GET_APPLICATION_PARAMETERS: '/appparam', // For /appparam/{appId}
   SET_APPLICATION_PARAMETER: '/WorkflowAppParam', // For saving/updating application parameters
+  
+  // Role Management Endpoints
+  GET_WORKFLOW_ROLES: '/GetWorkflowRoleDetails', // For /GetWorkflowRoleDetails/false
+  SET_ROLES: '/SetRoles', // For saving/updating roles
+  GET_UNIQUE_APPLICATIONS: '/GetWorkflowUniqueApplications', // For unique applications
+  GET_UNIQUE_ROLES: '/GetWorkflowUniqueRoles', // For unique roles
+  GET_APPLICATION_ROLE_MAP: '/GetApplicationToRoleMap', // For application-role mappings
+  
   // Add more endpoints as you provide them
 } as const;
 

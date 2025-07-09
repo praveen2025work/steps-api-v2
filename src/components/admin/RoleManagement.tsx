@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -29,209 +29,83 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
-import { Role, Permission, Application } from '@/types/workflow-types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Search, Plus, Edit, Trash2, Eye, RefreshCw, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { ScrollArea } from '@/components/ui/scroll-area';
-
-// Sample applications
-const sampleApplications: Application[] = [
-  {
-    id: '1',
-    name: 'Financial Reporting',
-    category: 'Finance',
-    serviceUrl: 'https://api.example.com/financial-reporting',
-    description: 'End of day financial reporting application',
-    superUserRole: 'Finance Admin',
-    cronSchedule: '0 18 * * 1-5',
-    offset: 30,
-    lockingRequired: true,
-    lockingRole: 'Finance Manager',
-    runOnWeekdays: true,
-    parameters: [],
-    createdAt: '2025-01-15T10:00:00Z',
-    updatedAt: '2025-04-20T14:30:00Z',
-    createdBy: 'System Admin',
-    updatedBy: 'John Doe',
-    isActive: true
-  },
-  {
-    id: '2',
-    name: 'Risk Assessment',
-    category: 'Risk',
-    serviceUrl: 'https://api.example.com/risk-assessment',
-    description: 'Daily risk assessment and reporting',
-    superUserRole: 'Risk Admin',
-    cronSchedule: '0 8 * * 1-5',
-    offset: 15,
-    lockingRequired: true,
-    lockingRole: 'Risk Manager',
-    runOnWeekdays: true,
-    parameters: [],
-    createdAt: '2025-02-10T09:15:00Z',
-    updatedAt: '2025-04-18T11:20:00Z',
-    createdBy: 'System Admin',
-    updatedBy: 'Jane Smith',
-    isActive: true
-  },
-  {
-    id: '3',
-    name: 'Compliance Checker',
-    category: 'Compliance',
-    serviceUrl: 'https://api.example.com/compliance',
-    description: 'Regulatory compliance verification',
-    superUserRole: 'Compliance Admin',
-    cronSchedule: '0 20 * * 5',
-    offset: 60,
-    lockingRequired: false,
-    lockingRole: '',
-    runOnWeekdays: false,
-    parameters: [],
-    createdAt: '2025-03-05T14:00:00Z',
-    updatedAt: '2025-04-15T16:45:00Z',
-    createdBy: 'System Admin',
-    updatedBy: 'Robert Johnson',
-    isActive: false
-  }
-];
-
-// Sample permissions
-const samplePermissions: Permission[] = [
-  { id: 'perm1', name: 'View Workflows', description: 'View all workflows', code: 'VIEW_WORKFLOWS' },
-  { id: 'perm2', name: 'Edit Workflows', description: 'Edit workflow details', code: 'EDIT_WORKFLOWS' },
-  { id: 'perm3', name: 'Delete Workflows', description: 'Delete workflows', code: 'DELETE_WORKFLOWS' },
-  { id: 'perm4', name: 'Approve Workflows', description: 'Approve workflow stages', code: 'APPROVE_WORKFLOWS' },
-  { id: 'perm5', name: 'Upload Files', description: 'Upload files to workflows', code: 'UPLOAD_FILES' },
-  { id: 'perm6', name: 'Download Files', description: 'Download files from workflows', code: 'DOWNLOAD_FILES' },
-  { id: 'perm7', name: 'Manage Users', description: 'Manage user accounts', code: 'MANAGE_USERS' },
-  { id: 'perm8', name: 'Manage Roles', description: 'Manage roles and permissions', code: 'MANAGE_ROLES' },
-  { id: 'perm9', name: 'View Reports', description: 'View system reports', code: 'VIEW_REPORTS' },
-  { id: 'perm10', name: 'Export Data', description: 'Export data from the system', code: 'EXPORT_DATA' }
-];
-
-// Sample roles
-const sampleRoles: Role[] = [
-  {
-    id: 'role1',
-    name: 'Administrator',
-    description: 'Full system access',
-    permissions: samplePermissions,
-    applications: ['1', '2', '3'],
-    createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: true
-  },
-  {
-    id: 'role2',
-    name: 'Finance Manager',
-    description: 'Manages financial workflows',
-    permissions: samplePermissions.filter(p => ['perm1', 'perm2', 'perm4', 'perm5', 'perm6', 'perm9', 'perm10'].includes(p.id)),
-    applications: ['1'],
-    createdAt: '2025-01-02T00:00:00Z',
-    updatedAt: '2025-01-02T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: true
-  },
-  {
-    id: 'role3',
-    name: 'Risk Analyst',
-    description: 'Analyzes risk data',
-    permissions: samplePermissions.filter(p => ['perm1', 'perm5', 'perm6', 'perm9', 'perm10'].includes(p.id)),
-    applications: ['2'],
-    createdAt: '2025-01-03T00:00:00Z',
-    updatedAt: '2025-01-03T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: true
-  },
-  {
-    id: 'role4',
-    name: 'Compliance Officer',
-    description: 'Ensures regulatory compliance',
-    permissions: samplePermissions.filter(p => ['perm1', 'perm4', 'perm5', 'perm6', 'perm9'].includes(p.id)),
-    applications: ['3'],
-    createdAt: '2025-01-04T00:00:00Z',
-    updatedAt: '2025-01-04T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: true
-  },
-  {
-    id: 'role5',
-    name: 'Read Only User',
-    description: 'View-only access to all applications',
-    permissions: samplePermissions.filter(p => ['perm1', 'perm9'].includes(p.id)),
-    applications: ['1', '2', '3'],
-    createdAt: '2025-01-05T00:00:00Z',
-    updatedAt: '2025-01-05T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: true
-  }
-];
-
-// Form interface
-interface RoleForm {
-  id?: string;
-  name: string;
-  department: string;
-  userType: string;
-  accessLevel: 'RO' | 'RW';
-  selectedApplications: string[];
-  isActive: boolean;
-}
+import { 
+  useWorkflowRoles, 
+  useUniqueApplications, 
+  useApplicationRoleMappings,
+  useEnvironmentInfo 
+} from '@/hooks/useWorkflowService';
+import { WorkflowRole, RoleForm } from '@/types/application-types';
 
 const RoleManagement: React.FC = () => {
-  const [roles, setRoles] = useState<Role[]>(sampleRoles);
+  // Use the new service hooks
+  const {
+    roles,
+    loading,
+    error,
+    addRole,
+    updateRole,
+    deleteRole,
+    refresh
+  } = useWorkflowRoles();
+  
+  const {
+    applications: uniqueApplications,
+    loading: applicationsLoading
+  } = useUniqueApplications();
+  
+  const {
+    mappings: applicationRoleMappings,
+    loading: mappingsLoading
+  } = useApplicationRoleMappings();
+  
+  const envInfo = useEnvironmentInfo();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [roleToDelete, setRoleToDelete] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<WorkflowRole | null>(null);
+  const [roleToDelete, setRoleToDelete] = useState<number | null>(null);
   
   // Form state
   const [roleForm, setRoleForm] = useState<RoleForm>({
-    name: '',
     department: '',
+    role: '',
     userType: 'User',
-    accessLevel: 'RO',
-    selectedApplications: [],
+    isReadWrite: 'RO',
     isActive: true
   });
   
   // Filter roles based on search term
   const filteredRoles = roles.filter(role => 
-    role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (role.department && role.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (role.userType && role.userType.toLowerCase().includes(searchTerm.toLowerCase()))
+    role.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    role.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    role.userType.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   // Reset form when dialog opens/closes
-  React.useEffect(() => {
+  useEffect(() => {
     if (roleDialogOpen && selectedRole) {
       setRoleForm({
-        id: selectedRole.id,
-        name: selectedRole.name,
-        department: selectedRole.department || '',
-        userType: selectedRole.userType || 'User',
-        accessLevel: selectedRole.accessLevel || 'RO',
-        selectedApplications: selectedRole.applications,
+        roleId: selectedRole.roleId,
+        department: selectedRole.department,
+        role: selectedRole.role,
+        userType: selectedRole.userType,
+        isReadWrite: selectedRole.isReadWrite as 'RO' | 'RW',
         isActive: selectedRole.isActive
       });
     } else if (roleDialogOpen) {
       setRoleForm({
-        name: '',
         department: '',
+        role: '',
         userType: 'User',
-        accessLevel: 'RO',
-        selectedApplications: [],
+        isReadWrite: 'RO',
         isActive: true
       });
     }
@@ -242,24 +116,9 @@ const RoleManagement: React.FC = () => {
     setRoleForm(prev => ({ ...prev, [field]: value }));
   };
   
-  const toggleApplication = (applicationId: string) => {
-    setRoleForm(prev => {
-      const selectedApplications = [...prev.selectedApplications];
-      const index = selectedApplications.indexOf(applicationId);
-      
-      if (index === -1) {
-        selectedApplications.push(applicationId);
-      } else {
-        selectedApplications.splice(index, 1);
-      }
-      
-      return { ...prev, selectedApplications };
-    });
-  };
-  
   // Save role
-  const saveRole = () => {
-    if (!roleForm.name.trim()) {
+  const handleSaveRole = async () => {
+    if (!roleForm.role.trim()) {
       toast({
         title: "Validation Error",
         description: "Role name is required",
@@ -268,53 +127,130 @@ const RoleManagement: React.FC = () => {
       return;
     }
     
-    const newRole: Role = {
-      id: roleForm.id || `role-${Date.now()}`,
-      name: roleForm.name,
-      description: '', // Empty description as it's not needed
-      department: roleForm.department,
-      userType: roleForm.userType,
-      accessLevel: roleForm.accessLevel,
-      permissions: [], // Empty permissions as they're not needed
-      applications: roleForm.selectedApplications,
-      createdAt: roleForm.id ? roles.find(r => r.id === roleForm.id)?.createdAt || new Date().toISOString() : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: roleForm.id ? roles.find(r => r.id === roleForm.id)?.createdBy || 'Current User' : 'Current User',
-      updatedBy: 'Current User',
-      isActive: roleForm.isActive
-    };
-    
-    if (roleForm.id) {
-      // Update existing role
-      setRoles(prev => prev.map(role => role.id === roleForm.id ? newRole : role));
+    if (!roleForm.department.trim()) {
       toast({
-        title: "Role Updated",
-        description: `Role "${roleForm.name}" has been updated successfully.`
+        title: "Validation Error",
+        description: "Department is required",
+        variant: "destructive"
       });
-    } else {
-      // Add new role
-      setRoles(prev => [...prev, newRole]);
-      toast({
-        title: "Role Added",
-        description: `Role "${roleForm.name}" has been added successfully.`
-      });
+      return;
     }
     
-    setRoleDialogOpen(false);
+    try {
+      let success = false;
+      
+      if (selectedRole) {
+        // Update existing role
+        const updatedRole: WorkflowRole = {
+          roleId: selectedRole.roleId,
+          department: roleForm.department,
+          role: roleForm.role,
+          userType: roleForm.userType,
+          isReadWrite: roleForm.isReadWrite,
+          isActive: roleForm.isActive
+        };
+        
+        success = await updateRole(updatedRole);
+        if (success) {
+          toast({
+            title: "Role Updated",
+            description: `Role "${roleForm.role}" has been updated successfully.`
+          });
+        }
+      } else {
+        // Add new role
+        const newRole = {
+          department: roleForm.department,
+          role: roleForm.role,
+          userType: roleForm.userType,
+          isReadWrite: roleForm.isReadWrite,
+          isActive: roleForm.isActive
+        };
+        
+        success = await addRole(newRole);
+        if (success) {
+          toast({
+            title: "Role Added",
+            description: `Role "${roleForm.role}" has been added successfully.`
+          });
+        }
+      }
+      
+      if (success) {
+        setRoleDialogOpen(false);
+        setSelectedRole(null);
+      }
+    } catch (error) {
+      console.error('Error saving role:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save role. Please try again later.',
+        variant: 'destructive'
+      });
+    }
   };
   
   // Delete role
-  const confirmDelete = () => {
-    setRoles(prev => prev.filter(role => role.id !== roleToDelete));
-    setDeleteDialogOpen(false);
-    toast({
-      title: "Role Deleted",
-      description: "The role has been deleted successfully."
-    });
+  const handleDeleteRole = async () => {
+    if (!roleToDelete) return;
+    
+    try {
+      const success = await deleteRole(roleToDelete);
+      
+      if (success) {
+        toast({
+          title: "Role Deleted",
+          description: "The role has been deleted successfully."
+        });
+        setDeleteDialogOpen(false);
+        setRoleToDelete(null);
+      }
+    } catch (error) {
+      console.error('Error deleting role:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete role. Please try again later.',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Get applications for a role from mappings
+  const getApplicationsForRole = (roleId: number): string[] => {
+    return applicationRoleMappings
+      .filter(mapping => mapping.roleId === roleId)
+      .map(mapping => mapping.applicationName);
   };
   
   return (
     <div className="space-y-6">
+      {/* Environment Status Banner */}
+      {envInfo.isMock ? (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Running in <strong>Mock Data Mode</strong> - Environment: {envInfo.mode} | Base URL: {envInfo.baseUrl}
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert>
+          <RefreshCw className="h-4 w-4" />
+          <AlertDescription>
+            Connected to <strong>Live API</strong> - Environment: {envInfo.mode} | Base URL: {envInfo.baseUrl}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex justify-between items-center">
         <div className="relative w-64">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -326,108 +262,99 @@ const RoleManagement: React.FC = () => {
           />
         </div>
         
-        <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setSelectedRole(null)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Role
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[700px]">
-            <DialogHeader>
-              <DialogTitle>{selectedRole ? 'Edit Role' : 'Add New Role'}</DialogTitle>
-              <DialogDescription>
-                {selectedRole ? 'Update the role details' : 'Create a new role'}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Role Name</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Enter role name" 
-                    value={roleForm.name}
-                    onChange={(e) => handleRoleFormChange('name', e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <Input 
-                    id="department" 
-                    placeholder="Enter department" 
-                    value={roleForm.department}
-                    onChange={(e) => handleRoleFormChange('department', e.target.value)}
-                  />
-                </div>
-              </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          
+          <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setSelectedRole(null)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Role
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>{selectedRole ? 'Edit Role' : 'Add New Role'}</DialogTitle>
+                <DialogDescription>
+                  {selectedRole ? 'Update the role details' : 'Create a new role with its configuration details'}
+                </DialogDescription>
+              </DialogHeader>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="userType">User Type</Label>
-                  <Input 
-                    id="userType" 
-                    placeholder="User or SME" 
-                    value={roleForm.userType}
-                    onChange={(e) => handleRoleFormChange('userType', e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="accessLevel">Access Level (RO/RW)</Label>
-                  <div className="flex items-center space-x-2 pt-2">
-                    <Switch 
-                      id="accessLevel" 
-                      checked={roleForm.accessLevel === 'RW'}
-                      onCheckedChange={(checked) => handleRoleFormChange('accessLevel', checked ? 'RW' : 'RO')}
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department <span className="text-red-500">*</span></Label>
+                    <Input 
+                      id="department" 
+                      placeholder="Enter department" 
+                      value={roleForm.department}
+                      onChange={(e) => handleRoleFormChange('department', e.target.value)}
+                      required
                     />
-                    <Label htmlFor="accessLevel" className="cursor-pointer">
-                      {roleForm.accessLevel === 'RW' ? 'Read Write' : 'Read Only'}
-                    </Label>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role Name <span className="text-red-500">*</span></Label>
+                    <Input 
+                      id="role" 
+                      placeholder="Enter role name" 
+                      value={roleForm.role}
+                      onChange={(e) => handleRoleFormChange('role', e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="userType">User Type</Label>
+                    <Input 
+                      id="userType" 
+                      placeholder="User or SME" 
+                      value={roleForm.userType}
+                      onChange={(e) => handleRoleFormChange('userType', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="isReadWrite">Access Level</Label>
+                    <div className="flex items-center space-x-2 pt-2">
+                      <Switch 
+                        id="isReadWrite" 
+                        checked={roleForm.isReadWrite === 'RW'}
+                        onCheckedChange={(checked) => handleRoleFormChange('isReadWrite', checked ? 'RW' : 'RO')}
+                      />
+                      <Label htmlFor="isReadWrite" className="cursor-pointer">
+                        {roleForm.isReadWrite === 'RW' ? 'Read Write' : 'Read Only'}
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="isActive" 
+                    checked={roleForm.isActive}
+                    onCheckedChange={(checked) => handleRoleFormChange('isActive', checked)}
+                  />
+                  <Label htmlFor="isActive">Role is active</Label>
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label>Applications</Label>
-                <div className="border rounded-md p-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    {sampleApplications.map((application) => (
-                      <div key={application.id} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`app-${application.id}`} 
-                          checked={roleForm.selectedApplications.includes(application.id)}
-                          onCheckedChange={() => toggleApplication(application.id)}
-                        />
-                        <Label htmlFor={`app-${application.id}`}>{application.name}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="isActive" 
-                  checked={roleForm.isActive}
-                  onCheckedChange={(checked) => handleRoleFormChange('isActive', checked)}
-                />
-                <Label htmlFor="isActive">Role is active</Label>
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={saveRole}>
-                {selectedRole ? 'Update Role' : 'Create Role'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRoleDialogOpen(false)} disabled={loading}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveRole} disabled={loading}>
+                  {loading ? 'Saving...' : selectedRole ? 'Update Role' : 'Create Role'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
       <div className="border rounded-md">
@@ -444,68 +371,97 @@ const RoleManagement: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRoles.length === 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-6">
+                  <div className="flex justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredRoles.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                   No roles found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredRoles.map((role) => (
-                <TableRow key={role.id}>
-                  <TableCell>{role.department || '-'}</TableCell>
-                  <TableCell className="font-medium">{role.name}</TableCell>
-                  <TableCell>{role.userType || 'User'}</TableCell>
-                  <TableCell>
-                    <Badge variant={role.accessLevel === 'RW' ? 'default' : 'secondary'}>
-                      {role.accessLevel === 'RW' ? 'Read Write' : 'Read Only'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {role.applications.slice(0, 2).map((appId) => (
-                        <Badge key={appId} variant="outline" className="text-xs">
-                          {sampleApplications.find(app => app.id === appId)?.name || appId}
-                        </Badge>
-                      ))}
-                      {role.applications.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{role.applications.length - 2} more
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      role.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {role.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        setSelectedRole(role);
-                        setViewDialogOpen(true);
-                      }}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        setSelectedRole(role);
-                        setRoleDialogOpen(true);
-                      }}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        setRoleToDelete(role.id);
-                        setDeleteDialogOpen(true);
-                      }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredRoles.map((role) => {
+                const applications = getApplicationsForRole(role.roleId);
+                return (
+                  <TableRow key={role.roleId}>
+                    <TableCell>{role.department}</TableCell>
+                    <TableCell className="font-medium">{role.role}</TableCell>
+                    <TableCell>{role.userType}</TableCell>
+                    <TableCell>
+                      <Badge variant={role.isReadWrite === 'RW' ? 'default' : 'secondary'}>
+                        {role.isReadWrite === 'RW' ? 'Read Write' : 'Read Only'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {applications.slice(0, 2).map((appName, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {appName}
+                          </Badge>
+                        ))}
+                        {applications.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{applications.length - 2} more
+                          </Badge>
+                        )}
+                        {applications.length === 0 && (
+                          <span className="text-muted-foreground text-sm">No applications</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        role.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {role.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            setSelectedRole(role);
+                            setViewDialogOpen(true);
+                          }}
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            setSelectedRole(role);
+                            setRoleDialogOpen(true);
+                          }}
+                          title="Edit Role"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            setRoleToDelete(role.roleId);
+                            setDeleteDialogOpen(true);
+                          }}
+                          title="Delete Role"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -513,7 +469,7 @@ const RoleManagement: React.FC = () => {
       
       {/* View Role Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Role Details</DialogTitle>
             <DialogDescription>
@@ -525,24 +481,24 @@ const RoleManagement: React.FC = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Role Name</h3>
-                  <p className="text-base">{selectedRole.name}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">Department</h3>
+                  <p className="text-base">{selectedRole.department}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Department</h3>
-                  <p className="text-base">{selectedRole.department || '-'}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">Role Name</h3>
+                  <p className="text-base">{selectedRole.role}</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">User Type</h3>
-                  <p className="text-base">{selectedRole.userType || 'User'}</p>
+                  <p className="text-base">{selectedRole.userType}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Access Level</h3>
-                  <Badge variant={selectedRole.accessLevel === 'RW' ? 'default' : 'secondary'}>
-                    {selectedRole.accessLevel === 'RW' ? 'Read Write' : 'Read Only'}
+                  <Badge variant={selectedRole.isReadWrite === 'RW' ? 'default' : 'secondary'}>
+                    {selectedRole.isReadWrite === 'RW' ? 'Read Write' : 'Read Only'}
                   </Badge>
                 </div>
               </div>
@@ -550,30 +506,25 @@ const RoleManagement: React.FC = () => {
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground">Applications</h3>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {selectedRole.applications.map((appId) => (
-                    <Badge key={appId} variant="outline">
-                      {sampleApplications.find(app => app.id === appId)?.name || appId}
+                  {getApplicationsForRole(selectedRole.roleId).map((appName, index) => (
+                    <Badge key={index} variant="outline">
+                      {appName}
                     </Badge>
                   ))}
+                  {getApplicationsForRole(selectedRole.roleId).length === 0 && (
+                    <span className="text-muted-foreground text-sm">No applications assigned</span>
+                  )}
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+              <div className="pt-2 border-t">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Created By</h3>
-                  <p className="text-sm">{selectedRole.createdBy}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Created At</h3>
-                  <p className="text-sm">{new Date(selectedRole.createdAt).toLocaleString()}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Updated By</h3>
-                  <p className="text-sm">{selectedRole.updatedBy}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Updated At</h3>
-                  <p className="text-sm">{new Date(selectedRole.updatedAt).toLocaleString()}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    selectedRole.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {selectedRole.isActive ? 'Active' : 'Inactive'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -595,8 +546,10 @@ const RoleManagement: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteRole} disabled={loading}>
+              {loading ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

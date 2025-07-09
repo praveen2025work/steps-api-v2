@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { workflowService } from '@/services/workflowService';
-import { Application, ApiResponse, ApplicationParameter } from '@/types/application-types';
+import { 
+  Application, 
+  ApiResponse, 
+  ApplicationParameter,
+  WorkflowRole,
+  UniqueApplication,
+  UniqueRole,
+  ApplicationRoleMapping
+} from '@/types/application-types';
 
 // Hook for managing applications
 export const useApplications = () => {
@@ -316,6 +324,288 @@ export const useApplicationParameters = (appId: number) => {
     addParameter,
     updateParameter,
     deleteParameter,
+    refresh,
+  };
+};
+
+// Hook for managing workflow roles
+export const useWorkflowRoles = () => {
+  const [roles, setRoles] = useState<WorkflowRole[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+
+  // Fetch workflow roles
+  const fetchRoles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await workflowService.getWorkflowRoles();
+      
+      if (response.success) {
+        setRoles(response.data);
+        setLastFetch(new Date());
+      } else {
+        setError(response.error || 'Failed to fetch workflow roles');
+        setRoles([]);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      setRoles([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Save roles
+  const saveRoles = useCallback(async (rolesToSave: WorkflowRole[]): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await workflowService.saveRoles(rolesToSave);
+      
+      if (response.success && response.data === 1) {
+        // Update local state with the saved roles
+        setRoles(prevRoles => {
+          const updatedRoles = [...prevRoles];
+          rolesToSave.forEach(role => {
+            const existingIndex = updatedRoles.findIndex(r => r.roleId === role.roleId);
+            if (existingIndex >= 0) {
+              updatedRoles[existingIndex] = role;
+            } else {
+              updatedRoles.push(role);
+            }
+          });
+          return updatedRoles;
+        });
+        setLastFetch(new Date());
+        return true;
+      } else {
+        setError(response.error || 'Failed to save roles');
+        return false;
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Add a new role
+  const addRole = useCallback(async (role: Omit<WorkflowRole, 'roleId'>): Promise<boolean> => {
+    const newRole: WorkflowRole = {
+      ...role,
+      roleId: Date.now(), // Temporary ID, server should assign real ID
+      action: 1, // Action for new role
+      isReadWriteChecked: role.isReadWrite === 'RW'
+    };
+    
+    return saveRoles([newRole]);
+  }, [saveRoles]);
+
+  // Update an existing role
+  const updateRole = useCallback(async (updatedRole: WorkflowRole): Promise<boolean> => {
+    const roleWithAction: WorkflowRole = {
+      ...updatedRole,
+      action: 2, // Action for update
+      isReadWriteChecked: updatedRole.isReadWrite === 'RW'
+    };
+    
+    return saveRoles([roleWithAction]);
+  }, [saveRoles]);
+
+  // Delete a role
+  const deleteRole = useCallback(async (roleId: number): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // For delete, we'll need to implement a delete endpoint later
+      // For now, we'll simulate by removing from local state
+      setRoles(prevRoles => prevRoles.filter(role => role.roleId !== roleId));
+      setLastFetch(new Date());
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Refresh roles
+  const refresh = useCallback(() => {
+    fetchRoles();
+  }, [fetchRoles]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
+
+  return {
+    roles,
+    loading,
+    error,
+    lastFetch,
+    fetchRoles,
+    saveRoles,
+    addRole,
+    updateRole,
+    deleteRole,
+    refresh,
+  };
+};
+
+// Hook for managing unique applications
+export const useUniqueApplications = () => {
+  const [applications, setApplications] = useState<UniqueApplication[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+
+  // Fetch unique applications
+  const fetchApplications = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await workflowService.getUniqueApplications();
+      
+      if (response.success) {
+        setApplications(response.data);
+        setLastFetch(new Date());
+      } else {
+        setError(response.error || 'Failed to fetch unique applications');
+        setApplications([]);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      setApplications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Refresh applications
+  const refresh = useCallback(() => {
+    fetchApplications();
+  }, [fetchApplications]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
+
+  return {
+    applications,
+    loading,
+    error,
+    lastFetch,
+    fetchApplications,
+    refresh,
+  };
+};
+
+// Hook for managing unique roles
+export const useUniqueRoles = () => {
+  const [roles, setRoles] = useState<UniqueRole[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+
+  // Fetch unique roles
+  const fetchRoles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await workflowService.getUniqueRoles();
+      
+      if (response.success) {
+        setRoles(response.data);
+        setLastFetch(new Date());
+      } else {
+        setError(response.error || 'Failed to fetch unique roles');
+        setRoles([]);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      setRoles([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Refresh roles
+  const refresh = useCallback(() => {
+    fetchRoles();
+  }, [fetchRoles]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
+
+  return {
+    roles,
+    loading,
+    error,
+    lastFetch,
+    fetchRoles,
+    refresh,
+  };
+};
+
+// Hook for managing application-role mappings
+export const useApplicationRoleMappings = () => {
+  const [mappings, setMappings] = useState<ApplicationRoleMapping[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+
+  // Fetch application-role mappings
+  const fetchMappings = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await workflowService.getApplicationRoleMappings();
+      
+      if (response.success) {
+        setMappings(response.data);
+        setLastFetch(new Date());
+      } else {
+        setError(response.error || 'Failed to fetch application-role mappings');
+        setMappings([]);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      setMappings([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Refresh mappings
+  const refresh = useCallback(() => {
+    fetchMappings();
+  }, [fetchMappings]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchMappings();
+  }, [fetchMappings]);
+
+  return {
+    mappings,
+    loading,
+    error,
+    lastFetch,
+    fetchMappings,
     refresh,
   };
 };
