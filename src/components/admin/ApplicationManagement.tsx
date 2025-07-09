@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Role } from '@/types/workflow-types';
+import { Application } from '@/types/application-types';
+import { useApplications, useEnvironmentInfo } from '@/hooks/useWorkflowService';
 import { 
   Table, 
   TableBody, 
@@ -33,49 +35,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Edit, Trash2, Eye, Calendar, Link } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye, Calendar, Link, RefreshCw, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-// Define the interface for the API response
-interface ApplicationResponse {
-  applicationId: number;
-  name: string;
-  category: string | null;
-  serviceUrl: string | null;
-  description?: string;
-  createdOn?: string;
-  cronExpression?: string;
-  isActive?: boolean;
-  isLockingEnabled?: boolean;
-  isRunOnWeekDayOnly?: boolean;
-  lockingRole?: string;
-  rtbRole?: string;
-  runDateOffSet?: number;
-  useRunCalendar?: boolean;
-}
-
-// Define the interface for our application model
-interface Application {
-  id: string;
-  name: string;
-  category: string;
-  serviceUrl: string;
-  description: string;
-  cronExpression: string;
-  runDateOffSet: number;
-  isLockingEnabled: boolean;
-  lockingRole: string;
-  rtbRole: string;
-  isRunOnWeekDayOnly: boolean;
-  useRunCalendar: boolean;
-  isActive: boolean;
-  createdOn: string;
-}
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Form interface
 interface ApplicationForm {
-  id?: string;
+  applicationId?: number;
   name: string;
   category: string;
   serviceUrl: string;
@@ -83,64 +50,12 @@ interface ApplicationForm {
   cronExpression: string;
   runDateOffSet: number;
   isLockingEnabled: boolean;
-  lockingRole: string;
-  rtbRole: string;
+  lockingRole: number;
   isRunOnWeekDayOnly: boolean;
   useRunCalendar: boolean;
   isActive: boolean;
+  entitlementMapping: number;
 }
-
-// Sample data based on the API response format
-const sampleApplications: Application[] = [
-  {
-    id: '17',
-    name: 'Basel',
-    category: 'Basel',
-    serviceUrl: 'http://localhost:4200',
-    description: 'Basel app',
-    cronExpression: '0 55 18 ? * MON-FRI *',
-    runDateOffSet: 0,
-    isLockingEnabled: false,
-    lockingRole: 'Finance Manager',
-    rtbRole: 'Risk Analyst',
-    isRunOnWeekDayOnly: true,
-    useRunCalendar: false,
-    isActive: true,
-    createdOn: '03/07/2023 04:30:46'
-  },
-  {
-    id: '1',
-    name: 'Daily Named Pnl',
-    category: 'NPL ID',
-    serviceUrl: '',
-    description: '',
-    cronExpression: '',
-    runDateOffSet: 0,
-    isLockingEnabled: false,
-    lockingRole: 'Finance Manager',
-    rtbRole: '',
-    isRunOnWeekDayOnly: false,
-    useRunCalendar: false,
-    isActive: true,
-    createdOn: '01/01/2023 00:00:00'
-  },
-  {
-    id: '5',
-    name: 'Demoapp',
-    category: 'PCV',
-    serviceUrl: '',
-    description: 'test',
-    cronExpression: '',
-    runDateOffSet: 0,
-    isLockingEnabled: false,
-    lockingRole: '',
-    rtbRole: 'Compliance Officer',
-    isRunOnWeekDayOnly: false,
-    useRunCalendar: false,
-    isActive: true,
-    createdOn: '01/01/2023 00:00:00'
-  }
-];
 
 // Sample roles data
 const sampleRoles: Role[] = [
@@ -207,13 +122,24 @@ const sampleRoles: Role[] = [
 ];
 
 const ApplicationManagement: React.FC = () => {
-  const [applications, setApplications] = useState<Application[]>(sampleApplications);
+  // Use the new service hooks
+  const {
+    applications,
+    loading,
+    error,
+    updateApplication,
+    deleteApplication,
+    addApplication,
+    refresh
+  } = useApplications();
+  
+  const envInfo = useEnvironmentInfo();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [applicationDialogOpen, setApplicationDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
-  const [applicationToDelete, setApplicationToDelete] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [applicationToDelete, setApplicationToDelete] = useState<number | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [roles, setRoles] = useState<Role[]>(sampleRoles);
   const [isLoadingRoles, setIsLoadingRoles] = useState(false);
@@ -227,11 +153,11 @@ const ApplicationManagement: React.FC = () => {
     cronExpression: '',
     runDateOffSet: 0,
     isLockingEnabled: false,
-    lockingRole: '',
-    rtbRole: '',
+    lockingRole: 0,
     isRunOnWeekDayOnly: false,
     useRunCalendar: false,
-    isActive: true
+    isActive: true,
+    entitlementMapping: 12
   });
   
   // Filter applications based on search term
@@ -241,28 +167,7 @@ const ApplicationManagement: React.FC = () => {
     (app.description && app.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
-  // Fetch applications from API
-  const fetchApplications = async () => {
-    setIsLoading(true);
-    try {
-      // This is a mock API call - in a real implementation, this would be a fetch call
-      // const response = await fetch('http://portal-workflowcore-api-uat.com/api/WF/GetWorkflowApplicationDetails/false');
-      // const data: ApplicationResponse[] = await response.json();
-      
-      // For now, we'll simulate the API response with our sample data
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
-    } catch (error) {
-      console.error('Error fetching applications:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch applications. Please try again later.',
-        variant: 'destructive'
-      });
-      setIsLoading(false);
-    }
-  };
+
   
   // Fetch roles from API
   const fetchRoles = useCallback(async () => {
@@ -288,9 +193,8 @@ const ApplicationManagement: React.FC = () => {
     }
   }, []);
 
-  // Load applications and roles on component mount
+  // Load roles on component mount
   useEffect(() => {
-    fetchApplications();
     fetchRoles();
   }, [fetchRoles]);
   
@@ -298,19 +202,19 @@ const ApplicationManagement: React.FC = () => {
   useEffect(() => {
     if (applicationDialogOpen && selectedApplication) {
       setApplicationForm({
-        id: selectedApplication.id,
+        applicationId: selectedApplication.applicationId,
         name: selectedApplication.name,
         category: selectedApplication.category,
-        serviceUrl: selectedApplication.serviceUrl,
+        serviceUrl: selectedApplication.serviceUrl || '',
         description: selectedApplication.description,
         cronExpression: selectedApplication.cronExpression,
         runDateOffSet: selectedApplication.runDateOffSet,
         isLockingEnabled: selectedApplication.isLockingEnabled,
-        lockingRole: selectedApplication.lockingRole || 'none',
-        rtbRole: selectedApplication.rtbRole || 'none',
+        lockingRole: selectedApplication.lockingRole || 0,
         isRunOnWeekDayOnly: selectedApplication.isRunOnWeekDayOnly,
         useRunCalendar: selectedApplication.useRunCalendar,
-        isActive: selectedApplication.isActive
+        isActive: selectedApplication.isActive,
+        entitlementMapping: selectedApplication.entitlementMapping
       });
     } else if (applicationDialogOpen) {
       setApplicationForm({
@@ -321,11 +225,11 @@ const ApplicationManagement: React.FC = () => {
         cronExpression: '',
         runDateOffSet: 0,
         isLockingEnabled: false,
-        lockingRole: 'none',
-        rtbRole: 'none',
+        lockingRole: 0,
         isRunOnWeekDayOnly: true,
         useRunCalendar: false,
-        isActive: true
+        isActive: true,
+        entitlementMapping: 12
       });
     }
   }, [applicationDialogOpen, selectedApplication]);
@@ -336,7 +240,7 @@ const ApplicationManagement: React.FC = () => {
   };
   
   // Save application
-  const saveApplication = async () => {
+  const handleSaveApplication = async () => {
     if (!applicationForm.name.trim()) {
       toast({
         title: "Validation Error",
@@ -346,74 +250,49 @@ const ApplicationManagement: React.FC = () => {
       return;
     }
     
-    setIsLoading(true);
-    
     try {
-      // Process form data - convert 'none' to empty string for roles
-      const processedForm = {
-        ...applicationForm,
-        lockingRole: applicationForm.lockingRole === 'none' ? '' : applicationForm.lockingRole,
-        rtbRole: applicationForm.rtbRole === 'none' ? '' : applicationForm.rtbRole
+      const applicationData: Application = {
+        applicationId: applicationForm.applicationId || 0,
+        name: applicationForm.name,
+        category: applicationForm.category,
+        serviceUrl: applicationForm.serviceUrl || null,
+        description: applicationForm.description,
+        entitlementMapping: applicationForm.entitlementMapping,
+        isActive: applicationForm.isActive,
+        cronExpression: applicationForm.cronExpression,
+        isLockingEnabled: applicationForm.isLockingEnabled,
+        lockingRole: applicationForm.lockingRole,
+        useRunCalendar: applicationForm.useRunCalendar,
+        createdon: new Date().toISOString(),
+        runDateOffSet: applicationForm.runDateOffSet,
+        isRunOnWeekDayOnly: applicationForm.isRunOnWeekDayOnly
       };
+
+      let success = false;
       
-      // Simulate API response
-      setTimeout(() => {
-        if (processedForm.id) {
-          // Update existing application
-          setApplications(prev => prev.map(app => 
-            app.id === processedForm.id 
-              ? { 
-                  ...app, 
-                  name: processedForm.name,
-                  category: processedForm.category,
-                  serviceUrl: processedForm.serviceUrl,
-                  description: processedForm.description,
-                  cronExpression: processedForm.cronExpression,
-                  runDateOffSet: processedForm.runDateOffSet,
-                  isLockingEnabled: processedForm.isLockingEnabled,
-                  lockingRole: processedForm.lockingRole,
-                  rtbRole: processedForm.rtbRole,
-                  isRunOnWeekDayOnly: processedForm.isRunOnWeekDayOnly,
-                  useRunCalendar: processedForm.useRunCalendar,
-                  isActive: processedForm.isActive
-                } 
-              : app
-          ));
-          
+      if (selectedApplication) {
+        // Update existing application
+        success = await updateApplication(applicationData);
+        if (success) {
           toast({
             title: "Application Updated",
-            description: `Application "${processedForm.name}" has been updated successfully.`
+            description: `Application "${applicationForm.name}" has been updated successfully.`
           });
-        } else {
-          // Add new application
-          const newApplication: Application = {
-            id: `app-${Date.now()}`,
-            name: processedForm.name,
-            category: processedForm.category,
-            serviceUrl: processedForm.serviceUrl,
-            description: processedForm.description,
-            cronExpression: processedForm.cronExpression,
-            runDateOffSet: processedForm.runDateOffSet,
-            isLockingEnabled: processedForm.isLockingEnabled,
-            lockingRole: processedForm.lockingRole,
-            rtbRole: processedForm.rtbRole,
-            isRunOnWeekDayOnly: processedForm.isRunOnWeekDayOnly,
-            useRunCalendar: processedForm.useRunCalendar,
-            isActive: processedForm.isActive,
-            createdOn: new Date().toLocaleDateString()
-          };
-          
-          setApplications(prev => [...prev, newApplication]);
-          
+        }
+      } else {
+        // Add new application
+        success = await addApplication(applicationData);
+        if (success) {
           toast({
             title: "Application Added",
             description: `Application "${applicationForm.name}" has been added successfully.`
           });
         }
-        
+      }
+      
+      if (success) {
         setApplicationDialogOpen(false);
-        setIsLoading(false);
-      }, 500);
+      }
     } catch (error) {
       console.error('Error saving application:', error);
       toast({
@@ -421,27 +300,24 @@ const ApplicationManagement: React.FC = () => {
         description: 'Failed to save application. Please try again later.',
         variant: 'destructive'
       });
-      setIsLoading(false);
     }
   };
   
   // Delete application
-  const confirmDeleteApplication = async () => {
-    setIsLoading(true);
+  const handleDeleteApplication = async () => {
+    if (!applicationToDelete) return;
     
     try {
-      // Simulate API response
-      setTimeout(() => {
-        setApplications(prev => prev.filter(app => app.id !== applicationToDelete));
-        setDeleteDialogOpen(false);
-        
+      const success = await deleteApplication(applicationToDelete);
+      
+      if (success) {
         toast({
           title: "Application Deleted",
           description: "The application has been deleted successfully."
         });
-        
-        setIsLoading(false);
-      }, 500);
+        setDeleteDialogOpen(false);
+        setApplicationToDelete(null);
+      }
     } catch (error) {
       console.error('Error deleting application:', error);
       toast({
@@ -449,7 +325,6 @@ const ApplicationManagement: React.FC = () => {
         description: 'Failed to delete application. Please try again later.',
         variant: 'destructive'
       });
-      setIsLoading(false);
     }
   };
   
@@ -469,6 +344,33 @@ const ApplicationManagement: React.FC = () => {
   
   return (
     <div className="space-y-6">
+      {/* Environment Status Banner */}
+      {envInfo.isMock ? (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Running in <strong>Mock Data Mode</strong> - Environment: {envInfo.mode} | Base URL: {envInfo.baseUrl}
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert>
+          <RefreshCw className="h-4 w-4" />
+          <AlertDescription>
+            Connected to <strong>Live API</strong> - Environment: {envInfo.mode} | Base URL: {envInfo.baseUrl}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex justify-between items-center">
         <div className="relative w-64">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -480,13 +382,19 @@ const ApplicationManagement: React.FC = () => {
           />
         </div>
         
-        <Dialog open={applicationDialogOpen} onOpenChange={setApplicationDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setSelectedApplication(null)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Application
-            </Button>
-          </DialogTrigger>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          
+          <Dialog open={applicationDialogOpen} onOpenChange={setApplicationDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setSelectedApplication(null)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Application
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>{selectedApplication ? 'Edit Application' : 'Add New Application'}</DialogTitle>
@@ -645,11 +553,11 @@ const ApplicationManagement: React.FC = () => {
             </div>
             
             <DialogFooter>
-              <Button variant="outline" onClick={() => setApplicationDialogOpen(false)} disabled={isLoading}>
+              <Button variant="outline" onClick={() => setApplicationDialogOpen(false)} disabled={loading}>
                 Cancel
               </Button>
-              <Button onClick={saveApplication} disabled={isLoading}>
-                {isLoading ? 'Saving...' : selectedApplication ? 'Update Application' : 'Create Application'}
+              <Button onClick={handleSaveApplication} disabled={loading}>
+                {loading ? 'Saving...' : selectedApplication ? 'Update Application' : 'Create Application'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -669,7 +577,7 @@ const ApplicationManagement: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {loading ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-6">
                   <div className="flex justify-center">
@@ -685,7 +593,7 @@ const ApplicationManagement: React.FC = () => {
               </TableRow>
             ) : (
               filteredApplications.map((app) => (
-                <TableRow key={app.id}>
+                <TableRow key={app.applicationId}>
                   <TableCell className="font-medium">{app.name}</TableCell>
                   <TableCell>{app.category}</TableCell>
                   <TableCell className="max-w-xs truncate">{app.description}</TableCell>
@@ -723,7 +631,7 @@ const ApplicationManagement: React.FC = () => {
                         variant="ghost" 
                         size="icon"
                         onClick={() => {
-                          setApplicationToDelete(app.id);
+                          setApplicationToDelete(app.applicationId);
                           setDeleteDialogOpen(true);
                         }}
                       >
@@ -847,9 +755,9 @@ const ApplicationManagement: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteApplication} disabled={isLoading}>
-              {isLoading ? 'Deleting...' : 'Delete'}
+            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteApplication} disabled={loading}>
+              {loading ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
