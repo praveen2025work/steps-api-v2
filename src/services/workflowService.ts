@@ -94,16 +94,13 @@ class WorkflowService {
   }
 
   private createAxiosInstance(): AxiosInstance {
-    // Use proxy in development to avoid CORS issues
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const useProxy = isDevelopment && process.env.NEXT_PUBLIC_FORCE_REAL_API === 'true';
-    
-    const baseURL = useProxy ? '/api/proxy/WF' : `${this.baseUrl}/api/WF`;
+    // Always use the configured base URL directly
+    const baseURL = `${this.baseUrl}/api/WF`;
     
     const instance = axios.create({
       baseURL,
       timeout: 30000,
-      withCredentials: !useProxy, // Don't use credentials with proxy
+      withCredentials: true, // Use credentials for Windows authentication
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
