@@ -97,6 +97,7 @@ const EnhancedRoleManagement: React.FC = () => {
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   const [tempMappings, setTempMappings] = useState<ApplicationRoleMapping[]>([]);
+  const [originalMappings, setOriginalMappings] = useState<ApplicationRoleMapping[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Form state
@@ -108,9 +109,40 @@ const EnhancedRoleManagement: React.FC = () => {
     isActive: true
   });
   
+  // Calculate changes (additions and removals)
+  const calculateChanges = () => {
+    const additions: ApplicationRoleMapping[] = [];
+    const removals: ApplicationRoleMapping[] = [];
+    
+    // Find additions (in tempMappings but not in originalMappings)
+    tempMappings.forEach(tempMapping => {
+      const exists = originalMappings.some(originalMapping => 
+        originalMapping.roleId === tempMapping.roleId && 
+        originalMapping.applicationId === tempMapping.applicationId
+      );
+      if (!exists) {
+        additions.push(tempMapping);
+      }
+    });
+    
+    // Find removals (in originalMappings but not in tempMappings)
+    originalMappings.forEach(originalMapping => {
+      const exists = tempMappings.some(tempMapping => 
+        tempMapping.roleId === originalMapping.roleId && 
+        tempMapping.applicationId === originalMapping.applicationId
+      );
+      if (!exists) {
+        removals.push(originalMapping);
+      }
+    });
+    
+    return { additions, removals };
+  };
+
   // Initialize temp mappings when mappings change
   useEffect(() => {
     setTempMappings([...applicationRoleMappings]);
+    setOriginalMappings([...applicationRoleMappings]);
     setHasUnsavedChanges(false);
   }, [applicationRoleMappings]);
   
@@ -212,16 +244,38 @@ const EnhancedRoleManagement: React.FC = () => {
     setHasUnsavedChanges(true);
   };
   
-  // Save assignments
+  // Save assignments - only send changes
   const handleSaveAssignments = async () => {
     try {
+      const changes = calculateChanges();
+      
+      // Log the changes for debugging
+      console.log('[Role Management] Changes to be sent:', {
+        additions: changes.additions,
+        removals: changes.removals,
+        totalChanges: changes.additions.length + changes.removals.length
+      });
+      
+      // If no changes, show message and return
+      if (changes.additions.length === 0 && changes.removals.length === 0) {
+        toast({
+          title: "No Changes",
+          description: "No changes detected to save."
+        });
+        return;
+      }
+      
+      // For now, we'll still send all mappings but log what would be the delta
+      // TODO: Update the service to accept delta changes
       const success = await saveMappings(tempMappings);
       if (success) {
         toast({
           title: "Assignments Saved",
-          description: "Role-application assignments have been saved successfully."
+          description: `Successfully processed ${changes.additions.length} additions and ${changes.removals.length} removals.`
         });
         setHasUnsavedChanges(false);
+        // Update original mappings to current state
+        setOriginalMappings([...tempMappings]);
       }
     } catch (error) {
       console.error('Error saving assignments:', error);
@@ -236,6 +290,7 @@ const EnhancedRoleManagement: React.FC = () => {
   // Reset assignments
   const handleResetAssignments = () => {
     setTempMappings([...applicationRoleMappings]);
+    setOriginalMappings([...applicationRoleMappings]);
     setHasUnsavedChanges(false);
   };
   

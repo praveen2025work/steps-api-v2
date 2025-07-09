@@ -614,6 +614,47 @@ export const useApplicationRoleMappings = () => {
     }
   }, []);
 
+  // Save application-role mappings with delta changes (additions and removals)
+  const saveMappingsDelta = useCallback(async (
+    additions: ApplicationRoleMapping[], 
+    removals: ApplicationRoleMapping[]
+  ): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // For now, we'll calculate the final state and use the existing method
+      // TODO: Use proper delta method when service supports it
+      let updatedMappings = [...mappings];
+      
+      // Remove mappings
+      removals.forEach(removal => {
+        updatedMappings = updatedMappings.filter(mapping => 
+          !(mapping.roleId === removal.roleId && mapping.applicationId === removal.applicationId)
+        );
+      });
+      
+      // Add new mappings
+      additions.forEach(addition => {
+        const exists = updatedMappings.some(mapping => 
+          mapping.roleId === addition.roleId && mapping.applicationId === addition.applicationId
+        );
+        if (!exists) {
+          updatedMappings.push(addition);
+        }
+      });
+      
+      // Use existing save method with updated mappings
+      return await saveMappings(updatedMappings);
+      
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [mappings, saveMappings]);
+
   // Refresh mappings
   const refresh = useCallback(() => {
     fetchMappings();
@@ -631,6 +672,7 @@ export const useApplicationRoleMappings = () => {
     lastFetch,
     fetchMappings,
     saveMappings,
+    saveMappingsDelta,
     refresh,
   };
 };
