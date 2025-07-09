@@ -690,8 +690,15 @@ class WorkflowService {
         return this.createApiResponse(1);
       }
 
-      console.log('[Workflow Service] Saving application-role mappings to API:', mappings);
-      const response = await this.axiosInstance.post<number>('/SetApplicationToRoleMap', mappings);
+      // Transform ApplicationRoleMapping[] to the format expected by the API
+      // API expects: [{ "appId": "17", "roleId": "38" }, { "appId": "17", "roleId": "21" }]
+      const apiPayload = mappings.map(mapping => ({
+        appId: mapping.applicationId.toString(),
+        roleId: mapping.roleId.toString()
+      }));
+
+      console.log('[Workflow Service] Saving application-role mappings to API:', apiPayload);
+      const response = await this.axiosInstance.post<number>('/SetApplicationToRoleMap', apiPayload);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
