@@ -49,6 +49,13 @@ const createEnvironment = (config: Partial<ApiEnvironment> & { name: string }): 
 };
 
 export const API_ENVIRONMENTS: Record<string, ApiEnvironment> = {
+  local: createEnvironment({
+    name: 'local',
+    displayName: 'Local Development',
+    baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8080',
+    coreApiUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8080'}/api/WF`,
+    description: 'Local development environment with custom URL'
+  }),
   dev: createEnvironment({
     name: 'dev',
     displayName: 'Development',
@@ -97,7 +104,19 @@ export const DEFAULT_ENVIRONMENT = process.env.NEXT_PUBLIC_DEFAULT_API_ENV || 'p
 // Get current environment configuration with fallback
 export const getCurrentEnvironment = (): ApiEnvironment => {
   try {
-    const envName = process.env.NEXT_PUBLIC_API_ENVIRONMENT || DEFAULT_ENVIRONMENT;
+    // Check if we're in local development mode and should use local environment
+    const isLocalDev = process.env.NODE_ENV === 'local' || 
+                      process.env.NEXT_PUBLIC_API_MODE === 'live' ||
+                      process.env.NEXT_PUBLIC_FORCE_REAL_API === 'true';
+    
+    let envName: string;
+    
+    if (isLocalDev && process.env.NEXT_PUBLIC_BASE_URL) {
+      envName = 'local';
+    } else {
+      envName = process.env.NEXT_PUBLIC_API_ENVIRONMENT || DEFAULT_ENVIRONMENT;
+    }
+    
     const environment = API_ENVIRONMENTS[envName];
     
     if (!environment) {
