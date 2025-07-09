@@ -685,9 +685,9 @@ class WorkflowService {
       }
 
       // Transform ApplicationRoleMapping[] to the format expected by the API
-      // API expects: [{ "appId": "17", "roleId": "38" }, { "appId": "17", "roleId": "21" }]
+      // API expects: [{ "applicationId": "17", "roleId": "38" }, { "applicationId": "17", "roleId": "21" }]
       const apiPayload = mappings.map(mapping => ({
-        appId: mapping.applicationId.toString(),
+        applicationId: mapping.applicationId.toString(),
         roleId: mapping.roleId.toString()
       }));
 
@@ -740,7 +740,7 @@ class WorkflowService {
 
       // Transform to API format - only send mappings for edited applications
       const apiPayload = mappingsForEditedApps.map(mapping => ({
-        appId: mapping.applicationId.toString(),
+        applicationId: mapping.applicationId.toString(),
         roleId: mapping.roleId.toString()
       }));
 
