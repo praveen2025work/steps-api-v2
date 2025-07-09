@@ -35,10 +35,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Edit, Trash2, Eye, Calendar, Link, RefreshCw, AlertCircle } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye, Calendar, Link, RefreshCw, AlertCircle, Settings } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import AppParameters from '@/components/workflow/AppParameters';
 
 // Form interface
 interface ApplicationForm {
@@ -141,6 +142,8 @@ const ApplicationManagement: React.FC = () => {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [applicationToDelete, setApplicationToDelete] = useState<number | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
+  const [parametersApplication, setParametersApplication] = useState<Application | null>(null);
   const [roles, setRoles] = useState<Role[]>(sampleRoles);
   const [isLoadingRoles, setIsLoadingRoles] = useState(false);
   
@@ -606,8 +609,20 @@ const ApplicationManagement: React.FC = () => {
                           setSelectedApplication(app);
                           setViewDialogOpen(true);
                         }}
+                        title="View Details"
                       >
                         <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => {
+                          setParametersApplication(app);
+                          setParametersDialogOpen(true);
+                        }}
+                        title="Application Parameters"
+                      >
+                        <Settings className="h-4 w-4" />
                       </Button>
                       <Button 
                         variant="ghost" 
@@ -616,6 +631,7 @@ const ApplicationManagement: React.FC = () => {
                           setSelectedApplication(app);
                           setApplicationDialogOpen(true);
                         }}
+                        title="Edit Application"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -626,6 +642,7 @@ const ApplicationManagement: React.FC = () => {
                           setApplicationToDelete(app.applicationId);
                           setDeleteDialogOpen(true);
                         }}
+                        title="Delete Application"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -737,6 +754,26 @@ const ApplicationManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
       
+      {/* Application Parameters Dialog */}
+      <Dialog open={parametersDialogOpen} onOpenChange={setParametersDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Application Parameters - {parametersApplication?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Manage parameters for {parametersApplication?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {parametersApplication && (
+            <AppParameters 
+              applicationId={parametersApplication.applicationId}
+              applicationName={parametersApplication.name}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Application Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
