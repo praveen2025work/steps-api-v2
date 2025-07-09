@@ -395,7 +395,7 @@ const ApplicationManagement: React.FC = () => {
                 Add Application
               </Button>
             </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>{selectedApplication ? 'Edit Application' : 'Add New Application'}</DialogTitle>
               <DialogDescription>
@@ -492,23 +492,14 @@ const ApplicationManagement: React.FC = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="rtbRole">RTB Role</Label>
-                <Select
-                  value={applicationForm.rtbRole}
-                  onValueChange={(value) => handleApplicationFormChange('rtbRole', value)}
-                >
-                  <SelectTrigger id="rtbRole" className="w-full">
-                    <SelectValue placeholder="Select an RTB role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.name}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="entitlementMapping">Entitlement Mapping</Label>
+                <Input 
+                  id="entitlementMapping" 
+                  type="number" 
+                  placeholder="12" 
+                  value={applicationForm.entitlementMapping}
+                  onChange={(e) => handleApplicationFormChange('entitlementMapping', parseInt(e.target.value) || 12)}
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -561,7 +552,8 @@ const ApplicationManagement: React.FC = () => {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
       
       <div className="border rounded-md">
@@ -721,8 +713,8 @@ const ApplicationManagement: React.FC = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">RTB Role</h3>
-                  <p>{selectedApplication.rtbRole || 'N/A'}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">Entitlement Mapping</h3>
+                  <p>{selectedApplication.entitlementMapping}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Run on Weekdays Only</h3>
