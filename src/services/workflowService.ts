@@ -6,7 +6,11 @@ import {
   WorkflowRole,
   UniqueApplication,
   UniqueRole,
-  ApplicationRoleMapping
+  ApplicationRoleMapping,
+  WorkflowCalendar,
+  UniqueCalendar,
+  ApplicationCalendarMapping,
+  CalendarSaveRequest
 } from '@/types/application-types';
 
 // Mock data for development/demo environments
@@ -200,6 +204,76 @@ const MOCK_APPLICATION_ROLE_MAPPINGS: ApplicationRoleMapping[] = [
     roleId: 32,
     applicationName: "G4 Automation",
     roleName: "G4-AUTOMATION-APPROVER-SME-RW"
+  }
+];
+
+// Mock data for workflow calendars - matching your API specification
+const MOCK_WORKFLOW_CALENDARS: WorkflowCalendar[] = [
+  {
+    calendarName: "Netting POC Calendar",
+    calendarDescription: "Netting POC Calendar",
+    businessDate: "25-Dec-2020"
+  },
+  {
+    calendarName: "Netting POC Calendar",
+    calendarDescription: "Netting POC Calendar",
+    businessDate: "01-Jan-2021"
+  },
+  {
+    calendarName: "Daily Named Pnl Holiday Calendar",
+    calendarDescription: "Daily Named Pnl Holiday Calendar",
+    businessDate: "01-Jan-2020"
+  },
+  {
+    calendarName: "Daily Named Pnl Holiday Calendar",
+    calendarDescription: "Daily Named Pnl Holiday Calendar",
+    businessDate: "25-Dec-2020"
+  },
+  {
+    calendarName: "Daily Workspace Pnl Holiday Calendar",
+    calendarDescription: "Daily Workspace Pnl Holiday Calendar",
+    businessDate: "01-Jan-2020"
+  },
+  {
+    calendarName: "Daily Workspace Pnl Holiday Calendar",
+    calendarDescription: "Daily Workspace Pnl Holiday Calendar",
+    businessDate: "04-Jul-2020"
+  },
+  {
+    calendarName: "Daily Workspace Pnl Holiday Calendar",
+    calendarDescription: "Daily Workspace Pnl Holiday Calendar",
+    businessDate: "25-Dec-2020"
+  }
+];
+
+// Mock data for unique calendars - matching your API specification
+const MOCK_UNIQUE_CALENDARS: UniqueCalendar[] = [
+  { calendarName: "Daily Named Pnl Holiday Calendar" },
+  { calendarName: "Daily Workspace Pnl Holiday Calendar" },
+  { calendarName: "Netting POC Calendar" }
+];
+
+// Mock data for application-calendar mappings - matching your API specification
+const MOCK_APPLICATION_CALENDAR_MAPPINGS: ApplicationCalendarMapping[] = [
+  {
+    applicationId: 1,
+    applicationName: "Daily Named Pnl",
+    calendarName: "Daily Named Pnl Holiday Calendar"
+  },
+  {
+    applicationId: 2,
+    applicationName: "Daily Workspace Pnl",
+    calendarName: "Daily Workspace Pnl Holiday Calendar"
+  },
+  {
+    applicationId: 8,
+    applicationName: "Netting",
+    calendarName: "Netting POC Calendar"
+  },
+  {
+    applicationId: 11,
+    applicationName: "Netting Dev",
+    calendarName: "Netting POC Calendar"
   }
 ];
 
@@ -759,6 +833,191 @@ class WorkflowService {
         0,
         false,
         error.response?.data?.message || error.message || 'Failed to save application-role mappings'
+      );
+    }
+  }
+
+  // ===== CALENDAR MANAGEMENT METHODS =====
+
+  // Get all workflow calendars
+  async getWorkflowCalendars(): Promise<ApiResponse<WorkflowCalendar[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for workflow calendars');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_WORKFLOW_CALENDARS);
+      }
+
+      console.log('[Workflow Service] Fetching workflow calendars from API');
+      const response = await this.axiosInstance.get<WorkflowCalendar[]>('/GetWorkflowCalendarDetails');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching workflow calendars:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch workflow calendars'
+      );
+    }
+  }
+
+  // Save/update calendars
+  async saveCalendars(calendars: WorkflowCalendar[]): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for calendars');
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data based on action
+        calendars.forEach(calendar => {
+          if (calendar.action === 3) {
+            // Delete action - remove from mock data
+            const index = MOCK_WORKFLOW_CALENDARS.findIndex(c => 
+              c.calendarName === calendar.calendarName && 
+              c.businessDate === calendar.businessDate
+            );
+            if (index >= 0) {
+              MOCK_WORKFLOW_CALENDARS.splice(index, 1);
+            }
+          } else {
+            // Add/update action - add to mock data if not exists
+            const exists = MOCK_WORKFLOW_CALENDARS.some(c => 
+              c.calendarName === calendar.calendarName && 
+              c.businessDate === calendar.businessDate
+            );
+            if (!exists) {
+              MOCK_WORKFLOW_CALENDARS.push({
+                calendarName: calendar.calendarName,
+                calendarDescription: calendar.calendarDescription,
+                businessDate: calendar.businessDate
+              });
+            }
+          }
+        });
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      console.log('[Workflow Service] Saving calendars to API:', calendars);
+      const response = await this.axiosInstance.post<number>('/SetCalendar', calendars);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving calendars:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save calendars'
+      );
+    }
+  }
+
+  // Get unique calendars
+  async getUniqueCalendars(): Promise<ApiResponse<UniqueCalendar[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for unique calendars');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_UNIQUE_CALENDARS);
+      }
+
+      console.log('[Workflow Service] Fetching unique calendars from API');
+      const response = await this.axiosInstance.get<UniqueCalendar[]>('/GetWorkflowUniqueCalendars');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching unique calendars:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch unique calendars'
+      );
+    }
+  }
+
+  // Get application-calendar mappings
+  async getApplicationCalendarMappings(): Promise<ApiResponse<ApplicationCalendarMapping[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for application-calendar mappings');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_APPLICATION_CALENDAR_MAPPINGS);
+      }
+
+      console.log('[Workflow Service] Fetching application-calendar mappings from API');
+      const response = await this.axiosInstance.get<ApplicationCalendarMapping[]>('/GetWorkflowApplicationToCalendarMap');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching application-calendar mappings:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch application-calendar mappings'
+      );
+    }
+  }
+
+  // Save application-calendar mapping
+  async saveApplicationCalendarMapping(mapping: CalendarSaveRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for application-calendar mapping');
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data based on action
+        if (mapping.action === 3) {
+          // Delete action - remove from mock data
+          const index = MOCK_APPLICATION_CALENDAR_MAPPINGS.findIndex(m => 
+            m.applicationId === mapping.applicationId
+          );
+          if (index >= 0) {
+            MOCK_APPLICATION_CALENDAR_MAPPINGS.splice(index, 1);
+          }
+        } else {
+          // Add/update action
+          const existingIndex = MOCK_APPLICATION_CALENDAR_MAPPINGS.findIndex(m => 
+            m.applicationId === mapping.applicationId
+          );
+          
+          // Find application name from mock applications
+          const application = MOCK_APPLICATIONS.find(app => app.applicationId === mapping.applicationId);
+          const applicationName = application ? application.name : `Application ${mapping.applicationId}`;
+          
+          const newMapping: ApplicationCalendarMapping = {
+            applicationId: mapping.applicationId,
+            applicationName: applicationName,
+            calendarName: mapping.calendarName
+          };
+          
+          if (existingIndex >= 0) {
+            MOCK_APPLICATION_CALENDAR_MAPPINGS[existingIndex] = newMapping;
+          } else {
+            MOCK_APPLICATION_CALENDAR_MAPPINGS.push(newMapping);
+          }
+        }
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      console.log('[Workflow Service] Saving application-calendar mapping to API:', mapping);
+      const response = await this.axiosInstance.post<number>('/SetApplicationToCalendarMap', mapping);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving application-calendar mapping:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save application-calendar mapping'
       );
     }
   }

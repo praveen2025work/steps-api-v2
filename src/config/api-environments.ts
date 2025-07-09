@@ -104,6 +104,13 @@ export const CORE_API_ENDPOINTS = {
   GET_APPLICATION_ROLE_MAP: '/GetWorkflowApplicationToRoleMap', // For application-role mappings
   SET_APPLICATION_ROLE_MAP: '/SetApplicationToRoleMap', // For saving application-role mappings
   
+  // Calendar Management Endpoints
+  GET_WORKFLOW_CALENDARS: '/GetWorkflowCalendarDetails', // For getting calendar details
+  SET_CALENDAR: '/SetCalendar', // For saving/updating calendars
+  GET_UNIQUE_CALENDARS: '/GetWorkflowUniqueCalendars', // For unique calendars
+  GET_APPLICATION_CALENDAR_MAP: '/GetWorkflowApplicationToCalendarMap', // For application-calendar mappings
+  SET_APPLICATION_CALENDAR_MAP: '/SetApplicationToCalendarMap', // For saving application-calendar mappings
+  
   // Add more endpoints as you provide them
 } as const;
 

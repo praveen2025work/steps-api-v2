@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -30,136 +30,218 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Search, Plus, Edit, Trash2, Download, Upload } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Search, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Calendar as CalendarIcon, 
+  Save,
+  X,
+  Clock,
+  Building2
+} from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { workflowService } from '@/services/workflowService';
+import { 
+  WorkflowCalendar, 
+  UniqueCalendar, 
+  ApplicationCalendarMapping, 
+  UniqueApplication,
+  CalendarSaveRequest
+} from '@/types/application-types';
 
-// Define the interface for the Holiday Calendar
-interface HolidayCalendar {
-  id: string;
-  name: string;
-  description: string;
-  holidays: string; // Comma-separated dates
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  updatedBy: string;
-  isActive: boolean;
-}
+// Helper function to convert date formats
+const formatDateForAPI = (dateStr: string): string => {
+  // Convert from YYYY-MM-DD to DD-MMM-YYYY format
+  const date = new Date(dateStr);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
 
-// Interface for parsed holiday data
-interface ParsedHoliday {
-  date: string;
-}
-
-// Sample holiday calendars
-const sampleHolidayCalendars: HolidayCalendar[] = [
-  {
-    id: 'cal1',
-    name: 'US Holidays 2025',
-    description: 'Standard US holidays for 2025',
-    holidays: '2025-01-01,2025-01-20,2025-02-17,2025-05-26,2025-07-04,2025-09-01,2025-10-13,2025-11-11,2025-11-27,2025-12-25',
-    createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: true
-  },
-  {
-    id: 'cal2',
-    name: 'UK Holidays 2025',
-    description: 'Standard UK bank holidays for 2025',
-    holidays: '2025-01-01,2025-04-18,2025-04-21,2025-05-05,2025-05-26,2025-08-25,2025-12-25,2025-12-26',
-    createdAt: '2025-01-02T00:00:00Z',
-    updatedAt: '2025-01-02T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: true
-  },
-  {
-    id: 'cal3',
-    name: 'EU Holidays 2025',
-    description: 'Common European holidays for 2025',
-    holidays: '2025-01-01,2025-04-18,2025-04-21,2025-05-01,2025-05-09,2025-12-25,2025-12-26',
-    createdAt: '2025-01-03T00:00:00Z',
-    updatedAt: '2025-01-03T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: false
+const formatDateFromAPI = (dateStr: string): string => {
+  // Convert from DD-MMM-YYYY to YYYY-MM-DD format
+  try {
+    const [day, month, year] = dateStr.split('-');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthIndex = months.indexOf(month);
+    if (monthIndex === -1) return dateStr;
+    
+    const date = new Date(parseInt(year), monthIndex, parseInt(day));
+    return date.toISOString().split('T')[0];
+  } catch {
+    return dateStr;
   }
-];
+};
 
-// Form interfaces
-interface CalendarForm {
-  id?: string;
-  name: string;
-  description: string;
-  holidays: string;
-  isActive: boolean;
+const isDateExpired = (dateStr: string): boolean => {
+  try {
+    const date = new Date(formatDateFromAPI(dateStr));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  } catch {
+    return false;
+  }
+};
+
+// Group calendars by name
+interface CalendarGroup {
+  calendarName: string;
+  calendarDescription: string;
+  holidays: WorkflowCalendar[];
 }
 
 const HolidayCalendarManagement: React.FC = () => {
-  const [calendars, setCalendars] = useState<HolidayCalendar[]>(sampleHolidayCalendars);
+  // State for calendar data
+  const [calendars, setCalendars] = useState<WorkflowCalendar[]>([]);
+  const [uniqueCalendars, setUniqueCalendars] = useState<UniqueCalendar[]>([]);
+  const [applications, setApplications] = useState<UniqueApplication[]>([]);
+  const [applicationMappings, setApplicationMappings] = useState<ApplicationCalendarMapping[]>([]);
+  
+  // UI state
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCalendarName, setSelectedCalendarName] = useState<string>('');
+  
+  // Dialog states
   const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedCalendar, setSelectedCalendar] = useState<HolidayCalendar | null>(null);
-  const [calendarToDelete, setCalendarToDelete] = useState<string>('');
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importText, setImportText] = useState('');
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   
   // Form states
-  const [calendarForm, setCalendarForm] = useState<CalendarForm>({
-    name: '',
-    description: '',
-    holidays: '',
-    isActive: true
+  const [calendarForm, setCalendarForm] = useState({
+    calendarName: '',
+    calendarDescription: '',
+    newDates: [] as string[]
   });
+  const [newDateInput, setNewDateInput] = useState('');
+  const [dateToDelete, setDateToDelete] = useState<{ calendarName: string; businessDate: string } | null>(null);
   
-  // Filter calendars based on search term
-  const filteredCalendars = calendars.filter(calendar => 
-    calendar.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    calendar.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  // Reset form when dialog opens/closes
-  React.useEffect(() => {
-    if (calendarDialogOpen && selectedCalendar) {
-      setCalendarForm({
-        id: selectedCalendar.id,
-        name: selectedCalendar.name,
-        description: selectedCalendar.description,
-        holidays: selectedCalendar.holidays,
-        isActive: selectedCalendar.isActive
+  // Load data on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [calendarsRes, uniqueCalendarsRes, applicationsRes, mappingsRes] = await Promise.all([
+        workflowService.getWorkflowCalendars(),
+        workflowService.getUniqueCalendars(),
+        workflowService.getUniqueApplications(),
+        workflowService.getApplicationCalendarMappings()
+      ]);
+
+      if (calendarsRes.success) setCalendars(calendarsRes.data);
+      if (uniqueCalendarsRes.success) setUniqueCalendars(uniqueCalendarsRes.data);
+      if (applicationsRes.success) setApplications(applicationsRes.data);
+      if (mappingsRes.success) setApplicationMappings(mappingsRes.data);
+
+      if (!calendarsRes.success || !uniqueCalendarsRes.success || !applicationsRes.success || !mappingsRes.success) {
+        toast({
+          title: "Warning",
+          description: "Some data could not be loaded. Please refresh the page.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load calendar data",
+        variant: "destructive"
       });
-    } else if (calendarDialogOpen) {
-      setCalendarForm({
-        name: '',
-        description: '',
-        holidays: '',
-        isActive: true
-      });
+    } finally {
+      setLoading(false);
     }
-  }, [calendarDialogOpen, selectedCalendar]);
-  
-  // Helper function to parse holidays string into an array of objects
-  const parseHolidays = (calendar: HolidayCalendar): ParsedHoliday[] => {
-    const dates = calendar.holidays.split(',').map(date => date.trim()).filter(Boolean);
-    
-    return dates.map((date) => ({
-      date
-    }));
   };
-  
-  // Form handlers
-  const handleCalendarFormChange = (field: keyof CalendarForm, value: any) => {
+
+  // Group calendars by name
+  const groupedCalendars = React.useMemo(() => {
+    const groups: Record<string, CalendarGroup> = {};
+    
+    calendars.forEach(calendar => {
+      if (!groups[calendar.calendarName]) {
+        groups[calendar.calendarName] = {
+          calendarName: calendar.calendarName,
+          calendarDescription: calendar.calendarDescription,
+          holidays: []
+        };
+      }
+      groups[calendar.calendarName].holidays.push(calendar);
+    });
+    
+    return Object.values(groups);
+  }, [calendars]);
+
+  // Filter calendars based on search term
+  const filteredCalendars = groupedCalendars.filter(group => 
+    group.calendarName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    group.calendarDescription.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handle form changes
+  const handleCalendarFormChange = (field: string, value: any) => {
     setCalendarForm(prev => ({ ...prev, [field]: value }));
   };
-  
-  // Save calendar
-  const saveCalendar = () => {
-    if (!calendarForm.name.trim()) {
+
+  // Add new date to form
+  const addNewDate = () => {
+    if (!newDateInput.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a date",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const formattedDate = formatDateForAPI(newDateInput);
+    if (calendarForm.newDates.includes(formattedDate)) {
+      toast({
+        title: "Validation Error",
+        description: "This date is already added",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCalendarForm(prev => ({
+      ...prev,
+      newDates: [...prev.newDates, formattedDate]
+    }));
+    setNewDateInput('');
+  };
+
+  // Remove date from form
+  const removeDateFromForm = (dateToRemove: string) => {
+    setCalendarForm(prev => ({
+      ...prev,
+      newDates: prev.newDates.filter(date => date !== dateToRemove)
+    }));
+  };
+
+  // Save calendar with new dates
+  const saveCalendar = async () => {
+    if (!calendarForm.calendarName.trim()) {
       toast({
         title: "Validation Error",
         description: "Calendar name is required",
@@ -167,8 +249,8 @@ const HolidayCalendarManagement: React.FC = () => {
       });
       return;
     }
-    
-    if (!calendarForm.description.trim()) {
+
+    if (!calendarForm.calendarDescription.trim()) {
       toast({
         title: "Validation Error",
         description: "Calendar description is required",
@@ -176,167 +258,146 @@ const HolidayCalendarManagement: React.FC = () => {
       });
       return;
     }
-    
-    if (calendarForm.id) {
-      // Update existing calendar
-      setCalendars(prev => prev.map(calendar => 
-        calendar.id === calendarForm.id 
-          ? { 
-              ...calendar, 
-              name: calendarForm.name, 
-              description: calendarForm.description,
-              holidays: calendarForm.holidays,
-              isActive: calendarForm.isActive,
-              updatedAt: new Date().toISOString(),
-              updatedBy: 'Current User'
-            } 
-          : calendar
-      ));
+
+    if (calendarForm.newDates.length === 0) {
       toast({
-        title: "Calendar Updated",
-        description: `Calendar "${calendarForm.name}" has been updated successfully.`
+        title: "Validation Error",
+        description: "At least one holiday date is required",
+        variant: "destructive"
       });
-    } else {
-      // Add new calendar
-      const newCalendar: HolidayCalendar = {
-        id: `cal-${Date.now()}`,
-        name: calendarForm.name,
-        description: calendarForm.description,
-        holidays: calendarForm.holidays,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'Current User',
-        updatedBy: 'Current User',
-        isActive: calendarForm.isActive
-      };
-      
-      setCalendars(prev => [...prev, newCalendar]);
-      toast({
-        title: "Calendar Added",
-        description: `Calendar "${calendarForm.name}" has been added successfully.`
-      });
+      return;
     }
-    
-    setCalendarDialogOpen(false);
-  };
-  
-  // Delete calendar
-  const confirmDeleteCalendar = () => {
-    setCalendars(prev => prev.filter(calendar => calendar.id !== calendarToDelete));
-    setDeleteDialogOpen(false);
-    toast({
-      title: "Calendar Deleted",
-      description: "The holiday calendar has been deleted successfully."
-    });
-  };
-  
-  // Export calendar
-  const exportCalendar = (calendar: HolidayCalendar) => {
-    const data = {
-      name: calendar.name,
-      description: calendar.description,
-      holidays: calendar.holidays
-    };
-    
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${calendar.name.replace(/\s+/g, '_')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Calendar Exported",
-      description: `Calendar "${calendar.name}" has been exported successfully.`
-    });
-  };
-  
-  // Import calendar
-  const importCalendar = () => {
+
     try {
-      const data = JSON.parse(importText);
+      const calendarEntries: WorkflowCalendar[] = calendarForm.newDates.map(date => ({
+        calendarName: calendarForm.calendarName,
+        calendarDescription: calendarForm.calendarDescription,
+        businessDate: date,
+        action: 1 // Add action
+      }));
+
+      const response = await workflowService.saveCalendars(calendarEntries);
       
-      if (!data.name || !data.description || !data.holidays) {
-        throw new Error('Invalid format');
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: `Calendar "${calendarForm.calendarName}" has been saved successfully.`
+        });
+        setCalendarDialogOpen(false);
+        loadData(); // Reload data
+      } else {
+        throw new Error(response.error || 'Failed to save calendar');
       }
-      
-      const newCalendar: HolidayCalendar = {
-        id: `cal-${Date.now()}`,
-        name: data.name,
-        description: data.description || '',
-        holidays: data.holidays,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'Current User',
-        updatedBy: 'Current User',
-        isActive: true
-      };
-      
-      setCalendars(prev => [...prev, newCalendar]);
-      setImportDialogOpen(false);
-      setImportText('');
-      
+    } catch (error: any) {
       toast({
-        title: "Calendar Imported",
-        description: `Calendar "${data.name}" has been imported successfully.`
-      });
-    } catch (error) {
-      toast({
-        title: "Import Failed",
-        description: "Failed to import calendar. Please check the format of your JSON data.",
+        title: "Error",
+        description: error.message || "Failed to save calendar",
         variant: "destructive"
       });
     }
   };
-  
-  // Import from CSV
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const lines = content.split('\n');
-        
-        // Skip header row
-        const dates: string[] = [];
-        
-        lines.slice(1).filter(line => line.trim()).forEach(line => {
-          const date = line.split(',')[0].trim();
-          if (date) {
-            dates.push(date);
-          }
-        });
-        
-        if (dates.length === 0) {
-          throw new Error('No holidays found in CSV');
-        }
-        
-        setImportText(JSON.stringify({
-          name: file.name.replace('.csv', ''),
-          description: `Imported from ${file.name}`,
-          holidays: dates.join(',')
-        }, null, 2));
-        
-      } catch (error) {
+
+  // Delete a specific date from a calendar
+  const deleteDate = async () => {
+    if (!dateToDelete) return;
+
+    try {
+      const calendarEntry: WorkflowCalendar = {
+        calendarName: dateToDelete.calendarName,
+        calendarDescription: '', // Not needed for delete
+        businessDate: dateToDelete.businessDate,
+        action: 3 // Delete action
+      };
+
+      const response = await workflowService.saveCalendars([calendarEntry]);
+      
+      if (response.success) {
         toast({
-          title: "CSV Parse Failed",
-          description: "Failed to parse CSV file. Please check the format.",
-          variant: "destructive"
+          title: "Success",
+          description: "Holiday date has been deleted successfully."
         });
+        setDeleteDialogOpen(false);
+        setDateToDelete(null);
+        loadData(); // Reload data
+      } else {
+        throw new Error(response.error || 'Failed to delete date');
       }
-    };
-    
-    reader.readAsText(file);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete date",
+        variant: "destructive"
+      });
+    }
   };
-  
+
+  // Open calendar form for new calendar
+  const openNewCalendarForm = () => {
+    setCalendarForm({
+      calendarName: '',
+      calendarDescription: '',
+      newDates: []
+    });
+    setNewDateInput('');
+    setCalendarDialogOpen(true);
+  };
+
+  // Open calendar form for editing existing calendar
+  const openEditCalendarForm = (group: CalendarGroup) => {
+    setCalendarForm({
+      calendarName: group.calendarName,
+      calendarDescription: group.calendarDescription,
+      newDates: []
+    });
+    setNewDateInput('');
+    setCalendarDialogOpen(true);
+  };
+
+  // Get applications assigned to a calendar
+  const getAssignedApplications = (calendarName: string) => {
+    return applicationMappings.filter(mapping => mapping.calendarName === calendarName);
+  };
+
+  // Handle application assignment
+  const handleApplicationAssignment = async (applicationId: number, calendarName: string, isAssigned: boolean) => {
+    try {
+      const mapping: CalendarSaveRequest = {
+        action: isAssigned ? 1 : 3, // 1 = assign, 3 = unassign
+        applicationId: applicationId,
+        calendarName: calendarName
+      };
+
+      const response = await workflowService.saveApplicationCalendarMapping(mapping);
+      
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: `Application ${isAssigned ? 'assigned to' : 'unassigned from'} calendar successfully.`
+        });
+        loadData(); // Reload data
+      } else {
+        throw new Error(response.error || 'Failed to update assignment');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update application assignment",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading calendar data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -350,229 +411,268 @@ const HolidayCalendarManagement: React.FC = () => {
           />
         </div>
         
-        <div className="flex space-x-2">
-          <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Upload className="mr-2 h-4 w-4" />
-                Import Calendar
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Import Holiday Calendar</DialogTitle>
-                <DialogDescription>
-                  Import a holiday calendar from JSON or CSV format
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="importFile">Upload CSV File (Date)</Label>
-                  <Input id="importFile" type="file" accept=".csv" onChange={handleFileUpload} />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="importJson">Or paste JSON data</Label>
-                  <Textarea 
-                    id="importJson" 
-                    placeholder='{"name": "Calendar Name", "description": "Description", "holidays": "2025-01-01,2025-12-25"}' 
-                    rows={10} 
-                    value={importText}
-                    onChange={(e) => setImportText(e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={importCalendar} disabled={!importText.trim()}>
-                  Import Calendar
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
-          <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setSelectedCalendar(null)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Calendar
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>{selectedCalendar ? 'Edit Calendar' : 'Add New Calendar'}</DialogTitle>
-                <DialogDescription>
-                  {selectedCalendar ? 'Update the calendar details' : 'Create a new holiday calendar'}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Calendar Name <span className="text-red-500">*</span></Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Enter calendar name" 
-                    value={calendarForm.name}
-                    onChange={(e) => handleCalendarFormChange('name', e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
-                  <Textarea 
-                    id="description" 
-                    placeholder="Enter calendar description" 
-                    value={calendarForm.description}
-                    onChange={(e) => handleCalendarFormChange('description', e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="holidays">Holidays (comma-separated dates) <span className="text-red-500">*</span></Label>
-                  <Textarea 
-                    id="holidays" 
-                    placeholder="2025-01-01,2025-12-25,2025-12-26" 
-                    value={calendarForm.holidays}
-                    onChange={(e) => handleCalendarFormChange('holidays', e.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">Enter dates in YYYY-MM-DD format, separated by commas</p>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="isActive" 
-                    checked={calendarForm.isActive}
-                    onCheckedChange={(checked) => handleCalendarFormChange('isActive', checked)}
-                  />
-                  <Label htmlFor="isActive">Calendar is active</Label>
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setCalendarDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={saveCalendar}>
-                  {selectedCalendar ? 'Update Calendar' : 'Create Calendar'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Button onClick={openNewCalendarForm}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Calendar
+        </Button>
       </div>
-      
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Holidays</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+
+      <Tabs defaultValue="calendars" className="w-full">
+        <TabsList>
+          <TabsTrigger value="calendars">Holiday Calendars</TabsTrigger>
+          <TabsTrigger value="assignments">Application Assignments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendars" className="space-y-4">
+          <div className="grid gap-4">
             {filteredCalendars.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                  No calendars found
-                </TableCell>
-              </TableRow>
+              <Card>
+                <CardContent className="flex items-center justify-center h-32">
+                  <p className="text-muted-foreground">No calendars found</p>
+                </CardContent>
+              </Card>
             ) : (
-              filteredCalendars.map((calendar) => (
-                <React.Fragment key={calendar.id}>
-                  <TableRow>
-                    <TableCell className="font-medium">{calendar.name}</TableCell>
-                    <TableCell className="max-w-xs truncate">{calendar.description}</TableCell>
-                    <TableCell>{calendar.holidays.split(',').filter(Boolean).length} holidays</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        calendar.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {calendar.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => exportCalendar(calendar)}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          setSelectedCalendar(calendar);
-                          setCalendarDialogOpen(true);
-                        }}>
+              filteredCalendars.map((group) => (
+                <Card key={group.calendarName}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <CalendarIcon className="h-5 w-5" />
+                          {group.calendarName}
+                        </CardTitle>
+                        <CardDescription>{group.calendarDescription}</CardDescription>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openEditCalendarForm(group)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          setCalendarToDelete(calendar.id);
-                          setDeleteDialogOpen(true);
-                        }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell colSpan={5} className="p-0 border-t-0">
-                      <div className="px-4 py-2 bg-muted/30">
-                        <div className="mb-2">
-                          <h4 className="text-sm font-medium">Holidays</h4>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">Holiday Dates ({group.holidays.length})</h4>
+                        <Badge variant="secondary">
+                          {getAssignedApplications(group.calendarName).length} Applications
+                        </Badge>
+                      </div>
+                      
+                      <ScrollArea className="h-48">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {group.holidays
+                            .sort((a, b) => new Date(formatDateFromAPI(a.businessDate)).getTime() - new Date(formatDateFromAPI(b.businessDate)).getTime())
+                            .map((holiday, index) => {
+                              const isExpired = isDateExpired(holiday.businessDate);
+                              return (
+                                <div key={index} className={`flex items-center justify-between p-2 rounded border ${isExpired ? 'bg-muted opacity-60' : 'bg-background'}`}>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-3 w-3" />
+                                    <span className="text-sm">
+                                      {new Date(formatDateFromAPI(holiday.businessDate)).toLocaleDateString()}
+                                    </span>
+                                    {isExpired && <Badge variant="outline" className="text-xs">Expired</Badge>}
+                                  </div>
+                                  {!isExpired && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setDateToDelete({
+                                          calendarName: holiday.calendarName,
+                                          businessDate: holiday.businessDate
+                                        });
+                                        setDeleteDialogOpen(true);
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
                         </div>
-                        
-                        {!calendar.holidays ? (
-                          <div className="text-center py-4 border rounded-md">
-                            <p className="text-sm text-muted-foreground">
-                              No holidays defined for this calendar.
-                            </p>
-                          </div>
-                        ) : (
-                          <ScrollArea className="h-[200px]">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Date</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {parseHolidays(calendar).map((holiday, index) => (
-                                  <TableRow key={index}>
-                                    <TableCell>{new Date(holiday.date).toLocaleDateString()}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </ScrollArea>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                </React.Fragment>
+                      </ScrollArea>
+                    </div>
+                  </CardContent>
+                </Card>
               ))
             )}
-          </TableBody>
-        </Table>
-      </div>
-      
-      {/* Delete Calendar Confirmation Dialog */}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="assignments" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Application Calendar Assignments</CardTitle>
+              <CardDescription>
+                Assign holiday calendars to applications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {applications.map((app) => {
+                  const currentMapping = applicationMappings.find(m => m.applicationId === parseInt(app.configId));
+                  return (
+                    <div key={app.configId} className="flex items-center justify-between p-4 border rounded">
+                      <div className="flex items-center gap-3">
+                        <Building2 className="h-5 w-5" />
+                        <div>
+                          <p className="font-medium">{app.configName}</p>
+                          <p className="text-sm text-muted-foreground">{app.configType}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {currentMapping && (
+                          <Badge variant="secondary">
+                            {currentMapping.calendarName}
+                          </Badge>
+                        )}
+                        <Select
+                          value={currentMapping?.calendarName || ''}
+                          onValueChange={(value) => {
+                            if (value === '') {
+                              // Unassign current calendar
+                              if (currentMapping) {
+                                handleApplicationAssignment(parseInt(app.configId), currentMapping.calendarName, false);
+                              }
+                            } else {
+                              // Assign new calendar
+                              handleApplicationAssignment(parseInt(app.configId), value, true);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-64">
+                            <SelectValue placeholder="Select calendar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">No Calendar</SelectItem>
+                            {uniqueCalendars.map((calendar) => (
+                              <SelectItem key={calendar.calendarName} value={calendar.calendarName}>
+                                {calendar.calendarName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Add/Edit Calendar Dialog */}
+      <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>
+              {calendarForm.calendarName ? 'Add Dates to Calendar' : 'Create New Calendar'}
+            </DialogTitle>
+            <DialogDescription>
+              {calendarForm.calendarName ? 'Add new holiday dates to the existing calendar' : 'Create a new holiday calendar with dates'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="calendarName">Calendar Name <span className="text-red-500">*</span></Label>
+              <Input 
+                id="calendarName" 
+                placeholder="Enter calendar name" 
+                value={calendarForm.calendarName}
+                onChange={(e) => handleCalendarFormChange('calendarName', e.target.value)}
+                disabled={!!calendarForm.calendarName} // Disable if editing existing calendar
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="calendarDescription">Description <span className="text-red-500">*</span></Label>
+              <Textarea 
+                id="calendarDescription" 
+                placeholder="Enter calendar description" 
+                value={calendarForm.calendarDescription}
+                onChange={(e) => handleCalendarFormChange('calendarDescription', e.target.value)}
+                required
+              />
+            </div>
+            
+            <Separator />
+            
+            <div className="space-y-2">
+              <Label>Add Holiday Dates</Label>
+              <div className="flex gap-2">
+                <Input 
+                  type="date"
+                  value={newDateInput}
+                  onChange={(e) => setNewDateInput(e.target.value)}
+                  placeholder="Select date"
+                />
+                <Button onClick={addNewDate} disabled={!newDateInput}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            {calendarForm.newDates.length > 0 && (
+              <div className="space-y-2">
+                <Label>New Dates to Add ({calendarForm.newDates.length})</Label>
+                <ScrollArea className="h-32 border rounded p-2">
+                  <div className="space-y-1">
+                    {calendarForm.newDates.map((date, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <span className="text-sm">
+                          {new Date(formatDateFromAPI(date)).toLocaleDateString()}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeDateFromForm(date)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCalendarDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveCalendar} disabled={calendarForm.newDates.length === 0}>
+              <Save className="mr-2 h-4 w-4" />
+              Save Calendar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Date Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Holiday Date</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the selected holiday calendar and all its holidays.
+              Are you sure you want to delete this holiday date? This action cannot be undone.
+              {dateToDelete && (
+                <div className="mt-2 p-2 bg-muted rounded">
+                  <strong>Calendar:</strong> {dateToDelete.calendarName}<br />
+                  <strong>Date:</strong> {new Date(formatDateFromAPI(dateToDelete.businessDate)).toLocaleDateString()}
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteCalendar}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={deleteDate}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -117,6 +117,40 @@ export interface RoleForm {
   isActive: boolean;
 }
 
+// Calendar interface matching the API payload structure
+export interface WorkflowCalendar {
+  calendarName: string;
+  calendarDescription: string;
+  businessDate: string; // Format: "DD-MMM-YYYY" (e.g., "25-Dec-2020")
+  action?: number; // 1 = add, 3 = delete (for save operations)
+}
+
+// Unique Calendar interface
+export interface UniqueCalendar {
+  calendarName: string;
+}
+
+// Application-Calendar Mapping interface
+export interface ApplicationCalendarMapping {
+  applicationId: number;
+  applicationName: string;
+  calendarName: string;
+}
+
+// Calendar save request interface
+export interface CalendarSaveRequest {
+  action: number; // 1 = add/update, 3 = delete
+  applicationId: number;
+  calendarName: string;
+}
+
+// Form interface for calendar management UI
+export interface CalendarForm {
+  calendarName: string;
+  calendarDescription: string;
+  businessDates: string[]; // Array of dates in "DD-MMM-YYYY" format
+}
+
 // Service response types
 export interface GetApplicationsResponse extends ApiResponse<Application[]> {}
 export interface SaveApplicationsResponse extends ApiResponse<Application[]> {}
@@ -129,3 +163,10 @@ export interface SaveRolesResponse extends ApiResponse<number> {}
 export interface GetUniqueApplicationsResponse extends ApiResponse<UniqueApplication[]> {}
 export interface GetUniqueRolesResponse extends ApiResponse<UniqueRole[]> {}
 export interface GetApplicationRoleMappingResponse extends ApiResponse<ApplicationRoleMapping[]> {}
+
+// Calendar service response types
+export interface GetWorkflowCalendarsResponse extends ApiResponse<WorkflowCalendar[]> {}
+export interface SaveCalendarResponse extends ApiResponse<number> {}
+export interface GetUniqueCalendarsResponse extends ApiResponse<UniqueCalendar[]> {}
+export interface GetApplicationCalendarMappingResponse extends ApiResponse<ApplicationCalendarMapping[]> {}
+export interface SaveApplicationCalendarMappingResponse extends ApiResponse<number> {}
