@@ -1,8 +1,10 @@
 import React from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import ApiEnvironmentManager from '@/components/admin/ApiEnvironmentManager';
+import { CorsDebugger } from '@/components/admin/CorsDebugger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, Globe, Database, Shield } from 'lucide-react';
 
 const ApiEnvironmentsPage: React.FC = () => {
@@ -65,8 +67,21 @@ const ApiEnvironmentsPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Main API Environment Manager */}
-        <ApiEnvironmentManager />
+        {/* Main Content with Tabs */}
+        <Tabs defaultValue="manager" className="w-full">
+          <TabsList>
+            <TabsTrigger value="manager">Environment Manager</TabsTrigger>
+            <TabsTrigger value="cors-debug">CORS Troubleshooting</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="manager">
+            <ApiEnvironmentManager />
+          </TabsContent>
+          
+          <TabsContent value="cors-debug">
+            <CorsDebugger />
+          </TabsContent>
+        </Tabs>
 
         {/* Usage Instructions */}
         <Card>
