@@ -669,7 +669,7 @@ class WorkflowService {
     }
   }
 
-  // Save application-role mappings
+  // Save application-role mappings (legacy method - sends all mappings)
   async saveApplicationRoleMappings(mappings: ApplicationRoleMapping[]): Promise<ApiResponse<number>> {
     try {
       if (this.isMockMode()) {
@@ -697,6 +697,63 @@ class WorkflowService {
       return this.createApiResponse(response.data);
     } catch (error: any) {
       console.error('[Workflow Service] Error saving application-role mappings:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save application-role mappings'
+      );
+    }
+  }
+
+  // Save application-role mappings for specific applications only (optimized method)
+  async saveApplicationRoleMappingsForApplications(
+    editedApplicationIds: number[], 
+    allCurrentMappings: ApplicationRoleMapping[]
+  ): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for application-role mappings (optimized)');
+        console.log('[Workflow Service] Edited applications:', editedApplicationIds);
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data for edited applications only
+        editedApplicationIds.forEach(appId => {
+          // Remove existing mappings for this application
+          const filteredMappings = MOCK_APPLICATION_ROLE_MAPPINGS.filter(m => m.applicationId !== appId);
+          // Add new mappings for this application
+          const newMappingsForApp = allCurrentMappings.filter(m => m.applicationId === appId);
+          
+          // Update mock data
+          MOCK_APPLICATION_ROLE_MAPPINGS.length = 0;
+          MOCK_APPLICATION_ROLE_MAPPINGS.push(...filteredMappings, ...newMappingsForApp);
+        });
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      // Filter mappings to only include edited applications
+      const mappingsForEditedApps = allCurrentMappings.filter(mapping => 
+        editedApplicationIds.includes(mapping.applicationId)
+      );
+
+      // Transform to API format - only send mappings for edited applications
+      const apiPayload = mappingsForEditedApps.map(mapping => ({
+        appId: mapping.applicationId.toString(),
+        roleId: mapping.roleId.toString()
+      }));
+
+      console.log('[Workflow Service] Saving optimized application-role mappings to API:');
+      console.log('[Workflow Service] Edited applications:', editedApplicationIds);
+      console.log('[Workflow Service] Mappings to send:', apiPayload);
+      console.log('[Workflow Service] Total mappings sent:', apiPayload.length, 'instead of', allCurrentMappings.length);
+
+      const response = await this.axiosInstance.post<number>('/SetApplicationToRoleMap', apiPayload);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving optimized application-role mappings:', error);
       
       return this.createApiResponse(
         0,

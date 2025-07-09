@@ -79,6 +79,7 @@ const EnhancedRoleManagement: React.FC = () => {
     mappings: applicationRoleMappings,
     loading: mappingsLoading,
     saveMappings,
+    saveMappingsDelta,
     refresh: refreshMappings
   } = useApplicationRoleMappings();
   
@@ -265,9 +266,8 @@ const EnhancedRoleManagement: React.FC = () => {
         return;
       }
       
-      // For now, we'll still send all mappings but log what would be the delta
-      // TODO: Update the service to accept delta changes
-      const success = await saveMappings(tempMappings);
+      // Use the optimized delta save method
+      const success = await saveMappingsDelta(changes.additions, changes.removals);
       if (success) {
         toast({
           title: "Assignments Saved",

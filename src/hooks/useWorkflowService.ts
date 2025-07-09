@@ -623,8 +623,7 @@ export const useApplicationRoleMappings = () => {
     setError(null);
     
     try {
-      // For now, we'll calculate the final state and use the existing method
-      // TODO: Use proper delta method when service supports it
+      // Calculate the final state
       let updatedMappings = [...mappings];
       
       // Remove mappings
@@ -643,9 +642,40 @@ export const useApplicationRoleMappings = () => {
           updatedMappings.push(addition);
         }
       });
+
+      // Get all unique application IDs that were affected by changes
+      const editedApplicationIds = new Set<number>();
       
-      // Use existing save method with updated mappings
-      return await saveMappings(updatedMappings);
+      // Add application IDs from additions
+      additions.forEach(addition => {
+        editedApplicationIds.add(addition.applicationId);
+      });
+      
+      // Add application IDs from removals
+      removals.forEach(removal => {
+        editedApplicationIds.add(removal.applicationId);
+      });
+
+      const editedApplicationIdsArray = Array.from(editedApplicationIds);
+
+      console.log('[useWorkflowService] Delta save - edited applications:', editedApplicationIdsArray);
+      console.log('[useWorkflowService] Delta save - additions:', additions.length);
+      console.log('[useWorkflowService] Delta save - removals:', removals.length);
+
+      // Use optimized save method that sends only mappings for edited applications
+      const response = await workflowService.saveApplicationRoleMappingsForApplications(
+        editedApplicationIdsArray,
+        updatedMappings
+      );
+      
+      if (response.success && response.data === 1) {
+        setMappings(updatedMappings);
+        setLastFetch(new Date());
+        return true;
+      } else {
+        setError(response.error || 'Failed to save application-role mappings');
+        return false;
+      }
       
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
@@ -653,7 +683,7 @@ export const useApplicationRoleMappings = () => {
     } finally {
       setLoading(false);
     }
-  }, [mappings, saveMappings]);
+  }, [mappings]);
 
   // Refresh mappings
   const refresh = useCallback(() => {
