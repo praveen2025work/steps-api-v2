@@ -111,6 +111,13 @@ export const CORE_API_ENDPOINTS = {
   GET_APPLICATION_CALENDAR_MAP: '/GetWorkflowApplicationToCalendarMap', // For application-calendar mappings
   SET_APPLICATION_CALENDAR_MAP: '/SetApplicationToCalendarMap', // For saving application-calendar mappings
   
+  // Run Calendar Management Endpoints
+  GET_WORKFLOW_RUN_CALENDARS: '/GetWorkflowRunCalendarDetails', // For getting run calendar details
+  SET_RUN_CALENDAR: '/SetRunCalendar', // For saving/updating run calendars
+  GET_UNIQUE_RUN_CALENDARS: '/GetWorkflowUniqueRunCalendars', // For unique run calendars
+  GET_APPLICATION_RUN_CALENDAR_MAP: '/GetWorkflowApplicationToRunCalendarMap', // For application-run calendar mappings
+  SET_APPLICATION_RUN_CALENDAR_MAP: '/SetApplicationToRunCalendarMap', // For saving application-run calendar mappings
+  
   // Add more endpoints as you provide them
 } as const;
 

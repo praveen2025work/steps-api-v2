@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -30,141 +30,219 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Search, Plus, Edit, Trash2, Calendar as CalendarIcon, Download, Upload } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Search, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Calendar as CalendarIcon, 
+  Save,
+  X,
+  Clock,
+  Building2,
+  Play
+} from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { workflowService } from '@/services/workflowService';
+import { 
+  WorkflowRunCalendar, 
+  UniqueRunCalendar, 
+  ApplicationRunCalendarMapping, 
+  UniqueApplication,
+  RunCalendarSaveRequest
+} from '@/types/application-types';
 
-// Define the interface for the Run Calendar
-interface RunCalendar {
-  id: string;
-  name: string;
-  description: string;
-  entries: string; // Comma-separated dates
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  updatedBy: string;
-  isActive: boolean;
-}
+// Helper function to convert date formats
+const formatDateForAPI = (dateStr: string): string => {
+  // Convert from YYYY-MM-DD to DD-MMM-YYYY format
+  const date = new Date(dateStr);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
 
-// Interface for parsed entry data
-interface ParsedEntry {
-  date: string;
-}
-
-// Sample run calendars
-const sampleRunCalendars: RunCalendar[] = [
-  {
-    id: 'runcal1',
-    name: 'Daily Weekday Runs',
-    description: 'Runs every weekday (Monday to Friday)',
-    entries: '2025-05-01,2025-05-02,2025-05-05,2025-05-06,2025-05-07,2025-05-08,2025-05-09',
-    createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: true
-  },
-  {
-    id: 'runcal2',
-    name: 'Weekly Runs',
-    description: 'Runs every Monday',
-    entries: '2025-05-05,2025-05-12,2025-05-19,2025-05-26',
-    createdAt: '2025-01-02T00:00:00Z',
-    updatedAt: '2025-01-02T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: true
-  },
-  {
-    id: 'runcal3',
-    name: 'Month-End Runs',
-    description: 'Runs on the last business day of each month',
-    entries: '2025-01-31,2025-02-28,2025-03-31,2025-04-30,2025-05-30,2025-06-30',
-    createdAt: '2025-01-03T00:00:00Z',
-    updatedAt: '2025-01-03T00:00:00Z',
-    createdBy: 'System',
-    updatedBy: 'System',
-    isActive: false
+const formatDateFromAPI = (dateStr: string): string => {
+  // Convert from DD-MMM-YYYY to YYYY-MM-DD format
+  try {
+    const [day, month, year] = dateStr.split('-');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthIndex = months.indexOf(month);
+    if (monthIndex === -1) return dateStr;
+    
+    const date = new Date(parseInt(year), monthIndex, parseInt(day));
+    return date.toISOString().split('T')[0];
+  } catch {
+    return dateStr;
   }
-];
+};
 
-// Form interfaces
-interface CalendarForm {
-  id?: string;
-  name: string;
-  description: string;
-  entries: string;
-  isActive: boolean;
+const isDateExpired = (dateStr: string): boolean => {
+  try {
+    const date = new Date(formatDateFromAPI(dateStr));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  } catch {
+    return false;
+  }
+};
+
+// Group calendars by name
+interface RunCalendarGroup {
+  calendarName: string;
+  calendarDescription: string;
+  runDates: WorkflowRunCalendar[];
 }
 
 const RunCalendarManagement: React.FC = () => {
-  const [calendars, setCalendars] = useState<RunCalendar[]>(sampleRunCalendars);
+  // State for calendar data
+  const [runCalendars, setRunCalendars] = useState<WorkflowRunCalendar[]>([]);
+  const [uniqueRunCalendars, setUniqueRunCalendars] = useState<UniqueRunCalendar[]>([]);
+  const [applications, setApplications] = useState<UniqueApplication[]>([]);
+  const [applicationMappings, setApplicationMappings] = useState<ApplicationRunCalendarMapping[]>([]);
+  
+  // UI state
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCalendarName, setSelectedCalendarName] = useState<string>('');
+  
+  // Dialog states
   const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedCalendar, setSelectedCalendar] = useState<RunCalendar | null>(null);
-  const [calendarToDelete, setCalendarToDelete] = useState<string>('');
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importText, setImportText] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   
   // Form states
-  const [calendarForm, setCalendarForm] = useState<CalendarForm>({
-    name: '',
-    description: '',
-    entries: '',
-    isActive: true
+  const [calendarForm, setCalendarForm] = useState({
+    calendarName: '',
+    calendarDescription: '',
+    newDates: [] as string[]
   });
+  const [newDateInput, setNewDateInput] = useState('');
+  const [dateToDelete, setDateToDelete] = useState<{ calendarName: string; businessDate: string } | null>(null);
   
-  // Filter calendars based on search term
-  const filteredCalendars = calendars.filter(calendar => 
-    calendar.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    calendar.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  // Reset form when dialog opens/closes
-  React.useEffect(() => {
-    if (calendarDialogOpen && selectedCalendar) {
-      setCalendarForm({
-        id: selectedCalendar.id,
-        name: selectedCalendar.name,
-        description: selectedCalendar.description,
-        entries: selectedCalendar.entries,
-        isActive: selectedCalendar.isActive
+  // Load data on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [runCalendarsRes, uniqueRunCalendarsRes, applicationsRes, mappingsRes] = await Promise.all([
+        workflowService.getWorkflowRunCalendars(),
+        workflowService.getUniqueRunCalendars(),
+        workflowService.getUniqueApplications(),
+        workflowService.getApplicationRunCalendarMappings()
+      ]);
+
+      if (runCalendarsRes.success) setRunCalendars(runCalendarsRes.data);
+      if (uniqueRunCalendarsRes.success) setUniqueRunCalendars(uniqueRunCalendarsRes.data);
+      if (applicationsRes.success) setApplications(applicationsRes.data);
+      if (mappingsRes.success) setApplicationMappings(mappingsRes.data);
+
+      if (!runCalendarsRes.success || !uniqueRunCalendarsRes.success || !applicationsRes.success || !mappingsRes.success) {
+        toast({
+          title: "Warning",
+          description: "Some data could not be loaded. Please refresh the page.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load run calendar data",
+        variant: "destructive"
       });
-    } else if (calendarDialogOpen) {
-      setCalendarForm({
-        name: '',
-        description: '',
-        entries: '',
-        isActive: true
-      });
+    } finally {
+      setLoading(false);
     }
-  }, [calendarDialogOpen, selectedCalendar]);
-  
-  // Helper function to parse entries string into an array of objects
-  const parseEntries = (calendar: RunCalendar): ParsedEntry[] => {
-    const dates = calendar.entries.split(',').map(date => date.trim()).filter(Boolean);
-    
-    return dates.map((date) => ({
-      date
-    }));
   };
-  
-  // Form handlers
-  const handleCalendarFormChange = (field: keyof CalendarForm, value: any) => {
+
+  // Group calendars by name
+  const groupedRunCalendars = React.useMemo(() => {
+    const groups: Record<string, RunCalendarGroup> = {};
+    
+    runCalendars.forEach(calendar => {
+      if (!groups[calendar.calendarName]) {
+        groups[calendar.calendarName] = {
+          calendarName: calendar.calendarName,
+          calendarDescription: calendar.calendarDescription,
+          runDates: []
+        };
+      }
+      groups[calendar.calendarName].runDates.push(calendar);
+    });
+    
+    return Object.values(groups);
+  }, [runCalendars]);
+
+  // Filter calendars based on search term
+  const filteredRunCalendars = groupedRunCalendars.filter(group => 
+    group.calendarName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    group.calendarDescription.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handle form changes
+  const handleCalendarFormChange = (field: string, value: any) => {
     setCalendarForm(prev => ({ ...prev, [field]: value }));
   };
-  
-  // Save calendar
-  const saveCalendar = () => {
-    if (!calendarForm.name.trim()) {
+
+  // Add new date to form
+  const addNewDate = () => {
+    if (!newDateInput.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a date",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const formattedDate = formatDateForAPI(newDateInput);
+    if (calendarForm.newDates.includes(formattedDate)) {
+      toast({
+        title: "Validation Error",
+        description: "This date is already added",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCalendarForm(prev => ({
+      ...prev,
+      newDates: [...prev.newDates, formattedDate]
+    }));
+    setNewDateInput('');
+  };
+
+  // Remove date from form
+  const removeDateFromForm = (dateToRemove: string) => {
+    setCalendarForm(prev => ({
+      ...prev,
+      newDates: prev.newDates.filter(date => date !== dateToRemove)
+    }));
+  };
+
+  // Save calendar with new dates
+  const saveRunCalendar = async () => {
+    if (!calendarForm.calendarName.trim()) {
       toast({
         title: "Validation Error",
         description: "Calendar name is required",
@@ -172,8 +250,8 @@ const RunCalendarManagement: React.FC = () => {
       });
       return;
     }
-    
-    if (!calendarForm.description.trim()) {
+
+    if (!calendarForm.calendarDescription.trim()) {
       toast({
         title: "Validation Error",
         description: "Calendar description is required",
@@ -181,477 +259,452 @@ const RunCalendarManagement: React.FC = () => {
       });
       return;
     }
-    
-    if (calendarForm.id) {
-      // Update existing calendar
-      setCalendars(prev => prev.map(calendar => 
-        calendar.id === calendarForm.id 
-          ? { 
-              ...calendar, 
-              name: calendarForm.name, 
-              description: calendarForm.description,
-              entries: calendarForm.entries,
-              isActive: calendarForm.isActive,
-              updatedAt: new Date().toISOString(),
-              updatedBy: 'Current User'
-            } 
-          : calendar
-      ));
+
+    if (calendarForm.newDates.length === 0) {
       toast({
-        title: "Calendar Updated",
-        description: `Run calendar "${calendarForm.name}" has been updated successfully.`
+        title: "Validation Error",
+        description: "At least one run date is required",
+        variant: "destructive"
       });
-    } else {
-      // Add new calendar
-      const newCalendar: RunCalendar = {
-        id: `runcal-${Date.now()}`,
-        name: calendarForm.name,
-        description: calendarForm.description,
-        entries: calendarForm.entries,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'Current User',
-        updatedBy: 'Current User',
-        isActive: calendarForm.isActive
-      };
-      
-      setCalendars(prev => [...prev, newCalendar]);
-      toast({
-        title: "Calendar Added",
-        description: `Run calendar "${calendarForm.name}" has been added successfully.`
-      });
+      return;
     }
-    
-    setCalendarDialogOpen(false);
-  };
-  
-  // Delete calendar
-  const confirmDeleteCalendar = () => {
-    setCalendars(prev => prev.filter(calendar => calendar.id !== calendarToDelete));
-    setDeleteDialogOpen(false);
-    toast({
-      title: "Calendar Deleted",
-      description: "The run calendar has been deleted successfully."
-    });
-  };
-  
-  // Export calendar
-  const exportCalendar = (calendar: RunCalendar) => {
-    const data = {
-      name: calendar.name,
-      description: calendar.description,
-      entries: calendar.entries
-    };
-    
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${calendar.name.replace(/\s+/g, '_')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Calendar Exported",
-      description: `Run calendar "${calendar.name}" has been exported successfully.`
-    });
-  };
-  
-  // Import calendar
-  const importCalendar = () => {
+
     try {
-      const data = JSON.parse(importText);
+      const calendarEntries: WorkflowRunCalendar[] = calendarForm.newDates.map(date => ({
+        calendarName: calendarForm.calendarName,
+        calendarDescription: calendarForm.calendarDescription,
+        businessDate: date,
+        action: 1 // Add action
+      }));
+
+      const response = await workflowService.saveRunCalendars(calendarEntries);
       
-      if (!data.name || !data.description || !data.entries) {
-        throw new Error('Invalid format');
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: `Run Calendar "${calendarForm.calendarName}" has been saved successfully.`
+        });
+        setCalendarDialogOpen(false);
+        loadData(); // Reload data
+      } else {
+        throw new Error(response.error || 'Failed to save run calendar');
       }
-      
-      const newCalendar: RunCalendar = {
-        id: `runcal-${Date.now()}`,
-        name: data.name,
-        description: data.description || '',
-        entries: data.entries,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'Current User',
-        updatedBy: 'Current User',
-        isActive: true
-      };
-      
-      setCalendars(prev => [...prev, newCalendar]);
-      setImportDialogOpen(false);
-      setImportText('');
-      
+    } catch (error: any) {
       toast({
-        title: "Calendar Imported",
-        description: `Run calendar "${data.name}" has been imported successfully.`
-      });
-    } catch (error) {
-      toast({
-        title: "Import Failed",
-        description: "Failed to import calendar. Please check the format of your JSON data.",
+        title: "Error",
+        description: error.message || "Failed to save run calendar",
         variant: "destructive"
       });
     }
   };
-  
-  // Generate calendar entries for a month
-  const generateMonthEntries = (calendar: RunCalendar, month: Date, pattern: 'weekdays' | 'mondays' | 'month-end' | 'all') => {
-    const start = startOfMonth(month);
-    const end = endOfMonth(month);
-    const days = eachDayOfInterval({ start, end });
-    
-    // Parse existing entries
-    const existingEntries = parseEntries(calendar);
-    const existingDates = existingEntries.map(entry => entry.date);
-    
-    // New arrays to hold the updated data
-    let newDates: string[] = [];
-    
-    // Add existing entries that are not in the current month
-    existingEntries.forEach(entry => {
-      const entryDate = new Date(entry.date);
-      if (entryDate.getMonth() !== month.getMonth() || entryDate.getFullYear() !== month.getFullYear()) {
-        newDates.push(entry.date);
-      }
-    });
-    
-    // Generate new entries for the month
-    days.forEach(day => {
-      const dateStr = format(day, 'yyyy-MM-dd');
-      const existingIndex = existingDates.indexOf(dateStr);
+
+  // Delete a specific date from a calendar
+  const deleteDate = async () => {
+    if (!dateToDelete) return;
+
+    try {
+      const calendarEntry: WorkflowRunCalendar = {
+        calendarName: dateToDelete.calendarName,
+        calendarDescription: '', // Not needed for delete
+        businessDate: dateToDelete.businessDate,
+        action: 3 // Delete action
+      };
+
+      const response = await workflowService.saveRunCalendars([calendarEntry]);
       
-      if (existingIndex >= 0) {
-        // Keep existing entry
-        newDates.push(existingEntries[existingIndex].date);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Run date has been deleted successfully."
+        });
+        setDeleteDialogOpen(false);
+        setDateToDelete(null);
+        loadData(); // Reload data
       } else {
-        // Create new entry based on pattern
-        const dayOfWeek = day.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        const isLastDayOfMonth = day.getDate() === end.getDate();
-        const isWeekday = dayOfWeek > 0 && dayOfWeek < 6;
-        
-        let shouldAdd = false;
-        
-        switch (pattern) {
-          case 'weekdays':
-            shouldAdd = isWeekday;
-            break;
-          case 'mondays':
-            shouldAdd = dayOfWeek === 1;
-            break;
-          case 'month-end':
-            // For simplicity, we'll consider the last day of the month as month-end
-            shouldAdd = isLastDayOfMonth;
-            break;
-          case 'all':
-            shouldAdd = true;
-            break;
-        }
-        
-        if (shouldAdd) {
-          newDates.push(dateStr);
-        }
+        throw new Error(response.error || 'Failed to delete date');
       }
-    });
-    
-    // Sort entries by date
-    newDates.sort();
-    
-    // Update calendar with new entries
-    setCalendars(prev => prev.map(cal => 
-      cal.id === calendar.id 
-        ? { 
-            ...cal, 
-            entries: newDates.join(','),
-            updatedAt: new Date().toISOString(),
-            updatedBy: 'Current User'
-          } 
-        : cal
-    ));
-    
-    toast({
-      title: "Calendar Generated",
-      description: `Run calendar entries for ${format(month, 'MMMM yyyy')} have been generated successfully.`
-    });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete date",
+        variant: "destructive"
+      });
+    }
   };
-  
-  // Get entries for the selected month
-  const getMonthEntries = (calendar: RunCalendar): ParsedEntry[] => {
-    const allEntries = parseEntries(calendar);
-    const start = startOfMonth(selectedMonth);
-    const end = endOfMonth(selectedMonth);
-    
-    return allEntries.filter(entry => {
-      const entryDate = new Date(entry.date);
-      return entryDate >= start && entryDate <= end;
-    }).sort((a, b) => a.date.localeCompare(b.date));
+
+  // Open calendar form for new calendar
+  const openNewCalendarForm = () => {
+    setCalendarForm({
+      calendarName: '',
+      calendarDescription: '',
+      newDates: []
+    });
+    setNewDateInput('');
+    setCalendarDialogOpen(true);
   };
-  
+
+  // Open calendar form for editing existing calendar
+  const openEditCalendarForm = (group: RunCalendarGroup) => {
+    setCalendarForm({
+      calendarName: group.calendarName,
+      calendarDescription: group.calendarDescription,
+      newDates: []
+    });
+    setNewDateInput('');
+    setCalendarDialogOpen(true);
+  };
+
+  // Get applications assigned to a calendar
+  const getAssignedApplications = (calendarName: string) => {
+    return applicationMappings.filter(mapping => mapping.calendarName === calendarName);
+  };
+
+  // Handle application assignment
+  const handleApplicationAssignment = async (applicationId: number, calendarName: string, isAssigned: boolean) => {
+    try {
+      console.log('[RunCalendarManagement] Handling assignment:', { applicationId, calendarName, isAssigned });
+      
+      const mapping: RunCalendarSaveRequest = {
+        action: isAssigned ? 1 : 3, // 1 = assign, 3 = unassign
+        applicationId: applicationId,
+        calendarName: calendarName
+      };
+
+      console.log('[RunCalendarManagement] Sending mapping request:', mapping);
+      const response = await workflowService.saveApplicationRunCalendarMapping(mapping);
+      
+      console.log('[RunCalendarManagement] Response received:', response);
+      
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: `Application ${isAssigned ? 'assigned to' : 'unassigned from'} run calendar successfully.`
+        });
+        await loadData(); // Reload data
+      } else {
+        throw new Error(response.error || 'Failed to update assignment');
+      }
+    } catch (error: any) {
+      console.error('[RunCalendarManagement] Assignment error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update application assignment",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading run calendar data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div className="relative w-64">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search calendars..."
+            placeholder="Search run calendars..."
             className="pl-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
-        <div className="flex space-x-2">
-          <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Upload className="mr-2 h-4 w-4" />
-                Import Calendar
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Import Run Calendar</DialogTitle>
-                <DialogDescription>
-                  Import a run calendar from JSON format
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="importJson">Paste JSON data</Label>
-                  <Textarea 
-                    id="importJson" 
-                    placeholder='{"name": "Calendar Name", "description": "Description", "entries": "2025-01-01,2025-01-02"}' 
-                    rows={10} 
-                    value={importText}
-                    onChange={(e) => setImportText(e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={importCalendar} disabled={!importText.trim()}>
-                  Import Calendar
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
-          <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setSelectedCalendar(null)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Calendar
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>{selectedCalendar ? 'Edit Calendar' : 'Add New Calendar'}</DialogTitle>
-                <DialogDescription>
-                  {selectedCalendar ? 'Update the calendar details' : 'Create a new run calendar'}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Calendar Name <span className="text-red-500">*</span></Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Enter calendar name" 
-                    value={calendarForm.name}
-                    onChange={(e) => handleCalendarFormChange('name', e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
-                  <Textarea 
-                    id="description" 
-                    placeholder="Enter calendar description" 
-                    value={calendarForm.description}
-                    onChange={(e) => handleCalendarFormChange('description', e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="entries">Entries (comma-separated dates)</Label>
-                  <Textarea 
-                    id="entries" 
-                    placeholder="2025-01-01,2025-01-02,2025-01-03" 
-                    value={calendarForm.entries}
-                    onChange={(e) => handleCalendarFormChange('entries', e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">Enter dates in YYYY-MM-DD format, separated by commas</p>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="isActive" 
-                    checked={calendarForm.isActive}
-                    onCheckedChange={(checked) => handleCalendarFormChange('isActive', checked)}
-                  />
-                  <Label htmlFor="isActive">Calendar is active</Label>
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setCalendarDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={saveCalendar}>
-                  {selectedCalendar ? 'Update Calendar' : 'Create Calendar'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Button onClick={openNewCalendarForm}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Run Calendar
+        </Button>
       </div>
-      
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Entries</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCalendars.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                  No calendars found
-                </TableCell>
-              </TableRow>
+
+      <Tabs defaultValue="calendars" className="w-full">
+        <TabsList>
+          <TabsTrigger value="calendars">Run Calendars</TabsTrigger>
+          <TabsTrigger value="assignments">Application Assignments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendars" className="space-y-4">
+          <div className="grid gap-4">
+            {filteredRunCalendars.length === 0 ? (
+              <Card>
+                <CardContent className="flex items-center justify-center h-32">
+                  <p className="text-muted-foreground">No run calendars found</p>
+                </CardContent>
+              </Card>
             ) : (
-              filteredCalendars.map((calendar) => (
-                <React.Fragment key={calendar.id}>
-                  <TableRow>
-                    <TableCell className="font-medium">{calendar.name}</TableCell>
-                    <TableCell className="max-w-xs truncate">{calendar.description}</TableCell>
-                    <TableCell>{calendar.entries.split(',').filter(Boolean).length} entries</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        calendar.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {calendar.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => exportCalendar(calendar)}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          setSelectedCalendar(calendar);
-                          setCalendarDialogOpen(true);
-                        }}>
+              filteredRunCalendars.map((group) => (
+                <Card key={group.calendarName}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Play className="h-5 w-5" />
+                          {group.calendarName}
+                        </CardTitle>
+                        <CardDescription>{group.calendarDescription}</CardDescription>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openEditCalendarForm(group)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          setCalendarToDelete(calendar.id);
-                          setDeleteDialogOpen(true);
-                        }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell colSpan={5} className="p-0 border-t-0">
-                      <div className="px-4 py-2 bg-muted/30">
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="flex items-center space-x-4">
-                            <h4 className="text-sm font-medium">Run Calendar Entries</h4>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {format(selectedMonth, 'MMMM yyyy')}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                  mode="single"
-                                  selected={selectedMonth}
-                                  onSelect={(date) => setSelectedMonth(date || new Date())}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <div className="flex space-x-2">
-                              <Button variant="outline" size="sm" onClick={() => generateMonthEntries(calendar, selectedMonth, 'weekdays')}>
-                                Weekdays
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => generateMonthEntries(calendar, selectedMonth, 'mondays')}>
-                                Mondays
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => generateMonthEntries(calendar, selectedMonth, 'month-end')}>
-                                Month-End
-                              </Button>
-                            </div>
-                          </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">Run Dates ({group.runDates.length})</h4>
+                        <Badge variant="secondary">
+                          {getAssignedApplications(group.calendarName).length} Applications
+                        </Badge>
+                      </div>
+                      
+                      <ScrollArea className="h-48">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {group.runDates
+                            .sort((a, b) => new Date(formatDateFromAPI(a.businessDate)).getTime() - new Date(formatDateFromAPI(b.businessDate)).getTime())
+                            .map((runDate, index) => {
+                              const isExpired = isDateExpired(runDate.businessDate);
+                              return (
+                                <div key={index} className={`flex items-center justify-between p-2 rounded border ${isExpired ? 'bg-muted opacity-60' : 'bg-background'}`}>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-3 w-3" />
+                                    <span className="text-sm">
+                                      {new Date(formatDateFromAPI(runDate.businessDate)).toLocaleDateString()}
+                                    </span>
+                                    {isExpired && <Badge variant="outline" className="text-xs">Expired</Badge>}
+                                  </div>
+                                  {!isExpired && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setDateToDelete({
+                                          calendarName: runDate.calendarName,
+                                          businessDate: runDate.businessDate
+                                        });
+                                        setDeleteDialogOpen(true);
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
                         </div>
-                        
-                        {getMonthEntries(calendar).length === 0 ? (
-                          <div className="text-center py-4 border rounded-md">
-                            <p className="text-sm text-muted-foreground">
-                              No entries defined for {format(selectedMonth, 'MMMM yyyy')}. Use the buttons above to generate entries.
-                            </p>
-                          </div>
-                        ) : (
-                          <ScrollArea className="h-[300px]">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Date</TableHead>
-                                  <TableHead>Day</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {getMonthEntries(calendar).map((entry, index) => (
-                                  <TableRow key={index}>
-                                    <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
-                                    <TableCell>{format(new Date(entry.date), 'EEEE')}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </ScrollArea>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                </React.Fragment>
+                      </ScrollArea>
+                    </div>
+                  </CardContent>
+                </Card>
               ))
             )}
-          </TableBody>
-        </Table>
-      </div>
-      
-      {/* Delete Calendar Confirmation Dialog */}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="assignments" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Application Run Calendar Assignments</CardTitle>
+              <CardDescription>
+                Assign run calendars to applications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {applications.map((app) => {
+                  const currentMapping = applicationMappings.find(m => m.applicationId === parseInt(app.configId));
+                  return (
+                    <div key={app.configId} className="flex items-center justify-between p-4 border rounded">
+                      <div className="flex items-center gap-3">
+                        <Building2 className="h-5 w-5" />
+                        <div>
+                          <p className="font-medium">{app.configName}</p>
+                          <p className="text-sm text-muted-foreground">{app.configType}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {currentMapping && (
+                          <Badge variant="secondary">
+                            {currentMapping.calendarName}
+                          </Badge>
+                        )}
+                        <Select
+                          value={currentMapping?.calendarName || ''}
+                          onValueChange={async (value) => {
+                            try {
+                              const appId = parseInt(app.configId, 10);
+                              
+                              if (isNaN(appId)) {
+                                console.error('[RunCalendarManagement] Invalid application ID:', app.configId);
+                                toast({
+                                  title: "Error",
+                                  description: "Invalid application ID",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+
+                              if (value === '') {
+                                // Unassign current calendar
+                                if (currentMapping) {
+                                  await handleApplicationAssignment(appId, currentMapping.calendarName, false);
+                                }
+                              } else {
+                                // First unassign current calendar if exists
+                                if (currentMapping && currentMapping.calendarName !== value) {
+                                  await handleApplicationAssignment(appId, currentMapping.calendarName, false);
+                                }
+                                // Then assign new calendar
+                                await handleApplicationAssignment(appId, value, true);
+                              }
+                            } catch (error: any) {
+                              console.error('[RunCalendarManagement] Select change error:', error);
+                              toast({
+                                title: "Error",
+                                description: "Failed to update run calendar assignment",
+                                variant: "destructive"
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-64">
+                            <SelectValue placeholder="Select run calendar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">No Run Calendar</SelectItem>
+                            {uniqueRunCalendars.map((calendar) => (
+                              <SelectItem key={calendar.calendarName} value={calendar.calendarName}>
+                                {calendar.calendarName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Add/Edit Calendar Dialog */}
+      <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>
+              {calendarForm.calendarName ? 'Add Dates to Run Calendar' : 'Create New Run Calendar'}
+            </DialogTitle>
+            <DialogDescription>
+              {calendarForm.calendarName ? 'Add new run dates to the existing calendar' : 'Create a new run calendar with dates'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="calendarName">Calendar Name <span className="text-red-500">*</span></Label>
+              <Input 
+                id="calendarName" 
+                placeholder="Enter calendar name" 
+                value={calendarForm.calendarName}
+                onChange={(e) => handleCalendarFormChange('calendarName', e.target.value)}
+                disabled={!!calendarForm.calendarName} // Disable if editing existing calendar
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="calendarDescription">Description <span className="text-red-500">*</span></Label>
+              <Textarea 
+                id="calendarDescription" 
+                placeholder="Enter calendar description" 
+                value={calendarForm.calendarDescription}
+                onChange={(e) => handleCalendarFormChange('calendarDescription', e.target.value)}
+                required
+              />
+            </div>
+            
+            <Separator />
+            
+            <div className="space-y-2">
+              <Label>Add Run Dates</Label>
+              <div className="flex gap-2">
+                <Input 
+                  type="date"
+                  value={newDateInput}
+                  onChange={(e) => setNewDateInput(e.target.value)}
+                  placeholder="Select date"
+                />
+                <Button onClick={addNewDate} disabled={!newDateInput}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            {calendarForm.newDates.length > 0 && (
+              <div className="space-y-2">
+                <Label>New Dates to Add ({calendarForm.newDates.length})</Label>
+                <ScrollArea className="h-32 border rounded p-2">
+                  <div className="space-y-1">
+                    {calendarForm.newDates.map((date, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <span className="text-sm">
+                          {new Date(formatDateFromAPI(date)).toLocaleDateString()}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeDateFromForm(date)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCalendarDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveRunCalendar} disabled={calendarForm.newDates.length === 0}>
+              <Save className="mr-2 h-4 w-4" />
+              Save Run Calendar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Date Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Run Date</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the selected run calendar and all its entries.
+              Are you sure you want to delete this run date? This action cannot be undone.
+              {dateToDelete && (
+                <div className="mt-2 p-2 bg-muted rounded">
+                  <strong>Calendar:</strong> {dateToDelete.calendarName}<br />
+                  <strong>Date:</strong> {new Date(formatDateFromAPI(dateToDelete.businessDate)).toLocaleDateString()}
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteCalendar}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={deleteDate}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

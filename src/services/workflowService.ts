@@ -10,7 +10,11 @@ import {
   WorkflowCalendar,
   UniqueCalendar,
   ApplicationCalendarMapping,
-  CalendarSaveRequest
+  CalendarSaveRequest,
+  WorkflowRunCalendar,
+  UniqueRunCalendar,
+  ApplicationRunCalendarMapping,
+  RunCalendarSaveRequest
 } from '@/types/application-types';
 
 // Mock data for development/demo environments
@@ -255,6 +259,76 @@ const MOCK_UNIQUE_CALENDARS: UniqueCalendar[] = [
 
 // Mock data for application-calendar mappings - matching your API specification
 const MOCK_APPLICATION_CALENDAR_MAPPINGS: ApplicationCalendarMapping[] = [
+  {
+    applicationId: 1,
+    applicationName: "Daily Named Pnl",
+    calendarName: "Daily Named Pnl Holiday Calendar"
+  },
+  {
+    applicationId: 2,
+    applicationName: "Daily Workspace Pnl",
+    calendarName: "Daily Workspace Pnl Holiday Calendar"
+  },
+  {
+    applicationId: 8,
+    applicationName: "Netting",
+    calendarName: "Netting POC Calendar"
+  },
+  {
+    applicationId: 11,
+    applicationName: "Netting Dev",
+    calendarName: "Netting POC Calendar"
+  }
+];
+
+// Mock data for workflow run calendars - matching your API specification
+const MOCK_WORKFLOW_RUN_CALENDARS: WorkflowRunCalendar[] = [
+  {
+    calendarName: "Netting POC Calendar",
+    calendarDescription: "Netting POC Calendar",
+    businessDate: "25-Dec-2020"
+  },
+  {
+    calendarName: "Netting POC Calendar",
+    calendarDescription: "Netting POC Calendar",
+    businessDate: "01-Jan-2021"
+  },
+  {
+    calendarName: "Daily Named Pnl Holiday Calendar",
+    calendarDescription: "Daily Named Pnl Holiday Calendar",
+    businessDate: "01-Jan-2020"
+  },
+  {
+    calendarName: "Daily Named Pnl Holiday Calendar",
+    calendarDescription: "Daily Named Pnl Holiday Calendar",
+    businessDate: "25-Dec-2020"
+  },
+  {
+    calendarName: "Daily Workspace Pnl Holiday Calendar",
+    calendarDescription: "Daily Workspace Pnl Holiday Calendar",
+    businessDate: "01-Jan-2020"
+  },
+  {
+    calendarName: "Daily Workspace Pnl Holiday Calendar",
+    calendarDescription: "Daily Workspace Pnl Holiday Calendar",
+    businessDate: "04-Jul-2020"
+  },
+  {
+    calendarName: "Daily Workspace Pnl Holiday Calendar",
+    calendarDescription: "Daily Workspace Pnl Holiday Calendar",
+    businessDate: "25-Dec-2020"
+  }
+];
+
+// Mock data for unique run calendars - matching your API specification
+const MOCK_UNIQUE_RUN_CALENDARS: UniqueRunCalendar[] = [
+  { calendarName: "Daily Named Pnl Holiday Calendar" },
+  { calendarName: "Daily Workspace Pnl Holiday Calendar" },
+  { calendarName: "Netting POC Calendar" }
+];
+
+// Mock data for application-run calendar mappings - matching your API specification
+const MOCK_APPLICATION_RUN_CALENDAR_MAPPINGS: ApplicationRunCalendarMapping[] = [
   {
     applicationId: 1,
     applicationName: "Daily Named Pnl",
@@ -1018,6 +1092,191 @@ class WorkflowService {
         0,
         false,
         error.response?.data?.message || error.message || 'Failed to save application-calendar mapping'
+      );
+    }
+  }
+
+  // ===== RUN CALENDAR MANAGEMENT METHODS =====
+
+  // Get all workflow run calendars
+  async getWorkflowRunCalendars(): Promise<ApiResponse<WorkflowRunCalendar[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for workflow run calendars');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_WORKFLOW_RUN_CALENDARS);
+      }
+
+      console.log('[Workflow Service] Fetching workflow run calendars from API');
+      const response = await this.axiosInstance.get<WorkflowRunCalendar[]>('/GetWorkflowRunCalendarDetails');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching workflow run calendars:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch workflow run calendars'
+      );
+    }
+  }
+
+  // Save/update run calendars
+  async saveRunCalendars(calendars: WorkflowRunCalendar[]): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for run calendars');
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data based on action
+        calendars.forEach(calendar => {
+          if (calendar.action === 3) {
+            // Delete action - remove from mock data
+            const index = MOCK_WORKFLOW_RUN_CALENDARS.findIndex(c => 
+              c.calendarName === calendar.calendarName && 
+              c.businessDate === calendar.businessDate
+            );
+            if (index >= 0) {
+              MOCK_WORKFLOW_RUN_CALENDARS.splice(index, 1);
+            }
+          } else {
+            // Add/update action - add to mock data if not exists
+            const exists = MOCK_WORKFLOW_RUN_CALENDARS.some(c => 
+              c.calendarName === calendar.calendarName && 
+              c.businessDate === calendar.businessDate
+            );
+            if (!exists) {
+              MOCK_WORKFLOW_RUN_CALENDARS.push({
+                calendarName: calendar.calendarName,
+                calendarDescription: calendar.calendarDescription,
+                businessDate: calendar.businessDate
+              });
+            }
+          }
+        });
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      console.log('[Workflow Service] Saving run calendars to API:', calendars);
+      const response = await this.axiosInstance.post<number>('/SetRunCalendar', calendars);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving run calendars:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save run calendars'
+      );
+    }
+  }
+
+  // Get unique run calendars
+  async getUniqueRunCalendars(): Promise<ApiResponse<UniqueRunCalendar[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for unique run calendars');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_UNIQUE_RUN_CALENDARS);
+      }
+
+      console.log('[Workflow Service] Fetching unique run calendars from API');
+      const response = await this.axiosInstance.get<UniqueRunCalendar[]>('/GetWorkflowUniqueRunCalendars');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching unique run calendars:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch unique run calendars'
+      );
+    }
+  }
+
+  // Get application-run calendar mappings
+  async getApplicationRunCalendarMappings(): Promise<ApiResponse<ApplicationRunCalendarMapping[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for application-run calendar mappings');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_APPLICATION_RUN_CALENDAR_MAPPINGS);
+      }
+
+      console.log('[Workflow Service] Fetching application-run calendar mappings from API');
+      const response = await this.axiosInstance.get<ApplicationRunCalendarMapping[]>('/GetWorkflowApplicationToRunCalendarMap');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching application-run calendar mappings:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch application-run calendar mappings'
+      );
+    }
+  }
+
+  // Save application-run calendar mapping
+  async saveApplicationRunCalendarMapping(mapping: RunCalendarSaveRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for application-run calendar mapping');
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data based on action
+        if (mapping.action === 3) {
+          // Delete action - remove from mock data
+          const index = MOCK_APPLICATION_RUN_CALENDAR_MAPPINGS.findIndex(m => 
+            m.applicationId === mapping.applicationId
+          );
+          if (index >= 0) {
+            MOCK_APPLICATION_RUN_CALENDAR_MAPPINGS.splice(index, 1);
+          }
+        } else {
+          // Add/update action
+          const existingIndex = MOCK_APPLICATION_RUN_CALENDAR_MAPPINGS.findIndex(m => 
+            m.applicationId === mapping.applicationId
+          );
+          
+          // Find application name from mock applications
+          const application = MOCK_APPLICATIONS.find(app => app.applicationId === mapping.applicationId);
+          const applicationName = application ? application.name : `Application ${mapping.applicationId}`;
+          
+          const newMapping: ApplicationRunCalendarMapping = {
+            applicationId: mapping.applicationId,
+            applicationName: applicationName,
+            calendarName: mapping.calendarName
+          };
+          
+          if (existingIndex >= 0) {
+            MOCK_APPLICATION_RUN_CALENDAR_MAPPINGS[existingIndex] = newMapping;
+          } else {
+            MOCK_APPLICATION_RUN_CALENDAR_MAPPINGS.push(newMapping);
+          }
+        }
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      console.log('[Workflow Service] Saving application-run calendar mapping to API:', mapping);
+      const response = await this.axiosInstance.post<number>('/SetApplicationToRunCalendarMap', mapping);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving application-run calendar mapping:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save application-run calendar mapping'
       );
     }
   }

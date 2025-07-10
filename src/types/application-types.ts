@@ -170,3 +170,37 @@ export interface SaveCalendarResponse extends ApiResponse<number> {}
 export interface GetUniqueCalendarsResponse extends ApiResponse<UniqueCalendar[]> {}
 export interface GetApplicationCalendarMappingResponse extends ApiResponse<ApplicationCalendarMapping[]> {}
 export interface SaveApplicationCalendarMappingResponse extends ApiResponse<number> {}
+
+// Run Calendar interface matching the API payload structure (same as WorkflowCalendar)
+export interface WorkflowRunCalendar {
+  calendarName: string;
+  calendarDescription: string;
+  businessDate: string; // Format: "DD-MMM-YYYY" (e.g., "25-Dec-2020")
+  action?: number; // 1 = add, 3 = delete (for save operations)
+}
+
+// Unique Run Calendar interface
+export interface UniqueRunCalendar {
+  calendarName: string;
+}
+
+// Application-Run Calendar Mapping interface
+export interface ApplicationRunCalendarMapping {
+  applicationId: number;
+  applicationName: string;
+  calendarName: string;
+}
+
+// Run Calendar save request interface
+export interface RunCalendarSaveRequest {
+  action: number; // 1 = add/update, 3 = delete
+  applicationId: number;
+  calendarName: string;
+}
+
+// Run Calendar service response types
+export interface GetWorkflowRunCalendarsResponse extends ApiResponse<WorkflowRunCalendar[]> {}
+export interface SaveRunCalendarResponse extends ApiResponse<number> {}
+export interface GetUniqueRunCalendarsResponse extends ApiResponse<UniqueRunCalendar[]> {}
+export interface GetApplicationRunCalendarMappingResponse extends ApiResponse<ApplicationRunCalendarMapping[]> {}
+export interface SaveApplicationRunCalendarMappingResponse extends ApiResponse<number> {}
