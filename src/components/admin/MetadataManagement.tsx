@@ -48,7 +48,7 @@ interface Attestation {
 }
 
 interface EmailTemplate {
-  templateld: number;
+  templateId: number;
   name: string;
   emailBody: string;
   ishtml: string;
@@ -63,7 +63,7 @@ interface Substage {
   defaultstage: number;
   attestationMapping: number[];
   paramMapping: number[];
-  templateld: number;
+  templateId: number;
   entitlementMapping: number;
   followUp: string;
   updatedby: string;
@@ -79,6 +79,132 @@ interface ExtendedStage {
   stageId: number;
   name: string;
 }
+
+// Mock data for development
+const mockParameters: Param[] = [
+  {
+    paramId: 1,
+    name: "Upload Timeout",
+    paramType: "upload",
+    description: "Maximum time allowed for file uploads",
+    updatedby: "admin",
+    updatedon: "2024-01-15",
+    value: "300"
+  },
+  {
+    paramId: 2,
+    name: "Default Currency",
+    paramType: "default",
+    description: "Default currency for calculations",
+    updatedby: "system",
+    updatedon: "2024-01-10",
+    value: "USD"
+  },
+  {
+    paramId: 3,
+    name: "Download Path",
+    paramType: "download",
+    description: "Default download directory path",
+    updatedby: "admin",
+    updatedon: "2024-01-12",
+    value: "/downloads"
+  }
+];
+
+const mockAttestations: Attestation[] = [
+  {
+    attestationId: 1,
+    name: "Manager Approval",
+    type: "DEFAULT",
+    updatedby: "admin",
+    updatedon: "2024-01-15"
+  },
+  {
+    attestationId: 2,
+    name: "Compliance Check",
+    type: "DEFAULT",
+    updatedby: "system",
+    updatedon: "2024-01-10"
+  },
+  {
+    attestationId: 3,
+    name: "Risk Assessment",
+    type: "DEFAULT",
+    updatedby: "admin",
+    updatedon: "2024-01-12"
+  }
+];
+
+const mockEmailTemplates: EmailTemplate[] = [
+  {
+    templateId: 1,
+    name: "Welcome Email",
+    emailBody: "<h1>Welcome!</h1><p>Thank you for joining our workflow system.</p>",
+    ishtml: "Y",
+    subject: "Welcome to the System",
+    fromEmailList: "noreply@company.com"
+  },
+  {
+    templateId: 2,
+    name: "Approval Required",
+    emailBody: "Your approval is required for the following item: {ITEM_NAME}",
+    ishtml: "N",
+    subject: "Action Required: Approval Needed",
+    fromEmailList: "workflow@company.com"
+  },
+  {
+    templateId: 3,
+    name: "Process Complete",
+    emailBody: "<h2>Process Completed</h2><p>The workflow process has been successfully completed.</p>",
+    ishtml: "Y",
+    subject: "Process Completion Notification",
+    fromEmailList: "notifications@company.com"
+  }
+];
+
+const mockSubstages: Substage[] = [
+  {
+    substageId: 1,
+    name: "Initial Review",
+    componentname: "/components/review/initial",
+    defaultstage: 1,
+    attestationMapping: [1, 2],
+    paramMapping: [1, 3],
+    templateId: 1,
+    entitlementMapping: 1,
+    followUp: "Y",
+    updatedby: "admin",
+    updatedon: "2024-01-15",
+    expectedduration: "2",
+    expectedtime: "09:00",
+    sendEmailAtStart: "Y",
+    servicelink: "http://api.company.com/review"
+  },
+  {
+    substageId: 2,
+    name: "Manager Approval",
+    componentname: "/components/approval/manager",
+    defaultstage: 2,
+    attestationMapping: [1],
+    paramMapping: [2],
+    templateId: 2,
+    entitlementMapping: 2,
+    followUp: "N",
+    updatedby: "system",
+    updatedon: "2024-01-12",
+    expectedduration: "1",
+    expectedtime: "14:00",
+    sendEmailAtStart: "Y",
+    servicelink: "http://api.company.com/approval"
+  }
+];
+
+const mockRoles = [
+  { roleId: 1, roleName: "Producer" },
+  { roleId: 2, roleName: "Approver" },
+  { roleId: 3, roleName: "Reviewer" },
+  { roleId: 4, roleName: "Administrator" }
+];
 
 const MetadataManagement: React.FC = () => {
   const { currentEnvironment } = useApiEnvironment();
@@ -155,7 +281,7 @@ const MetadataManagement: React.FC = () => {
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const [emailForm, setEmailForm] = useState<EmailTemplate>({
-    templateld: 0,
+    templateId: 0,
     name: '',
     emailBody: '',
     ishtml: 'Y',
@@ -188,7 +314,7 @@ const MetadataManagement: React.FC = () => {
     defaultstage: 0,
     attestationMapping: [],
     paramMapping: [],
-    templateld: 0,
+    templateId: 0,
     entitlementMapping: 0,
     followUp: 'N',
     updatedby: 'system',
@@ -210,8 +336,19 @@ const MetadataManagement: React.FC = () => {
     return currentEnvironment?.baseUrl || 'http://api.com';
   };
 
+  // Check if we should use mock data
+  const shouldUseMockData = () => {
+    return process.env.NEXT_PUBLIC_FORCE_REAL_API !== 'true' && 
+           (currentEnvironment?.name === 'Mock' || !currentEnvironment);
+  };
+
   // Check if app is importing data
   const checkAppImportProgress = async (appId: number) => {
+    if (shouldUseMockData()) {
+      setAppImportStatus(prev => ({ ...prev, [appId]: false }));
+      return false;
+    }
+
     setCheckingImportStatus(prev => ({ ...prev, [appId]: true }));
     try {
       const response = await fetch(`${getDotNetBaseUrl()}/api/workflowapp/${appId}/inProgress`, {
@@ -324,6 +461,11 @@ const MetadataManagement: React.FC = () => {
 
   // Extended metadata API calls with proper CORS configuration
   const fetchParameters = async () => {
+    if (shouldUseMockData()) {
+      setParameters(mockParameters);
+      return;
+    }
+
     try {
       const response = await fetch(`${getJavaBaseUrl()}/api/param`, {
         method: 'GET',
@@ -342,15 +484,22 @@ const MetadataManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching parameters:', error);
+      // Fallback to mock data on error
+      setParameters(mockParameters);
       toast({
-        title: "Error",
-        description: `Failed to fetch parameters: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
+        title: "Using Mock Data",
+        description: "Failed to fetch parameters from API, using mock data for development",
+        variant: "default"
       });
     }
   };
 
   const fetchAttestations = async () => {
+    if (shouldUseMockData()) {
+      setAttestations(mockAttestations);
+      return;
+    }
+
     try {
       const response = await fetch(`${getJavaBaseUrl()}/api/attest?type=DEFAULT`, {
         method: 'GET',
@@ -369,15 +518,22 @@ const MetadataManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching attestations:', error);
+      // Fallback to mock data on error
+      setAttestations(mockAttestations);
       toast({
-        title: "Error",
-        description: `Failed to fetch attestations: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
+        title: "Using Mock Data",
+        description: "Failed to fetch attestations from API, using mock data for development",
+        variant: "default"
       });
     }
   };
 
   const fetchEmailTemplates = async () => {
+    if (shouldUseMockData()) {
+      setEmailTemplates(mockEmailTemplates);
+      return;
+    }
+
     try {
       const response = await fetch(`${getJavaBaseUrl()}/api/email`, {
         method: 'GET',
@@ -396,15 +552,22 @@ const MetadataManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching email templates:', error);
+      // Fallback to mock data on error
+      setEmailTemplates(mockEmailTemplates);
       toast({
-        title: "Error",
-        description: `Failed to fetch email templates: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
+        title: "Using Mock Data",
+        description: "Failed to fetch email templates from API, using mock data for development",
+        variant: "default"
       });
     }
   };
 
   const fetchSubstages = async (stageId: number) => {
+    if (shouldUseMockData()) {
+      setSubstages(mockSubstages);
+      return;
+    }
+
     try {
       const response = await fetch(`${getJavaBaseUrl()}/api/substage?stageId=${stageId}`, {
         method: 'GET',
@@ -423,15 +586,22 @@ const MetadataManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching substages:', error);
+      // Fallback to mock data on error
+      setSubstages(mockSubstages);
       toast({
-        title: "Error",
-        description: `Failed to fetch substages: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
+        title: "Using Mock Data",
+        description: "Failed to fetch substages from API, using mock data for development",
+        variant: "default"
       });
     }
   };
 
   const fetchAvailableRoles = async () => {
+    if (shouldUseMockData()) {
+      setAvailableRoles(mockRoles);
+      return;
+    }
+
     try {
       const response = await fetch(`${getDotNetBaseUrl()}/api/WF/GetWorkflowUniqueRoles`, {
         method: 'GET',
@@ -450,10 +620,12 @@ const MetadataManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching available roles:', error);
+      // Fallback to mock data on error
+      setAvailableRoles(mockRoles);
       toast({
-        title: "Error",
-        description: `Failed to fetch available roles: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
+        title: "Using Mock Data",
+        description: "Failed to fetch roles from API, using mock data for development",
+        variant: "default"
       });
     }
   };
@@ -515,6 +687,23 @@ const MetadataManagement: React.FC = () => {
 
   // Extended metadata save functions with proper CORS configuration
   const saveParameter = async () => {
+    if (shouldUseMockData()) {
+      // Mock save for development
+      const newParam = { ...paramForm, paramId: paramForm.paramId || Date.now() };
+      if (editingParam) {
+        setParameters(prev => prev.map(p => p.paramId === editingParam.paramId ? newParam : p));
+      } else {
+        setParameters(prev => [...prev, newParam]);
+      }
+      toast({
+        title: "Success (Mock)",
+        description: `Parameter ${editingParam ? 'updated' : 'created'} successfully in mock data`
+      });
+      setParamDialogOpen(false);
+      setEditingParam(null);
+      return;
+    }
+
     try {
       const method = editingParam ? 'PUT' : 'POST';
       const url = editingParam 
@@ -554,6 +743,23 @@ const MetadataManagement: React.FC = () => {
   };
 
   const saveAttestation = async () => {
+    if (shouldUseMockData()) {
+      // Mock save for development
+      const newAttestation = { ...attestationForm, attestationId: attestationForm.attestationId || Date.now() };
+      if (editingAttestation) {
+        setAttestations(prev => prev.map(a => a.attestationId === editingAttestation.attestationId ? newAttestation : a));
+      } else {
+        setAttestations(prev => [...prev, newAttestation]);
+      }
+      toast({
+        title: "Success (Mock)",
+        description: `Attestation ${editingAttestation ? 'updated' : 'created'} successfully in mock data`
+      });
+      setAttestationDialogOpen(false);
+      setEditingAttestation(null);
+      return;
+    }
+
     try {
       const method = editingAttestation ? 'PUT' : 'POST';
       const url = editingAttestation 
@@ -593,10 +799,27 @@ const MetadataManagement: React.FC = () => {
   };
 
   const saveEmailTemplate = async () => {
+    if (shouldUseMockData()) {
+      // Mock save for development
+      const newTemplate = { ...emailForm, templateId: emailForm.templateId || Date.now() };
+      if (editingEmail) {
+        setEmailTemplates(prev => prev.map(t => t.templateId === editingEmail.templateId ? newTemplate : t));
+      } else {
+        setEmailTemplates(prev => [...prev, newTemplate]);
+      }
+      toast({
+        title: "Success (Mock)",
+        description: `Email template ${editingEmail ? 'updated' : 'created'} successfully in mock data`
+      });
+      setEmailDialogOpen(false);
+      setEditingEmail(null);
+      return;
+    }
+
     try {
       const method = editingEmail ? 'PUT' : 'POST';
       const url = editingEmail 
-        ? `${getJavaBaseUrl()}/api/email/${editingEmail.templateld}`
+        ? `${getJavaBaseUrl()}/api/email/${editingEmail.templateId}`
         : `${getJavaBaseUrl()}/api/email/`;
 
       const response = await fetch(url, {
@@ -632,6 +855,23 @@ const MetadataManagement: React.FC = () => {
   };
 
   const saveSubstage = async () => {
+    if (shouldUseMockData()) {
+      // Mock save for development
+      const newSubstage = { ...substageForm, substageId: substageForm.substageId || Date.now() };
+      if (editingSubstage) {
+        setSubstages(prev => prev.map(s => s.substageId === editingSubstage.substageId ? newSubstage : s));
+      } else {
+        setSubstages(prev => [...prev, newSubstage]);
+      }
+      toast({
+        title: "Success (Mock)",
+        description: `Substage ${editingSubstage ? 'updated' : 'created'} successfully in mock data`
+      });
+      setSubstageDialogOpen(false);
+      setEditingSubstage(null);
+      return;
+    }
+
     try {
       const method = editingSubstage ? 'PUT' : 'POST';
       const baseUrl = editingSubstage 
@@ -794,7 +1034,7 @@ const MetadataManagement: React.FC = () => {
   const addNewEmailTemplate = () => {
     setEditingEmail(null);
     setEmailForm({
-      templateld: 0,
+      templateId: 0,
       name: '',
       emailBody: '',
       ishtml: 'Y',
@@ -813,7 +1053,7 @@ const MetadataManagement: React.FC = () => {
       defaultstage: selectedStageId || 0,
       attestationMapping: [],
       paramMapping: [],
-      templateld: 0,
+      templateId: 0,
       entitlementMapping: 0,
       followUp: 'N',
       updatedby: 'system',
@@ -853,6 +1093,9 @@ const MetadataManagement: React.FC = () => {
           <h2 className="text-2xl font-bold tracking-tight">Metadata Management</h2>
           <p className="text-muted-foreground">
             Manage workflow applications, stages, parameters, attestations, email templates, and substages
+            {shouldUseMockData() && (
+              <Badge variant="outline" className="ml-2">Using Mock Data</Badge>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1330,7 +1573,7 @@ const MetadataManagement: React.FC = () => {
                     </TableRow>
                   ) : (
                     filteredEmailTemplates.map((template) => (
-                      <TableRow key={template.templateld}>
+                      <TableRow key={template.templateId}>
                         <TableCell className="font-medium pl-6">{template.name}</TableCell>
                         <TableCell className="max-w-md truncate">{template.subject}</TableCell>
                         <TableCell>{template.fromEmailList}</TableCell>
@@ -1557,7 +1800,7 @@ const MetadataManagement: React.FC = () => {
                                     <Badge variant="outline">{defaultStageName}</Badge>
                                   </TableCell>
                                   <TableCell>
-                                    <Badge variant="secondary">{substage.templateld}</Badge>
+                                    <Badge variant="secondary">{substage.templateId}</Badge>
                                   </TableCell>
                                   <TableCell>
                                     <Badge variant="secondary">{substage.entitlementMapping}</Badge>
@@ -1963,8 +2206,8 @@ const MetadataManagement: React.FC = () => {
                   <div>
                     <Label htmlFor="substage-template">Email Template (One-to-One)</Label>
                     <Select 
-                      value={substageForm.templateld.toString()} 
-                      onValueChange={(value) => setSubstageForm({ ...substageForm, templateld: Number(value) })}
+                      value={substageForm.templateId?.toString() || '0'} 
+                      onValueChange={(value) => setSubstageForm({ ...substageForm, templateId: Number(value) })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select email template" />
@@ -1972,7 +2215,7 @@ const MetadataManagement: React.FC = () => {
                       <SelectContent>
                         <SelectItem value="0">None</SelectItem>
                         {emailTemplates.map(template => (
-                          <SelectItem key={template.templateld} value={template.templateld.toString()}>
+                          <SelectItem key={template.templateId} value={template.templateId.toString()}>
                             {template.name}
                           </SelectItem>
                         ))}
@@ -1982,7 +2225,7 @@ const MetadataManagement: React.FC = () => {
                   <div>
                     <Label htmlFor="substage-entitlement">Entitlement</Label>
                     <Select 
-                      value={substageForm.entitlementMapping.toString()} 
+                      value={substageForm.entitlementMapping?.toString() || '0'} 
                       onValueChange={(value) => setSubstageForm({ ...substageForm, entitlementMapping: Number(value) })}
                     >
                       <SelectTrigger>
