@@ -163,6 +163,9 @@ const MetadataManagement: React.FC = () => {
     fromEmailList: ''
   });
 
+  // Available roles state
+  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
+
   // Substages state
   const [substages, setSubstages] = useState<Substage[]>([]);
   const [substageDialogOpen, setSubstageDialogOpen] = useState(false);
@@ -301,7 +304,7 @@ const MetadataManagement: React.FC = () => {
     }
   }, [stageDialogOpen, selectedStage]);
 
-  // Load parameters and attestations when substage dialog opens
+  // Load parameters, attestations, email templates, and roles when substage dialog opens
   useEffect(() => {
     if (substageDialogOpen) {
       if (parameters.length === 0) {
@@ -312,6 +315,9 @@ const MetadataManagement: React.FC = () => {
       }
       if (emailTemplates.length === 0) {
         fetchEmailTemplates();
+      }
+      if (availableRoles.length === 0) {
+        fetchAvailableRoles();
       }
     }
   }, [substageDialogOpen]);
@@ -420,6 +426,33 @@ const MetadataManagement: React.FC = () => {
       toast({
         title: "Error",
         description: `Failed to fetch substages: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const fetchAvailableRoles = async () => {
+    try {
+      const response = await fetch(`${getDotNetBaseUrl()}/api/WF/GetWorkflowUniqueRoles`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include', // .NET service uses Windows authentication
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableRoles(data);
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error fetching available roles:', error);
+      toast({
+        title: "Error",
+        description: `Failed to fetch available roles: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -1947,14 +1980,23 @@ const MetadataManagement: React.FC = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="substage-entitlement">Entitlement (One-to-One)</Label>
-                    <Input
-                      id="substage-entitlement"
-                      type="number"
-                      value={substageForm.entitlementMapping}
-                      onChange={(e) => setSubstageForm({ ...substageForm, entitlementMapping: Number(e.target.value) })}
-                      placeholder="21"
-                    />
+                    <Label htmlFor="substage-entitlement">Entitlement</Label>
+                    <Select 
+                      value={substageForm.entitlementMapping.toString()} 
+                      onValueChange={(value) => setSubstageForm({ ...substageForm, entitlementMapping: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">None</SelectItem>
+                        {availableRoles.map(role => (
+                          <SelectItem key={role.roleId} value={role.roleId.toString()}>
+                            {role.roleName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 
