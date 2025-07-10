@@ -536,7 +536,7 @@ const HolidayCalendarManagement: React.FC = () => {
                           </Badge>
                         )}
                         <Select
-                          value={currentMapping?.calendarName || ''}
+                          value={currentMapping?.calendarName || 'none'}
                           onValueChange={async (value) => {
                             try {
                               const appId = parseInt(app.configId, 10);
@@ -551,7 +551,7 @@ const HolidayCalendarManagement: React.FC = () => {
                                 return;
                               }
 
-                              if (value === '') {
+                              if (value === 'none') {
                                 // Unassign current calendar
                                 if (currentMapping) {
                                   await handleApplicationAssignment(appId, currentMapping.calendarName, false);
@@ -578,7 +578,7 @@ const HolidayCalendarManagement: React.FC = () => {
                             <SelectValue placeholder="Select calendar" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">No Calendar</SelectItem>
+                            <SelectItem value="none">No Calendar</SelectItem>
                             {uniqueCalendars.map((calendar) => (
                               <SelectItem key={calendar.calendarName} value={calendar.calendarName}>
                                 {calendar.calendarName}

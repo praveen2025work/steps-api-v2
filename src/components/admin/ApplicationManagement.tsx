@@ -476,8 +476,8 @@ const ApplicationManagement: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="lockingRole">Locking Role</Label>
                   <Select
-                    value={applicationForm.lockingRole}
-                    onValueChange={(value) => handleApplicationFormChange('lockingRole', value)}
+                    value={applicationForm.lockingRole === 0 ? "none" : String(applicationForm.lockingRole)}
+                    onValueChange={(value) => handleApplicationFormChange('lockingRole', value === "none" ? 0 : value)}
                   >
                     <SelectTrigger id="lockingRole" className="w-full">
                       <SelectValue placeholder="Select a locking role" />
