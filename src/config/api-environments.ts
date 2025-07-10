@@ -118,6 +118,13 @@ export const CORE_API_ENDPOINTS = {
   GET_APPLICATION_RUN_CALENDAR_MAP: '/GetWorkflowApplicationToRunCalendarMap', // For application-run calendar mappings
   SET_APPLICATION_RUN_CALENDAR_MAP: '/SetApplicationToRunCalendarMap', // For saving application-run calendar mappings
   
+  // Hierarchy Management Endpoints
+  GET_UNIQUE_HIERARCHIES: '/GetWorkflowUniqueHierarchy', // For getting unique hierarchies
+  GET_HIERARCHY_DETAILS: '/GetWorkflowHierarchyDetails', // For getting hierarchy details
+  SET_HIERARCHY: '/setHierarchy', // For saving/updating hierarchies
+  GET_APPLICATION_HIERARCHY_MAP: '/GetWorkflowApplicationToHierarchyMap', // For application-hierarchy mappings
+  SET_APPLICATION_HIERARCHY_MAP: '/SetApplicationHierarchyMap', // For saving application-hierarchy mappings
+  
   // Add more endpoints as you provide them
 } as const;
 

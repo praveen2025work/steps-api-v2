@@ -498,7 +498,7 @@ export class ApiClient {
       };
     }
 
-    const endpoint = '/GetWorkflowUniqueHierarchy';
+    const endpoint = CORE_API_ENDPOINTS.GET_UNIQUE_HIERARCHIES;
     return this.makeRequest<UniqueHierarchy[]>(endpoint);
   }
 
@@ -515,7 +515,7 @@ export class ApiClient {
       };
     }
 
-    const endpoint = '/GetWorkflowHierarchyDetails';
+    const endpoint = CORE_API_ENDPOINTS.GET_HIERARCHY_DETAILS;
     return this.makeRequest<HierarchyDetail[]>(endpoint);
   }
 
@@ -533,7 +533,7 @@ export class ApiClient {
       };
     }
 
-    const endpoint = '/setHierarchy';
+    const endpoint = CORE_API_ENDPOINTS.SET_HIERARCHY;
     return this.makeRequest<number>(endpoint, {
       method: 'POST',
       body: JSON.stringify(hierarchyData),
@@ -553,7 +553,7 @@ export class ApiClient {
       };
     }
 
-    const endpoint = '/GetWorkflowApplicationToHierarchyMap';
+    const endpoint = CORE_API_ENDPOINTS.GET_APPLICATION_HIERARCHY_MAP;
     return this.makeRequest<ApplicationToHierarchyMap[]>(endpoint);
   }
 
@@ -571,7 +571,7 @@ export class ApiClient {
       };
     }
 
-    const endpoint = '/SetApplicationHierarchyMap';
+    const endpoint = CORE_API_ENDPOINTS.SET_APPLICATION_HIERARCHY_MAP;
     return this.makeRequest<number>(endpoint, {
       method: 'POST',
       body: JSON.stringify(mappingData),

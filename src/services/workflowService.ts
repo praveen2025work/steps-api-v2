@@ -16,6 +16,13 @@ import {
   ApplicationRunCalendarMapping,
   RunCalendarSaveRequest
 } from '@/types/application-types';
+import { 
+  UniqueHierarchy, 
+  HierarchyDetail, 
+  SetHierarchyRequest, 
+  ApplicationToHierarchyMap, 
+  SetApplicationHierarchyMapRequest 
+} from '@/types/hierarchy-api-types';
 
 // Mock data for development/demo environments
 const MOCK_APPLICATIONS: Application[] = [
@@ -348,6 +355,95 @@ const MOCK_APPLICATION_RUN_CALENDAR_MAPPINGS: ApplicationRunCalendarMapping[] = 
     applicationId: 11,
     applicationName: "Netting Dev",
     calendarName: "Netting POC Calendar"
+  }
+];
+
+// Mock hierarchy data for development/preview environments
+const MOCK_UNIQUE_HIERARCHIES: UniqueHierarchy[] = [
+  { hierarchyId: 12, hierarchyName: "Basel Hierarchy" },
+  { hierarchyId: 9, hierarchyName: "Basel4" },
+  { hierarchyId: 1, hierarchyName: "Daily Named Pnl Hierarchy" },
+  { hierarchyId: 2, hierarchyName: "Daily Workspace Pnl Hierarchy" },
+  { hierarchyId: 14, hierarchyName: "FO Explains processing" },
+  { hierarchyId: 15, hierarchyName: "FOBO processing" },
+  { hierarchyId: 11, hierarchyName: "GAAUTOMATION" },
+  { hierarchyId: 4, hierarchyName: "IPV-3rdLineHierarchy" },
+  { hierarchyId: 10, hierarchyName: "MonthEnd Workspace Pnl Hierarchy" }
+];
+
+const MOCK_HIERARCHY_DETAILS: HierarchyDetail[] = [
+  {
+    hierarchyId: 12,
+    hierarchyName: "Basel Hierarchy",
+    hierarchyDescription: "basel",
+    hierarchyLevel: 1,
+    columnName: "Risk Area",
+    parentHierarchyLevel: 0,
+    parentColumnName: "NA",
+    isUsedForEntitlements: true,
+    isUsedForWorkflowInstance: false
+  },
+  {
+    hierarchyId: 12,
+    hierarchyLevel: 2,
+    columnName: "Milestone",
+    parentHierarchyLevel: 1,
+    parentColumnName: "Risk Area",
+    isUsedForEntitlements: false,
+    isUsedForWorkflowInstance: false
+  },
+  {
+    hierarchyId: 12,
+    hierarchyLevel: 3,
+    columnName: "Taxonomy LO",
+    parentHierarchyLevel: 2,
+    parentColumnName: "Milestone",
+    isUsedForEntitlements: false,
+    isUsedForWorkflowInstance: false
+  },
+  {
+    hierarchyId: 9,
+    hierarchyName: "Basel4",
+    hierarchyDescription: "RegCap",
+    hierarchyLevel: 1,
+    columnName: "Group",
+    parentHierarchyLevel: 0,
+    parentColumnName: "NA",
+    isUsedForEntitlements: true,
+    isUsedForWorkflowInstance: false
+  }
+];
+
+const MOCK_APPLICATION_HIERARCHY_MAP: ApplicationToHierarchyMap[] = [
+  {
+    applicationId: 2,
+    hierarchyId: 2,
+    hierarchyName: "Daily Workspace Pnl Hierarchy",
+    applicationName: "Daily Workspace Pnl"
+  },
+  {
+    applicationId: 16,
+    hierarchyId: 11,
+    hierarchyName: "GAAUTOMATION",
+    applicationName: "G4 Automation"
+  },
+  {
+    applicationId: 15,
+    hierarchyId: 10,
+    hierarchyName: "MonthEnd Workspace Pnl Hierarchy",
+    applicationName: "Month End Workflow"
+  },
+  {
+    applicationId: 1,
+    hierarchyId: 1,
+    hierarchyName: "Daily Named Pnl Hierarchy",
+    applicationName: "Daily Named Pnl"
+  },
+  {
+    applicationId: 14,
+    hierarchyId: 9,
+    hierarchyName: "Basel4",
+    applicationName: "Reg Reporting"
   }
 ];
 
@@ -1277,6 +1373,226 @@ class WorkflowService {
         0,
         false,
         error.response?.data?.message || error.message || 'Failed to save application-run calendar mapping'
+      );
+    }
+  }
+
+  // ===== HIERARCHY MANAGEMENT METHODS =====
+
+  // Get unique hierarchies
+  async getUniqueHierarchies(): Promise<ApiResponse<UniqueHierarchy[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for unique hierarchies');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_UNIQUE_HIERARCHIES);
+      }
+
+      console.log('[Workflow Service] Fetching unique hierarchies from API');
+      const response = await this.axiosInstance.get<UniqueHierarchy[]>('/GetWorkflowUniqueHierarchy');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching unique hierarchies:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch unique hierarchies'
+      );
+    }
+  }
+
+  // Get hierarchy details
+  async getHierarchyDetails(): Promise<ApiResponse<HierarchyDetail[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for hierarchy details');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_HIERARCHY_DETAILS);
+      }
+
+      console.log('[Workflow Service] Fetching hierarchy details from API');
+      const response = await this.axiosInstance.get<HierarchyDetail[]>('/GetWorkflowHierarchyDetails');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching hierarchy details:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch hierarchy details'
+      );
+    }
+  }
+
+  // Set/Update hierarchy
+  async setHierarchy(hierarchyData: SetHierarchyRequest[]): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for hierarchy');
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data based on action
+        hierarchyData.forEach(hierarchy => {
+          if (hierarchy.action === 3) {
+            // Delete action - remove from mock data
+            const hierarchyIndex = MOCK_UNIQUE_HIERARCHIES.findIndex(h => h.hierarchyId === hierarchy.hierarchyId);
+            if (hierarchyIndex >= 0) {
+              MOCK_UNIQUE_HIERARCHIES.splice(hierarchyIndex, 1);
+            }
+            
+            // Remove from details
+            const detailsToRemove = MOCK_HIERARCHY_DETAILS.filter(d => d.hierarchyId === hierarchy.hierarchyId);
+            detailsToRemove.forEach(detail => {
+              const detailIndex = MOCK_HIERARCHY_DETAILS.indexOf(detail);
+              if (detailIndex >= 0) {
+                MOCK_HIERARCHY_DETAILS.splice(detailIndex, 1);
+              }
+            });
+          } else {
+            // Add/update action
+            const existingHierarchyIndex = MOCK_UNIQUE_HIERARCHIES.findIndex(h => h.hierarchyId === hierarchy.hierarchyId);
+            if (existingHierarchyIndex >= 0) {
+              MOCK_UNIQUE_HIERARCHIES[existingHierarchyIndex].hierarchyName = hierarchy.hierarchyName;
+            } else if (hierarchy.action === 1) {
+              // Add new hierarchy
+              const newHierarchyId = Math.max(...MOCK_UNIQUE_HIERARCHIES.map(h => h.hierarchyId), 0) + 1;
+              MOCK_UNIQUE_HIERARCHIES.push({
+                hierarchyId: newHierarchyId,
+                hierarchyName: hierarchy.hierarchyName
+              });
+              hierarchy.hierarchyId = newHierarchyId;
+            }
+            
+            // Update hierarchy details
+            const existingDetailIndex = MOCK_HIERARCHY_DETAILS.findIndex(d => 
+              d.hierarchyId === hierarchy.hierarchyId && d.hierarchyLevel === hierarchy.hierarchyLevel
+            );
+            
+            const detailData: HierarchyDetail = {
+              hierarchyId: hierarchy.hierarchyId,
+              hierarchyName: hierarchy.hierarchyName,
+              hierarchyDescription: hierarchy.hierarchyDescription,
+              hierarchyLevel: hierarchy.hierarchyLevel,
+              columnName: hierarchy.columnName,
+              parentHierarchyLevel: hierarchy.parentHierarchyLevel,
+              parentColumnName: hierarchy.parentcolumnName,
+              isUsedForEntitlements: hierarchy.isUsedForEntitlements,
+              isUsedForWorkflowInstance: hierarchy.isUsedForworkflowInstance
+            };
+            
+            if (existingDetailIndex >= 0) {
+              MOCK_HIERARCHY_DETAILS[existingDetailIndex] = detailData;
+            } else {
+              MOCK_HIERARCHY_DETAILS.push(detailData);
+            }
+          }
+        });
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      console.log('[Workflow Service] Saving hierarchy to API:', hierarchyData);
+      const response = await this.axiosInstance.post<number>('/setHierarchy', hierarchyData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving hierarchy:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save hierarchy'
+      );
+    }
+  }
+
+  // Get application to hierarchy map
+  async getApplicationToHierarchyMap(): Promise<ApiResponse<ApplicationToHierarchyMap[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for application-hierarchy mappings');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_APPLICATION_HIERARCHY_MAP);
+      }
+
+      console.log('[Workflow Service] Fetching application-hierarchy mappings from API');
+      const response = await this.axiosInstance.get<ApplicationToHierarchyMap[]>('/GetWorkflowApplicationToHierarchyMap');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching application-hierarchy mappings:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch application-hierarchy mappings'
+      );
+    }
+  }
+
+  // Set application to hierarchy map
+  async setApplicationHierarchyMap(mappingData: SetApplicationHierarchyMapRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock save for application-hierarchy mapping');
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data based on action
+        if (mappingData.action === 3) {
+          // Delete action - remove from mock data
+          const index = MOCK_APPLICATION_HIERARCHY_MAP.findIndex(m => 
+            m.applicationId === mappingData.applicationId && m.hierarchyId === mappingData.hierarchyId
+          );
+          if (index >= 0) {
+            MOCK_APPLICATION_HIERARCHY_MAP.splice(index, 1);
+          }
+        } else {
+          // Add/update action
+          const existingIndex = MOCK_APPLICATION_HIERARCHY_MAP.findIndex(m => 
+            m.applicationId === mappingData.applicationId
+          );
+          
+          // Find application name from mock applications
+          const application = MOCK_APPLICATIONS.find(app => app.applicationId === mappingData.applicationId);
+          const applicationName = application ? application.name : `Application ${mappingData.applicationId}`;
+          
+          // Find hierarchy name from mock hierarchies
+          const hierarchy = MOCK_UNIQUE_HIERARCHIES.find(h => h.hierarchyId === mappingData.hierarchyId);
+          const hierarchyName = hierarchy ? hierarchy.hierarchyName : `Hierarchy ${mappingData.hierarchyId}`;
+          
+          const newMapping: ApplicationToHierarchyMap = {
+            applicationId: mappingData.applicationId,
+            hierarchyId: mappingData.hierarchyId,
+            applicationName: applicationName,
+            hierarchyName: hierarchyName
+          };
+          
+          if (existingIndex >= 0) {
+            MOCK_APPLICATION_HIERARCHY_MAP[existingIndex] = newMapping;
+          } else {
+            MOCK_APPLICATION_HIERARCHY_MAP.push(newMapping);
+          }
+        }
+        
+        // Simulate successful save by returning 1
+        return this.createApiResponse(1);
+      }
+
+      console.log('[Workflow Service] Saving application-hierarchy mapping to API:', mappingData);
+      const response = await this.axiosInstance.post<number>('/SetApplicationHierarchyMap', mappingData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error saving application-hierarchy mapping:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to save application-hierarchy mapping'
       );
     }
   }

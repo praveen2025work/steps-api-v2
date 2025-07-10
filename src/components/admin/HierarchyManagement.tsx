@@ -51,7 +51,7 @@ import {
   Layers
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { useApiClient, UniqueApplication } from '@/lib/api-client';
+import { useHierarchyManagement } from '@/hooks/useHierarchyService';
 import { 
   UniqueHierarchy, 
   HierarchyDetail, 
@@ -65,19 +65,24 @@ import {
 } from '@/types/hierarchy-api-types';
 
 const HierarchyManagement: React.FC = () => {
-  const apiClient = useApiClient();
+  const {
+    uniqueHierarchies,
+    hierarchyDetails,
+    applicationMappings,
+    uniqueApplications,
+    loading,
+    error,
+    saveHierarchy: saveHierarchyHook,
+    saveMapping: saveMappingHook,
+    refreshAll
+  } = useHierarchyManagement();
   
   // State management
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('hierarchies');
   
   // Data state
-  const [uniqueHierarchies, setUniqueHierarchies] = useState<UniqueHierarchy[]>([]);
-  const [hierarchyDetails, setHierarchyDetails] = useState<HierarchyDetail[]>([]);
-  const [applicationMappings, setApplicationMappings] = useState<ApplicationToHierarchyMap[]>([]);
   const [hierarchyStructures, setHierarchyStructures] = useState<HierarchyStructure[]>([]);
-  const [uniqueApplications, setUniqueApplications] = useState<UniqueApplication[]>([]);
   
   // Dialog states
   const [hierarchyDialogOpen, setHierarchyDialogOpen] = useState(false);
@@ -110,76 +115,21 @@ const HierarchyManagement: React.FC = () => {
     hierarchyId: 0
   });
 
-  // Load data on component mount
-  useEffect(() => {
-    loadAllData();
-  }, []);
-
   // Combine data into hierarchy structures
   useEffect(() => {
     combineHierarchyData();
   }, [uniqueHierarchies, hierarchyDetails, applicationMappings]);
 
-  // Load all hierarchy data
-  const loadAllData = async () => {
-    setLoading(true);
-    try {
-      const [hierarchiesResponse, detailsResponse, mappingsResponse, applicationsResponse] = await Promise.all([
-        apiClient.getUniqueHierarchies(),
-        apiClient.getHierarchyDetails(),
-        apiClient.getApplicationToHierarchyMap(),
-        apiClient.getUniqueApplications()
-      ]);
-
-      if (hierarchiesResponse.success) {
-        setUniqueHierarchies(hierarchiesResponse.data);
-      } else {
-        toast({
-          title: "Error Loading Hierarchies",
-          description: hierarchiesResponse.error || "Failed to load unique hierarchies",
-          variant: "destructive"
-        });
-      }
-
-      if (detailsResponse.success) {
-        setHierarchyDetails(detailsResponse.data);
-      } else {
-        toast({
-          title: "Error Loading Hierarchy Details",
-          description: detailsResponse.error || "Failed to load hierarchy details",
-          variant: "destructive"
-        });
-      }
-
-      if (mappingsResponse.success) {
-        setApplicationMappings(mappingsResponse.data);
-      } else {
-        toast({
-          title: "Error Loading Application Mappings",
-          description: mappingsResponse.error || "Failed to load application mappings",
-          variant: "destructive"
-        });
-      }
-
-      if (applicationsResponse.success) {
-        setUniqueApplications(applicationsResponse.data);
-      } else {
-        toast({
-          title: "Error Loading Applications",
-          description: applicationsResponse.error || "Failed to load unique applications",
-          variant: "destructive"
-        });
-      }
-    } catch (error: any) {
+  // Show error toast when error occurs
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Error Loading Data",
-        description: error.message || "An unexpected error occurred",
+        description: error,
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [error]);
 
   // Combine data into structured format
   const combineHierarchyData = () => {
@@ -261,7 +211,7 @@ const HierarchyManagement: React.FC = () => {
   };
 
   // Save hierarchy
-  const saveHierarchy = async () => {
+  const handleSaveHierarchy = async () => {
     if (!hierarchyForm.hierarchyName.trim()) {
       toast({
         title: "Validation Error",
@@ -271,7 +221,6 @@ const HierarchyManagement: React.FC = () => {
       return;
     }
 
-    setLoading(true);
     try {
       const hierarchyData: SetHierarchyRequest[] = [{
         action: selectedHierarchy ? 2 : 1, // 2 = Update, 1 = Add
@@ -286,9 +235,9 @@ const HierarchyManagement: React.FC = () => {
         isUsedForworkflowInstance: false
       }];
 
-      const response = await apiClient.setHierarchy(hierarchyData);
+      const success = await saveHierarchyHook(hierarchyData);
       
-      if (response.success) {
+      if (success) {
         toast({
           title: selectedHierarchy ? "Hierarchy Updated" : "Hierarchy Created",
           description: `Hierarchy "${hierarchyForm.hierarchyName}" has been ${selectedHierarchy ? 'updated' : 'created'} successfully.`
@@ -297,13 +246,6 @@ const HierarchyManagement: React.FC = () => {
         setHierarchyDialogOpen(false);
         resetHierarchyForm();
         setSelectedHierarchy(null);
-        await loadAllData();
-      } else {
-        toast({
-          title: "Error Saving Hierarchy",
-          description: response.error || "Failed to save hierarchy",
-          variant: "destructive"
-        });
       }
     } catch (error: any) {
       toast({
@@ -311,13 +253,11 @@ const HierarchyManagement: React.FC = () => {
         description: error.message || "An unexpected error occurred",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   // Save hierarchy level
-  const saveLevel = async () => {
+  const handleSaveLevel = async () => {
     if (!levelForm.columnName.trim() || !selectedHierarchy) {
       toast({
         title: "Validation Error",
@@ -327,7 +267,6 @@ const HierarchyManagement: React.FC = () => {
       return;
     }
 
-    setLoading(true);
     try {
       const levelData: SetHierarchyRequest[] = [{
         action: selectedLevel ? 2 : 1, // 2 = Update, 1 = Add
@@ -342,9 +281,9 @@ const HierarchyManagement: React.FC = () => {
         isUsedForworkflowInstance: levelForm.isUsedForWorkflowInstance
       }];
 
-      const response = await apiClient.setHierarchy(levelData);
+      const success = await saveHierarchyHook(levelData);
       
-      if (response.success) {
+      if (success) {
         toast({
           title: selectedLevel ? "Level Updated" : "Level Added",
           description: `Hierarchy level "${levelForm.columnName}" has been ${selectedLevel ? 'updated' : 'added'} successfully.`
@@ -353,13 +292,6 @@ const HierarchyManagement: React.FC = () => {
         setLevelDialogOpen(false);
         resetLevelForm();
         setSelectedLevel(null);
-        await loadAllData();
-      } else {
-        toast({
-          title: "Error Saving Level",
-          description: response.error || "Failed to save hierarchy level",
-          variant: "destructive"
-        });
       }
     } catch (error: any) {
       toast({
@@ -367,13 +299,11 @@ const HierarchyManagement: React.FC = () => {
         description: error.message || "An unexpected error occurred",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   // Save application mapping
-  const saveMapping = async () => {
+  const handleSaveMapping = async () => {
     if (mappingForm.applicationId === 0 || mappingForm.hierarchyId === 0) {
       toast({
         title: "Validation Error",
@@ -383,7 +313,6 @@ const HierarchyManagement: React.FC = () => {
       return;
     }
 
-    setLoading(true);
     try {
       const mappingData: SetApplicationHierarchyMapRequest = {
         action: 1, // 1 = Add
@@ -391,9 +320,9 @@ const HierarchyManagement: React.FC = () => {
         hierarchyId: mappingForm.hierarchyId
       };
 
-      const response = await apiClient.setApplicationHierarchyMap(mappingData);
+      const success = await saveMappingHook(mappingData);
       
-      if (response.success) {
+      if (success) {
         toast({
           title: "Mapping Created",
           description: "Application to hierarchy mapping has been created successfully."
@@ -401,13 +330,6 @@ const HierarchyManagement: React.FC = () => {
         
         setMappingDialogOpen(false);
         resetMappingForm();
-        await loadAllData();
-      } else {
-        toast({
-          title: "Error Saving Mapping",
-          description: response.error || "Failed to save application mapping",
-          variant: "destructive"
-        });
       }
     } catch (error: any) {
       toast({
@@ -415,14 +337,11 @@ const HierarchyManagement: React.FC = () => {
         description: error.message || "An unexpected error occurred",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   // Delete item
   const confirmDelete = async () => {
-    setLoading(true);
     try {
       if (itemToDelete.type === 'hierarchy') {
         // Delete hierarchy - this would require implementing delete functionality
@@ -447,8 +366,6 @@ const HierarchyManagement: React.FC = () => {
         description: error.message || "An unexpected error occurred",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -512,7 +429,7 @@ const HierarchyManagement: React.FC = () => {
         </div>
         
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={loadAllData} disabled={loading}>
+          <Button variant="outline" onClick={refreshAll} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -735,7 +652,7 @@ const HierarchyManagement: React.FC = () => {
             <Button variant="outline" onClick={() => setHierarchyDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={saveHierarchy} disabled={loading}>
+            <Button onClick={handleSaveHierarchy} disabled={loading}>
               {loading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
               {selectedHierarchy ? 'Update Hierarchy' : 'Create Hierarchy'}
             </Button>
@@ -827,7 +744,7 @@ const HierarchyManagement: React.FC = () => {
             <Button variant="outline" onClick={() => setLevelDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={saveLevel} disabled={loading}>
+            <Button onClick={handleSaveLevel} disabled={loading}>
               {loading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
               {selectedLevel ? 'Update Level' : 'Add Level'}
             </Button>
@@ -891,7 +808,7 @@ const HierarchyManagement: React.FC = () => {
             <Button variant="outline" onClick={() => setMappingDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={saveMapping} disabled={loading}>
+            <Button onClick={handleSaveMapping} disabled={loading}>
               {loading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
               Create Mapping
             </Button>
