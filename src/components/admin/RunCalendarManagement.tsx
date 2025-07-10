@@ -537,7 +537,7 @@ const RunCalendarManagement: React.FC = () => {
                           </Badge>
                         )}
                         <Select
-                          value={currentMapping?.calendarName || ''}
+                          value={currentMapping?.calendarName || 'none'}
                           onValueChange={async (value) => {
                             try {
                               const appId = parseInt(app.configId, 10);
@@ -552,7 +552,7 @@ const RunCalendarManagement: React.FC = () => {
                                 return;
                               }
 
-                              if (value === '') {
+                              if (value === 'none') {
                                 // Unassign current calendar
                                 if (currentMapping) {
                                   await handleApplicationAssignment(appId, currentMapping.calendarName, false);
@@ -579,7 +579,7 @@ const RunCalendarManagement: React.FC = () => {
                             <SelectValue placeholder="Select run calendar" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">No Run Calendar</SelectItem>
+                            <SelectItem value="none">No Run Calendar</SelectItem>
                             {uniqueRunCalendars.map((calendar) => (
                               <SelectItem key={calendar.calendarName} value={calendar.calendarName}>
                                 {calendar.calendarName}
