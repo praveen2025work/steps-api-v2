@@ -1,4 +1,11 @@
 import { ApiEnvironment, getCurrentEnvironment, CORE_API_ENDPOINTS } from '@/config/api-environments';
+import { 
+  UniqueHierarchy, 
+  HierarchyDetail, 
+  SetHierarchyRequest, 
+  ApplicationToHierarchyMap, 
+  SetApplicationHierarchyMapRequest 
+} from '@/types/hierarchy-api-types';
 
 // Application interface based on your API response
 export interface WorkflowApplication {
@@ -106,6 +113,95 @@ const MOCK_PARAMETERS: ApplicationParameter[] = [
     active: "Y",
     updatedBy: "jane.smith",
     ignore: "N"
+  }
+];
+
+// Mock hierarchy data for development/preview environments
+const MOCK_UNIQUE_HIERARCHIES: UniqueHierarchy[] = [
+  { hierarchyId: 12, hierarchyName: "Basel Hierarchy" },
+  { hierarchyId: 9, hierarchyName: "Basel4" },
+  { hierarchyId: 1, hierarchyName: "Daily Named Pnl Hierarchy" },
+  { hierarchyId: 2, hierarchyName: "Daily Workspace Pnl Hierarchy" },
+  { hierarchyId: 14, hierarchyName: "FO Explains processing" },
+  { hierarchyId: 15, hierarchyName: "FOBO processing" },
+  { hierarchyId: 11, hierarchyName: "GAAUTOMATION" },
+  { hierarchyId: 4, hierarchyName: "IPV-3rdLineHierarchy" },
+  { hierarchyId: 10, hierarchyName: "MonthEnd Workspace Pnl Hierarchy" }
+];
+
+const MOCK_HIERARCHY_DETAILS: HierarchyDetail[] = [
+  {
+    hierarchyId: 12,
+    hierarchyName: "Basel Hierarchy",
+    hierarchyDescription: "basel",
+    hierarchyLevel: 1,
+    columnName: "Risk Area",
+    parentHierarchyLevel: 0,
+    parentColumnName: "NA",
+    isUsedForEntitlements: true,
+    isUsedForWorkflowInstance: false
+  },
+  {
+    hierarchyId: 12,
+    hierarchyLevel: 2,
+    columnName: "Milestone",
+    parentHierarchyLevel: 1,
+    parentColumnName: "Risk Area",
+    isUsedForEntitlements: false,
+    isUsedForWorkflowInstance: false
+  },
+  {
+    hierarchyId: 12,
+    hierarchyLevel: 3,
+    columnName: "Taxonomy LO",
+    parentHierarchyLevel: 2,
+    parentColumnName: "Milestone",
+    isUsedForEntitlements: false,
+    isUsedForWorkflowInstance: false
+  },
+  {
+    hierarchyId: 9,
+    hierarchyName: "Basel4",
+    hierarchyDescription: "RegCap",
+    hierarchyLevel: 1,
+    columnName: "Group",
+    parentHierarchyLevel: 0,
+    parentColumnName: "NA",
+    isUsedForEntitlements: true,
+    isUsedForWorkflowInstance: false
+  }
+];
+
+const MOCK_APPLICATION_HIERARCHY_MAP: ApplicationToHierarchyMap[] = [
+  {
+    applicationId: 2,
+    hierarchyId: 2,
+    hierarchyName: "Daily Workspace Pnl Hierarchy",
+    applicationName: "Daily Workspace Pnl"
+  },
+  {
+    applicationId: 16,
+    hierarchyId: 11,
+    hierarchyName: "GAAUTOMATION",
+    applicationName: "G4 Automation"
+  },
+  {
+    applicationId: 15,
+    hierarchyId: 10,
+    hierarchyName: "MonthEnd Workspace Pnl Hierarchy",
+    applicationName: "Month End Workflow"
+  },
+  {
+    applicationId: 1,
+    hierarchyId: 1,
+    hierarchyName: "Daily Named Pnl Hierarchy",
+    applicationName: "Daily Named Pnl"
+  },
+  {
+    applicationId: 14,
+    hierarchyId: 9,
+    hierarchyName: "Basel4",
+    applicationName: "Reg Reporting"
   }
 ];
 
@@ -354,6 +450,101 @@ export class ApiClient {
         environment: this.environment.name,
       };
     }
+  }
+
+  // ===== HIERARCHY API METHODS =====
+
+  // Get unique hierarchies
+  async getUniqueHierarchies(): Promise<ApiResponse<UniqueHierarchy[]>> {
+    if (isDevelopmentMode()) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      return {
+        data: MOCK_UNIQUE_HIERARCHIES,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `${this.environment.name} (Mock Data)`,
+      };
+    }
+
+    const endpoint = '/GetWorkflowUniqueHierarchy';
+    return this.makeRequest<UniqueHierarchy[]>(endpoint);
+  }
+
+  // Get hierarchy details
+  async getHierarchyDetails(): Promise<ApiResponse<HierarchyDetail[]>> {
+    if (isDevelopmentMode()) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      return {
+        data: MOCK_HIERARCHY_DETAILS,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `${this.environment.name} (Mock Data)`,
+      };
+    }
+
+    const endpoint = '/GetWorkflowHierarchyDetails';
+    return this.makeRequest<HierarchyDetail[]>(endpoint);
+  }
+
+  // Set/Update hierarchy
+  async setHierarchy(hierarchyData: SetHierarchyRequest[]): Promise<ApiResponse<number>> {
+    if (isDevelopmentMode()) {
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      // Simulate success response (API returns 1 for success)
+      return {
+        data: 1,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `${this.environment.name} (Mock Data)`,
+      };
+    }
+
+    const endpoint = '/setHierarchy';
+    return this.makeRequest<number>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(hierarchyData),
+    });
+  }
+
+  // Get application to hierarchy map
+  async getApplicationToHierarchyMap(): Promise<ApiResponse<ApplicationToHierarchyMap[]>> {
+    if (isDevelopmentMode()) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      return {
+        data: MOCK_APPLICATION_HIERARCHY_MAP,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `${this.environment.name} (Mock Data)`,
+      };
+    }
+
+    const endpoint = '/GetWorkflowApplicationToHierarchyMap';
+    return this.makeRequest<ApplicationToHierarchyMap[]>(endpoint);
+  }
+
+  // Set application to hierarchy map
+  async setApplicationHierarchyMap(mappingData: SetApplicationHierarchyMapRequest): Promise<ApiResponse<number>> {
+    if (isDevelopmentMode()) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Simulate success response (API returns 1 for success)
+      return {
+        data: 1,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `${this.environment.name} (Mock Data)`,
+      };
+    }
+
+    const endpoint = '/SetApplicationHierarchyMap';
+    return this.makeRequest<number>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(mappingData),
+    });
   }
 }
 
