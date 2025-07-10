@@ -361,24 +361,30 @@ const HolidayCalendarManagement: React.FC = () => {
   // Handle application assignment
   const handleApplicationAssignment = async (applicationId: number, calendarName: string, isAssigned: boolean) => {
     try {
+      console.log('[HolidayCalendarManagement] Handling assignment:', { applicationId, calendarName, isAssigned });
+      
       const mapping: CalendarSaveRequest = {
         action: isAssigned ? 1 : 3, // 1 = assign, 3 = unassign
         applicationId: applicationId,
         calendarName: calendarName
       };
 
+      console.log('[HolidayCalendarManagement] Sending mapping request:', mapping);
       const response = await workflowService.saveApplicationCalendarMapping(mapping);
+      
+      console.log('[HolidayCalendarManagement] Response received:', response);
       
       if (response.success) {
         toast({
           title: "Success",
           description: `Application ${isAssigned ? 'assigned to' : 'unassigned from'} calendar successfully.`
         });
-        loadData(); // Reload data
+        await loadData(); // Reload data
       } else {
         throw new Error(response.error || 'Failed to update assignment');
       }
     } catch (error: any) {
+      console.error('[HolidayCalendarManagement] Assignment error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update application assignment",
@@ -531,15 +537,40 @@ const HolidayCalendarManagement: React.FC = () => {
                         )}
                         <Select
                           value={currentMapping?.calendarName || ''}
-                          onValueChange={(value) => {
-                            if (value === '') {
-                              // Unassign current calendar
-                              if (currentMapping) {
-                                handleApplicationAssignment(parseInt(app.configId), currentMapping.calendarName, false);
+                          onValueChange={async (value) => {
+                            try {
+                              const appId = parseInt(app.configId, 10);
+                              
+                              if (isNaN(appId)) {
+                                console.error('[HolidayCalendarManagement] Invalid application ID:', app.configId);
+                                toast({
+                                  title: "Error",
+                                  description: "Invalid application ID",
+                                  variant: "destructive"
+                                });
+                                return;
                               }
-                            } else {
-                              // Assign new calendar
-                              handleApplicationAssignment(parseInt(app.configId), value, true);
+
+                              if (value === '') {
+                                // Unassign current calendar
+                                if (currentMapping) {
+                                  await handleApplicationAssignment(appId, currentMapping.calendarName, false);
+                                }
+                              } else {
+                                // First unassign current calendar if exists
+                                if (currentMapping && currentMapping.calendarName !== value) {
+                                  await handleApplicationAssignment(appId, currentMapping.calendarName, false);
+                                }
+                                // Then assign new calendar
+                                await handleApplicationAssignment(appId, value, true);
+                              }
+                            } catch (error: any) {
+                              console.error('[HolidayCalendarManagement] Select change error:', error);
+                              toast({
+                                title: "Error",
+                                description: "Failed to update calendar assignment",
+                                variant: "destructive"
+                              });
                             }
                           }}
                         >
