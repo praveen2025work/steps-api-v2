@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, RefreshCw, AlertCircle, Loader2, Lock, Unlock, Search, Save, Database, Mail, Settings, FileText, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, RefreshCw, AlertCircle, Loader2, Lock, Unlock, Search, Save, Database, Mail, Settings, FileText, CheckCircle, Eye } from 'lucide-react';
 import { useMetadataManagement } from '@/hooks/useMetadataManagement';
 import { useApiEnvironment } from '@/contexts/ApiEnvironmentContext';
 import { toast } from '@/components/ui/use-toast';
@@ -140,7 +140,7 @@ const MetadataManagement: React.FC = () => {
   const [attestationForm, setAttestationForm] = useState<Attestation>({
     attestationId: 0,
     name: '',
-    type: 'default',
+    type: 'DEFAULT',
     updatedby: 'system',
     updatedon: ''
   });
@@ -149,6 +149,8 @@ const MetadataManagement: React.FC = () => {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [editingEmail, setEditingEmail] = useState<EmailTemplate | null>(null);
+  const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const [emailForm, setEmailForm] = useState<EmailTemplate>({
     templateld: 0,
     name: '',
@@ -604,13 +606,19 @@ const MetadataManagement: React.FC = () => {
   // Edit functions for extended metadata
   const editParameter = (param: Param) => {
     setEditingParam(param);
-    setParamForm(param);
+    setParamForm({
+      ...param,
+      paramType: param.paramType || 'default' // Ensure type is loaded
+    });
     setParamDialogOpen(true);
   };
 
   const editAttestation = (attestation: Attestation) => {
     setEditingAttestation(attestation);
-    setAttestationForm(attestation);
+    setAttestationForm({
+      ...attestation,
+      type: attestation.type || 'DEFAULT' // Ensure type is loaded
+    });
     setAttestationDialogOpen(true);
   };
 
@@ -624,6 +632,12 @@ const MetadataManagement: React.FC = () => {
     setEditingSubstage(substage);
     setSubstageForm(substage);
     setSubstageDialogOpen(true);
+  };
+
+  // Preview email template
+  const previewEmail = (template: EmailTemplate) => {
+    setPreviewTemplate(template);
+    setEmailPreviewOpen(true);
   };
 
   // Add new functions for extended metadata
@@ -646,7 +660,7 @@ const MetadataManagement: React.FC = () => {
     setAttestationForm({
       attestationId: 0,
       name: '',
-      type: 'default',
+      type: 'DEFAULT',
       updatedby: 'system',
       updatedon: ''
     });
@@ -1033,58 +1047,56 @@ const MetadataManagement: React.FC = () => {
                 Add Parameter
               </Button>
             </CardHeader>
-            <CardContent>
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-6">Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Updated By</TableHead>
+                    <TableHead>Updated On</TableHead>
+                    <TableHead className="text-right pr-6">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Updated By</TableHead>
-                      <TableHead>Updated On</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableCell colSpan={6} className="text-center py-6">
+                        Loading parameters...
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-6">
-                          Loading parameters...
+                  ) : filteredParameters.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        No parameters found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredParameters.map((param) => (
+                      <TableRow key={param.paramId}>
+                        <TableCell className="font-medium pl-6">{param.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{param.paramType}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-md truncate">{param.description}</TableCell>
+                        <TableCell>{param.updatedby}</TableCell>
+                        <TableCell>{param.updatedon ? new Date(param.updatedon).toLocaleDateString() : 'N/A'}</TableCell>
+                        <TableCell className="text-right pr-6">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => editParameter(param)}
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    ) : filteredParameters.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                          No parameters found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredParameters.map((param) => (
-                        <TableRow key={param.paramId}>
-                          <TableCell className="font-medium">{param.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{param.paramType}</Badge>
-                          </TableCell>
-                          <TableCell className="max-w-md truncate">{param.description}</TableCell>
-                          <TableCell>{param.updatedby}</TableCell>
-                          <TableCell>{param.updatedon ? new Date(param.updatedon).toLocaleDateString() : 'N/A'}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => editParameter(param)}
-                            >
-                              <Edit className="h-3 w-3 mr-1" />
-                              Edit
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1095,63 +1107,61 @@ const MetadataManagement: React.FC = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Attestations Management</CardTitle>
-                <CardDescription>Manage default attestations for workflow processes</CardDescription>
+                <CardDescription>Manage attestations for workflow processes</CardDescription>
               </div>
               <Button onClick={addNewAttestation}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Attestation
               </Button>
             </CardHeader>
-            <CardContent>
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-6">Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Updated By</TableHead>
+                    <TableHead>Updated On</TableHead>
+                    <TableHead className="text-right pr-6">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Updated By</TableHead>
-                      <TableHead>Updated On</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableCell colSpan={5} className="text-center py-6">
+                        Loading attestations...
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-6">
-                          Loading attestations...
+                  ) : filteredAttestations.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        No attestations found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAttestations.map((attestation) => (
+                      <TableRow key={attestation.attestationId}>
+                        <TableCell className="font-medium pl-6">{attestation.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{attestation.type}</Badge>
+                        </TableCell>
+                        <TableCell>{attestation.updatedby}</TableCell>
+                        <TableCell>{new Date(attestation.updatedon).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right pr-6">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => editAttestation(attestation)}
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    ) : filteredAttestations.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                          No attestations found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredAttestations.map((attestation) => (
-                        <TableRow key={attestation.attestationId}>
-                          <TableCell className="font-medium">{attestation.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{attestation.type}</Badge>
-                          </TableCell>
-                          <TableCell>{attestation.updatedby}</TableCell>
-                          <TableCell>{new Date(attestation.updatedon).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => editAttestation(attestation)}
-                            >
-                              <Edit className="h-3 w-3 mr-1" />
-                              Edit
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1162,50 +1172,58 @@ const MetadataManagement: React.FC = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Email Templates Management</CardTitle>
-                <CardDescription>Manage email templates for workflow notifications</CardDescription>
+                <CardDescription>Manage email templates for workflow notifications (Template ID represents email list)</CardDescription>
               </div>
               <Button onClick={addNewEmailTemplate}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Template
               </Button>
             </CardHeader>
-            <CardContent>
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-6">Name</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>From Email List</TableHead>
+                    <TableHead>HTML</TableHead>
+                    <TableHead className="text-right pr-6">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>From Email</TableHead>
-                      <TableHead>HTML</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableCell colSpan={5} className="text-center py-6">
+                        Loading email templates...
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-6">
-                          Loading email templates...
+                  ) : filteredEmailTemplates.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        No email templates found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredEmailTemplates.map((template) => (
+                      <TableRow key={template.templateld}>
+                        <TableCell className="font-medium pl-6">{template.name}</TableCell>
+                        <TableCell className="max-w-md truncate">{template.subject}</TableCell>
+                        <TableCell>{template.fromEmailList}</TableCell>
+                        <TableCell>
+                          <Badge variant={template.ishtml === 'Y' ? 'default' : 'secondary'}>
+                            {template.ishtml === 'Y' ? 'HTML' : 'Text'}
+                          </Badge>
                         </TableCell>
-                      </TableRow>
-                    ) : filteredEmailTemplates.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                          No email templates found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredEmailTemplates.map((template) => (
-                        <TableRow key={template.templateld}>
-                          <TableCell className="font-medium">{template.name}</TableCell>
-                          <TableCell className="max-w-md truncate">{template.subject}</TableCell>
-                          <TableCell>{template.fromEmailList}</TableCell>
-                          <TableCell>
-                            <Badge variant={template.ishtml === 'Y' ? 'default' : 'secondary'}>
-                              {template.ishtml === 'Y' ? 'HTML' : 'Text'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
+                        <TableCell className="text-right pr-6">
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => previewEmail(template)}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              Preview
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
@@ -1214,13 +1232,13 @@ const MetadataManagement: React.FC = () => {
                               <Edit className="h-3 w-3 mr-1" />
                               Edit
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1276,19 +1294,6 @@ const MetadataManagement: React.FC = () => {
                   <RefreshCw className={`h-4 w-4 ${applicationsLoading ? 'animate-spin' : ''}`} />
                 </Button>
               </div>
-
-              {currentSubstageApplication && (
-                <div className="mt-4 p-4 bg-muted rounded-md">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium">Description:</span> {currentSubstageApplication.description}
-                    </div>
-                    <div>
-                      <span className="font-medium">Updated by:</span> {currentSubstageApplication.updatedby}
-                    </div>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -1298,7 +1303,13 @@ const MetadataManagement: React.FC = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Substages Management</CardTitle>
-                  <CardDescription>Select a stage to manage its substages</CardDescription>
+                  <CardDescription>
+                    Select a stage to manage its substages
+                    <br />
+                    <span className="text-xs text-muted-foreground">
+                      Template ID = Email List • Entitlement Mapping = Roles • Attestation Mapping = Attestations
+                    </span>
+                  </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <Select 
@@ -1331,77 +1342,75 @@ const MetadataManagement: React.FC = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {!selectedStageId ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <Database className="h-16 w-16 mx-auto mb-4 opacity-50" />
                     <p>Please select a stage to view its substages</p>
                   </div>
                 ) : (
-                  <div className="border rounded-md">
-                    <Table>
-                      <TableHeader>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="pl-6">Name</TableHead>
+                        <TableHead>Component</TableHead>
+                        <TableHead>Default Stage</TableHead>
+                        <TableHead>Email List ID</TableHead>
+                        <TableHead>Roles ID</TableHead>
+                        <TableHead>Follow Up</TableHead>
+                        <TableHead className="text-right pr-6">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Component</TableHead>
-                          <TableHead>Default Stage</TableHead>
-                          <TableHead>Follow Up</TableHead>
-                          <TableHead>Email at Start</TableHead>
-                          <TableHead>Updated By</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableCell colSpan={7} className="text-center py-6">
+                            Loading substages...
+                          </TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {loading ? (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-6">
-                              Loading substages...
-                            </TableCell>
-                          </TableRow>
-                        ) : filteredSubstages.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                              No substages found for this stage
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredSubstages.map((substage) => {
-                            const defaultStageName = currentSubstageStages.find(s => s.stageId === substage.defaultstage)?.name || substage.defaultstage.toString();
-                            return (
-                              <TableRow key={substage.substageId}>
-                                <TableCell className="font-medium">{substage.name}</TableCell>
-                                <TableCell>{substage.componentname}</TableCell>
-                                <TableCell>
-                                  <Badge variant="outline">{defaultStageName}</Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={substage.followUp === 'Y' ? 'default' : 'secondary'}>
-                                    {substage.followUp === 'Y' ? 'Yes' : 'No'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={substage.sendEmailAtStart === 'Y' ? 'default' : 'secondary'}>
-                                    {substage.sendEmailAtStart === 'Y' ? 'Yes' : substage.sendEmailAtStart === 'N' ? 'No' : 'N/A'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{substage.updatedby}</TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => editSubstage(substage)}
-                                  >
-                                    <Edit className="h-3 w-3 mr-1" />
-                                    Edit
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
+                      ) : filteredSubstages.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                            No substages found for this stage
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredSubstages.map((substage) => {
+                          const defaultStageName = currentSubstageStages.find(s => s.stageId === substage.defaultstage)?.name || substage.defaultstage.toString();
+                          return (
+                            <TableRow key={substage.substageId}>
+                              <TableCell className="font-medium pl-6">{substage.name}</TableCell>
+                              <TableCell className="font-mono text-xs">{substage.componentname}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{defaultStageName}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">{substage.templateld}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">{substage.entitlementMapping}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={substage.followUp === 'Y' ? 'default' : 'secondary'}>
+                                  {substage.followUp === 'Y' ? 'Yes' : 'No'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right pr-6">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => editSubstage(substage)}
+                                >
+                                  <Edit className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
                 )}
               </CardContent>
             </Card>
@@ -1432,7 +1441,7 @@ const MetadataManagement: React.FC = () => {
               <Label htmlFor="param-type">Type</Label>
               <Select value={paramForm.paramType} onValueChange={(value) => setParamForm({ ...paramForm, paramType: value })}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="default">Default</SelectItem>
@@ -1495,10 +1504,10 @@ const MetadataManagement: React.FC = () => {
               <Label htmlFor="attestation-type">Type</Label>
               <Select value={attestationForm.type} onValueChange={(value) => setAttestationForm({ ...attestationForm, type: value })}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="default">Default</SelectItem>
+                  <SelectItem value="DEFAULT">DEFAULT</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1544,7 +1553,7 @@ const MetadataManagement: React.FC = () => {
               />
             </div>
             <div>
-              <Label htmlFor="email-from">From Email</Label>
+              <Label htmlFor="email-from">From Email List</Label>
               <Input
                 id="email-from"
                 value={emailForm.fromEmailList}
@@ -1583,20 +1592,78 @@ const MetadataManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Substage Dialog */}
+      {/* Email Preview Dialog */}
+      <Dialog open={emailPreviewOpen} onOpenChange={setEmailPreviewOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email Preview: {previewTemplate?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Preview of the email template as it would appear to recipients
+            </DialogDescription>
+          </DialogHeader>
+          {previewTemplate && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                <div>
+                  <Label className="text-sm font-medium">From:</Label>
+                  <p className="text-sm">{previewTemplate.fromEmailList}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Format:</Label>
+                  <Badge variant={previewTemplate.ishtml === 'Y' ? 'default' : 'secondary'}>
+                    {previewTemplate.ishtml === 'Y' ? 'HTML' : 'Text'}
+                  </Badge>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium">Subject:</Label>
+                  <p className="text-sm font-semibold">{previewTemplate.subject}</p>
+                </div>
+              </div>
+              <div className="border rounded-lg">
+                <div className="bg-muted px-4 py-2 border-b">
+                  <Label className="text-sm font-medium">Email Body:</Label>
+                </div>
+                <div className="p-4">
+                  {previewTemplate.ishtml === 'Y' ? (
+                    <div 
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: previewTemplate.emailBody }}
+                    />
+                  ) : (
+                    <pre className="whitespace-pre-wrap text-sm font-mono">
+                      {previewTemplate.emailBody}
+                    </pre>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailPreviewOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Substage Dialog - Compact Version */}
       <Dialog open={substageDialogOpen} onOpenChange={setSubstageDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>{editingSubstage ? 'Edit Substage' : 'Add New Substage'}</DialogTitle>
             <DialogDescription>
               {editingSubstage ? 'Update the substage details' : 'Create a new substage'}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[600px]">
-            <div className="space-y-4 pr-4">
+          <ScrollArea className="max-h-[70vh]">
+            <div className="space-y-6 pr-4">
+              {/* Basic Information */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="substage-name">Name</Label>
+                  <Label htmlFor="substage-name">Name *</Label>
                   <Input
                     id="substage-name"
                     value={substageForm.name}
@@ -1605,17 +1672,19 @@ const MetadataManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="substage-component">Component Name</Label>
+                  <Label htmlFor="substage-component">Component Path *</Label>
                   <Input
                     id="substage-component"
                     value={substageForm.componentname}
                     onChange={(e) => setSubstageForm({ ...substageForm, componentname: e.target.value })}
                     placeholder="/component/path"
+                    className="font-mono text-sm"
                   />
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              {/* Timing & Service */}
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="substage-duration">Expected Duration</Label>
                   <Input
@@ -1634,47 +1703,14 @@ const MetadataManagement: React.FC = () => {
                     placeholder="12:00 PM"
                   />
                 </div>
-              </div>
-
-              <div>
-                <Label htmlFor="substage-service">Service Link</Label>
-                <Input
-                  id="substage-service"
-                  value={substageForm.servicelink || ''}
-                  onChange={(e) => setSubstageForm({ ...substageForm, servicelink: e.target.value })}
-                  placeholder="http://api"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="substage-template">Template ID</Label>
-                  <Input
-                    id="substage-template"
-                    type="number"
-                    value={substageForm.templateld}
-                    onChange={(e) => setSubstageForm({ ...substageForm, templateld: Number(e.target.value) })}
-                    placeholder="30"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="substage-entitlement">Entitlement Mapping</Label>
-                  <Input
-                    id="substage-entitlement"
-                    type="number"
-                    value={substageForm.entitlementMapping}
-                    onChange={(e) => setSubstageForm({ ...substageForm, entitlementMapping: Number(e.target.value) })}
-                    placeholder="21"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="substage-stage">Default Stage</Label>
+                  <Label htmlFor="substage-stage">Default Stage *</Label>
                   <Select 
                     value={substageForm.defaultstage.toString()} 
                     onValueChange={(value) => setSubstageForm({ ...substageForm, defaultstage: Number(value) })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select default stage" />
+                      <SelectValue placeholder="Select stage" />
                     </SelectTrigger>
                     <SelectContent>
                       {currentSubstageStages.map(stage => (
@@ -1688,25 +1724,64 @@ const MetadataManagement: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="substage-attestations">Attestation Mapping</Label>
+                <Label htmlFor="substage-service">Service Link</Label>
                 <Input
-                  id="substage-attestations"
-                  value={substageForm.attestationMapping}
-                  onChange={(e) => setSubstageForm({ ...substageForm, attestationMapping: e.target.value })}
-                  placeholder="6649;6650; (semicolon-separated IDs)"
+                  id="substage-service"
+                  value={substageForm.servicelink || ''}
+                  onChange={(e) => setSubstageForm({ ...substageForm, servicelink: e.target.value })}
+                  placeholder="http://api"
+                  className="font-mono text-sm"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="substage-params">Parameter Mapping</Label>
-                <Input
-                  id="substage-params"
-                  value={substageForm.paramMapping}
-                  onChange={(e) => setSubstageForm({ ...substageForm, paramMapping: e.target.value })}
-                  placeholder="72; (semicolon-separated IDs)"
-                />
+              {/* Mappings */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">ID Mappings</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="substage-template">Email List ID</Label>
+                    <Input
+                      id="substage-template"
+                      type="number"
+                      value={substageForm.templateld}
+                      onChange={(e) => setSubstageForm({ ...substageForm, templateld: Number(e.target.value) })}
+                      placeholder="30"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="substage-entitlement">Roles ID</Label>
+                    <Input
+                      id="substage-entitlement"
+                      type="number"
+                      value={substageForm.entitlementMapping}
+                      onChange={(e) => setSubstageForm({ ...substageForm, entitlementMapping: Number(e.target.value) })}
+                      placeholder="21"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="substage-attestations">Attestations IDs</Label>
+                    <Input
+                      id="substage-attestations"
+                      value={substageForm.attestationMapping}
+                      onChange={(e) => setSubstageForm({ ...substageForm, attestationMapping: e.target.value })}
+                      placeholder="6649;6650"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="substage-params">Parameter IDs</Label>
+                  <Input
+                    id="substage-params"
+                    value={substageForm.paramMapping}
+                    onChange={(e) => setSubstageForm({ ...substageForm, paramMapping: e.target.value })}
+                    placeholder="72;73;74"
+                    className="font-mono text-sm"
+                  />
+                </div>
               </div>
 
+              {/* Options */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center space-x-2">
                   <Switch
