@@ -620,18 +620,29 @@ const MOCK_IN_PROGRESS_STATUS: Record<number, boolean> = {
 class WorkflowService {
   private dotNetAxiosInstance: AxiosInstance;
   private javaAxiosInstance: AxiosInstance;
-  private baseUrl: string;
+  private dotNetBaseUrl: string;
+  private javaBaseUrl: string;
 
   constructor() {
-    this.baseUrl = this.getBaseUrl();
+    this.dotNetBaseUrl = this.getDotNetBaseUrl();
+    this.javaBaseUrl = this.getJavaBaseUrl();
     this.dotNetAxiosInstance = this.createDotNetAxiosInstance();
     this.javaAxiosInstance = this.createJavaAxiosInstance();
   }
 
-  private getBaseUrl(): string {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    if (!baseUrl) {
-      console.warn('NEXT_PUBLIC_BASE_URL not set, falling back to localhost');
+  private getDotNetBaseUrl(): string {
+    // .NET service for roles, calendar - http://api.com/
+    const baseUrl = process.env.NEXT_PUBLIC_DOTNET_BASE_URL || 'http://api.com';
+    if (this.isMockMode()) {
+      return 'http://localhost:3000';
+    }
+    return baseUrl;
+  }
+
+  private getJavaBaseUrl(): string {
+    // Java service for metadata - http://api-workflow.com
+    const baseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL || 'http://api-workflow.com';
+    if (this.isMockMode()) {
       return 'http://localhost:3000';
     }
     return baseUrl;
@@ -639,7 +650,7 @@ class WorkflowService {
 
   private createDotNetAxiosInstance(): AxiosInstance {
     // .NET service uses /api/WF base path
-    const baseURL = `${this.baseUrl}/api/WF`;
+    const baseURL = `${this.dotNetBaseUrl}/api/WF`;
     
     const instance = axios.create({
       baseURL,
@@ -703,7 +714,7 @@ class WorkflowService {
 
   private createJavaAxiosInstance(): AxiosInstance {
     // Java service uses /api base path
-    const baseURL = `${this.baseUrl}/api`;
+    const baseURL = `${this.javaBaseUrl}/api`;
     
     const instance = axios.create({
       baseURL,
@@ -767,7 +778,8 @@ class WorkflowService {
 
   private isWindowsAuthEnvironment(): boolean {
     // Check if we're in an environment that uses Windows authentication
-    return !this.isMockMode() && !this.baseUrl.includes('localhost');
+    return !this.isMockMode() && 
+           (!this.dotNetBaseUrl.includes('localhost') || !this.javaBaseUrl.includes('localhost'));
   }
 
   private isMockMode(): boolean {
@@ -811,7 +823,7 @@ class WorkflowService {
       success,
       error,
       timestamp: new Date().toISOString(),
-      environment: this.isMockMode() ? 'Mock Data' : this.baseUrl
+      environment: this.isMockMode() ? 'Mock Data' : `DotNet: ${this.dotNetBaseUrl}, Java: ${this.javaBaseUrl}`
     };
   }
 
@@ -2000,10 +2012,11 @@ class WorkflowService {
   }
 
   // Get current environment info
-  getEnvironmentInfo(): { mode: string; baseUrl: string; isMock: boolean } {
+  getEnvironmentInfo(): { mode: string; dotNetBaseUrl: string; javaBaseUrl: string; isMock: boolean } {
     return {
       mode: process.env.NEXT_PUBLIC_API_MODE || 'auto',
-      baseUrl: this.baseUrl,
+      dotNetBaseUrl: this.dotNetBaseUrl,
+      javaBaseUrl: this.javaBaseUrl,
       isMock: this.isMockMode()
     };
   }
