@@ -14,7 +14,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Plus, Edit, Trash2, RefreshCw, AlertCircle, Loader2, Lock, Unlock, Search, Save, Database, Mail, Settings, FileText, CheckCircle, Eye, AlertTriangle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Edit, Trash2, RefreshCw, AlertCircle, Loader2, Lock, Unlock, Search, Save, Database, Mail, Settings, FileText, CheckCircle, Eye, AlertTriangle, X } from 'lucide-react';
 import { useMetadataManagement } from '@/hooks/useMetadataManagement';
 import { useApiEnvironment } from '@/contexts/ApiEnvironmentContext';
 import { toast } from '@/components/ui/use-toast';
@@ -60,8 +61,8 @@ interface Substage {
   name: string;
   componentname: string;
   defaultstage: number;
-  attestationMapping: string;
-  paramMapping: string;
+  attestationMapping: number[];
+  paramMapping: number[];
   templateld: number;
   entitlementMapping: number;
   followUp: string;
@@ -182,8 +183,8 @@ const MetadataManagement: React.FC = () => {
     name: '',
     componentname: '',
     defaultstage: 0,
-    attestationMapping: '',
-    paramMapping: '',
+    attestationMapping: [],
+    paramMapping: [],
     templateld: 0,
     entitlementMapping: 0,
     followUp: 'N',
@@ -299,6 +300,21 @@ const MetadataManagement: React.FC = () => {
       });
     }
   }, [stageDialogOpen, selectedStage]);
+
+  // Load parameters and attestations when substage dialog opens
+  useEffect(() => {
+    if (substageDialogOpen) {
+      if (parameters.length === 0) {
+        fetchParameters();
+      }
+      if (attestations.length === 0) {
+        fetchAttestations();
+      }
+      if (emailTemplates.length === 0) {
+        fetchEmailTemplates();
+      }
+    }
+  }, [substageDialogOpen]);
 
   // Extended metadata API calls with proper CORS configuration
   const fetchParameters = async () => {
@@ -657,8 +673,12 @@ const MetadataManagement: React.FC = () => {
     substage.name.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
     substage.componentname.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
     (substage.servicelink && substage.servicelink.toLowerCase().includes(substageSearchTerm.toLowerCase())) ||
-    substage.attestationMapping.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
-    substage.paramMapping.toLowerCase().includes(substageSearchTerm.toLowerCase())
+    (Array.isArray(substage.attestationMapping) ? 
+      substage.attestationMapping.some(id => id.toString().includes(substageSearchTerm)) :
+      substage.attestationMapping.toString().toLowerCase().includes(substageSearchTerm.toLowerCase())) ||
+    (Array.isArray(substage.paramMapping) ? 
+      substage.paramMapping.some(id => id.toString().includes(substageSearchTerm)) :
+      substage.paramMapping.toString().toLowerCase().includes(substageSearchTerm.toLowerCase()))
   );
 
   // Pagination calculations for substages
@@ -758,8 +778,8 @@ const MetadataManagement: React.FC = () => {
       name: '',
       componentname: '',
       defaultstage: selectedStageId || 0,
-      attestationMapping: '',
-      paramMapping: '',
+      attestationMapping: [],
+      paramMapping: [],
       templateld: 0,
       entitlementMapping: 0,
       followUp: 'N',
@@ -1379,7 +1399,7 @@ const MetadataManagement: React.FC = () => {
                     Select a stage to manage its substages
                     <br />
                     <span className="text-xs text-muted-foreground">
-                      Template ID = Email List • Entitlement Mapping = Roles • Attestation Mapping = Attestations
+                      Email Template = One-to-One • Entitlement = One-to-One • Parameters & Attestations = Many-to-One
                     </span>
                     {isSubstageAppInProgress && (
                       <Alert className="mt-2">
@@ -1461,8 +1481,8 @@ const MetadataManagement: React.FC = () => {
                             <TableHead className="pl-6">Name</TableHead>
                             <TableHead className="w-[200px]">Component</TableHead>
                             <TableHead>Default Stage</TableHead>
-                            <TableHead>Email List ID</TableHead>
-                            <TableHead>Roles ID</TableHead>
+                            <TableHead>Email Template</TableHead>
+                            <TableHead>Entitlement</TableHead>
                             <TableHead className="w-[150px]">Service Link</TableHead>
                             <TableHead>Follow Up</TableHead>
                             <TableHead className="text-right pr-6">Actions</TableHead>
@@ -1906,19 +1926,28 @@ const MetadataManagement: React.FC = () => {
               {/* Mappings */}
               <div className="space-y-4">
                 <h4 className="text-sm font-medium text-muted-foreground">ID Mappings</h4>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="substage-template">Email List ID</Label>
-                    <Input
-                      id="substage-template"
-                      type="number"
-                      value={substageForm.templateld}
-                      onChange={(e) => setSubstageForm({ ...substageForm, templateld: Number(e.target.value) })}
-                      placeholder="30"
-                    />
+                    <Label htmlFor="substage-template">Email Template (One-to-One)</Label>
+                    <Select 
+                      value={substageForm.templateld.toString()} 
+                      onValueChange={(value) => setSubstageForm({ ...substageForm, templateld: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select email template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">None</SelectItem>
+                        {emailTemplates.map(template => (
+                          <SelectItem key={template.templateld} value={template.templateld.toString()}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <Label htmlFor="substage-entitlement">Roles ID</Label>
+                    <Label htmlFor="substage-entitlement">Entitlement (One-to-One)</Label>
                     <Input
                       id="substage-entitlement"
                       type="number"
@@ -1927,26 +1956,86 @@ const MetadataManagement: React.FC = () => {
                       placeholder="21"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="substage-attestations">Attestations IDs</Label>
-                    <Input
-                      id="substage-attestations"
-                      value={substageForm.attestationMapping}
-                      onChange={(e) => setSubstageForm({ ...substageForm, attestationMapping: e.target.value })}
-                      placeholder="6649;6650"
-                      className="font-mono text-sm"
-                    />
+                </div>
+                
+                {/* Multi-select for Parameters */}
+                <div>
+                  <Label>Parameters (Many-to-One)</Label>
+                  <div className="border rounded-md p-3 max-h-32 overflow-y-auto">
+                    <div className="space-y-2">
+                      {parameters.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No parameters available</p>
+                      ) : (
+                        parameters.map(param => (
+                          <div key={param.paramId} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`param-${param.paramId}`}
+                              checked={Array.isArray(substageForm.paramMapping) 
+                                ? substageForm.paramMapping.includes(param.paramId!)
+                                : substageForm.paramMapping.toString().split(';').includes(param.paramId!.toString())
+                              }
+                              onCheckedChange={(checked) => {
+                                const currentParams = Array.isArray(substageForm.paramMapping) 
+                                  ? substageForm.paramMapping 
+                                  : substageForm.paramMapping.toString().split(';').map(id => parseInt(id)).filter(id => !isNaN(id));
+                                
+                                let newParams;
+                                if (checked) {
+                                  newParams = [...currentParams, param.paramId!];
+                                } else {
+                                  newParams = currentParams.filter(id => id !== param.paramId);
+                                }
+                                setSubstageForm({ ...substageForm, paramMapping: newParams });
+                              }}
+                            />
+                            <Label htmlFor={`param-${param.paramId}`} className="text-sm">
+                              {param.name} ({param.paramType})
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                {/* Multi-select for Attestations */}
                 <div>
-                  <Label htmlFor="substage-params">Parameter IDs</Label>
-                  <Input
-                    id="substage-params"
-                    value={substageForm.paramMapping}
-                    onChange={(e) => setSubstageForm({ ...substageForm, paramMapping: e.target.value })}
-                    placeholder="72;73;74"
-                    className="font-mono text-sm"
-                  />
+                  <Label>Attestations (Many-to-One)</Label>
+                  <div className="border rounded-md p-3 max-h-32 overflow-y-auto">
+                    <div className="space-y-2">
+                      {attestations.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No attestations available</p>
+                      ) : (
+                        attestations.map(attestation => (
+                          <div key={attestation.attestationId} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`attestation-${attestation.attestationId}`}
+                              checked={Array.isArray(substageForm.attestationMapping) 
+                                ? substageForm.attestationMapping.includes(attestation.attestationId)
+                                : substageForm.attestationMapping.toString().split(';').includes(attestation.attestationId.toString())
+                              }
+                              onCheckedChange={(checked) => {
+                                const currentAttestations = Array.isArray(substageForm.attestationMapping) 
+                                  ? substageForm.attestationMapping 
+                                  : substageForm.attestationMapping.toString().split(';').map(id => parseInt(id)).filter(id => !isNaN(id));
+                                
+                                let newAttestations;
+                                if (checked) {
+                                  newAttestations = [...currentAttestations, attestation.attestationId];
+                                } else {
+                                  newAttestations = currentAttestations.filter(id => id !== attestation.attestationId);
+                                }
+                                setSubstageForm({ ...substageForm, attestationMapping: newAttestations });
+                              }}
+                            />
+                            <Label htmlFor={`attestation-${attestation.attestationId}`} className="text-sm">
+                              {attestation.name} ({attestation.type})
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
