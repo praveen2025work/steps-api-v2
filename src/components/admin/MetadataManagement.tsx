@@ -12,7 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, RefreshCw, AlertCircle, Loader2, Lock, Unlock, Search, Save, Database, Mail, Settings, FileText, CheckCircle, Eye } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Plus, Edit, Trash2, RefreshCw, AlertCircle, Loader2, Lock, Unlock, Search, Save, Database, Mail, Settings, FileText, CheckCircle, Eye, AlertTriangle } from 'lucide-react';
 import { useMetadataManagement } from '@/hooks/useMetadataManagement';
 import { useApiEnvironment } from '@/contexts/ApiEnvironmentContext';
 import { toast } from '@/components/ui/use-toast';
@@ -166,6 +168,15 @@ const MetadataManagement: React.FC = () => {
   const [editingSubstage, setEditingSubstage] = useState<Substage | null>(null);
   const [selectedStageId, setSelectedStageId] = useState<number | null>(null);
   const [selectedSubstageApplicationId, setSelectedSubstageApplicationId] = useState<number | null>(null);
+  
+  // Pagination state for substages
+  const [substageCurrentPage, setSubstageCurrentPage] = useState(1);
+  const [substageSearchTerm, setSubstageSearchTerm] = useState('');
+  const substagesPerPage = 10;
+
+  // App import progress state
+  const [appImportStatus, setAppImportStatus] = useState<Record<number, boolean>>({});
+  const [checkingImportStatus, setCheckingImportStatus] = useState<Record<number, boolean>>({});
   const [substageForm, setSubstageForm] = useState<Substage>({
     substageId: null,
     name: '',
@@ -190,13 +201,56 @@ const MetadataManagement: React.FC = () => {
     return currentEnvironment?.javaBaseUrl || 'http://api-workflow.com';
   };
 
+  // Get base URL for .NET service
+  const getDotNetBaseUrl = () => {
+    return currentEnvironment?.baseUrl || 'http://api.com';
+  };
+
+  // Check if app is importing data
+  const checkAppImportProgress = async (appId: number) => {
+    setCheckingImportStatus(prev => ({ ...prev, [appId]: true }));
+    try {
+      const response = await fetch(`${getDotNetBaseUrl()}/api/workflowapp/${appId}/inProgress`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include', // .NET service uses Windows authentication
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const isInProgress = await response.json();
+        setAppImportStatus(prev => ({ ...prev, [appId]: isInProgress }));
+        return isInProgress;
+      } else {
+        console.warn(`Failed to check import status for app ${appId}: ${response.status}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error checking app import progress:', error);
+      return false;
+    } finally {
+      setCheckingImportStatus(prev => ({ ...prev, [appId]: false }));
+    }
+  };
+
   // Load stages and in-progress status when application is selected
   useEffect(() => {
     if (selectedApplicationId) {
       refreshStages(selectedApplicationId);
       checkInProgress(selectedApplicationId);
+      checkAppImportProgress(selectedApplicationId);
     }
   }, [selectedApplicationId, refreshStages, checkInProgress]);
+
+  // Check import progress for substage application
+  useEffect(() => {
+    if (selectedSubstageApplicationId) {
+      checkAppImportProgress(selectedSubstageApplicationId);
+    }
+  }, [selectedSubstageApplicationId]);
 
   // Load extended metadata based on active tab
   useEffect(() => {
@@ -598,10 +652,27 @@ const MetadataManagement: React.FC = () => {
     template.subject.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Enhanced substages filtering with pagination
   const filteredSubstages = substages.filter(substage =>
-    substage.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    substage.componentname.toLowerCase().includes(searchTerm.toLowerCase())
+    substage.name.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
+    substage.componentname.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
+    (substage.servicelink && substage.servicelink.toLowerCase().includes(substageSearchTerm.toLowerCase())) ||
+    substage.attestationMapping.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
+    substage.paramMapping.toLowerCase().includes(substageSearchTerm.toLowerCase())
   );
+
+  // Pagination calculations for substages
+  const totalSubstagePages = Math.ceil(filteredSubstages.length / substagesPerPage);
+  const paginatedSubstages = filteredSubstages.slice(
+    (substageCurrentPage - 1) * substagesPerPage,
+    substageCurrentPage * substagesPerPage
+  );
+
+  // Text truncation utility
+  const truncateText = (text: string, maxLength: number = 30) => {
+    if (!text) return '';
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
 
   // Edit functions for extended metadata
   const editParameter = (param: Param) => {
@@ -709,7 +780,7 @@ const MetadataManagement: React.FC = () => {
     : null;
 
   const currentStages = selectedApplicationId ? stages[selectedApplicationId] || [] : [];
-  const isApplicationInProgress = selectedApplicationId ? inProgressStatus[selectedApplicationId] || false : false;
+  const isApplicationInProgress = selectedApplicationId ? inProgressStatus[selectedApplicationId] || appImportStatus[selectedApplicationId] || false : false;
   const isStagesLoading = selectedApplicationId ? stagesLoading[selectedApplicationId] || false : false;
 
   // Get substage application data
@@ -719,6 +790,7 @@ const MetadataManagement: React.FC = () => {
 
   const currentSubstageStages = selectedSubstageApplicationId ? stages[selectedSubstageApplicationId] || [] : [];
   const isSubstageStagesLoading = selectedSubstageApplicationId ? stagesLoading[selectedSubstageApplicationId] || false : false;
+  const isSubstageAppInProgress = selectedSubstageApplicationId ? appImportStatus[selectedSubstageApplicationId] || false : false;
 
   return (
     <div className="space-y-6">
@@ -1309,6 +1381,14 @@ const MetadataManagement: React.FC = () => {
                     <span className="text-xs text-muted-foreground">
                       Template ID = Email List • Entitlement Mapping = Roles • Attestation Mapping = Attestations
                     </span>
+                    {isSubstageAppInProgress && (
+                      <Alert className="mt-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Application is currently importing data. Substage actions are disabled.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1317,6 +1397,7 @@ const MetadataManagement: React.FC = () => {
                     onValueChange={(value) => {
                       const stageId = value ? Number(value) : null;
                       setSelectedStageId(stageId);
+                      setSubstageCurrentPage(1); // Reset pagination when stage changes
                       if (stageId) {
                         fetchSubstages(stageId);
                       } else {
@@ -1336,81 +1417,169 @@ const MetadataManagement: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button onClick={addNewSubstage} disabled={!selectedStageId}>
+                  <Button 
+                    onClick={addNewSubstage} 
+                    disabled={!selectedStageId || isSubstageAppInProgress}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Substage
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="space-y-4">
                 {!selectedStageId ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <Database className="h-16 w-16 mx-auto mb-4 opacity-50" />
                     <p>Please select a stage to view its substages</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="pl-6">Name</TableHead>
-                        <TableHead>Component</TableHead>
-                        <TableHead>Default Stage</TableHead>
-                        <TableHead>Email List ID</TableHead>
-                        <TableHead>Roles ID</TableHead>
-                        <TableHead>Follow Up</TableHead>
-                        <TableHead className="text-right pr-6">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {loading ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-6">
-                            Loading substages...
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredSubstages.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                            No substages found for this stage
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredSubstages.map((substage) => {
-                          const defaultStageName = currentSubstageStages.find(s => s.stageId === substage.defaultstage)?.name || substage.defaultstage.toString();
-                          return (
-                            <TableRow key={substage.substageId}>
-                              <TableCell className="font-medium pl-6">{substage.name}</TableCell>
-                              <TableCell className="font-mono text-xs">{substage.componentname}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{defaultStageName}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="secondary">{substage.templateld}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="secondary">{substage.entitlementMapping}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={substage.followUp === 'Y' ? 'default' : 'secondary'}>
-                                  {substage.followUp === 'Y' ? 'Yes' : 'No'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right pr-6">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => editSubstage(substage)}
-                                >
-                                  <Edit className="h-3 w-3 mr-1" />
-                                  Edit
-                                </Button>
+                  <>
+                    {/* Search Bar for Substages */}
+                    <div className="flex items-center gap-4 p-4 border-b">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search substages by name, component, service link, or mappings..."
+                          className="pl-8"
+                          value={substageSearchTerm}
+                          onChange={(e) => {
+                            setSubstageSearchTerm(e.target.value);
+                            setSubstageCurrentPage(1); // Reset to first page when searching
+                          }}
+                        />
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {filteredSubstages.length} of {substages.length} substages
+                      </div>
+                    </div>
+
+                    {/* Substages Table */}
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="pl-6">Name</TableHead>
+                            <TableHead className="w-[200px]">Component</TableHead>
+                            <TableHead>Default Stage</TableHead>
+                            <TableHead>Email List ID</TableHead>
+                            <TableHead>Roles ID</TableHead>
+                            <TableHead className="w-[150px]">Service Link</TableHead>
+                            <TableHead>Follow Up</TableHead>
+                            <TableHead className="text-right pr-6">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {loading ? (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-6">
+                                Loading substages...
                               </TableCell>
                             </TableRow>
-                          );
-                        })
-                      )}
-                    </TableBody>
-                  </Table>
+                          ) : paginatedSubstages.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                                {substageSearchTerm ? 'No substages match your search' : 'No substages found for this stage'}
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            paginatedSubstages.map((substage) => {
+                              const defaultStageName = currentSubstageStages.find(s => s.stageId === substage.defaultstage)?.name || substage.defaultstage.toString();
+                              return (
+                                <TableRow key={substage.substageId}>
+                                  <TableCell className="font-medium pl-6">
+                                    <div className="max-w-[150px]">
+                                      <div className="truncate" title={substage.name}>
+                                        {substage.name}
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-mono text-xs">
+                                    <div className="max-w-[180px]">
+                                      <div className="break-all text-wrap" title={substage.componentname}>
+                                        {truncateText(substage.componentname, 40)}
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">{defaultStageName}</Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="secondary">{substage.templateld}</Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="secondary">{substage.entitlementMapping}</Badge>
+                                  </TableCell>
+                                  <TableCell className="font-mono text-xs">
+                                    <div className="max-w-[130px]">
+                                      {substage.servicelink ? (
+                                        <div className="break-all text-wrap" title={substage.servicelink}>
+                                          {truncateText(substage.servicelink, 25)}
+                                        </div>
+                                      ) : (
+                                        <span className="text-muted-foreground">-</span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant={substage.followUp === 'Y' ? 'default' : 'secondary'}>
+                                      {substage.followUp === 'Y' ? 'Yes' : 'No'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right pr-6">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => editSubstage(substage)}
+                                      disabled={isSubstageAppInProgress}
+                                    >
+                                      <Edit className="h-3 w-3 mr-1" />
+                                      Edit
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalSubstagePages > 1 && (
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">
+                          Showing {((substageCurrentPage - 1) * substagesPerPage) + 1} to {Math.min(substageCurrentPage * substagesPerPage, filteredSubstages.length)} of {filteredSubstages.length} results
+                        </div>
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious 
+                                onClick={() => setSubstageCurrentPage(Math.max(1, substageCurrentPage - 1))}
+                                className={substageCurrentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+                            {Array.from({ length: totalSubstagePages }, (_, i) => i + 1).map((page) => (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => setSubstageCurrentPage(page)}
+                                  isActive={page === substageCurrentPage}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            ))}
+                            <PaginationItem>
+                              <PaginationNext 
+                                onClick={() => setSubstageCurrentPage(Math.min(totalSubstagePages, substageCurrentPage + 1))}
+                                className={substageCurrentPage === totalSubstagePages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
