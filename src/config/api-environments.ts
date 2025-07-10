@@ -4,6 +4,8 @@ export interface ApiEnvironment {
   displayName: string;
   baseUrl: string;
   coreApiUrl: string;
+  javaBaseUrl: string;
+  javaApiUrl: string;
   authType: 'windows' | 'bearer' | 'basic';
   timeout: number;
   retryAttempts: number;
@@ -26,6 +28,8 @@ const createEnvironment = (config: Partial<ApiEnvironment> & { name: string }): 
     displayName: config.name.charAt(0).toUpperCase() + config.name.slice(1),
     baseUrl: 'http://localhost:3000',
     coreApiUrl: 'http://localhost:3000/api/WF',
+    javaBaseUrl: 'http://localhost:3000',
+    javaApiUrl: 'http://localhost:3000/api',
     authType: 'windows' as const,
     timeout: 30000,
     retryAttempts: 3,
@@ -45,6 +49,16 @@ const createEnvironment = (config: Partial<ApiEnvironment> & { name: string }): 
     environment.coreApiUrl = defaults.coreApiUrl;
   }
 
+  if (!validateUrl(environment.javaBaseUrl)) {
+    console.warn(`Invalid javaBaseUrl for ${environment.name}: ${environment.javaBaseUrl}`);
+    environment.javaBaseUrl = defaults.javaBaseUrl;
+  }
+
+  if (!validateUrl(environment.javaApiUrl)) {
+    console.warn(`Invalid javaApiUrl for ${environment.name}: ${environment.javaApiUrl}`);
+    environment.javaApiUrl = defaults.javaApiUrl;
+  }
+
   return environment;
 };
 
@@ -54,6 +68,8 @@ export const API_ENVIRONMENTS: Record<string, ApiEnvironment> = {
     displayName: 'Local Development',
     baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8080',
     coreApiUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8080'}/api/WF`,
+    javaBaseUrl: process.env.NEXT_PUBLIC_JAVA_BASE_URL || 'http://localhost:8081',
+    javaApiUrl: `${process.env.NEXT_PUBLIC_JAVA_BASE_URL || 'http://localhost:8081'}/api`,
     description: 'Local development environment with custom URL'
   }),
   dev: createEnvironment({
@@ -61,6 +77,8 @@ export const API_ENVIRONMENTS: Record<string, ApiEnvironment> = {
     displayName: 'Development',
     baseUrl: 'http://dev-api.com',
     coreApiUrl: 'http://dev-api.com/api/WF',
+    javaBaseUrl: 'http://dev-api-workflow.com',
+    javaApiUrl: 'http://dev-api-workflow.com/api',
     description: 'Development environment for testing new features'
   }),
   uat: createEnvironment({
@@ -68,6 +86,8 @@ export const API_ENVIRONMENTS: Record<string, ApiEnvironment> = {
     displayName: 'User Acceptance Testing',
     baseUrl: 'http://uat-api.com',
     coreApiUrl: 'http://uat-api.com/api/WF',
+    javaBaseUrl: 'http://uat-api-workflow.com',
+    javaApiUrl: 'http://uat-api-workflow.com/api',
     description: 'UAT environment for user acceptance testing'
   }),
   demo: createEnvironment({
@@ -75,6 +95,8 @@ export const API_ENVIRONMENTS: Record<string, ApiEnvironment> = {
     displayName: 'Demo',
     baseUrl: 'http://demo-api.com',
     coreApiUrl: 'http://demo-api.com/api/WF',
+    javaBaseUrl: 'http://demo-api-workflow.com',
+    javaApiUrl: 'http://demo-api-workflow.com/api',
     retryAttempts: 2,
     description: 'Demo environment for client presentations'
   }),
@@ -83,13 +105,15 @@ export const API_ENVIRONMENTS: Record<string, ApiEnvironment> = {
     displayName: 'Production',
     baseUrl: 'http://api.com',
     coreApiUrl: 'http://api.com/api/WF',
+    javaBaseUrl: 'http://api-workflow.com',
+    javaApiUrl: 'http://api-workflow.com/api',
     timeout: 45000,
     retryAttempts: 5,
     description: 'Production environment - live data'
   })
 };
 
-// Core API Endpoints
+// Core API Endpoints (.NET Service)
 export const CORE_API_ENDPOINTS = {
   GET_WORKFLOW_APPLICATIONS: '/GetWorkflowApplicationDetails',
   SET_APPLICATION: '/SetApplication', // For saving/updating applications
@@ -124,8 +148,36 @@ export const CORE_API_ENDPOINTS = {
   SET_HIERARCHY: '/setHierarchy', // For saving/updating hierarchies
   GET_APPLICATION_HIERARCHY_MAP: '/GetWorkflowApplicationToHierarchyMap', // For application-hierarchy mappings
   SET_APPLICATION_HIERARCHY_MAP: '/SetApplicationHierarchyMap', // For saving application-hierarchy mappings
+} as const;
+
+// Java API Endpoints (Java Service)
+export const JAVA_API_ENDPOINTS = {
+  // Metadata Management Endpoints
+  GET_METADATA_APPLICATIONS: '/workflowapp', // For getting metadata applications
+  GET_STAGES_BY_APP: '/stage', // For /stage?appId={appId}
+  CREATE_STAGE: '/stage', // POST for creating new stage
+  UPDATE_STAGE: '/stage', // PUT for updating stage
+  CHECK_APP_IN_PROGRESS: '/workflowapp', // For /workflowapp/{appId}/inProgress
   
-  // Add more endpoints as you provide them
+  // Parameter Management Endpoints
+  GET_PARAMS: '/param', // For getting all parameters
+  CREATE_PARAM: '/param', // POST for creating new parameter
+  UPDATE_PARAM: '/param', // PUT for updating parameter
+  
+  // Attestation Management Endpoints
+  GET_ATTESTATIONS: '/attest', // For /attest?type=DEFAULT
+  CREATE_ATTESTATION: '/attest/', // POST for creating new attestation
+  UPDATE_ATTESTATION: '/attest', // PUT for updating attestation
+  
+  // Email Template Management Endpoints
+  GET_EMAIL_TEMPLATES: '/email', // For getting all email templates
+  CREATE_EMAIL_TEMPLATE: '/email/', // POST for creating new email template
+  UPDATE_EMAIL_TEMPLATE: '/email', // PUT for updating email template
+  
+  // Substage Management Endpoints
+  GET_SUBSTAGES: '/substage', // For /substage?stageId={stageId}
+  CREATE_SUBSTAGE: '/substage', // POST for creating new substage
+  UPDATE_SUBSTAGE: '/substage', // PUT for updating substage
 } as const;
 
 // Default environment (can be overridden by environment variable)
