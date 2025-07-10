@@ -269,23 +269,23 @@ const AdminDashboard: React.FC = () => {
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/admin?tab=metadata'}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Metadata Management</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">
-                Manage applications and stages metadata
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/admin?tab=extended-metadata'}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Extended Metadata</CardTitle>
               <Database className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground">
-                Manage parameters, attestations, email templates, and substages
+                Manage applications, stages, parameters, attestations, email templates, and substages
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/admin?tab=hierarchy'}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Hierarchy Management</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                Manage workflow hierarchies and application mappings
               </p>
             </CardContent>
           </Card>
