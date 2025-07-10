@@ -242,7 +242,6 @@ const MetadataManagement: React.FC = () => {
   // Extended metadata API calls
   const fetchParameters = async () => {
     try {
-      setLoading(true);
       const response = await fetch(`${getJavaBaseUrl()}/api/param`);
       if (response.ok) {
         const data = await response.json();
@@ -257,14 +256,11 @@ const MetadataManagement: React.FC = () => {
         description: "Failed to fetch parameters",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchAttestations = async () => {
     try {
-      setLoading(true);
       const response = await fetch(`${getJavaBaseUrl()}/api/attest?type=default`);
       if (response.ok) {
         const data = await response.json();
@@ -279,14 +275,11 @@ const MetadataManagement: React.FC = () => {
         description: "Failed to fetch attestations",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchEmailTemplates = async () => {
     try {
-      setLoading(true);
       const response = await fetch(`${getJavaBaseUrl()}/api/email`);
       if (response.ok) {
         const data = await response.json();
@@ -301,14 +294,11 @@ const MetadataManagement: React.FC = () => {
         description: "Failed to fetch email templates",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchSubstages = async (stageId: number) => {
     try {
-      setLoading(true);
       const response = await fetch(`${getJavaBaseUrl()}/api/substage?stageId=${stageId}`);
       if (response.ok) {
         const data = await response.json();
@@ -323,8 +313,6 @@ const MetadataManagement: React.FC = () => {
         description: "Failed to fetch substages",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
