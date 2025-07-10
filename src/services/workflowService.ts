@@ -719,7 +719,7 @@ class WorkflowService {
     const instance = axios.create({
       baseURL,
       timeout: 30000,
-      withCredentials: true, // Use credentials for Windows authentication
+      withCredentials: false, // Java service does NOT use Windows authentication
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -727,16 +727,10 @@ class WorkflowService {
       },
     });
 
-    // Request interceptor for authentication and logging
+    // Request interceptor for logging (no Windows auth for Java service)
     instance.interceptors.request.use(
       (config) => {
         console.log(`[Java API Request] ${config.method?.toUpperCase()} ${config.url}`);
-        
-        // Add any additional headers for Windows auth if needed
-        if (this.isWindowsAuthEnvironment()) {
-          config.headers['X-Requested-With'] = 'XMLHttpRequest';
-        }
-        
         return config;
       },
       (error) => {
@@ -760,13 +754,13 @@ class WorkflowService {
           data: error.response?.data
         });
 
-        // Handle specific error cases
+        // Handle specific error cases for Java service
         if (error.response?.status === 401) {
-          console.error('Authentication failed - check Windows credentials');
+          console.error('Authentication failed - Java service authentication issue');
         } else if (error.response?.status === 403) {
           console.error('Access forbidden - insufficient permissions');
         } else if (error.response?.status >= 500) {
-          console.error('Server error - check API availability');
+          console.error('Server error - check Java API availability');
         }
 
         return Promise.reject(error);
@@ -778,8 +772,9 @@ class WorkflowService {
 
   private isWindowsAuthEnvironment(): boolean {
     // Check if we're in an environment that uses Windows authentication
+    // Only .NET service uses Windows auth, Java service does not
     return !this.isMockMode() && 
-           (!this.dotNetBaseUrl.includes('localhost') || !this.javaBaseUrl.includes('localhost'));
+           !this.dotNetBaseUrl.includes('localhost');
   }
 
   private isMockMode(): boolean {
