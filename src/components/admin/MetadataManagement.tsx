@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -312,6 +312,10 @@ const MetadataManagement: React.FC = () => {
   const [substageSearchTerm, setSubstageSearchTerm] = useState('');
   const substagesPerPage = 10;
 
+  // Search state for parameters and attestations in substage dialog
+  const [parameterSearchTerm, setParameterSearchTerm] = useState('');
+  const [attestationSearchTerm, setAttestationSearchTerm] = useState('');
+
   // App import progress state
   const [appImportStatus, setAppImportStatus] = useState<Record<number, boolean>>({});
   const [checkingImportStatus, setCheckingImportStatus] = useState<Record<number, boolean>>({});
@@ -452,6 +456,10 @@ const MetadataManagement: React.FC = () => {
   // Load parameters, attestations, email templates, and roles when substage dialog opens
   useEffect(() => {
     if (substageDialogOpen) {
+      // Reset search terms when dialog opens
+      setParameterSearchTerm('');
+      setAttestationSearchTerm('');
+      
       if (parameters.length === 0) {
         fetchParameters();
       }
@@ -997,6 +1005,22 @@ const MetadataManagement: React.FC = () => {
     template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     template.subject.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Filtered parameters and attestations for substage dialog with search
+  const filteredParametersForSubstage = useMemo(() => {
+    return parameters.filter(param =>
+      param.name.toLowerCase().includes(parameterSearchTerm.toLowerCase()) ||
+      param.description.toLowerCase().includes(parameterSearchTerm.toLowerCase()) ||
+      param.paramType.toLowerCase().includes(parameterSearchTerm.toLowerCase())
+    );
+  }, [parameters, parameterSearchTerm]);
+
+  const filteredAttestationsForSubstage = useMemo(() => {
+    return attestations.filter(attestation =>
+      attestation.name.toLowerCase().includes(attestationSearchTerm.toLowerCase()) ||
+      attestation.type.toLowerCase().includes(attestationSearchTerm.toLowerCase())
+    );
+  }, [attestations, attestationSearchTerm]);
 
   // Enhanced substages filtering with pagination
   const filteredSubstages = substages.filter(substage =>
@@ -1730,10 +1754,6 @@ const MetadataManagement: React.FC = () => {
                   <CardTitle>Substages Management</CardTitle>
                   <CardDescription>
                     Select a stage to manage its substages
-                    <br />
-                    <span className="text-xs text-muted-foreground">
-                      Email Template = One-to-One • Entitlement = One-to-One • Parameters & Attestations = Many-to-One
-                    </span>
                     {isSubstageAppInProgress && (
                       <Alert className="mt-2">
                         <AlertTriangle className="h-4 w-4" />
@@ -2264,10 +2284,9 @@ const MetadataManagement: React.FC = () => {
 
               {/* Mappings */}
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-muted-foreground">ID Mappings</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="substage-template">Email Template (One-to-One)</Label>
+                    <Label htmlFor="substage-template">Email Template</Label>
                     <Select 
                       value={substageForm.templateId?.toString() || '0'} 
                       onValueChange={(value) => setSubstageForm({ ...substageForm, templateId: Number(value) })}
@@ -2316,83 +2335,128 @@ const MetadataManagement: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Multi-select for Parameters */}
+                {/* Multi-select for Parameters with Search */}
                 <div>
-                  <Label>Parameters (Many-to-One)</Label>
-                  <div className="border rounded-md p-3 max-h-32 overflow-y-auto">
-                    <div className="space-y-2">
-                      {parameters.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No parameters available</p>
-                      ) : (
-                        parameters.map(param => (
-                          <div key={param.paramId} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`param-${param.paramId}`}
-                              checked={Array.isArray(substageForm.paramMapping) 
-                                ? substageForm.paramMapping.includes(param.paramId!)
-                                : substageForm.paramMapping.toString().split(';').includes(param.paramId!.toString())
-                              }
-                              onCheckedChange={(checked) => {
-                                const currentParams = Array.isArray(substageForm.paramMapping) 
-                                  ? substageForm.paramMapping 
-                                  : substageForm.paramMapping.toString().split(';').map(id => parseInt(id)).filter(id => !isNaN(id));
-                                
-                                let newParams;
-                                if (checked) {
-                                  newParams = [...currentParams, param.paramId!];
-                                } else {
-                                  newParams = currentParams.filter(id => id !== param.paramId);
-                                }
-                                setSubstageForm({ ...substageForm, paramMapping: newParams });
-                              }}
-                            />
-                            <Label htmlFor={`param-${param.paramId}`} className="text-sm">
-                              {param.name} ({param.paramType})
-                            </Label>
-                          </div>
-                        ))
-                      )}
+                  <Label>Parameters</Label>
+                  <div className="border rounded-md">
+                    <div className="p-3 border-b">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search parameters..."
+                          className="pl-8"
+                          value={parameterSearchTerm}
+                          onChange={(e) => setParameterSearchTerm(e.target.value)}
+                        />
+                      </div>
                     </div>
+                    <div className="p-3 max-h-48 overflow-y-auto">
+                      <div className="space-y-2">
+                        {filteredParametersForSubstage.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            {parameterSearchTerm ? 'No parameters match your search' : 'No parameters available'}
+                          </p>
+                        ) : (
+                          filteredParametersForSubstage.map(param => (
+                            <div key={param.paramId} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`param-${param.paramId}`}
+                                checked={Array.isArray(substageForm.paramMapping) 
+                                  ? substageForm.paramMapping.includes(param.paramId!)
+                                  : substageForm.paramMapping.toString().split(';').includes(param.paramId!.toString())
+                                }
+                                onCheckedChange={(checked) => {
+                                  const currentParams = Array.isArray(substageForm.paramMapping) 
+                                    ? substageForm.paramMapping 
+                                    : substageForm.paramMapping.toString().split(';').map(id => parseInt(id)).filter(id => !isNaN(id));
+                                  
+                                  let newParams;
+                                  if (checked) {
+                                    newParams = [...currentParams, param.paramId!];
+                                  } else {
+                                    newParams = currentParams.filter(id => id !== param.paramId);
+                                  }
+                                  setSubstageForm({ ...substageForm, paramMapping: newParams });
+                                }}
+                              />
+                              <Label htmlFor={`param-${param.paramId}`} className="text-sm flex-1">
+                                <span className="font-medium">{param.name}</span>
+                                <span className="text-muted-foreground ml-1">({param.paramType})</span>
+                                {param.description && (
+                                  <div className="text-xs text-muted-foreground mt-1">{param.description}</div>
+                                )}
+                              </Label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    {filteredParametersForSubstage.length > 0 && (
+                      <div className="px-3 py-2 border-t bg-muted/50 text-xs text-muted-foreground">
+                        {Array.isArray(substageForm.paramMapping) ? substageForm.paramMapping.length : 0} selected
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Multi-select for Attestations */}
+                {/* Multi-select for Attestations with Search */}
                 <div>
-                  <Label>Attestations (Many-to-One)</Label>
-                  <div className="border rounded-md p-3 max-h-32 overflow-y-auto">
-                    <div className="space-y-2">
-                      {attestations.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No attestations available</p>
-                      ) : (
-                        attestations.map(attestation => (
-                          <div key={attestation.attestationId} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`attestation-${attestation.attestationId}`}
-                              checked={Array.isArray(substageForm.attestationMapping) 
-                                ? substageForm.attestationMapping.includes(attestation.attestationId)
-                                : substageForm.attestationMapping.toString().split(';').includes(attestation.attestationId.toString())
-                              }
-                              onCheckedChange={(checked) => {
-                                const currentAttestations = Array.isArray(substageForm.attestationMapping) 
-                                  ? substageForm.attestationMapping 
-                                  : substageForm.attestationMapping.toString().split(';').map(id => parseInt(id)).filter(id => !isNaN(id));
-                                
-                                let newAttestations;
-                                if (checked) {
-                                  newAttestations = [...currentAttestations, attestation.attestationId];
-                                } else {
-                                  newAttestations = currentAttestations.filter(id => id !== attestation.attestationId);
-                                }
-                                setSubstageForm({ ...substageForm, attestationMapping: newAttestations });
-                              }}
-                            />
-                            <Label htmlFor={`attestation-${attestation.attestationId}`} className="text-sm">
-                              {attestation.name} ({attestation.type})
-                            </Label>
-                          </div>
-                        ))
-                      )}
+                  <Label>Attestations</Label>
+                  <div className="border rounded-md">
+                    <div className="p-3 border-b">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search attestations..."
+                          className="pl-8"
+                          value={attestationSearchTerm}
+                          onChange={(e) => setAttestationSearchTerm(e.target.value)}
+                        />
+                      </div>
                     </div>
+                    <div className="p-3 max-h-48 overflow-y-auto">
+                      <div className="space-y-2">
+                        {filteredAttestationsForSubstage.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            {attestationSearchTerm ? 'No attestations match your search' : 'No attestations available'}
+                          </p>
+                        ) : (
+                          filteredAttestationsForSubstage.map(attestation => (
+                            <div key={attestation.attestationId} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`attestation-${attestation.attestationId}`}
+                                checked={Array.isArray(substageForm.attestationMapping) 
+                                  ? substageForm.attestationMapping.includes(attestation.attestationId)
+                                  : substageForm.attestationMapping.toString().split(';').includes(attestation.attestationId.toString())
+                                }
+                                onCheckedChange={(checked) => {
+                                  const currentAttestations = Array.isArray(substageForm.attestationMapping) 
+                                    ? substageForm.attestationMapping 
+                                    : substageForm.attestationMapping.toString().split(';').map(id => parseInt(id)).filter(id => !isNaN(id));
+                                  
+                                  let newAttestations;
+                                  if (checked) {
+                                    newAttestations = [...currentAttestations, attestation.attestationId];
+                                  } else {
+                                    newAttestations = currentAttestations.filter(id => id !== attestation.attestationId);
+                                  }
+                                  setSubstageForm({ ...substageForm, attestationMapping: newAttestations });
+                                }}
+                              />
+                              <Label htmlFor={`attestation-${attestation.attestationId}`} className="text-sm flex-1">
+                                <span className="font-medium">{attestation.name}</span>
+                                <span className="text-muted-foreground ml-1">({attestation.type})</span>
+                              </Label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    {filteredAttestationsForSubstage.length > 0 && (
+                      <div className="px-3 py-2 border-t bg-muted/50 text-xs text-muted-foreground">
+                        {Array.isArray(substageForm.attestationMapping) ? substageForm.attestationMapping.length : 0} selected
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
