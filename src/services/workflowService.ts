@@ -24,6 +24,53 @@ import {
   SetApplicationHierarchyMapRequest 
 } from '@/types/hierarchy-api-types';
 
+// Metadata types
+interface MetadataApplication {
+  appId: number;
+  name: string;
+  category: string;
+  description: string;
+  updatedby: string;
+  updatedon: string;
+  isactive: number;
+  entitlementMapping: number;
+  islockingenabled: number;
+  lockingrole: number;
+  cronexpression: string;
+  startdate: number;
+  expirydate: number;
+  useruncalendar: number;
+  rundateoffset: number;
+  isrunonweekdayonly: number;
+}
+
+interface MetadataStage {
+  stageId: number;
+  workflowApplication: { appId: number };
+  name: string;
+  updatedby: string;
+  updatedon: string;
+  description?: string;
+}
+
+interface CreateStageRequest {
+  stageId: null;
+  name: string;
+  updatedby: string;
+  updatedon: null;
+  workflowApplication: { appId: number };
+  description: string;
+}
+
+interface UpdateStageRequest {
+  stageId: number;
+  name: string;
+  updatedby: string;
+  updatedon: null;
+  workflowApplication: { appId: number };
+  description: string;
+}
+
 // Mock data for development/demo environments
 const MOCK_APPLICATIONS: Application[] = [
   {
@@ -446,6 +493,129 @@ const MOCK_APPLICATION_HIERARCHY_MAP: ApplicationToHierarchyMap[] = [
     applicationName: "Reg Reporting"
   }
 ];
+
+// Mock data for metadata management
+const MOCK_METADATA_APPLICATIONS: MetadataApplication[] = [
+  {
+    appId: 1,
+    name: "Daily Named Pnl",
+    category: "NPL ID",
+    description: "Daily Named Pnl",
+    updatedby: "x01279711",
+    updatedon: "2024-10-28 13:46:55",
+    isactive: 1,
+    entitlementMapping: 12,
+    islockingenabled: 1,
+    lockingrole: 2,
+    cronexpression: "0 10 0? * MON-FRI *",
+    startdate: 1730123215572,
+    expirydate: 253402214400000,
+    useruncalendar: 0,
+    rundateoffset: 1,
+    isrunonweekdayonly: 1
+  },
+  {
+    appId: 2,
+    name: "Daily Workspace Pnl",
+    category: "WORKSPACE ID",
+    description: "Daily Workspace Pnl",
+    updatedby: "x01329873",
+    updatedon: "2025-05-13 10:48:50",
+    isactive: 1,
+    entitlementMapping: 12,
+    islockingenabled: 1,
+    lockingrole: 2,
+    cronexpression: "0 10 0? * MON-FRI *",
+    startdate: 1747133330704,
+    expirydate: 253402214406008,
+    useruncalendar: 0,
+    rundateoffset: 1,
+    isrunonweekdayonly: 1
+  },
+  {
+    appId: 17,
+    name: "Basel",
+    category: "Basel",
+    description: "Basel regulatory reporting",
+    updatedby: "kumarp15",
+    updatedon: "2023-09-28 01:27:39",
+    isactive: 1,
+    entitlementMapping: 12,
+    islockingenabled: 0,
+    lockingrole: 0,
+    cronexpression: "0 55 18 ? * MON-FRI *",
+    startdate: 1695859659000,
+    expirydate: 253402214400000,
+    useruncalendar: 0,
+    rundateoffset: 0,
+    isrunonweekdayonly: 1
+  }
+];
+
+const MOCK_METADATA_STAGES: Record<number, MetadataStage[]> = {
+  17: [
+    {
+      stageId: 1056,
+      workflowApplication: { appId: 17 },
+      name: "Director Sign off/Attestation Complete",
+      updatedby: "kumarp15",
+      updatedon: "2023-09-28 01:27:39"
+    },
+    {
+      stageId: 1055,
+      workflowApplication: { appId: 17 },
+      name: "Director Review and Challenge",
+      updatedby: "kumarp15",
+      updatedon: "2023-09-28 01:27:31"
+    },
+    {
+      stageId: 1054,
+      workflowApplication: { appId: 17 },
+      name: "Review BOP (Status of Build, System vs topline, compliance to rules, impact of)",
+      updatedby: "kumarp15",
+      updatedon: "2023-09-28 01:25:16"
+    },
+    {
+      stageId: 1053,
+      workflowApplication: { appId: 17 },
+      name: "Generate Dashboard & Review",
+      updatedby: "kumarp15",
+      updatedon: "2023-09-28 01:24:54"
+    }
+  ],
+  1: [
+    {
+      stageId: 1001,
+      workflowApplication: { appId: 1 },
+      name: "Data Collection",
+      updatedby: "system",
+      updatedon: "2024-01-15 09:30:00"
+    },
+    {
+      stageId: 1002,
+      workflowApplication: { appId: 1 },
+      name: "Data Validation",
+      updatedby: "system",
+      updatedon: "2024-01-15 09:35:00"
+    }
+  ],
+  2: [
+    {
+      stageId: 2001,
+      workflowApplication: { appId: 2 },
+      name: "Workspace Setup",
+      updatedby: "admin",
+      updatedon: "2024-02-01 10:00:00"
+    }
+  ]
+};
+
+// Mock in-progress status for applications
+const MOCK_IN_PROGRESS_STATUS: Record<number, boolean> = {
+  17: false,
+  1: false,
+  2: true // This application is currently importing
+};
 
 class WorkflowService {
   private axiosInstance: AxiosInstance;
@@ -1593,6 +1763,232 @@ class WorkflowService {
         0,
         false,
         error.response?.data?.message || error.message || 'Failed to save application-hierarchy mapping'
+      );
+    }
+  }
+
+  // ===== METADATA MANAGEMENT METHODS =====
+
+  // Get all metadata applications
+  async getMetadataApplications(): Promise<ApiResponse<MetadataApplication[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for metadata applications');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_METADATA_APPLICATIONS);
+      }
+
+      console.log('[Workflow Service] Fetching metadata applications from API');
+      // Use different base URL for metadata APIs
+      const metadataInstance = axios.create({
+        baseURL: `${this.baseUrl}/api`,
+        timeout: 30000,
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      });
+
+      const response = await metadataInstance.get<MetadataApplication[]>('/workflowapp');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching metadata applications:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch metadata applications'
+      );
+    }
+  }
+
+  // Get stages by application ID
+  async getStagesByApplicationId(appId: number): Promise<ApiResponse<MetadataStage[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for stages by application ID:', appId);
+        await this.simulateNetworkDelay();
+        
+        const stages = MOCK_METADATA_STAGES[appId] || [];
+        return this.createApiResponse(stages);
+      }
+
+      console.log('[Workflow Service] Fetching stages from API for appId:', appId);
+      // Use different base URL for metadata APIs
+      const metadataInstance = axios.create({
+        baseURL: `${this.baseUrl}/api`,
+        timeout: 30000,
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      });
+
+      const response = await metadataInstance.get<MetadataStage[]>(`/stage?appId=${appId}`);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching stages:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch stages'
+      );
+    }
+  }
+
+  // Check if application is in progress (importing)
+  async checkApplicationInProgress(appId: number): Promise<ApiResponse<boolean>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for application in progress check:', appId);
+        await this.simulateNetworkDelay();
+        
+        const inProgress = MOCK_IN_PROGRESS_STATUS[appId] || false;
+        return this.createApiResponse(inProgress);
+      }
+
+      console.log('[Workflow Service] Checking application in progress from API for appId:', appId);
+      // Use different base URL for metadata APIs
+      const metadataInstance = axios.create({
+        baseURL: `${this.baseUrl}/api`,
+        timeout: 30000,
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      });
+
+      const response = await metadataInstance.get<boolean>(`/workflowapp/${appId}/inProgress`);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error checking application in progress:', error);
+      
+      return this.createApiResponse(
+        false,
+        false,
+        error.response?.data?.message || error.message || 'Failed to check application in progress status'
+      );
+    }
+  }
+
+  // Create new stage
+  async createStage(stageData: CreateStageRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock create for stage');
+        await this.simulateNetworkDelay(800);
+        
+        // Generate new stage ID
+        const newStageId = Date.now();
+        
+        // Add to mock data
+        const appId = stageData.workflowApplication.appId;
+        if (!MOCK_METADATA_STAGES[appId]) {
+          MOCK_METADATA_STAGES[appId] = [];
+        }
+        
+        const newStage: MetadataStage = {
+          stageId: newStageId,
+          workflowApplication: { appId },
+          name: stageData.name,
+          updatedby: stageData.updatedby,
+          updatedon: new Date().toISOString(),
+          description: stageData.description
+        };
+        
+        MOCK_METADATA_STAGES[appId].push(newStage);
+        
+        // Return the newly created stage ID
+        return this.createApiResponse(newStageId);
+      }
+
+      console.log('[Workflow Service] Creating stage via API:', stageData);
+      // Use different base URL for metadata APIs
+      const metadataInstance = axios.create({
+        baseURL: `${this.baseUrl}/api`,
+        timeout: 30000,
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      });
+
+      const response = await metadataInstance.post<number>('/stage', stageData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error creating stage:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to create stage'
+      );
+    }
+  }
+
+  // Update existing stage
+  async updateStage(stageId: number, stageData: UpdateStageRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock update for stage:', stageId);
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data
+        const appId = stageData.workflowApplication.appId;
+        if (MOCK_METADATA_STAGES[appId]) {
+          const stageIndex = MOCK_METADATA_STAGES[appId].findIndex(s => s.stageId === stageId);
+          if (stageIndex >= 0) {
+            MOCK_METADATA_STAGES[appId][stageIndex] = {
+              stageId,
+              workflowApplication: { appId },
+              name: stageData.name,
+              updatedby: stageData.updatedby,
+              updatedon: new Date().toISOString(),
+              description: stageData.description
+            };
+          }
+        }
+        
+        // Return the updated stage ID
+        return this.createApiResponse(stageId);
+      }
+
+      console.log('[Workflow Service] Updating stage via API:', stageId, stageData);
+      // Use different base URL for metadata APIs
+      const metadataInstance = axios.create({
+        baseURL: `${this.baseUrl}/api`,
+        timeout: 30000,
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      });
+
+      const response = await metadataInstance.put<number>(`/stage/${stageId}`, stageData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error updating stage:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to update stage'
       );
     }
   }
