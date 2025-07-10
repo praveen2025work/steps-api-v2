@@ -206,6 +206,13 @@ const mockRoles = [
   { roleId: 4, roleName: "Administrator" }
 ];
 
+const mockApplicationRoleMappings = [
+  { applicationId: 1, roleId: 1, roleName: "Producer" },
+  { applicationId: 1, roleId: 2, roleName: "Approver" },
+  { applicationId: 2, roleId: 1, roleName: "Producer" },
+  { applicationId: 2, roleId: 3, roleName: "Reviewer" }
+];
+
 const MetadataManagement: React.FC = () => {
   const { currentEnvironment } = useApiEnvironment();
   
@@ -291,6 +298,7 @@ const MetadataManagement: React.FC = () => {
 
   // Available roles state
   const [availableRoles, setAvailableRoles] = useState<any[]>([]);
+  const [applicationRoleMappings, setApplicationRoleMappings] = useState<any[]>([]);
 
   // Substages state
   const [substages, setSubstages] = useState<Substage[]>([]);
@@ -456,8 +464,12 @@ const MetadataManagement: React.FC = () => {
       if (availableRoles.length === 0) {
         fetchAvailableRoles();
       }
+      // Fetch application-specific role mappings if we have a selected application
+      if (selectedSubstageApplicationId) {
+        fetchApplicationRoleMappings(selectedSubstageApplicationId);
+      }
     }
-  }, [substageDialogOpen]);
+  }, [substageDialogOpen, selectedSubstageApplicationId]);
 
   // Extended metadata API calls with proper CORS configuration
   const fetchParameters = async () => {
@@ -625,6 +637,51 @@ const MetadataManagement: React.FC = () => {
       toast({
         title: "Using Mock Data",
         description: "Failed to fetch roles from API, using mock data for development",
+        variant: "default"
+      });
+    }
+  };
+
+  const fetchApplicationRoleMappings = async (applicationId: number) => {
+    if (shouldUseMockData()) {
+      const filteredMappings = mockApplicationRoleMappings.filter(
+        mapping => mapping.applicationId === applicationId
+      );
+      setApplicationRoleMappings(filteredMappings);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${getDotNetBaseUrl()}/api/WF/GetApplicationToRoleMap`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include', // .NET service uses Windows authentication
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Filter mappings for the specific application
+        const filteredMappings = data.filter((mapping: any) => 
+          mapping.applicationId === applicationId.toString() || 
+          mapping.applicationId === applicationId
+        );
+        setApplicationRoleMappings(filteredMappings);
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error fetching application role mappings:', error);
+      // Fallback to mock data on error
+      const filteredMappings = mockApplicationRoleMappings.filter(
+        mapping => mapping.applicationId === applicationId
+      );
+      setApplicationRoleMappings(filteredMappings);
+      toast({
+        title: "Using Mock Data",
+        description: "Failed to fetch application role mappings from API, using mock data for development",
         variant: "default"
       });
     }
@@ -1800,10 +1857,16 @@ const MetadataManagement: React.FC = () => {
                                     <Badge variant="outline">{defaultStageName}</Badge>
                                   </TableCell>
                                   <TableCell>
-                                    <Badge variant="secondary">{substage.templateId}</Badge>
+                                    <Badge variant="secondary">
+                                      {emailTemplates.find(t => t.templateId === substage.templateId)?.name || substage.templateId}
+                                    </Badge>
                                   </TableCell>
                                   <TableCell>
-                                    <Badge variant="secondary">{substage.entitlementMapping}</Badge>
+                                    <Badge variant="secondary">
+                                      {applicationRoleMappings.find(r => r.roleId === substage.entitlementMapping)?.roleName || 
+                                       availableRoles.find(r => r.roleId === substage.entitlementMapping)?.roleName || 
+                                       substage.entitlementMapping}
+                                    </Badge>
                                   </TableCell>
                                   <TableCell className="font-mono text-xs">
                                     <div className="max-w-[130px]">
@@ -2233,11 +2296,21 @@ const MetadataManagement: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="0">None</SelectItem>
-                        {availableRoles.map(role => (
-                          <SelectItem key={role.roleId} value={role.roleId.toString()}>
-                            {role.roleName}
-                          </SelectItem>
-                        ))}
+                        {applicationRoleMappings.length > 0 ? (
+                          // Use application-specific role mappings if available
+                          applicationRoleMappings.map(mapping => (
+                            <SelectItem key={mapping.roleId} value={mapping.roleId.toString()}>
+                              {mapping.roleName}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          // Fallback to all available roles if no application-specific mappings
+                          availableRoles.map(role => (
+                            <SelectItem key={role.roleId} value={role.roleId.toString()}>
+                              {role.roleName}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
