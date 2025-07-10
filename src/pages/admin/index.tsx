@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/DashboardLayout';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import WorkflowDashboard from '@/components/admin/WorkflowDashboard';
+import ExtendedMetadataManagement from '@/components/admin/ExtendedMetadataManagement';
 
 const AdminPage = () => {
   const router = useRouter();
@@ -19,13 +20,19 @@ const AdminPage = () => {
       case 'holidays': return "Holiday Calendar Management";
       case 'runcalendar': return "Run Calendar Management";
       case 'hierarchy': return "Workflow Management System";
+      case 'metadata': return "Metadata Management";
+      case 'extended-metadata': return "Extended Metadata Management";
       default: return "Admin Dashboard";
     }
   };
 
   return (
     <DashboardLayout title={getTitle()}>
-      {tab ? (
+      {tab === 'extended-metadata' ? (
+        <div className="container mx-auto py-6">
+          <ExtendedMetadataManagement />
+        </div>
+      ) : tab ? (
         <WorkflowDashboard defaultTab={tab as string} />
       ) : (
         <div className="container mx-auto py-6">

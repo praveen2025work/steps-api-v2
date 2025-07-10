@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, RefreshCw, AlertCircle, CheckCircle, Clock, Play, FileText, BarChart3, Calendar as CalendarIcon, Settings, Globe } from 'lucide-react';
+import { Search, RefreshCw, AlertCircle, CheckCircle, Clock, Play, FileText, BarChart3, Calendar as CalendarIcon, Settings, Globe, Database } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import { WorkflowRun, AuditLog } from '@/types/workflow-types';
@@ -248,6 +248,48 @@ const AdminDashboard: React.FC = () => {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Management Cards */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Management Tools</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/admin?tab=applications'}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Application Management</CardTitle>
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                Manage workflow applications, roles, and calendars
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/admin?tab=metadata'}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Metadata Management</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                Manage applications and stages metadata
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/admin?tab=extended-metadata'}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Extended Metadata</CardTitle>
+              <Database className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                Manage parameters, attestations, email templates, and substages
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Tabs defaultValue="workflow-runs" className="space-y-4" onValueChange={setActiveTab}>

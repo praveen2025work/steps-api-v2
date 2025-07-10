@@ -71,6 +71,148 @@ interface UpdateStageRequest {
   description: string;
 }
 
+// Parameter types
+interface MetadataParam {
+  paramId: number;
+  name: string;
+  paramType: string;
+  description: string;
+  updatedby: string;
+  updatedon: string;
+  value?: string;
+}
+
+interface CreateParamRequest {
+  paramId: null;
+  name: string;
+  description: string;
+  paramType: string;
+  updatedby: string;
+  updatedon: null;
+  value: null;
+}
+
+interface UpdateParamRequest {
+  paramId: number;
+  name: string;
+  description: string;
+  paramType: string;
+  updatedby: string;
+  updatedon: null;
+  value?: string;
+}
+
+// Attestation types
+interface MetadataAttestation {
+  attestationId: number;
+  name: string;
+  type: string;
+  updatedby: string;
+  updatedon: string;
+}
+
+interface CreateAttestationRequest {
+  attestationId: null;
+  name: string;
+  type: string;
+  updatedby: string;
+  updatedon: null;
+}
+
+interface UpdateAttestationRequest {
+  attestationId: number;
+  name: string;
+  type: string;
+  updatedby: string;
+  updatedon: null;
+}
+
+// Email Template types
+interface MetadataEmailTemplate {
+  templateld: number;
+  name: string;
+  emailBody: string;
+  ishtml: string;
+  subject: string;
+  fromEmailList: string;
+}
+
+interface CreateEmailTemplateRequest {
+  templateld: null;
+  name: string;
+  emailBody: string;
+  ishtml: string;
+  subject: string;
+  fromEmailList: string;
+}
+
+interface UpdateEmailTemplateRequest {
+  templateld: number;
+  name: string;
+  emailBody: string;
+  ishtml: string;
+  subject: string;
+  fromEmailList: string;
+}
+
+// Substage types
+interface MetadataSubstage {
+  substageId: number;
+  name: string;
+  componentname: string;
+  defaultstage: number;
+  attestationMapping: string;
+  paramMapping: string;
+  templateld: number;
+  entitlementMapping: number;
+  followUp: string;
+  updatedby: string;
+  updatedon: string;
+  expectedduration?: string;
+  expectedtime?: string;
+  sendEmailAtStart?: string;
+  servicelink?: string;
+  substageAttestations?: any[];
+}
+
+interface CreateSubstageRequest {
+  substageId: null;
+  name: string;
+  componentname: string;
+  defaultstage: number;
+  attestationMapping: string;
+  paramMapping: string;
+  templateld: number;
+  entitlementMapping: number;
+  expectedduration: string;
+  expectedtime: string;
+  followUp: string;
+  sendEmailAtStart: string;
+  servicelink: string;
+  substageAttestations: any[];
+  updatedby: string;
+  updatedon: string;
+}
+
+interface UpdateSubstageRequest {
+  substageId: number;
+  name: string;
+  componentname: string;
+  defaultstage: number;
+  attestationMapping: string;
+  paramMapping: string;
+  templateld: number;
+  entitlementMapping: number;
+  expectedduration: string;
+  expectedtime: string;
+  followUp: string;
+  sendEmailAtStart: string;
+  servicelink: string;
+  substageAttestations: any[];
+  updatedby: string;
+  updatedon: string;
+}
+
 // Mock data for development/demo environments
 const MOCK_APPLICATIONS: Application[] = [
   {
@@ -615,6 +757,146 @@ const MOCK_IN_PROGRESS_STATUS: Record<number, boolean> = {
   17: false,
   1: false,
   2: true // This application is currently importing
+};
+
+// Mock data for parameters
+const MOCK_METADATA_PARAMS: MetadataParam[] = [
+  {
+    paramId: 1733,
+    name: "BOOK_LOCK_UNLOCK_ENABLE",
+    paramType: "DEFAULT",
+    description: "Enable Locking/Unlocking Books for Adjustment",
+    updatedby: "x01306998",
+    updatedon: "2024-07-27 21:35:36"
+  },
+  {
+    paramId: 1734,
+    name: "MAX_RETRY_COUNT",
+    paramType: "DEFAULT",
+    description: "Maximum number of retry attempts",
+    updatedby: "system",
+    updatedon: "2024-08-01 10:15:22"
+  },
+  {
+    paramId: 1735,
+    name: "TIMEOUT_SECONDS",
+    paramType: "SYSTEM",
+    description: "Request timeout in seconds",
+    updatedby: "admin",
+    updatedon: "2024-08-05 14:30:45"
+  }
+];
+
+// Mock data for attestations
+const MOCK_METADATA_ATTESTATIONS: MetadataAttestation[] = [
+  {
+    attestationId: 7071,
+    name: "Blocked",
+    type: "DEFAULT",
+    updatedby: "x01446259",
+    updatedon: "2023-09-01 08:27:37"
+  },
+  {
+    attestationId: 7072,
+    name: "Approved",
+    type: "DEFAULT",
+    updatedby: "system",
+    updatedon: "2023-09-01 08:30:15"
+  },
+  {
+    attestationId: 7073,
+    name: "Rejected",
+    type: "DEFAULT",
+    updatedby: "admin",
+    updatedon: "2023-09-01 08:32:45"
+  }
+];
+
+// Mock data for email templates
+const MOCK_METADATA_EMAIL_TEMPLATES: MetadataEmailTemplate[] = [
+  {
+    templateld: 1,
+    name: "VP Sign off Template",
+    emailBody: "<html><body><h1>VP Sign off Required</h1><p>Please review and sign off on the workflow.</p></body></html>",
+    ishtml: "Y",
+    subject: "$ENVIRONMENT$ - VP Sign off Email Delivery",
+    fromEmailList: "PCRWorkflow@barclays.com"
+  },
+  {
+    templateld: 2,
+    name: "Approval Notification",
+    emailBody: "<html><body><h1>Approval Notification</h1><p>Your request has been approved.</p></body></html>",
+    ishtml: "Y",
+    subject: "Workflow Approval Notification",
+    fromEmailList: "workflow@company.com"
+  },
+  {
+    templateld: 3,
+    name: "Rejection Notice",
+    emailBody: "Your workflow request has been rejected. Please review and resubmit.",
+    ishtml: "N",
+    subject: "Workflow Rejection Notice",
+    fromEmailList: "workflow@company.com"
+  }
+];
+
+// Mock data for substages
+const MOCK_METADATA_SUBSTAGES: Record<number, MetadataSubstage[]> = {
+  814: [
+    {
+      substageId: 5332,
+      name: "Add observation: Commentary / Explain",
+      componentname: "/test",
+      defaultstage: 814,
+      attestationMapping: "6649;6650;",
+      paramMapping: "72;",
+      templateld: 30,
+      entitlementMapping: 21,
+      followUp: "N",
+      updatedby: "X01279711",
+      updatedon: "2024-04-11 17:55:30",
+      expectedduration: "50",
+      expectedtime: "12:00 PM",
+      sendEmailAtStart: "Y",
+      servicelink: "http://api"
+    },
+    {
+      substageId: 5333,
+      name: "Review and Validate",
+      componentname: "/review",
+      defaultstage: 814,
+      attestationMapping: "6649;",
+      paramMapping: "72;73;",
+      templateld: 31,
+      entitlementMapping: 22,
+      followUp: "Y",
+      updatedby: "system",
+      updatedon: "2024-04-12 09:30:15",
+      expectedduration: "30",
+      expectedtime: "2:00 PM",
+      sendEmailAtStart: "N",
+      servicelink: "http://api/review"
+    }
+  ],
+  1056: [
+    {
+      substageId: 5334,
+      name: "Director Approval",
+      componentname: "/approval",
+      defaultstage: 1056,
+      attestationMapping: "7071;7072;",
+      paramMapping: "1733;",
+      templateld: 1,
+      entitlementMapping: 5,
+      followUp: "N",
+      updatedby: "kumarp15",
+      updatedon: "2023-09-28 01:27:39",
+      expectedduration: "60",
+      expectedtime: "4:00 PM",
+      sendEmailAtStart: "Y",
+      servicelink: "http://api/director"
+    }
+  ]
 };
 
 class WorkflowService {
@@ -2000,6 +2282,459 @@ class WorkflowService {
         0,
         false,
         error.response?.data?.message || error.message || 'Failed to update stage'
+      );
+    }
+  }
+
+  // ===== PARAMETER MANAGEMENT METHODS =====
+
+  // Get all parameters
+  async getMetadataParams(): Promise<ApiResponse<MetadataParam[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for metadata params');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_METADATA_PARAMS);
+      }
+
+      console.log('[Workflow Service] Fetching metadata params from Java API');
+      const response = await this.javaAxiosInstance.get<MetadataParam[]>('/param');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching metadata params:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch metadata params'
+      );
+    }
+  }
+
+  // Create new parameter
+  async createParam(paramData: CreateParamRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock create for param');
+        await this.simulateNetworkDelay(800);
+        
+        // Generate new param ID
+        const newParamId = Date.now();
+        
+        // Add to mock data
+        const newParam: MetadataParam = {
+          paramId: newParamId,
+          name: paramData.name,
+          paramType: paramData.paramType,
+          description: paramData.description,
+          updatedby: paramData.updatedby,
+          updatedon: new Date().toISOString()
+        };
+        
+        MOCK_METADATA_PARAMS.push(newParam);
+        
+        // Return the newly created param ID
+        return this.createApiResponse(newParamId);
+      }
+
+      console.log('[Workflow Service] Creating param via Java API:', paramData);
+      const response = await this.javaAxiosInstance.post<number>('/param', paramData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error creating param:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to create param'
+      );
+    }
+  }
+
+  // Update existing parameter
+  async updateParam(paramId: number, paramData: UpdateParamRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock update for param:', paramId);
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data
+        const paramIndex = MOCK_METADATA_PARAMS.findIndex(p => p.paramId === paramId);
+        if (paramIndex >= 0) {
+          MOCK_METADATA_PARAMS[paramIndex] = {
+            paramId,
+            name: paramData.name,
+            paramType: paramData.paramType,
+            description: paramData.description,
+            updatedby: paramData.updatedby,
+            updatedon: new Date().toISOString(),
+            value: paramData.value
+          };
+        }
+        
+        // Return the updated param ID
+        return this.createApiResponse(paramId);
+      }
+
+      console.log('[Workflow Service] Updating param via Java API:', paramId, paramData);
+      const response = await this.javaAxiosInstance.put<number>(`/param/${paramId}`, paramData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error updating param:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to update param'
+      );
+    }
+  }
+
+  // ===== ATTESTATION MANAGEMENT METHODS =====
+
+  // Get all attestations
+  async getMetadataAttestations(): Promise<ApiResponse<MetadataAttestation[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for metadata attestations');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_METADATA_ATTESTATIONS);
+      }
+
+      console.log('[Workflow Service] Fetching metadata attestations from Java API');
+      const response = await this.javaAxiosInstance.get<MetadataAttestation[]>('/attest?type=DEFAULT');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching metadata attestations:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch metadata attestations'
+      );
+    }
+  }
+
+  // Create new attestation
+  async createAttestation(attestationData: CreateAttestationRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock create for attestation');
+        await this.simulateNetworkDelay(800);
+        
+        // Generate new attestation ID
+        const newAttestationId = Date.now();
+        
+        // Add to mock data
+        const newAttestation: MetadataAttestation = {
+          attestationId: newAttestationId,
+          name: attestationData.name,
+          type: attestationData.type,
+          updatedby: attestationData.updatedby,
+          updatedon: new Date().toISOString()
+        };
+        
+        MOCK_METADATA_ATTESTATIONS.push(newAttestation);
+        
+        // Return the newly created attestation ID
+        return this.createApiResponse(newAttestationId);
+      }
+
+      console.log('[Workflow Service] Creating attestation via Java API:', attestationData);
+      const response = await this.javaAxiosInstance.post<number>('/attest/', attestationData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error creating attestation:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to create attestation'
+      );
+    }
+  }
+
+  // Update existing attestation
+  async updateAttestation(attestationId: number, attestationData: UpdateAttestationRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock update for attestation:', attestationId);
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data
+        const attestationIndex = MOCK_METADATA_ATTESTATIONS.findIndex(a => a.attestationId === attestationId);
+        if (attestationIndex >= 0) {
+          MOCK_METADATA_ATTESTATIONS[attestationIndex] = {
+            attestationId,
+            name: attestationData.name,
+            type: attestationData.type,
+            updatedby: attestationData.updatedby,
+            updatedon: new Date().toISOString()
+          };
+        }
+        
+        // Return the updated attestation ID
+        return this.createApiResponse(attestationId);
+      }
+
+      console.log('[Workflow Service] Updating attestation via Java API:', attestationId, attestationData);
+      const response = await this.javaAxiosInstance.put<number>(`/attest/${attestationId}`, attestationData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error updating attestation:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to update attestation'
+      );
+    }
+  }
+
+  // ===== EMAIL TEMPLATE MANAGEMENT METHODS =====
+
+  // Get all email templates
+  async getMetadataEmailTemplates(): Promise<ApiResponse<MetadataEmailTemplate[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for metadata email templates');
+        await this.simulateNetworkDelay();
+        return this.createApiResponse(MOCK_METADATA_EMAIL_TEMPLATES);
+      }
+
+      console.log('[Workflow Service] Fetching metadata email templates from Java API');
+      const response = await this.javaAxiosInstance.get<MetadataEmailTemplate[]>('/email');
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching metadata email templates:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch metadata email templates'
+      );
+    }
+  }
+
+  // Create new email template
+  async createEmailTemplate(templateData: CreateEmailTemplateRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock create for email template');
+        await this.simulateNetworkDelay(800);
+        
+        // Generate new template ID
+        const newTemplateId = Date.now();
+        
+        // Add to mock data
+        const newTemplate: MetadataEmailTemplate = {
+          templateld: newTemplateId,
+          name: templateData.name,
+          emailBody: templateData.emailBody,
+          ishtml: templateData.ishtml,
+          subject: templateData.subject,
+          fromEmailList: templateData.fromEmailList
+        };
+        
+        MOCK_METADATA_EMAIL_TEMPLATES.push(newTemplate);
+        
+        // Return the newly created template ID
+        return this.createApiResponse(newTemplateId);
+      }
+
+      console.log('[Workflow Service] Creating email template via Java API:', templateData);
+      const response = await this.javaAxiosInstance.post<number>('/email/', templateData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error creating email template:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to create email template'
+      );
+    }
+  }
+
+  // Update existing email template
+  async updateEmailTemplate(templateId: number, templateData: UpdateEmailTemplateRequest): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock update for email template:', templateId);
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data
+        const templateIndex = MOCK_METADATA_EMAIL_TEMPLATES.findIndex(t => t.templateld === templateId);
+        if (templateIndex >= 0) {
+          MOCK_METADATA_EMAIL_TEMPLATES[templateIndex] = {
+            templateld: templateId,
+            name: templateData.name,
+            emailBody: templateData.emailBody,
+            ishtml: templateData.ishtml,
+            subject: templateData.subject,
+            fromEmailList: templateData.fromEmailList
+          };
+        }
+        
+        // Return the updated template ID
+        return this.createApiResponse(templateId);
+      }
+
+      console.log('[Workflow Service] Updating email template via Java API:', templateId, templateData);
+      const response = await this.javaAxiosInstance.put<number>(`/email/${templateId}`, templateData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error updating email template:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to update email template'
+      );
+    }
+  }
+
+  // ===== SUBSTAGE MANAGEMENT METHODS =====
+
+  // Get substages by stage ID
+  async getSubstagesByStageId(stageId: number): Promise<ApiResponse<MetadataSubstage[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for substages by stage ID:', stageId);
+        await this.simulateNetworkDelay();
+        
+        const substages = MOCK_METADATA_SUBSTAGES[stageId] || [];
+        return this.createApiResponse(substages);
+      }
+
+      console.log('[Workflow Service] Fetching substages from Java API for stageId:', stageId);
+      const response = await this.javaAxiosInstance.get<MetadataSubstage[]>(`/substage?stageId=${stageId}`);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching substages:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch substages'
+      );
+    }
+  }
+
+  // Create new substage
+  async createSubstage(substageData: CreateSubstageRequest, forceStartDesc: string = 'force start', reRunDesc: string = 'rerun'): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock create for substage');
+        await this.simulateNetworkDelay(800);
+        
+        // Generate new substage ID
+        const newSubstageId = Date.now();
+        
+        // Add to mock data
+        const stageId = substageData.defaultstage;
+        if (!MOCK_METADATA_SUBSTAGES[stageId]) {
+          MOCK_METADATA_SUBSTAGES[stageId] = [];
+        }
+        
+        const newSubstage: MetadataSubstage = {
+          substageId: newSubstageId,
+          name: substageData.name,
+          componentname: substageData.componentname,
+          defaultstage: substageData.defaultstage,
+          attestationMapping: substageData.attestationMapping,
+          paramMapping: substageData.paramMapping,
+          templateld: substageData.templateld,
+          entitlementMapping: substageData.entitlementMapping,
+          followUp: substageData.followUp,
+          updatedby: substageData.updatedby,
+          updatedon: new Date().toISOString(),
+          expectedduration: substageData.expectedduration,
+          expectedtime: substageData.expectedtime,
+          sendEmailAtStart: substageData.sendEmailAtStart,
+          servicelink: substageData.servicelink,
+          substageAttestations: substageData.substageAttestations
+        };
+        
+        MOCK_METADATA_SUBSTAGES[stageId].push(newSubstage);
+        
+        // Return the newly created substage ID
+        return this.createApiResponse(newSubstageId);
+      }
+
+      console.log('[Workflow Service] Creating substage via Java API:', substageData);
+      const response = await this.javaAxiosInstance.post<number>(`/substage?forceStartDesc=${encodeURIComponent(forceStartDesc)}&reRunDesc=${encodeURIComponent(reRunDesc)}`, substageData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error creating substage:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to create substage'
+      );
+    }
+  }
+
+  // Update existing substage
+  async updateSubstage(substageId: number, substageData: UpdateSubstageRequest, forceStartDesc: string = 'force start', reRunDesc: string = 'rerun'): Promise<ApiResponse<number>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock update for substage:', substageId);
+        await this.simulateNetworkDelay(800);
+        
+        // Update mock data
+        const stageId = substageData.defaultstage;
+        if (MOCK_METADATA_SUBSTAGES[stageId]) {
+          const substageIndex = MOCK_METADATA_SUBSTAGES[stageId].findIndex(s => s.substageId === substageId);
+          if (substageIndex >= 0) {
+            MOCK_METADATA_SUBSTAGES[stageId][substageIndex] = {
+              substageId,
+              name: substageData.name,
+              componentname: substageData.componentname,
+              defaultstage: substageData.defaultstage,
+              attestationMapping: substageData.attestationMapping,
+              paramMapping: substageData.paramMapping,
+              templateld: substageData.templateld,
+              entitlementMapping: substageData.entitlementMapping,
+              followUp: substageData.followUp,
+              updatedby: substageData.updatedby,
+              updatedon: new Date().toISOString(),
+              expectedduration: substageData.expectedduration,
+              expectedtime: substageData.expectedtime,
+              sendEmailAtStart: substageData.sendEmailAtStart,
+              servicelink: substageData.servicelink,
+              substageAttestations: substageData.substageAttestations
+            };
+          }
+        }
+        
+        // Return the updated substage ID
+        return this.createApiResponse(substageId);
+      }
+
+      console.log('[Workflow Service] Updating substage via Java API:', substageId, substageData);
+      const response = await this.javaAxiosInstance.put<number>(`/substage/${substageId}?forceStartDesc=${encodeURIComponent(forceStartDesc)}&reRunDesc=${encodeURIComponent(reRunDesc)}`, substageData);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Workflow Service] Error updating substage:', error);
+      
+      return this.createApiResponse(
+        0,
+        false,
+        error.response?.data?.message || error.message || 'Failed to update substage'
       );
     }
   }
