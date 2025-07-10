@@ -205,6 +205,30 @@ const MOCK_APPLICATION_HIERARCHY_MAP: ApplicationToHierarchyMap[] = [
   }
 ];
 
+// Mock unique applications for development/preview environments
+const MOCK_UNIQUE_APPLICATIONS: UniqueApplication[] = [
+  {
+    configType: "Basel",
+    configId: "17",
+    configName: "Basel"
+  },
+  {
+    configType: "Finance",
+    configId: "13",
+    configName: "Finance Hiring Workflow"
+  },
+  {
+    configType: "G4",
+    configId: "16",
+    configName: "G4 Automation"
+  },
+  {
+    configType: "NPL ID",
+    configId: "1",
+    configName: "Daily Named Pnl"
+  }
+];
+
 // Check if we're in a development/preview environment
 const isDevelopmentMode = (): boolean => {
   // Allow forcing real API calls via environment variable
@@ -220,6 +244,13 @@ const isDevelopmentMode = (): boolean => {
          hostname.includes('vercel.app') ||
          hostname.includes('127.0.0.1');
 };
+
+// Unique Application interface based on your API response
+export interface UniqueApplication {
+  configType: string;
+  configId: string;
+  configName: string;
+}
 
 // Application Parameter interface based on your API response
 export interface ApplicationParameter {
@@ -545,6 +576,23 @@ export class ApiClient {
       method: 'POST',
       body: JSON.stringify(mappingData),
     });
+  }
+
+  // Get unique applications
+  async getUniqueApplications(): Promise<ApiResponse<UniqueApplication[]>> {
+    if (isDevelopmentMode()) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      return {
+        data: MOCK_UNIQUE_APPLICATIONS,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `${this.environment.name} (Mock Data)`,
+      };
+    }
+
+    const endpoint = CORE_API_ENDPOINTS.GET_UNIQUE_APPLICATIONS;
+    return this.makeRequest<UniqueApplication[]>(endpoint);
   }
 }
 

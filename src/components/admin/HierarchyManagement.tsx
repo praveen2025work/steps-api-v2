@@ -51,7 +51,7 @@ import {
   Layers
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { useApiClient } from '@/lib/api-client';
+import { useApiClient, UniqueApplication } from '@/lib/api-client';
 import { 
   UniqueHierarchy, 
   HierarchyDetail, 
@@ -77,6 +77,7 @@ const HierarchyManagement: React.FC = () => {
   const [hierarchyDetails, setHierarchyDetails] = useState<HierarchyDetail[]>([]);
   const [applicationMappings, setApplicationMappings] = useState<ApplicationToHierarchyMap[]>([]);
   const [hierarchyStructures, setHierarchyStructures] = useState<HierarchyStructure[]>([]);
+  const [uniqueApplications, setUniqueApplications] = useState<UniqueApplication[]>([]);
   
   // Dialog states
   const [hierarchyDialogOpen, setHierarchyDialogOpen] = useState(false);
@@ -123,10 +124,11 @@ const HierarchyManagement: React.FC = () => {
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [hierarchiesResponse, detailsResponse, mappingsResponse] = await Promise.all([
+      const [hierarchiesResponse, detailsResponse, mappingsResponse, applicationsResponse] = await Promise.all([
         apiClient.getUniqueHierarchies(),
         apiClient.getHierarchyDetails(),
-        apiClient.getApplicationToHierarchyMap()
+        apiClient.getApplicationToHierarchyMap(),
+        apiClient.getUniqueApplications()
       ]);
 
       if (hierarchiesResponse.success) {
@@ -155,6 +157,16 @@ const HierarchyManagement: React.FC = () => {
         toast({
           title: "Error Loading Application Mappings",
           description: mappingsResponse.error || "Failed to load application mappings",
+          variant: "destructive"
+        });
+      }
+
+      if (applicationsResponse.success) {
+        setUniqueApplications(applicationsResponse.data);
+      } else {
+        toast({
+          title: "Error Loading Applications",
+          description: applicationsResponse.error || "Failed to load unique applications",
           variant: "destructive"
         });
       }
@@ -835,14 +847,23 @@ const HierarchyManagement: React.FC = () => {
           
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="applicationId">Application ID</Label>
-              <Input 
-                id="applicationId" 
-                type="number"
-                placeholder="Enter application ID" 
-                value={mappingForm.applicationId || ''}
-                onChange={(e) => handleMappingFormChange('applicationId', parseInt(e.target.value) || 0)}
-              />
+              <Label htmlFor="applicationId">Application</Label>
+              <Select 
+                value={mappingForm.applicationId.toString()} 
+                onValueChange={(value) => handleMappingFormChange('applicationId', parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select application" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Select an application</SelectItem>
+                  {uniqueApplications.map((application) => (
+                    <SelectItem key={application.configId} value={application.configId}>
+                      {application.configName} ({application.configType})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
@@ -855,6 +876,7 @@ const HierarchyManagement: React.FC = () => {
                   <SelectValue placeholder="Select hierarchy" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="0">Select a hierarchy</SelectItem>
                   {uniqueHierarchies.map((hierarchy) => (
                     <SelectItem key={hierarchy.hierarchyId} value={hierarchy.hierarchyId.toString()}>
                       {hierarchy.hierarchyName}
