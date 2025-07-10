@@ -239,21 +239,29 @@ const MetadataManagement: React.FC = () => {
     }
   }, [stageDialogOpen, selectedStage]);
 
-  // Extended metadata API calls
+  // Extended metadata API calls with proper CORS configuration
   const fetchParameters = async () => {
     try {
-      const response = await fetch(`${getJavaBaseUrl()}/api/param`);
+      const response = await fetch(`${getJavaBaseUrl()}/api/param`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit', // Java service is not Windows authenticated
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setParameters(data);
       } else {
-        throw new Error('Failed to fetch parameters');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error fetching parameters:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch parameters",
+        description: `Failed to fetch parameters: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -261,18 +269,26 @@ const MetadataManagement: React.FC = () => {
 
   const fetchAttestations = async () => {
     try {
-      const response = await fetch(`${getJavaBaseUrl()}/api/attest?type=default`);
+      const response = await fetch(`${getJavaBaseUrl()}/api/attest?type=default`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit', // Java service is not Windows authenticated
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setAttestations(data);
       } else {
-        throw new Error('Failed to fetch attestations');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error fetching attestations:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch attestations",
+        description: `Failed to fetch attestations: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -280,18 +296,26 @@ const MetadataManagement: React.FC = () => {
 
   const fetchEmailTemplates = async () => {
     try {
-      const response = await fetch(`${getJavaBaseUrl()}/api/email`);
+      const response = await fetch(`${getJavaBaseUrl()}/api/email`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit', // Java service is not Windows authenticated
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setEmailTemplates(data);
       } else {
-        throw new Error('Failed to fetch email templates');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error fetching email templates:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch email templates",
+        description: `Failed to fetch email templates: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -299,18 +323,26 @@ const MetadataManagement: React.FC = () => {
 
   const fetchSubstages = async (stageId: number) => {
     try {
-      const response = await fetch(`${getJavaBaseUrl()}/api/substage?stageId=${stageId}`);
+      const response = await fetch(`${getJavaBaseUrl()}/api/substage?stageId=${stageId}`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit', // Java service is not Windows authenticated
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setSubstages(data);
       } else {
-        throw new Error('Failed to fetch substages');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error fetching substages:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch substages",
+        description: `Failed to fetch substages: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -371,7 +403,7 @@ const MetadataManagement: React.FC = () => {
     }
   };
 
-  // Extended metadata save functions
+  // Extended metadata save functions with proper CORS configuration
   const saveParameter = async () => {
     try {
       const method = editingParam ? 'PUT' : 'POST';
@@ -381,7 +413,10 @@ const MetadataManagement: React.FC = () => {
 
       const response = await fetch(url, {
         method,
+        mode: 'cors',
+        credentials: 'omit', // Java service is not Windows authenticated
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(paramForm)
@@ -396,13 +431,13 @@ const MetadataManagement: React.FC = () => {
         setEditingParam(null);
         fetchParameters();
       } else {
-        throw new Error('Failed to save parameter');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error saving parameter:', error);
       toast({
         title: "Error",
-        description: "Failed to save parameter",
+        description: `Failed to save parameter: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -417,7 +452,10 @@ const MetadataManagement: React.FC = () => {
 
       const response = await fetch(url, {
         method,
+        mode: 'cors',
+        credentials: 'omit', // Java service is not Windows authenticated
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(attestationForm)
@@ -432,13 +470,13 @@ const MetadataManagement: React.FC = () => {
         setEditingAttestation(null);
         fetchAttestations();
       } else {
-        throw new Error('Failed to save attestation');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error saving attestation:', error);
       toast({
         title: "Error",
-        description: "Failed to save attestation",
+        description: `Failed to save attestation: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -453,7 +491,10 @@ const MetadataManagement: React.FC = () => {
 
       const response = await fetch(url, {
         method,
+        mode: 'cors',
+        credentials: 'omit', // Java service is not Windows authenticated
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(emailForm)
@@ -468,13 +509,13 @@ const MetadataManagement: React.FC = () => {
         setEditingEmail(null);
         fetchEmailTemplates();
       } else {
-        throw new Error('Failed to save email template');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error saving email template:', error);
       toast({
         title: "Error",
-        description: "Failed to save email template",
+        description: `Failed to save email template: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -491,7 +532,10 @@ const MetadataManagement: React.FC = () => {
 
       const response = await fetch(url, {
         method,
+        mode: 'cors',
+        credentials: 'omit', // Java service is not Windows authenticated
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(substageForm)
@@ -508,13 +552,13 @@ const MetadataManagement: React.FC = () => {
           fetchSubstages(selectedStageId);
         }
       } else {
-        throw new Error('Failed to save substage');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error saving substage:', error);
       toast({
         title: "Error",
-        description: "Failed to save substage",
+        description: `Failed to save substage: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
