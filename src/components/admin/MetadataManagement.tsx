@@ -163,7 +163,7 @@ const MetadataManagement: React.FC = () => {
   const [substageDialogOpen, setSubstageDialogOpen] = useState(false);
   const [editingSubstage, setEditingSubstage] = useState<Substage | null>(null);
   const [selectedStageId, setSelectedStageId] = useState<number | null>(null);
-  const [extendedStages, setExtendedStages] = useState<ExtendedStage[]>([]);
+  const [selectedSubstageApplicationId, setSelectedSubstageApplicationId] = useState<number | null>(null);
   const [substageForm, setSubstageForm] = useState<Substage>({
     substageId: null,
     name: '',
@@ -205,14 +205,19 @@ const MetadataManagement: React.FC = () => {
     } else if (activeTab === 'email-templates') {
       fetchEmailTemplates();
     } else if (activeTab === 'substages') {
-      // Load sample stages for demo
-      setExtendedStages([
-        { stageId: 814, name: 'Initial Review' },
-        { stageId: 815, name: 'Approval Process' },
-        { stageId: 816, name: 'Final Validation' }
-      ]);
+      // Reset substage selections when switching to substages tab
+      setSelectedSubstageApplicationId(null);
+      setSelectedStageId(null);
+      setSubstages([]);
     }
   }, [activeTab, currentEnvironment]);
+
+  // Load stages when substage application is selected
+  useEffect(() => {
+    if (selectedSubstageApplicationId) {
+      refreshStages(selectedSubstageApplicationId);
+    }
+  }, [selectedSubstageApplicationId, refreshStages]);
 
   // Load substages when stage is selected
   useEffect(() => {
@@ -269,7 +274,7 @@ const MetadataManagement: React.FC = () => {
 
   const fetchAttestations = async () => {
     try {
-      const response = await fetch(`${getJavaBaseUrl()}/api/attest?type=default`, {
+      const response = await fetch(`${getJavaBaseUrl()}/api/attest?type=DEFAULT`, {
         method: 'GET',
         mode: 'cors',
         credentials: 'omit', // Java service is not Windows authenticated
@@ -692,6 +697,14 @@ const MetadataManagement: React.FC = () => {
   const currentStages = selectedApplicationId ? stages[selectedApplicationId] || [] : [];
   const isApplicationInProgress = selectedApplicationId ? inProgressStatus[selectedApplicationId] || false : false;
   const isStagesLoading = selectedApplicationId ? stagesLoading[selectedApplicationId] || false : false;
+
+  // Get substage application data
+  const currentSubstageApplication = selectedSubstageApplicationId 
+    ? applications.find(app => app.appId === selectedSubstageApplicationId)
+    : null;
+
+  const currentSubstageStages = selectedSubstageApplicationId ? stages[selectedSubstageApplicationId] || [] : [];
+  const isSubstageStagesLoading = selectedSubstageApplicationId ? stagesLoading[selectedSubstageApplicationId] || false : false;
 
   return (
     <div className="space-y-6">
@@ -1214,98 +1227,185 @@ const MetadataManagement: React.FC = () => {
 
         {/* Substages Tab */}
         <TabsContent value="substages" className="space-y-4">
+          {/* Application Selection for Substages */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Substages Management</CardTitle>
-                <CardDescription>Manage substages for workflow stages</CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={selectedStageId?.toString() || ''} onValueChange={(value) => setSelectedStageId(Number(value))}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select Stage" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {extendedStages.map(stage => (
-                      <SelectItem key={stage.stageId} value={stage.stageId.toString()}>
-                        {stage.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button onClick={addNewSubstage} disabled={!selectedStageId}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Substage
-                </Button>
-              </div>
+            <CardHeader>
+              <CardTitle>Select Application for Substages</CardTitle>
+              <CardDescription>Choose an application to manage its stage substages</CardDescription>
             </CardHeader>
             <CardContent>
-              {!selectedStageId ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Database className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <p>Please select a stage to view its substages</p>
+              <div className="flex items-center space-x-4">
+                <div className="flex-1">
+                  <Label htmlFor="substageApplicationSelect">Application</Label>
+                  <Select
+                    value={selectedSubstageApplicationId?.toString() || ""}
+                    onValueChange={(value) => {
+                      setSelectedSubstageApplicationId(value ? parseInt(value) : null);
+                      setSelectedStageId(null); // Reset stage selection when application changes
+                      setSubstages([]); // Clear substages
+                    }}
+                    disabled={applicationsLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={applicationsLoading ? "Loading applications..." : "Select an application"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {applications.map((app) => (
+                        <SelectItem key={app.appId} value={app.appId.toString()}>
+                          <div className="flex items-center space-x-2">
+                            <span>{app.name}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {app.category}
+                            </Badge>
+                            {app.isactive === 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                Inactive
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : (
-                <div className="border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Component</TableHead>
-                        <TableHead>Follow Up</TableHead>
-                        <TableHead>Email at Start</TableHead>
-                        <TableHead>Updated By</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {loading ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-6">
-                            Loading substages...
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredSubstages.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                            No substages found for this stage
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredSubstages.map((substage) => (
-                          <TableRow key={substage.substageId}>
-                            <TableCell className="font-medium">{substage.name}</TableCell>
-                            <TableCell>{substage.componentname}</TableCell>
-                            <TableCell>
-                              <Badge variant={substage.followUp === 'Y' ? 'default' : 'secondary'}>
-                                {substage.followUp === 'Y' ? 'Yes' : 'No'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={substage.sendEmailAtStart === 'Y' ? 'default' : 'secondary'}>
-                                {substage.sendEmailAtStart === 'Y' ? 'Yes' : substage.sendEmailAtStart === 'N' ? 'No' : 'N/A'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{substage.updatedby}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => editSubstage(substage)}
-                              >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Edit
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                <Button 
+                  onClick={refreshApplications} 
+                  disabled={applicationsLoading}
+                  variant="outline"
+                >
+                  <RefreshCw className={`h-4 w-4 ${applicationsLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+
+              {currentSubstageApplication && (
+                <div className="mt-4 p-4 bg-muted rounded-md">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Description:</span> {currentSubstageApplication.description}
+                    </div>
+                    <div>
+                      <span className="font-medium">Updated by:</span> {currentSubstageApplication.updatedby}
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Stage Selection and Substages Management */}
+          {selectedSubstageApplicationId && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Substages Management</CardTitle>
+                  <CardDescription>Select a stage to manage its substages</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select 
+                    value={selectedStageId?.toString() || ''} 
+                    onValueChange={(value) => {
+                      const stageId = value ? Number(value) : null;
+                      setSelectedStageId(stageId);
+                      if (stageId) {
+                        fetchSubstages(stageId);
+                      } else {
+                        setSubstages([]);
+                      }
+                    }}
+                    disabled={isSubstageStagesLoading}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder={isSubstageStagesLoading ? "Loading stages..." : "Select Stage"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currentSubstageStages.map(stage => (
+                        <SelectItem key={stage.stageId} value={stage.stageId.toString()}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={addNewSubstage} disabled={!selectedStageId}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Substage
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {!selectedStageId ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Database className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p>Please select a stage to view its substages</p>
+                  </div>
+                ) : (
+                  <div className="border rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Component</TableHead>
+                          <TableHead>Default Stage</TableHead>
+                          <TableHead>Follow Up</TableHead>
+                          <TableHead>Email at Start</TableHead>
+                          <TableHead>Updated By</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-6">
+                              Loading substages...
+                            </TableCell>
+                          </TableRow>
+                        ) : filteredSubstages.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                              No substages found for this stage
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredSubstages.map((substage) => {
+                            const defaultStageName = currentSubstageStages.find(s => s.stageId === substage.defaultstage)?.name || substage.defaultstage.toString();
+                            return (
+                              <TableRow key={substage.substageId}>
+                                <TableCell className="font-medium">{substage.name}</TableCell>
+                                <TableCell>{substage.componentname}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{defaultStageName}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={substage.followUp === 'Y' ? 'default' : 'secondary'}>
+                                    {substage.followUp === 'Y' ? 'Yes' : 'No'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={substage.sendEmailAtStart === 'Y' ? 'default' : 'secondary'}>
+                                    {substage.sendEmailAtStart === 'Y' ? 'Yes' : substage.sendEmailAtStart === 'N' ? 'No' : 'N/A'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{substage.updatedby}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => editSubstage(substage)}
+                                  >
+                                    <Edit className="h-3 w-3 mr-1" />
+                                    Edit
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -1569,13 +1669,21 @@ const MetadataManagement: React.FC = () => {
                 </div>
                 <div>
                   <Label htmlFor="substage-stage">Default Stage</Label>
-                  <Input
-                    id="substage-stage"
-                    type="number"
-                    value={substageForm.defaultstage}
-                    onChange={(e) => setSubstageForm({ ...substageForm, defaultstage: Number(e.target.value) })}
-                    placeholder="814"
-                  />
+                  <Select 
+                    value={substageForm.defaultstage.toString()} 
+                    onValueChange={(value) => setSubstageForm({ ...substageForm, defaultstage: Number(value) })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select default stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currentSubstageStages.map(stage => (
+                        <SelectItem key={stage.stageId} value={stage.stageId.toString()}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
