@@ -618,12 +618,14 @@ const MOCK_IN_PROGRESS_STATUS: Record<number, boolean> = {
 };
 
 class WorkflowService {
-  private axiosInstance: AxiosInstance;
+  private dotNetAxiosInstance: AxiosInstance;
+  private javaAxiosInstance: AxiosInstance;
   private baseUrl: string;
 
   constructor() {
     this.baseUrl = this.getBaseUrl();
-    this.axiosInstance = this.createAxiosInstance();
+    this.dotNetAxiosInstance = this.createDotNetAxiosInstance();
+    this.javaAxiosInstance = this.createJavaAxiosInstance();
   }
 
   private getBaseUrl(): string {
@@ -635,8 +637,8 @@ class WorkflowService {
     return baseUrl;
   }
 
-  private createAxiosInstance(): AxiosInstance {
-    // Always use the configured base URL directly
+  private createDotNetAxiosInstance(): AxiosInstance {
+    // .NET service uses /api/WF base path
     const baseURL = `${this.baseUrl}/api/WF`;
     
     const instance = axios.create({
@@ -653,7 +655,7 @@ class WorkflowService {
     // Request interceptor for authentication and logging
     instance.interceptors.request.use(
       (config) => {
-        console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
+        console.log(`[.NET API Request] ${config.method?.toUpperCase()} ${config.url}`);
         
         // Add any additional headers for Windows auth if needed
         if (this.isWindowsAuthEnvironment()) {
@@ -663,7 +665,7 @@ class WorkflowService {
         return config;
       },
       (error) => {
-        console.error('[API Request Error]', error);
+        console.error('[.NET API Request Error]', error);
         return Promise.reject(error);
       }
     );
@@ -671,11 +673,75 @@ class WorkflowService {
     // Response interceptor for error handling and logging
     instance.interceptors.response.use(
       (response: AxiosResponse) => {
-        console.log(`[API Response] ${response.status} ${response.config.url}`);
+        console.log(`[.NET API Response] ${response.status} ${response.config.url}`);
         return response;
       },
       (error) => {
-        console.error('[API Response Error]', {
+        console.error('[.NET API Response Error]', {
+          url: error.config?.url,
+          method: error.config?.method,
+          status: error.response?.status,
+          message: error.message,
+          data: error.response?.data
+        });
+
+        // Handle specific error cases
+        if (error.response?.status === 401) {
+          console.error('Authentication failed - check Windows credentials');
+        } else if (error.response?.status === 403) {
+          console.error('Access forbidden - insufficient permissions');
+        } else if (error.response?.status >= 500) {
+          console.error('Server error - check API availability');
+        }
+
+        return Promise.reject(error);
+      }
+    );
+
+    return instance;
+  }
+
+  private createJavaAxiosInstance(): AxiosInstance {
+    // Java service uses /api base path
+    const baseURL = `${this.baseUrl}/api`;
+    
+    const instance = axios.create({
+      baseURL,
+      timeout: 30000,
+      withCredentials: true, // Use credentials for Windows authentication
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache',
+      },
+    });
+
+    // Request interceptor for authentication and logging
+    instance.interceptors.request.use(
+      (config) => {
+        console.log(`[Java API Request] ${config.method?.toUpperCase()} ${config.url}`);
+        
+        // Add any additional headers for Windows auth if needed
+        if (this.isWindowsAuthEnvironment()) {
+          config.headers['X-Requested-With'] = 'XMLHttpRequest';
+        }
+        
+        return config;
+      },
+      (error) => {
+        console.error('[Java API Request Error]', error);
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor for error handling and logging
+    instance.interceptors.response.use(
+      (response: AxiosResponse) => {
+        console.log(`[Java API Response] ${response.status} ${response.config.url}`);
+        return response;
+      },
+      (error) => {
+        console.error('[Java API Response Error]', {
           url: error.config?.url,
           method: error.config?.method,
           status: error.response?.status,
@@ -759,7 +825,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching applications from API');
-      const response = await this.axiosInstance.get<Application[]>('/GetWorkflowApplicationDetails/false');
+      const response = await this.dotNetAxiosInstance.get<Application[]>('/GetWorkflowApplicationDetails/false');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -785,7 +851,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving application to API:', application);
-      const response = await this.axiosInstance.post<number>('/SetApplication', application);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetApplication', application);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -888,7 +954,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching application parameters from API for appId:', appId);
-      const response = await this.axiosInstance.get<ApplicationParameter[]>(`/appparam/${appId}`);
+      const response = await this.dotNetAxiosInstance.get<ApplicationParameter[]>(`/appparam/${appId}`);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -931,7 +997,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving application parameter to API:', parameter);
-      const response = await this.axiosInstance.post<ApplicationParameter[]>('/WorkflowAppParam', parameter);
+      const response = await this.dotNetAxiosInstance.post<ApplicationParameter[]>('/WorkflowAppParam', parameter);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -957,7 +1023,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching workflow roles from API');
-      const response = await this.axiosInstance.get<WorkflowRole[]>('/GetWorkflowRoleDetails/false');
+      const response = await this.dotNetAxiosInstance.get<WorkflowRole[]>('/GetWorkflowRoleDetails/false');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -997,7 +1063,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving roles to API:', roles);
-      const response = await this.axiosInstance.post<number>('/SetRoles', roles);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetRoles', roles);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1021,7 +1087,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching unique applications from API');
-      const response = await this.axiosInstance.get<UniqueApplication[]>('/GetWorkflowUniqueApplications');
+      const response = await this.dotNetAxiosInstance.get<UniqueApplication[]>('/GetWorkflowUniqueApplications');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1045,7 +1111,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching unique roles from API');
-      const response = await this.axiosInstance.get<UniqueRole[]>('/GetWorkflowUniqueRoles');
+      const response = await this.dotNetAxiosInstance.get<UniqueRole[]>('/GetWorkflowUniqueRoles');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1069,7 +1135,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching application-role mappings from API');
-      const response = await this.axiosInstance.get<ApplicationRoleMapping[]>('/GetWorkflowApplicationToRoleMap');
+      const response = await this.dotNetAxiosInstance.get<ApplicationRoleMapping[]>('/GetWorkflowApplicationToRoleMap');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1106,7 +1172,7 @@ class WorkflowService {
       }));
 
       console.log('[Workflow Service] Saving application-role mappings to API:', apiPayload);
-      const response = await this.axiosInstance.post<number>('/SetApplicationToRoleMap', apiPayload);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetApplicationToRoleMap', apiPayload);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1163,7 +1229,7 @@ class WorkflowService {
       console.log('[Workflow Service] Mappings to send:', apiPayload);
       console.log('[Workflow Service] Total mappings sent:', apiPayload.length, 'instead of', allCurrentMappings.length);
 
-      const response = await this.axiosInstance.post<number>('/SetApplicationToRoleMap', apiPayload);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetApplicationToRoleMap', apiPayload);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1189,7 +1255,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching workflow calendars from API');
-      const response = await this.axiosInstance.get<WorkflowCalendar[]>('/GetWorkflowCalendarDetails');
+      const response = await this.dotNetAxiosInstance.get<WorkflowCalendar[]>('/GetWorkflowCalendarDetails');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1242,7 +1308,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving calendars to API:', calendars);
-      const response = await this.axiosInstance.post<number>('/SetCalendar', calendars);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetCalendar', calendars);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1266,7 +1332,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching unique calendars from API');
-      const response = await this.axiosInstance.get<UniqueCalendar[]>('/GetWorkflowUniqueCalendars');
+      const response = await this.dotNetAxiosInstance.get<UniqueCalendar[]>('/GetWorkflowUniqueCalendars');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1290,7 +1356,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching application-calendar mappings from API');
-      const response = await this.axiosInstance.get<ApplicationCalendarMapping[]>('/GetWorkflowApplicationToCalendarMap');
+      const response = await this.dotNetAxiosInstance.get<ApplicationCalendarMapping[]>('/GetWorkflowApplicationToCalendarMap');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1348,7 +1414,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving application-calendar mapping to API:', mapping);
-      const response = await this.axiosInstance.post<number>('/SetApplicationToCalendarMap', mapping);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetApplicationToCalendarMap', mapping);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1374,7 +1440,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching workflow run calendars from API');
-      const response = await this.axiosInstance.get<WorkflowRunCalendar[]>('/GetWorkflowRunCalendarDetails');
+      const response = await this.dotNetAxiosInstance.get<WorkflowRunCalendar[]>('/GetWorkflowRunCalendarDetails');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1427,7 +1493,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving run calendars to API:', calendars);
-      const response = await this.axiosInstance.post<number>('/SetRunCalendar', calendars);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetRunCalendar', calendars);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1451,7 +1517,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching unique run calendars from API');
-      const response = await this.axiosInstance.get<UniqueRunCalendar[]>('/GetWorkflowUniqueRunCalendars');
+      const response = await this.dotNetAxiosInstance.get<UniqueRunCalendar[]>('/GetWorkflowUniqueRunCalendars');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1475,7 +1541,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching application-run calendar mappings from API');
-      const response = await this.axiosInstance.get<ApplicationRunCalendarMapping[]>('/GetWorkflowApplicationToRunCalendarMap');
+      const response = await this.dotNetAxiosInstance.get<ApplicationRunCalendarMapping[]>('/GetWorkflowApplicationToRunCalendarMap');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1533,7 +1599,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving application-run calendar mapping to API:', mapping);
-      const response = await this.axiosInstance.post<number>('/SetApplicationToRunCalendarMap', mapping);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetApplicationToRunCalendarMap', mapping);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1559,7 +1625,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching unique hierarchies from API');
-      const response = await this.axiosInstance.get<UniqueHierarchy[]>('/GetWorkflowUniqueHierarchy');
+      const response = await this.dotNetAxiosInstance.get<UniqueHierarchy[]>('/GetWorkflowUniqueHierarchy');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1583,7 +1649,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching hierarchy details from API');
-      const response = await this.axiosInstance.get<HierarchyDetail[]>('/GetWorkflowHierarchyDetails');
+      const response = await this.dotNetAxiosInstance.get<HierarchyDetail[]>('/GetWorkflowHierarchyDetails');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1666,7 +1732,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving hierarchy to API:', hierarchyData);
-      const response = await this.axiosInstance.post<number>('/setHierarchy', hierarchyData);
+      const response = await this.dotNetAxiosInstance.post<number>('/setHierarchy', hierarchyData);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1690,7 +1756,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching application-hierarchy mappings from API');
-      const response = await this.axiosInstance.get<ApplicationToHierarchyMap[]>('/GetWorkflowApplicationToHierarchyMap');
+      const response = await this.dotNetAxiosInstance.get<ApplicationToHierarchyMap[]>('/GetWorkflowApplicationToHierarchyMap');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1753,7 +1819,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving application-hierarchy mapping to API:', mappingData);
-      const response = await this.axiosInstance.post<number>('/SetApplicationHierarchyMap', mappingData);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetApplicationHierarchyMap', mappingData);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1778,20 +1844,8 @@ class WorkflowService {
         return this.createApiResponse(MOCK_METADATA_APPLICATIONS);
       }
 
-      console.log('[Workflow Service] Fetching metadata applications from API');
-      // Use different base URL for metadata APIs
-      const metadataInstance = axios.create({
-        baseURL: `${this.baseUrl}/api`,
-        timeout: 30000,
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-      });
-
-      const response = await metadataInstance.get<MetadataApplication[]>('/workflowapp');
+      console.log('[Workflow Service] Fetching metadata applications from Java API');
+      const response = await this.javaAxiosInstance.get<MetadataApplication[]>('/workflowapp');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1816,20 +1870,8 @@ class WorkflowService {
         return this.createApiResponse(stages);
       }
 
-      console.log('[Workflow Service] Fetching stages from API for appId:', appId);
-      // Use different base URL for metadata APIs
-      const metadataInstance = axios.create({
-        baseURL: `${this.baseUrl}/api`,
-        timeout: 30000,
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-      });
-
-      const response = await metadataInstance.get<MetadataStage[]>(`/stage?appId=${appId}`);
+      console.log('[Workflow Service] Fetching stages from Java API for appId:', appId);
+      const response = await this.javaAxiosInstance.get<MetadataStage[]>(`/stage?appId=${appId}`);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1854,20 +1896,8 @@ class WorkflowService {
         return this.createApiResponse(inProgress);
       }
 
-      console.log('[Workflow Service] Checking application in progress from API for appId:', appId);
-      // Use different base URL for metadata APIs
-      const metadataInstance = axios.create({
-        baseURL: `${this.baseUrl}/api`,
-        timeout: 30000,
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-      });
-
-      const response = await metadataInstance.get<boolean>(`/workflowapp/${appId}/inProgress`);
+      console.log('[Workflow Service] Checking application in progress from Java API for appId:', appId);
+      const response = await this.javaAxiosInstance.get<boolean>(`/workflowapp/${appId}/inProgress`);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1912,20 +1942,8 @@ class WorkflowService {
         return this.createApiResponse(newStageId);
       }
 
-      console.log('[Workflow Service] Creating stage via API:', stageData);
-      // Use different base URL for metadata APIs
-      const metadataInstance = axios.create({
-        baseURL: `${this.baseUrl}/api`,
-        timeout: 30000,
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-      });
-
-      const response = await metadataInstance.post<number>('/stage', stageData);
+      console.log('[Workflow Service] Creating stage via Java API:', stageData);
+      const response = await this.javaAxiosInstance.post<number>('/stage', stageData);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1966,20 +1984,8 @@ class WorkflowService {
         return this.createApiResponse(stageId);
       }
 
-      console.log('[Workflow Service] Updating stage via API:', stageId, stageData);
-      // Use different base URL for metadata APIs
-      const metadataInstance = axios.create({
-        baseURL: `${this.baseUrl}/api`,
-        timeout: 30000,
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-      });
-
-      const response = await metadataInstance.put<number>(`/stage/${stageId}`, stageData);
+      console.log('[Workflow Service] Updating stage via Java API:', stageId, stageData);
+      const response = await this.javaAxiosInstance.put<number>(`/stage/${stageId}`, stageData);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
