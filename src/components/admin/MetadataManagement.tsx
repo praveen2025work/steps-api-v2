@@ -340,12 +340,12 @@ const MetadataManagement: React.FC = () => {
 
   // Get base URL for Java service
   const getJavaBaseUrl = () => {
-    return currentEnvironment?.javaBaseUrl || 'http://api-workflow.com';
+    return currentEnvironment?.javaBaseUrl || process.env.NEXT_PUBLIC_JAVA_BASE_URL || 'http://api-workflow.com';
   };
 
   // Get base URL for .NET service
   const getDotNetBaseUrl = () => {
-    return currentEnvironment?.baseUrl || 'http://api.com';
+    return currentEnvironment?.baseUrl || process.env.NEXT_PUBLIC_DOTNET_BASE_URL || 'http://api.com';
   };
 
   // Check if we should use mock data
@@ -363,10 +363,10 @@ const MetadataManagement: React.FC = () => {
 
     setCheckingImportStatus(prev => ({ ...prev, [appId]: true }));
     try {
-      const response = await fetch(`${getDotNetBaseUrl()}/api/workflowapp/${appId}/inProgress`, {
+      const response = await fetch(`${getJavaBaseUrl()}/api/workflowapp/${appId}/inProgress`, {
         method: 'GET',
         mode: 'cors',
-        credentials: 'include', // .NET service uses Windows authentication
+        credentials: 'omit', // Java service is not Windows authenticated
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
