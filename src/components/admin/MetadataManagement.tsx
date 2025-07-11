@@ -310,7 +310,7 @@ const MetadataManagement: React.FC = () => {
   // Pagination state for substages
   const [substageCurrentPage, setSubstageCurrentPage] = useState(1);
   const [substageSearchTerm, setSubstageSearchTerm] = useState('');
-  const substagesPerPage = 10;
+  const substagesPerPage = 200;
 
   // Search state for parameters and attestations in substage dialog
   const [parameterSearchTerm, setParameterSearchTerm] = useState('');
@@ -1811,37 +1811,51 @@ const MetadataManagement: React.FC = () => {
 
                     {/* Pagination at Top */}
                     {totalSubstagePages > 1 && (
-                      <div className="flex items-center justify-between p-4 pagination-top">
-                        <div className="text-sm text-muted-foreground">
+                      <div className="pagination-top">
+                        <div className="pagination-info">
                           Showing {((substageCurrentPage - 1) * substagesPerPage) + 1} to {Math.min(substageCurrentPage * substagesPerPage, filteredSubstages.length)} of {filteredSubstages.length} results
                         </div>
-                        <Pagination>
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious 
-                                onClick={() => setSubstageCurrentPage(Math.max(1, substageCurrentPage - 1))}
-                                className={substageCurrentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                              />
-                            </PaginationItem>
-                            {Array.from({ length: totalSubstagePages }, (_, i) => i + 1).map((page) => (
-                              <PaginationItem key={page}>
-                                <PaginationLink
-                                  onClick={() => setSubstageCurrentPage(page)}
-                                  isActive={page === substageCurrentPage}
-                                  className="cursor-pointer"
-                                >
-                                  {page}
-                                </PaginationLink>
+                        <div className="pagination-wrapper">
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious 
+                                  onClick={() => setSubstageCurrentPage(Math.max(1, substageCurrentPage - 1))}
+                                  className={substageCurrentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
                               </PaginationItem>
-                            ))}
-                            <PaginationItem>
-                              <PaginationNext 
-                                onClick={() => setSubstageCurrentPage(Math.min(totalSubstagePages, substageCurrentPage + 1))}
-                                className={substageCurrentPage === totalSubstagePages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                              />
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
+                              {Array.from({ length: Math.min(totalSubstagePages, 5) }, (_, i) => {
+                                let page;
+                                if (totalSubstagePages <= 5) {
+                                  page = i + 1;
+                                } else if (substageCurrentPage <= 3) {
+                                  page = i + 1;
+                                } else if (substageCurrentPage >= totalSubstagePages - 2) {
+                                  page = totalSubstagePages - 4 + i;
+                                } else {
+                                  page = substageCurrentPage - 2 + i;
+                                }
+                                return (
+                                  <PaginationItem key={page}>
+                                    <PaginationLink
+                                      onClick={() => setSubstageCurrentPage(page)}
+                                      isActive={page === substageCurrentPage}
+                                      className="cursor-pointer"
+                                    >
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                );
+                              })}
+                              <PaginationItem>
+                                <PaginationNext 
+                                  onClick={() => setSubstageCurrentPage(Math.min(totalSubstagePages, substageCurrentPage + 1))}
+                                  className={substageCurrentPage === totalSubstagePages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
                       </div>
                     )}
 
@@ -1944,37 +1958,51 @@ const MetadataManagement: React.FC = () => {
 
                     {/* Pagination */}
                     {totalSubstagePages > 1 && (
-                      <div className="flex items-center justify-between p-4">
-                        <div className="text-sm text-muted-foreground">
+                      <div className="pagination-controls">
+                        <div className="pagination-info">
                           Showing {((substageCurrentPage - 1) * substagesPerPage) + 1} to {Math.min(substageCurrentPage * substagesPerPage, filteredSubstages.length)} of {filteredSubstages.length} results
                         </div>
-                        <Pagination>
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious 
-                                onClick={() => setSubstageCurrentPage(Math.max(1, substageCurrentPage - 1))}
-                                className={substageCurrentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                              />
-                            </PaginationItem>
-                            {Array.from({ length: totalSubstagePages }, (_, i) => i + 1).map((page) => (
-                              <PaginationItem key={page}>
-                                <PaginationLink
-                                  onClick={() => setSubstageCurrentPage(page)}
-                                  isActive={page === substageCurrentPage}
-                                  className="cursor-pointer"
-                                >
-                                  {page}
-                                </PaginationLink>
+                        <div className="pagination-wrapper">
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious 
+                                  onClick={() => setSubstageCurrentPage(Math.max(1, substageCurrentPage - 1))}
+                                  className={substageCurrentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
                               </PaginationItem>
-                            ))}
-                            <PaginationItem>
-                              <PaginationNext 
-                                onClick={() => setSubstageCurrentPage(Math.min(totalSubstagePages, substageCurrentPage + 1))}
-                                className={substageCurrentPage === totalSubstagePages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                              />
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
+                              {Array.from({ length: Math.min(totalSubstagePages, 5) }, (_, i) => {
+                                let page;
+                                if (totalSubstagePages <= 5) {
+                                  page = i + 1;
+                                } else if (substageCurrentPage <= 3) {
+                                  page = i + 1;
+                                } else if (substageCurrentPage >= totalSubstagePages - 2) {
+                                  page = totalSubstagePages - 4 + i;
+                                } else {
+                                  page = substageCurrentPage - 2 + i;
+                                }
+                                return (
+                                  <PaginationItem key={page}>
+                                    <PaginationLink
+                                      onClick={() => setSubstageCurrentPage(page)}
+                                      isActive={page === substageCurrentPage}
+                                      className="cursor-pointer"
+                                    >
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                );
+                              })}
+                              <PaginationItem>
+                                <PaginationNext 
+                                  onClick={() => setSubstageCurrentPage(Math.min(totalSubstagePages, substageCurrentPage + 1))}
+                                  className={substageCurrentPage === totalSubstagePages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
                       </div>
                     )}
                   </>

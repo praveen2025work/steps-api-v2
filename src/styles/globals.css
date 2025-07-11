@@ -339,6 +339,58 @@
 /* Pagination styling */
 .pagination-top {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid hsl(var(--border));
+  background-color: hsl(var(--muted) / 0.3);
+}
+
+/* Enhanced pagination controls */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-top: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background));
+}
+
+/* Pagination component improvements */
+.pagination-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+/* Ensure pagination buttons are properly aligned */
+[data-pagination] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Responsive pagination */
+@media (max-width: 768px) {
+  .pagination-top,
+  .pagination-controls {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .pagination-info {
+    text-align: center;
+  }
+  
+  .pagination-wrapper {
+    justify-content: center;
+  }
 }
