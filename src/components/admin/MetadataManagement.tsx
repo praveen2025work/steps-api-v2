@@ -993,39 +993,39 @@ const MetadataManagement: React.FC = () => {
 
   // Filter functions for extended metadata
   const filteredParameters = parameters.filter(param =>
-    param.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    param.description.toLowerCase().includes(searchTerm.toLowerCase())
+    param.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (param.description && param.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const filteredAttestations = attestations.filter(attestation =>
-    attestation.name.toLowerCase().includes(searchTerm.toLowerCase())
+    attestation.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredEmailTemplates = emailTemplates.filter(template =>
-    template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    template.subject.toLowerCase().includes(searchTerm.toLowerCase())
+    template.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    template.subject?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Filtered parameters and attestations for substage dialog with search
+  // Filtered parameters and attestations for substage dialog with search - FIXED
   const filteredParametersForSubstage = useMemo(() => {
     return parameters.filter(param =>
-      param.name.toLowerCase().includes(parameterSearchTerm.toLowerCase()) ||
-      param.description.toLowerCase().includes(parameterSearchTerm.toLowerCase()) ||
-      param.paramType.toLowerCase().includes(parameterSearchTerm.toLowerCase())
+      param.name?.toLowerCase().includes(parameterSearchTerm.toLowerCase()) ||
+      (param.description && param.description.toLowerCase().includes(parameterSearchTerm.toLowerCase())) ||
+      param.paramType?.toLowerCase().includes(parameterSearchTerm.toLowerCase())
     );
   }, [parameters, parameterSearchTerm]);
 
   const filteredAttestationsForSubstage = useMemo(() => {
     return attestations.filter(attestation =>
-      attestation.name.toLowerCase().includes(attestationSearchTerm.toLowerCase()) ||
-      attestation.type.toLowerCase().includes(attestationSearchTerm.toLowerCase())
+      attestation.name?.toLowerCase().includes(attestationSearchTerm.toLowerCase()) ||
+      attestation.type?.toLowerCase().includes(attestationSearchTerm.toLowerCase())
     );
   }, [attestations, attestationSearchTerm]);
 
   // Enhanced substages filtering with pagination
   const filteredSubstages = substages.filter(substage =>
-    substage.name.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
-    substage.componentname.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
+    substage.name?.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
+    substage.componentname?.toLowerCase().includes(substageSearchTerm.toLowerCase()) ||
     (substage.servicelink && substage.servicelink.toLowerCase().includes(substageSearchTerm.toLowerCase())) ||
     (Array.isArray(substage.attestationMapping) ? 
       substage.attestationMapping.some(id => id.toString().includes(substageSearchTerm)) :
@@ -1168,34 +1168,6 @@ const MetadataManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Metadata Management</h2>
-          <p className="text-muted-foreground">
-            Manage workflow applications, stages, parameters, attestations, email templates, and substages
-            {shouldUseMockData() && (
-              <Badge variant="outline" className="ml-2">Using Mock Data</Badge>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              className="pl-8 w-[200px]"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button onClick={refreshAll} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh All
-          </Button>
-        </div>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="applications" className="flex items-center gap-2">
@@ -1621,7 +1593,7 @@ const MetadataManagement: React.FC = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Email Templates Management</CardTitle>
-                <CardDescription>Manage email templates for workflow notifications (Template ID represents email list)</CardDescription>
+                <CardDescription>Manage email templates for workflow notifications</CardDescription>
               </div>
               <Button onClick={addNewEmailTemplate}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -1692,16 +1664,12 @@ const MetadataManagement: React.FC = () => {
           </Card>
         </TabsContent>
 
-        {/* Substages Tab */}
+        {/* Substages Tab - UPDATED LAYOUT */}
         <TabsContent value="substages" className="space-y-4">
-          {/* Application Selection for Substages */}
+          {/* Compact Application and Stage Selection */}
           <Card>
-            <CardHeader>
-              <CardTitle>Select Application for Substages</CardTitle>
-              <CardDescription>Choose an application to manage its stage substages</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-4">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
                 <div className="flex-1">
                   <Label htmlFor="substageApplicationSelect">Application</Label>
                   <Select
@@ -1735,71 +1703,73 @@ const MetadataManagement: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button 
-                  onClick={refreshApplications} 
-                  disabled={applicationsLoading}
-                  variant="outline"
-                >
-                  <RefreshCw className={`h-4 w-4 ${applicationsLoading ? 'animate-spin' : ''}`} />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Stage Selection and Substages Management */}
-          {selectedSubstageApplicationId && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Substages Management</CardTitle>
-                  <CardDescription>
-                    Select a stage to manage its substages
-                    {isSubstageAppInProgress && (
-                      <Alert className="mt-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>
-                          Application is currently importing data. Substage actions are disabled.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select 
-                    value={selectedStageId?.toString() || ''} 
-                    onValueChange={(value) => {
-                      const stageId = value ? Number(value) : null;
-                      setSelectedStageId(stageId);
-                      setSubstageCurrentPage(1); // Reset pagination when stage changes
-                      if (stageId) {
-                        fetchSubstages(stageId);
-                      } else {
-                        setSubstages([]);
-                      }
-                    }}
-                    disabled={isSubstageStagesLoading}
+                
+                {selectedSubstageApplicationId && (
+                  <div className="flex-1">
+                    <Label htmlFor="substageStageSelect">Stage</Label>
+                    <Select 
+                      value={selectedStageId?.toString() || ''} 
+                      onValueChange={(value) => {
+                        const stageId = value ? Number(value) : null;
+                        setSelectedStageId(stageId);
+                        setSubstageCurrentPage(1); // Reset pagination when stage changes
+                        if (stageId) {
+                          fetchSubstages(stageId);
+                        } else {
+                          setSubstages([]);
+                        }
+                      }}
+                      disabled={isSubstageStagesLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={isSubstageStagesLoading ? "Loading stages..." : "Select Stage"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currentSubstageStages.map(stage => (
+                          <SelectItem key={stage.stageId} value={stage.stageId.toString()}>
+                            {stage.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
+                <div className="flex items-end gap-2">
+                  <Button 
+                    onClick={refreshApplications} 
+                    disabled={applicationsLoading}
+                    variant="outline"
+                    size="sm"
                   >
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder={isSubstageStagesLoading ? "Loading stages..." : "Select Stage"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currentSubstageStages.map(stage => (
-                        <SelectItem key={stage.stageId} value={stage.stageId.toString()}>
-                          {stage.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <RefreshCw className={`h-4 w-4 ${applicationsLoading ? 'animate-spin' : ''}`} />
+                  </Button>
                   <Button 
                     onClick={addNewSubstage} 
                     disabled={!selectedStageId || isSubstageAppInProgress}
+                    size="sm"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Substage
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              </div>
+              
+              {isSubstageAppInProgress && (
+                <Alert className="mt-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Application is currently importing data. Substage actions are disabled.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Substages Management */}
+          {selectedSubstageApplicationId && selectedStageId && (
+            <Card>
+              <CardContent className="space-y-4 p-0">
                 {!selectedStageId ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <Database className="h-16 w-16 mx-auto mb-4 opacity-50" />
@@ -1925,7 +1895,7 @@ const MetadataManagement: React.FC = () => {
 
                     {/* Pagination */}
                     {totalSubstagePages > 1 && (
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between p-4">
                         <div className="text-sm text-muted-foreground">
                           Showing {((substageCurrentPage - 1) * substagesPerPage) + 1} to {Math.min(substageCurrentPage * substagesPerPage, filteredSubstages.length)} of {filteredSubstages.length} results
                         </div>
@@ -2197,7 +2167,7 @@ const MetadataManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Substage Dialog - Compact Version */}
+      {/* Substage Dialog - FIXED with proper selected count calculation */}
       <Dialog open={substageDialogOpen} onOpenChange={setSubstageDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -2393,7 +2363,8 @@ const MetadataManagement: React.FC = () => {
                     </div>
                     {filteredParametersForSubstage.length > 0 && (
                       <div className="px-3 py-2 border-t bg-muted/50 text-xs text-muted-foreground">
-                        {Array.isArray(substageForm.paramMapping) ? substageForm.paramMapping.length : 0} selected
+                        {Array.isArray(substageForm.paramMapping) ? substageForm.paramMapping.length : 
+                         (substageForm.paramMapping ? substageForm.paramMapping.toString().split(';').filter(id => id.trim() !== '').length : 0)} selected
                       </div>
                     )}
                   </div>
@@ -2454,7 +2425,8 @@ const MetadataManagement: React.FC = () => {
                     </div>
                     {filteredAttestationsForSubstage.length > 0 && (
                       <div className="px-3 py-2 border-t bg-muted/50 text-xs text-muted-foreground">
-                        {Array.isArray(substageForm.attestationMapping) ? substageForm.attestationMapping.length : 0} selected
+                        {Array.isArray(substageForm.attestationMapping) ? substageForm.attestationMapping.length : 
+                         (substageForm.attestationMapping ? substageForm.attestationMapping.toString().split(';').filter(id => id.trim() !== '').length : 0)} selected
                       </div>
                     )}
                   </div>
