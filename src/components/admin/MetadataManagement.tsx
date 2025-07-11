@@ -668,7 +668,7 @@ const MetadataManagement: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${getDotNetBaseUrl()}/api/WF/GetApplicationToRoleMap`, {
+      const response = await fetch(`${getDotNetBaseUrl()}/api/WF/GetWorkflowApplicationToRoleMap`, {
         method: 'GET',
         mode: 'cors',
         credentials: 'include', // .NET service uses Windows authentication
@@ -2252,7 +2252,7 @@ const MetadataManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Substage Dialog - FIXED with proper selected count calculation */}
+      {/* Substage Dialog - FIXED with proper null checks */}
       <Dialog open={substageDialogOpen} onOpenChange={setSubstageDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -2372,14 +2372,14 @@ const MetadataManagement: React.FC = () => {
                         <SelectItem value="0">None</SelectItem>
                         {applicationRoleMappings.length > 0 ? (
                           // Use application-specific role mappings if available
-                          applicationRoleMappings.map(mapping => (
+                          applicationRoleMappings.filter(mapping => mapping.roleId != null).map(mapping => (
                             <SelectItem key={mapping.roleId} value={mapping.roleId.toString()}>
                               {mapping.roleName}
                             </SelectItem>
                           ))
                         ) : (
                           // Fallback to all available roles if no application-specific mappings
-                          availableRoles.map(role => (
+                          availableRoles.filter(role => role.roleId != null).map(role => (
                             <SelectItem key={role.roleId} value={role.roleId.toString()}>
                               {role.roleName}
                             </SelectItem>
