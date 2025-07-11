@@ -345,7 +345,15 @@ const MetadataManagement: React.FC = () => {
 
   // Get base URL for .NET service
   const getDotNetBaseUrl = () => {
-    return currentEnvironment?.baseUrl || process.env.NEXT_PUBLIC_DOTNET_BASE_URL || 'http://api.com';
+    const dotNetUrl = currentEnvironment?.baseUrl || process.env.NEXT_PUBLIC_DOTNET_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://api.com';
+    console.log('getDotNetBaseUrl:', {
+      currentEnvironment: currentEnvironment?.name,
+      baseUrl: currentEnvironment?.baseUrl,
+      dotNetEnvVar: process.env.NEXT_PUBLIC_DOTNET_BASE_URL,
+      baseEnvVar: process.env.NEXT_PUBLIC_BASE_URL,
+      finalUrl: dotNetUrl
+    });
+    return dotNetUrl;
   };
 
   // Check if we should use mock data
