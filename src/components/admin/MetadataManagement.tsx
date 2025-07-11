@@ -945,6 +945,19 @@ const MetadataManagement: React.FC = () => {
       
       const url = `${baseUrl}?forceStartDesc=force%20start&reRunDesc=rerun`;
 
+      // Convert arrays to semicolon-separated strings for the API
+      const payload = {
+        ...substageForm,
+        attestationMapping: Array.isArray(substageForm.attestationMapping)
+          ? substageForm.attestationMapping.join(';') + (substageForm.attestationMapping.length > 0 ? ';' : '')
+          : substageForm.attestationMapping || '',
+        paramMapping: Array.isArray(substageForm.paramMapping)
+          ? substageForm.paramMapping.join(';') + (substageForm.paramMapping.length > 0 ? ';' : '')
+          : substageForm.paramMapping || '',
+        substageId: editingSubstage ? substageForm.substageId : null,
+        updatedon: new Date().toISOString().slice(0, 19).replace('T', ' ')
+      };
+
       const response = await fetch(url, {
         method,
         mode: 'cors',
@@ -953,7 +966,7 @@ const MetadataManagement: React.FC = () => {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(substageForm)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -1796,6 +1809,42 @@ const MetadataManagement: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Pagination at Top */}
+                    {totalSubstagePages > 1 && (
+                      <div className="flex items-center justify-between p-4 pagination-top">
+                        <div className="text-sm text-muted-foreground">
+                          Showing {((substageCurrentPage - 1) * substagesPerPage) + 1} to {Math.min(substageCurrentPage * substagesPerPage, filteredSubstages.length)} of {filteredSubstages.length} results
+                        </div>
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious 
+                                onClick={() => setSubstageCurrentPage(Math.max(1, substageCurrentPage - 1))}
+                                className={substageCurrentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+                            {Array.from({ length: totalSubstagePages }, (_, i) => i + 1).map((page) => (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => setSubstageCurrentPage(page)}
+                                  isActive={page === substageCurrentPage}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            ))}
+                            <PaginationItem>
+                              <PaginationNext 
+                                onClick={() => setSubstageCurrentPage(Math.min(totalSubstagePages, substageCurrentPage + 1))}
+                                className={substageCurrentPage === totalSubstagePages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+
                     {/* Substages Table */}
                     <div className="rounded-md border">
                       <Table>
@@ -2333,12 +2382,16 @@ const MetadataManagement: React.FC = () => {
                                 id={`param-${param.paramId}`}
                                 checked={Array.isArray(substageForm.paramMapping) 
                                   ? substageForm.paramMapping.includes(param.paramId!)
-                                  : substageForm.paramMapping.toString().split(';').includes(param.paramId!.toString())
+                                  : typeof substageForm.paramMapping === 'string' && substageForm.paramMapping
+                                    ? substageForm.paramMapping.split(';').includes(param.paramId!.toString())
+                                    : false
                                 }
                                 onCheckedChange={(checked) => {
                                   const currentParams = Array.isArray(substageForm.paramMapping) 
                                     ? substageForm.paramMapping 
-                                    : substageForm.paramMapping.toString().split(';').map(id => parseInt(id)).filter(id => !isNaN(id));
+                                    : (substageForm.paramMapping && typeof substageForm.paramMapping === 'string')
+                                      ? substageForm.paramMapping.split(';').map(id => parseInt(id)).filter(id => !isNaN(id))
+                                      : [];
                                   
                                   let newParams;
                                   if (checked) {
