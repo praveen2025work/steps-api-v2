@@ -1,0 +1,82 @@
+# iisnode configuration for production deployment
+
+# The optional iisnode.yml file provides overrides of the iisnode configuration settings specified in web.config.
+
+# node_env - determines the environment (production, development, staging, ...) in which 
+# child node processes run; if nonempty, is propagated to the child node process as the NODE_ENV 
+# environment variable; the default is the value of the IIS worker process'es NODE_ENV
+# environment variable
+node_env: production
+
+# loggingEnabled - controls whether stdout and stderr streams from node processes
+# are captured and made available over HTTP
+loggingEnabled: true
+
+# logDirectory - directory name relative to the main application file that will store files with stdout and stderr captures; 
+# individual log file names have .txt extension and contain the PID of the corresponding node process;
+# given that node processes are cycled with each IIS application restart, log files are likewise rotated;
+# the default is 'iisnode'
+logDirectory: iisnode
+
+# debuggingEnabled - controls whether the built-in debugger is enabled
+debuggingEnabled: false
+
+# debuggerPortRange - range of TCP ports that can be used for communication between the node-inspector
+# and the debugger in the node process; iisnode will round robin through this port range for subsequent
+# debugging sessions and pick the next available (free) port; the default is 5058-6058
+debuggerPortRange: 5058-6058
+
+# maxConcurrentRequestsPerProcess - maximum number of concurrent HTTP requests iisnode will allow 
+# a single node process to handle; the default is 1024
+maxConcurrentRequestsPerProcess: 1024
+
+# maxNamedPipeConnectionRetry - number of times iisnode will retry to establish a named pipe connection with a 
+# node process in case of a failure; the default is 24
+maxNamedPipeConnectionRetry: 3
+
+# namedPipeConnectionRetryDelay - delay in milliseconds between connection retries; the default is 250ms
+namedPipeConnectionRetryDelay: 2000
+
+# maxNamedPipeConnectionPoolSize - maximum number of named pipe connections each iisnode worker process will pool 
+# for reuse with node processes; the default is 512
+maxNamedPipeConnectionPoolSize: 512
+
+# maxNamedPipePooledConnectionAge - maximum age of a pooled connection in milliseconds after which it will be discarded; 
+# the default is 30000ms (30 seconds)
+maxNamedPipePooledConnectionAge: 30000
+
+# asyncCompletionThreadCount - size of the IO thread pool maintained by the iisnode module to process asynchronous IO; 
+# the default is 0 which means the size of the thread pool will be 4 times the number of processors
+asyncCompletionThreadCount: 0
+
+# initialRequestBufferSize - initial size in bytes of a memory buffer allocated for a new HTTP request; 
+# this buffer is used to capture the HTTP request body; if the request body is larger than this buffer,
+# a larger buffer will be allocated; the default is 4096
+initialRequestBufferSize: 4096
+
+# maxRequestBufferSize - maximum size in bytes of a memory buffer allocated per HTTP request for buffering request body; 
+# the default is 65536
+maxRequestBufferSize: 65536
+
+# uncFileChangesPollingInterval - polling interval in milliseconds to check for file changes in UNC locations; 
+# the default is 5000ms
+uncFileChangesPollingInterval: 5000
+
+# gracefulShutdownTimeout - timeout in milliseconds given to a node process to shut down gracefully after a recycle event; 
+# the default is 60000ms
+gracefulShutdownTimeout: 60000
+
+# maxLogFileSizeInKB - maximum size of a single log file in KB; once exceeded, a new log file is created; the default is 128
+maxLogFileSizeInKB: 128
+
+# logFileFlushInterval - timeout in milliseconds after which pending entries in the log buffer are flushed to the log file; 
+# the default is 5000ms
+logFileFlushInterval: 5000
+
+# flushResponse - controls whether each HTTP response is immediately flushed by iisnode; flushing each response incurs CPU overhead 
+# but may improve latency; the default is false
+flushResponse: false
+
+# enableXFF - controls whether iisnode adds or modifies the X-Forwarded-For HTTP request header with the IP address of the remote host; 
+# the default is false
+enableXFF: false
