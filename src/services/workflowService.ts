@@ -3289,6 +3289,328 @@ class WorkflowService {
     const dateString = this.formatDateForApi(today);
     return this.getWorkflowSummary({ date: dateString, configId, appId });
   }
+
+  // ===== RECURSIVE WORKFLOW TRAVERSAL METHODS =====
+
+  // Recursive method to traverse workflow nodes until terminal nodes are found
+  private async traverseWorkflowNodesRecursively(
+    date: string,
+    appId: number,
+    configId: string,
+    currentLevel: number,
+    nextLevel: number,
+    visitedNodes: Set<string> = new Set()
+  ): Promise<WorkflowDashboardApiResponse<WorkflowNode[]>> {
+    try {
+      // Create a unique key for this node to prevent infinite loops
+      const nodeKey = `${appId}-${configId}-${currentLevel}-${nextLevel}`;
+      
+      if (visitedNodes.has(nodeKey)) {
+        console.warn(`[Workflow Service] Circular dependency detected at node: ${nodeKey}`);
+        return {
+          data: [],
+          success: false,
+          error: 'Circular dependency detected in workflow traversal',
+          timestamp: new Date().toISOString(),
+          environment: `DotNet: ${this.dotNetBaseUrl}`
+        };
+      }
+      
+      visitedNodes.add(nodeKey);
+      
+      console.log(`[Workflow Service] Traversing workflow nodes: appId=${appId}, configId=${configId}, currentLevel=${currentLevel}, nextLevel=${nextLevel}`);
+      
+      // Get nodes for current level
+      const nodesResponse = await this.getWorkflowNodes({
+        date,
+        appId,
+        configId,
+        currentLevel,
+        nextLevel
+      });
+      
+      if (!nodesResponse.success) {
+        return nodesResponse;
+      }
+      
+      const allTerminalNodes: WorkflowNode[] = [];
+      
+      // Process each node
+      for (const node of nodesResponse.data) {
+        if (node.isUsedForWorkflowInstance) {
+          // This is a terminal node - add it to results
+          allTerminalNodes.push(node);
+          console.log(`[Workflow Service] Found terminal node: ${node.configName} (${node.configId})`);
+        } else {
+          // This is not a terminal node - recurse deeper
+          console.log(`[Workflow Service] Recursing deeper for node: ${node.configName} (${node.configId})`);
+          
+          const childNodesResponse = await this.traverseWorkflowNodesRecursively(
+            date,
+            node.appId,
+            node.configId,
+            node.currentLevel,
+            node.nextLevel,
+            new Set(visitedNodes) // Pass a copy to avoid shared state between branches
+          );
+          
+          if (childNodesResponse.success) {
+            allTerminalNodes.push(...childNodesResponse.data);
+          } else {
+            console.warn(`[Workflow Service] Failed to traverse child nodes for ${node.configName}: ${childNodesResponse.error}`);
+          }
+        }
+      }
+      
+      return {
+        data: allTerminalNodes,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+      
+    } catch (error: any) {
+      console.error('[Workflow Service] Error in recursive workflow traversal:', error);
+      
+      return {
+        data: [],
+        success: false,
+        error: error.response?.data?.message || error.message || 'Failed to traverse workflow nodes',
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+    }
+  }
+
+  // Main method to load complete workflow details following the 3-step process
+  async loadCompleteWorkflowDetails(date: string): Promise<WorkflowDashboardApiResponse<{
+    applications: WorkflowApplication[];
+    terminalNodes: WorkflowNode[];
+    workflowSummaries: WorkflowSummary[];
+    errors: string[];
+  }>> {
+    try {
+      console.log(`[Workflow Service] Starting complete workflow details load for date: ${date}`);
+      
+      const errors: string[] = [];
+      const workflowSummaries: WorkflowSummary[] = [];
+      
+      // Step 1: Get all workflow applications for the given date
+      console.log(`[Workflow Service] Step 1: Loading workflow applications`);
+      const applicationsResponse = await this.getAllWorkflowApplications({ date });
+      
+      if (!applicationsResponse.success) {
+        return {
+          data: {
+            applications: [],
+            terminalNodes: [],
+            workflowSummaries: [],
+            errors: [applicationsResponse.error || 'Failed to load applications']
+          },
+          success: false,
+          error: applicationsResponse.error,
+          timestamp: new Date().toISOString(),
+          environment: applicationsResponse.environment
+        };
+      }
+      
+      const applications = applicationsResponse.data;
+      console.log(`[Workflow Service] Found ${applications.length} applications`);
+      
+      const allTerminalNodes: WorkflowNode[] = [];
+      
+      // Step 2: For each application, traverse the node hierarchy recursively
+      for (const app of applications) {
+        console.log(`[Workflow Service] Step 2: Processing application ${app.configName} (ID: ${app.appId})`);
+        
+        try {
+          const terminalNodesResponse = await this.traverseWorkflowNodesRecursively(
+            date,
+            app.appId,
+            app.configId,
+            app.currentLevel,
+            app.nextLevel
+          );
+          
+          if (terminalNodesResponse.success) {
+            allTerminalNodes.push(...terminalNodesResponse.data);
+            console.log(`[Workflow Service] Found ${terminalNodesResponse.data.length} terminal nodes for application ${app.configName}`);
+          } else {
+            const errorMsg = `Failed to traverse nodes for application ${app.configName}: ${terminalNodesResponse.error}`;
+            errors.push(errorMsg);
+            console.error(`[Workflow Service] ${errorMsg}`);
+          }
+        } catch (error: any) {
+          const errorMsg = `Error processing application ${app.configName}: ${error.message}`;
+          errors.push(errorMsg);
+          console.error(`[Workflow Service] ${errorMsg}`, error);
+        }
+      }
+      
+      console.log(`[Workflow Service] Total terminal nodes found: ${allTerminalNodes.length}`);
+      
+      // Step 3: For each terminal node, fetch the workflow summary
+      console.log(`[Workflow Service] Step 3: Loading workflow summaries for terminal nodes`);
+      
+      for (const terminalNode of allTerminalNodes) {
+        try {
+          console.log(`[Workflow Service] Loading summary for terminal node: ${terminalNode.configName} (configId: ${terminalNode.configId}, appId: ${terminalNode.appId})`);
+          
+          const summaryResponse = await this.getWorkflowSummary({
+            date,
+            configId: terminalNode.configId,
+            appId: terminalNode.appId
+          });
+          
+          if (summaryResponse.success) {
+            workflowSummaries.push(summaryResponse.data);
+            console.log(`[Workflow Service] Successfully loaded summary for ${terminalNode.configName}`);
+          } else {
+            const errorMsg = `Failed to load summary for terminal node ${terminalNode.configName}: ${summaryResponse.error}`;
+            errors.push(errorMsg);
+            console.error(`[Workflow Service] ${errorMsg}`);
+          }
+        } catch (error: any) {
+          const errorMsg = `Error loading summary for terminal node ${terminalNode.configName}: ${error.message}`;
+          errors.push(errorMsg);
+          console.error(`[Workflow Service] ${errorMsg}`, error);
+        }
+      }
+      
+      console.log(`[Workflow Service] Complete workflow details load finished. Summaries: ${workflowSummaries.length}, Errors: ${errors.length}`);
+      
+      return {
+        data: {
+          applications,
+          terminalNodes: allTerminalNodes,
+          workflowSummaries,
+          errors
+        },
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+      
+    } catch (error: any) {
+      console.error('[Workflow Service] Error in complete workflow details load:', error);
+      
+      return {
+        data: {
+          applications: [],
+          terminalNodes: [],
+          workflowSummaries: [],
+          errors: [error.message || 'Failed to load complete workflow details']
+        },
+        success: false,
+        error: error.message || 'Failed to load complete workflow details',
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+    }
+  }
+
+  // Convenience method to load complete workflow details for today
+  async loadTodayCompleteWorkflowDetails(): Promise<WorkflowDashboardApiResponse<{
+    applications: WorkflowApplication[];
+    terminalNodes: WorkflowNode[];
+    workflowSummaries: WorkflowSummary[];
+    errors: string[];
+  }>> {
+    const today = new Date();
+    const dateString = this.formatDateForApi(today);
+    return this.loadCompleteWorkflowDetails(dateString);
+  }
+
+  // Method to load workflow details for a specific application
+  async loadWorkflowDetailsForApplication(
+    date: string,
+    appId: number,
+    configId: string,
+    currentLevel: number,
+    nextLevel: number
+  ): Promise<WorkflowDashboardApiResponse<{
+    terminalNodes: WorkflowNode[];
+    workflowSummaries: WorkflowSummary[];
+    errors: string[];
+  }>> {
+    try {
+      console.log(`[Workflow Service] Loading workflow details for specific application: appId=${appId}, configId=${configId}`);
+      
+      const errors: string[] = [];
+      const workflowSummaries: WorkflowSummary[] = [];
+      
+      // Traverse nodes for this specific application
+      const terminalNodesResponse = await this.traverseWorkflowNodesRecursively(
+        date,
+        appId,
+        configId,
+        currentLevel,
+        nextLevel
+      );
+      
+      if (!terminalNodesResponse.success) {
+        return {
+          data: {
+            terminalNodes: [],
+            workflowSummaries: [],
+            errors: [terminalNodesResponse.error || 'Failed to traverse workflow nodes']
+          },
+          success: false,
+          error: terminalNodesResponse.error,
+          timestamp: new Date().toISOString(),
+          environment: terminalNodesResponse.environment
+        };
+      }
+      
+      const terminalNodes = terminalNodesResponse.data;
+      console.log(`[Workflow Service] Found ${terminalNodes.length} terminal nodes for application`);
+      
+      // Load summaries for each terminal node
+      for (const terminalNode of terminalNodes) {
+        try {
+          const summaryResponse = await this.getWorkflowSummary({
+            date,
+            configId: terminalNode.configId,
+            appId: terminalNode.appId
+          });
+          
+          if (summaryResponse.success) {
+            workflowSummaries.push(summaryResponse.data);
+          } else {
+            errors.push(`Failed to load summary for ${terminalNode.configName}: ${summaryResponse.error}`);
+          }
+        } catch (error: any) {
+          errors.push(`Error loading summary for ${terminalNode.configName}: ${error.message}`);
+        }
+      }
+      
+      return {
+        data: {
+          terminalNodes,
+          workflowSummaries,
+          errors
+        },
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+      
+    } catch (error: any) {
+      console.error('[Workflow Service] Error loading workflow details for application:', error);
+      
+      return {
+        data: {
+          terminalNodes: [],
+          workflowSummaries: [],
+          errors: [error.message || 'Failed to load workflow details for application']
+        },
+        success: false,
+        error: error.message || 'Failed to load workflow details for application',
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+    }
+  }
 }
 
 // Create and export a singleton instance
