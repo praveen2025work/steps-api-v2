@@ -1531,299 +1531,299 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                 );
               }
               
-              return subStagesToRender;
-            })().map((subStage, index) => (
-              <Collapsible key={subStage.id}>
-                <div 
-                  className={`${
-                    subStage.status === 'completed' ? 'border-l-[3px] border-l-green-500' :
-                    subStage.status === 'in-progress' ? 'border-l-[3px] border-l-blue-500' :
-                    subStage.status === 'failed' ? 'border-l-[3px] border-l-red-500' :
-                    'border-l-[3px] border-l-gray-300'
-                  } ${selectedSubStage === subStage.id ? 'bg-primary/5 ring-1 ring-primary/40' : 'bg-background'} p-1.5 rounded-sm mb-1 transition-all duration-200 cursor-pointer hover:bg-muted/30`}
-                  onClick={(e) => {
-                    // Prevent event bubbling for buttons inside the row
-                    if ((e.target as HTMLElement).closest('button')) {
-                      return;
-                    }
-                    handleProcessIdClick(subStage.processId);
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-1">
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                        <h3 className="font-medium text-sm">{subStage.name}</h3>
-                        
-                        <div className="flex items-center gap-1 ml-1">
-                          {subStage.status === 'completed' ? (
-                            <CheckCircle className="h-3 w-3 text-green-500" />
-                          ) : subStage.status === 'in-progress' ? (
-                            <CircleDot className="h-3 w-3 text-blue-500" />
-                          ) : subStage.status === 'failed' ? (
-                            <XCircle className="h-3 w-3 text-red-500" />
-                          ) : (
-                            <Clock className="h-3 w-3 text-gray-500" />
-                          )}
-                          
-                          <Button 
-                            variant="ghost" 
-                            className={`p-0 h-auto font-mono text-xs ${selectedSubStage === subStage.id ? 'font-bold text-primary' : ''}`}
-                            onClick={() => handleProcessIdClick(subStage.processId)}
-                          >
-                            {subStage.processId}
-                          </Button>
-                          
-                          {subStage.type === 'auto' ? (
-                            <Bot className="h-3 w-3 text-muted-foreground" />
-                          ) : (
-                            <UserCircle className="h-3 w-3 text-muted-foreground" />
-                          )}
-                          
-                          {/* Process-level actions - Context-aware based on status */}
-                          <div className="flex items-center gap-1 ml-1">
-                            
-                            {/* Files button - Always visible */}
-                            {subStage.files && subStage.files.length > 0 && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
-                                onClick={(e) => {
-                                  // Ensure event doesn't bubble up to parent elements
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  
-                                  // Call the file click handler
-                                  handleFileClick(subStage.files[0], subStage.id);
-                                }}
-                                title={`View Files (${subStage.files.length})`}
-                              >
-                                <FileText className="h-3.5 w-3.5" />
-                                <span className="text-xs">Files</span>
-                              </Button>
-                            )}
-                            
-                            {/* Preview button - Only for processes with files */}
-                            {subStage.files && subStage.files.length > 0 && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
-                                onClick={(e) => {
-                                  // Ensure event doesn't bubble up to parent elements
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  
-                                  // Select this sub-stage
-                                  setSelectedSubStage(subStage.id);
-                                  
-                                  // Set current sub-stage files
-                                  const filesList = subStage.files.map((file, index) => ({
-                                    id: `file-${subStage.id}-${index}`,
-                                    name: file.name,
-                                    type: file.name.split('.').pop() || '',
-                                    size: file.size,
-                                    category: file.type
-                                  }));
-                                  
-                                  setCurrentSubStageFiles(filesList);
-                                  
-                                  // Preview the first file
-                                  if (subStage.files.length > 0) {
-                                    handlePreviewFile(subStage.files[0].name);
-                                  }
-                                }}
-                                title="Preview Files"
-                              >
-                                <Eye className="h-3.5 w-3.5" />
-                                <span className="text-xs">Preview</span>
-                              </Button>
-                            )}
-                            
-                            {/* Start button - Only for not-started or failed processes */}
-                            {(subStage.status === 'not-started' || subStage.status === 'failed') && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-6 w-6 p-0 hover:bg-muted"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  showSuccessToast(`Started ${subStage.name}`);
-                                }}
-                                title="Start"
-                              >
-                                <PlayCircle className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            
-                            {/* Refresh button - For all statuses */}
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-6 w-6 p-0 hover:bg-muted"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                showInfoToast(`Refreshing ${subStage.name}`);
-                              }}
-                              title="Refresh"
-                            >
-                              <RefreshCw className="h-3.5 w-3.5" />
-                            </Button>
-                            
-                            {/* Complete button - Only for in-progress processes */}
-                            {subStage.status === 'in-progress' && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-6 w-6 p-0 hover:bg-muted"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  showSuccessToast(`Completed ${subStage.name}`);
-                                }}
-                                title="Complete"
-                              >
-                                <ArrowRightCircle className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            
-                            {/* Skip button - Only for not-started or in-progress processes */}
-                            {(subStage.status === 'not-started' || subStage.status === 'in-progress') && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-6 w-6 p-0 hover:bg-muted"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  showWarningToast(`Skipped ${subStage.name}`);
-                                }}
-                                title="Skip"
-                              >
-                                <SkipForward className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            
-                            {/* Rerun button - Only for completed or failed processes */}
-                            {(subStage.status === 'completed' || subStage.status === 'failed') && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-6 w-6 p-0 hover:bg-muted"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  showInfoToast(`Rerunning ${subStage.name}`);
-                                }}
-                                title="Rerun"
-                              >
-                                <RotateCcw className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            
-                            {/* Notification button - For all statuses */}
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-6 w-6 p-0 hover:bg-muted"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                showInfoToast(`Notification sent for ${subStage.name}`);
-                              }}
-                              title="Send Notification"
-                            >
-                              <Mail className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-1 ml-auto">
-                          <span className="text-xs text-muted-foreground">
-                            {subStage.progress}%
+              return subStagesToRender.map((subStage, index) => (
+                <Collapsible key={subStage.id}>
+                  <div 
+                    className={`${
+                      subStage.status === 'completed' ? 'border-l-[3px] border-l-green-500' :
+                      subStage.status === 'in-progress' ? 'border-l-[3px] border-l-blue-500' :
+                      subStage.status === 'failed' ? 'border-l-[3px] border-l-red-500' :
+                      'border-l-[3px] border-l-gray-300'
+                    } ${selectedSubStage === subStage.id ? 'bg-primary/5 ring-1 ring-primary/40' : 'bg-background'} p-1.5 rounded-sm mb-1 transition-all duration-200 cursor-pointer hover:bg-muted/30`}
+                    onClick={(e) => {
+                      // Prevent event bubbling for buttons inside the row
+                      if ((e.target as HTMLElement).closest('button')) {
+                        return;
+                      }
+                      handleProcessIdClick(subStage.processId);
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className="text-xs text-muted-foreground font-mono">
+                            {String(index + 1).padStart(2, '0')}
                           </span>
-                          <Progress 
-                            value={subStage.progress} 
-                            className="w-12 h-1.5"
-                            {...(subStage.status === 'failed' && { 
-                              className: "w-12 h-1.5 bg-destructive" 
-                            })}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>Start: {subStage.timing.start}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>Duration: {subStage.timing.duration}</span>
-                        </div>
-                        {subStage.meta.updatedBy && (
-                          <div className="flex items-center gap-1">
-                            <UserCircle className="h-3 w-3" />
-                            <span>By: {subStage.meta.updatedBy}</span>
+                          <h3 className="font-medium text-sm">{subStage.name}</h3>
+                          
+                          <div className="flex items-center gap-1 ml-1">
+                            {subStage.status === 'completed' ? (
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                            ) : subStage.status === 'in-progress' ? (
+                              <CircleDot className="h-3 w-3 text-blue-500" />
+                            ) : subStage.status === 'failed' ? (
+                              <XCircle className="h-3 w-3 text-red-500" />
+                            ) : (
+                              <Clock className="h-3 w-3 text-gray-500" />
+                            )}
+                            
+                            <Button 
+                              variant="ghost" 
+                              className={`p-0 h-auto font-mono text-xs ${selectedSubStage === subStage.id ? 'font-bold text-primary' : ''}`}
+                              onClick={() => handleProcessIdClick(subStage.processId)}
+                            >
+                              {subStage.processId}
+                            </Button>
+                            
+                            {subStage.type === 'auto' ? (
+                              <Bot className="h-3 w-3 text-muted-foreground" />
+                            ) : (
+                              <UserCircle className="h-3 w-3 text-muted-foreground" />
+                            )}
+                            
+                            {/* Process-level actions - Context-aware based on status */}
+                            <div className="flex items-center gap-1 ml-1">
+                              
+                              {/* Files button - Always visible */}
+                              {subStage.files && subStage.files.length > 0 && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
+                                  onClick={(e) => {
+                                    // Ensure event doesn't bubble up to parent elements
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    
+                                    // Call the file click handler
+                                    handleFileClick(subStage.files[0], subStage.id);
+                                  }}
+                                  title={`View Files (${subStage.files.length})`}
+                                >
+                                  <FileText className="h-3.5 w-3.5" />
+                                  <span className="text-xs">Files</span>
+                                </Button>
+                              )}
+                              
+                              {/* Preview button - Only for processes with files */}
+                              {subStage.files && subStage.files.length > 0 && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
+                                  onClick={(e) => {
+                                    // Ensure event doesn't bubble up to parent elements
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    
+                                    // Select this sub-stage
+                                    setSelectedSubStage(subStage.id);
+                                    
+                                    // Set current sub-stage files
+                                    const filesList = subStage.files.map((file, index) => ({
+                                      id: `file-${subStage.id}-${index}`,
+                                      name: file.name,
+                                      type: file.name.split('.').pop() || '',
+                                      size: file.size,
+                                      category: file.type
+                                    }));
+                                    
+                                    setCurrentSubStageFiles(filesList);
+                                    
+                                    // Preview the first file
+                                    if (subStage.files.length > 0) {
+                                      handlePreviewFile(subStage.files[0].name);
+                                    }
+                                  }}
+                                  title="Preview Files"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span className="text-xs">Preview</span>
+                                </Button>
+                              )}
+                              
+                              {/* Start button - Only for not-started or failed processes */}
+                              {(subStage.status === 'not-started' || subStage.status === 'failed') && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 w-6 p-0 hover:bg-muted"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    showSuccessToast(`Started ${subStage.name}`);
+                                  }}
+                                  title="Start"
+                                >
+                                  <PlayCircle className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              
+                              {/* Refresh button - For all statuses */}
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  showInfoToast(`Refreshing ${subStage.name}`);
+                                }}
+                                title="Refresh"
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                              </Button>
+                              
+                              {/* Complete button - Only for in-progress processes */}
+                              {subStage.status === 'in-progress' && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 w-6 p-0 hover:bg-muted"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    showSuccessToast(`Completed ${subStage.name}`);
+                                  }}
+                                  title="Complete"
+                                >
+                                  <ArrowRightCircle className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              
+                              {/* Skip button - Only for not-started or in-progress processes */}
+                              {(subStage.status === 'not-started' || subStage.status === 'in-progress') && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 w-6 p-0 hover:bg-muted"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    showWarningToast(`Skipped ${subStage.name}`);
+                                  }}
+                                  title="Skip"
+                                >
+                                  <SkipForward className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              
+                              {/* Rerun button - Only for completed or failed processes */}
+                              {(subStage.status === 'completed' || subStage.status === 'failed') && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 w-6 p-0 hover:bg-muted"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    showInfoToast(`Rerunning ${subStage.name}`);
+                                  }}
+                                  title="Rerun"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              
+                              {/* Notification button - For all statuses */}
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  showInfoToast(`Notification sent for ${subStage.name}`);
+                                }}
+                                title="Send Notification"
+                              >
+                                <Mail className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </div>
-                        )}
+                          
+                          <div className="flex items-center gap-1 ml-auto">
+                            <span className="text-xs text-muted-foreground">
+                              {subStage.progress}%
+                            </span>
+                            <Progress 
+                              value={subStage.progress} 
+                              className="w-12 h-1.5"
+                              {...(subStage.status === 'failed' && { 
+                                className: "w-12 h-1.5 bg-destructive" 
+                              })}
+                            />
+                          </div>
+                        </div>
                         
-                        {/* Dependencies - Compact */}
-                        {subStage.dependencies && subStage.dependencies.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
-                            <Network className="h-3 w-3" />
-                            <span>Deps: {subStage.dependencies.map(d => d.name).join(', ')}</span>
+                            <Clock className="h-3 w-3" />
+                            <span>Start: {subStage.timing.start}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>Duration: {subStage.timing.duration}</span>
+                          </div>
+                          {subStage.meta.updatedBy && (
+                            <div className="flex items-center gap-1">
+                              <UserCircle className="h-3 w-3" />
+                              <span>By: {subStage.meta.updatedBy}</span>
+                            </div>
+                          )}
+                          
+                          {/* Dependencies - Compact */}
+                          {subStage.dependencies && subStage.dependencies.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Network className="h-3 w-3" />
+                              <span>Deps: {subStage.dependencies.map(d => d.name).join(', ')}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Messages - Compact with truncation for long messages */}
+                        {subStage.messages && subStage.messages.length > 0 && (
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {subStage.messages[0].length > 60 
+                              ? `${subStage.messages[0].substring(0, 60)}...` 
+                              : subStage.messages[0]}
                           </div>
                         )}
                       </div>
+                    </div>
 
-                      {/* Messages - Compact with truncation for long messages */}
-                      {subStage.messages && subStage.messages.length > 0 && (
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {subStage.messages[0].length > 60 
-                            ? `${subStage.messages[0].substring(0, 60)}...` 
-                            : subStage.messages[0]}
+                    <CollapsibleTrigger className="w-full text-left mt-1">
+                      <Button variant="ghost" size="sm" className="h-6 text-xs gap-1">
+                        <ChevronDown className="h-3 w-3" />
+                        Details
+                      </Button>
+                    </CollapsibleTrigger>
+
+                    <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-muted">
+                      {/* Files section removed from sub-stage process cards */}
+
+                      {/* Performance Metrics - Compact */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <div className="text-muted-foreground">Avg Duration</div>
+                          <div>{subStage.timing.avgDuration}</div>
                         </div>
-                      )}
-                    </div>
+                        <div>
+                          <div className="text-muted-foreground">Avg Start</div>
+                          <div>{subStage.timing.avgStart}</div>
+                        </div>
+                      </div>
+
+                      {/* Support Options - Compact */}
+                      <div>
+                        <CreateSupportIssue 
+                          processId={subStage.processId}
+                          processName={subStage.name}
+                          application={hierarchyPath[0]?.name || ""}
+                          buttonVariant="outline"
+                          buttonSize="sm"
+                          buttonClassName="h-6 text-xs"
+                        />
+                      </div>
+                    </CollapsibleContent>
                   </div>
-
-                  <CollapsibleTrigger className="w-full text-left mt-1">
-                    <Button variant="ghost" size="sm" className="h-6 text-xs gap-1">
-                      <ChevronDown className="h-3 w-3" />
-                      Details
-                    </Button>
-                  </CollapsibleTrigger>
-
-                  <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-muted">
-                    {/* Files section removed from sub-stage process cards */}
-
-                    {/* Performance Metrics - Compact */}
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <div className="text-muted-foreground">Avg Duration</div>
-                        <div>{subStage.timing.avgDuration}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">Avg Start</div>
-                        <div>{subStage.timing.avgStart}</div>
-                      </div>
-                    </div>
-
-                    {/* Support Options - Compact */}
-                    <div>
-                      <CreateSupportIssue 
-                        processId={subStage.processId}
-                        processName={subStage.name}
-                        application={hierarchyPath[0]?.name || ""}
-                        buttonVariant="outline"
-                        buttonSize="sm"
-                        buttonClassName="h-6 text-xs"
-                      />
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-            ))}
+                </Collapsible>
+              ));
+            })()}
           </div>
         </div>
 
