@@ -743,72 +743,74 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
   // Load stage-specific data when active stage changes
   useEffect(() => {
-    if (activeStage) {
-      // Get stage data from our new utility
-      const stageData = getStageData(activeStage);
-      
-      if (stageData) {
-        // Convert stage tasks to SubStage format for our component
-        const stageTasks = stageData.tasks.map(task => ({
-          id: task.id,
-          name: task.name,
-          type: task.processId.includes('AUTO') ? 'auto' : 'manual',
-          status: task.status,
-          progress: task.status === 'completed' ? 100 : 
-                   task.status === 'in-progress' ? 50 : 
-                   task.status === 'failed' ? 0 : 0,
-          processId: task.processId,
-          timing: {
-            start: task.expectedStart,
-            duration: `${task.duration}m`,
-            avgDuration: `${task.duration}m`,
-            avgStart: task.expectedStart
-          },
-          stats: {
-            success: '95%',
-            lastRun: null
-          },
-          meta: {
-            updatedBy: task.updatedBy,
-            updatedOn: task.updatedAt,
-            lockedBy: null,
-            lockedOn: null,
-            completedBy: task.status === 'completed' ? task.updatedBy : null,
-            completedOn: task.status === 'completed' ? task.updatedAt : null
-          },
-          files: task.documents?.map(doc => ({
-            name: doc.name,
-            type: 'download',
-            size: doc.size
-          })) || [],
-          messages: task.messages || [],
-          dependencies: task.dependencies?.map(dep => ({
-            name: dep.name,
-            status: dep.status,
-            id: dep.name.toLowerCase().replace(/\s+/g, '_')
-          })) || []
-        }));
-        
-        setStageSpecificSubStages(stageTasks);
-        
-        // Convert stage documents to the format expected by DocumentsList
-        const stageDocuments = stageData.documents.map(doc => ({
-          id: doc.id,
+    if (activeStage && tasks[activeStage]) {
+      // Convert actual API tasks to SubStage format for our component
+      const stageTasks = tasks[activeStage].map(task => ({
+        id: task.id,
+        name: task.name,
+        type: (task as any).auto === 'y' || (task as any).auto === 'Y' ? 'auto' : 'manual',
+        status: task.status === 'in_progress' ? 'in-progress' : task.status,
+        progress: task.status === 'completed' ? 100 : 
+                 task.status === 'in_progress' || task.status === 'in-progress' ? 50 : 
+                 task.status === 'failed' ? 0 : 0,
+        processId: task.processId,
+        timing: {
+          start: task.expectedStart || '09:00',
+          duration: task.actualDuration || `${task.duration}m`,
+          avgDuration: `${task.duration}m`,
+          avgStart: task.expectedStart || '09:00'
+        },
+        stats: {
+          success: '95%',
+          lastRun: null
+        },
+        meta: {
+          updatedBy: task.updatedBy,
+          updatedOn: task.updatedAt,
+          lockedBy: (task as any).lockedBy || null,
+          lockedOn: (task as any).lockedOn || null,
+          completedBy: task.status === 'completed' ? ((task as any).completedBy || task.updatedBy) : null,
+          completedOn: task.status === 'completed' ? ((task as any).completedOn || task.updatedAt) : null
+        },
+        files: task.documents?.map(doc => ({
           name: doc.name,
-          type: doc.type.toLowerCase(),
-          size: doc.size,
-          updatedAt: doc.uploadedAt,
-          updatedBy: doc.uploadedBy
-        }));
-        
-        setStageSpecificDocuments(stageDocuments);
-      } else {
-        // If no stage-specific data found, use default tasks
-        setStageSpecificSubStages([]);
-        setStageSpecificDocuments([]);
-      }
+          type: 'download',
+          size: doc.size
+        })) || [],
+        messages: task.messages || [],
+        dependencies: task.dependencies?.map(dep => ({
+          name: dep.name,
+          status: dep.status,
+          id: dep.name.toLowerCase().replace(/\s+/g, '_')
+        })) || []
+      }));
+      
+      setStageSpecificSubStages(stageTasks);
+      
+      // For documents, we can extract them from the tasks or use a fallback
+      const stageDocuments = tasks[activeStage].reduce((docs: any[], task) => {
+        if (task.documents) {
+          task.documents.forEach((doc, index) => {
+            docs.push({
+              id: `${task.id}-doc-${index}`,
+              name: doc.name,
+              type: doc.name.split('.').pop()?.toLowerCase() || 'unknown',
+              size: doc.size,
+              updatedAt: task.updatedAt,
+              updatedBy: task.updatedBy
+            });
+          });
+        }
+        return docs;
+      }, []);
+      
+      setStageSpecificDocuments(stageDocuments);
+    } else {
+      // If no stage-specific data found, clear the data
+      setStageSpecificSubStages([]);
+      setStageSpecificDocuments([]);
     }
-  }, [activeStage]);
+  }, [activeStage, tasks]);
 
   // Set up auto-refresh effect
   React.useEffect(() => {
@@ -1402,7 +1404,32 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         <div className={`${showFilePreview ? (showSubStageCards ? 'flex-[0.3] relative' : 'hidden') : 'flex-[0.6]'}`}>
           {/* Process Overview removed from main content as it's now in the right panel */}
           <div className="space-y-4">
-            {(stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages).map((subStage, index) => (
+            {(() => {
+              console.log('[WorkflowDetailView] Rendering sub-stages:', {
+                stageSpecificSubStagesLength: stageSpecificSubStages.length,
+                mockSubStagesLength: mockSubStages.length,
+                activeStage,
+                tasksForActiveStage: tasks[activeStage]?.length || 0,
+                usingMockData: stageSpecificSubStages.length === 0
+              });
+              
+              // Always prefer actual API data over mock data
+              const subStagesToRender = stageSpecificSubStages.length > 0 ? stageSpecificSubStages : [];
+              
+              if (subStagesToRender.length === 0) {
+                console.warn('[WorkflowDetailView] No sub-stages to render for active stage:', activeStage);
+                return (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-sm">No sub-stages found for this stage</div>
+                    <div className="text-xs mt-1">
+                      Active Stage: {activeStage} | Tasks Available: {tasks[activeStage]?.length || 0}
+                    </div>
+                  </div>
+                );
+              }
+              
+              return subStagesToRender;
+            })().map((subStage, index) => (
               <Collapsible key={subStage.id}>
                 <div 
                   className={`${

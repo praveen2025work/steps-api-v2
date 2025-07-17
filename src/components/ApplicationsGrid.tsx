@@ -500,17 +500,26 @@ const ApplicationsGrid = () => {
 
     const tasks: Record<string, WorkflowTask[]> = {};
     stageMap.forEach((stage, stageId) => {
-      // Flatten all steps within a stage into a single task array
+      // Create tasks array for this stage by properly organizing sub-stages
       const stageTasks: WorkflowTask[] = [];
-      stage.steps.forEach((stepTasks) => {
-        stageTasks.push(...stepTasks);
+      
+      // Convert the steps map to an array and sort by the first task's subStage_Seq
+      const sortedSteps = Array.from(stage.steps.entries()).sort((a, b) => {
+        const aSeq = (a[1][0] as any)?.subStageSeq || 0;
+        const bSeq = (b[1][0] as any)?.subStageSeq || 0;
+        return aSeq - bSeq;
       });
       
-      // Sort tasks by subStage_Seq to maintain proper order
-      stageTasks.sort((a, b) => {
-        const aSeq = (a as any).subStageSeq || 0;
-        const bSeq = (b as any).subStageSeq || 0;
-        return aSeq - bSeq;
+      // For each sub-stage group, add all its tasks
+      sortedSteps.forEach(([subStageKey, stepTasks]) => {
+        // Sort tasks within each sub-stage by subStage_Seq
+        const sortedStepTasks = stepTasks.sort((a, b) => {
+          const aSeq = (a as any).subStageSeq || 0;
+          const bSeq = (b as any).subStageSeq || 0;
+          return aSeq - bSeq;
+        });
+        
+        stageTasks.push(...sortedStepTasks);
       });
       
       tasks[stage.id] = stageTasks;
