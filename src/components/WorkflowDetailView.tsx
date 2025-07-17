@@ -744,60 +744,163 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   // Load stage-specific data when active stage changes
   useEffect(() => {
     if (activeStage && tasks[activeStage]) {
-      // Convert actual API tasks to SubStage format for our component
-      const stageTasks = tasks[activeStage].map(task => ({
-        id: task.id,
-        name: task.name,
-        type: (task as any).auto === 'y' || (task as any).auto === 'Y' ? 'auto' : 'manual',
-        status: task.status === 'in_progress' ? 'in-progress' : task.status,
-        progress: task.status === 'completed' ? 100 : 
-                 task.status === 'in_progress' || task.status === 'in-progress' ? 50 : 
-                 task.status === 'failed' ? 0 : 0,
-        processId: task.processId,
-        timing: {
+      // Convert actual API tasks to SubStage format with enhanced field mapping
+      const stageTasks = tasks[activeStage].map((task, index) => {
+        // Enhanced progress calculation based on API fields
+        let progress = 0;
+        if (task.status === 'completed') {
+          progress = 100;
+        } else if (task.status === 'in_progress' || task.status === 'in-progress') {
+          // Use percentage from API if available, otherwise default to 50
+          progress = task.percentage || 50;
+        } else if (task.status === 'failed') {
+          // Failed tasks might have partial progress
+          progress = task.partialComplete === 'Y' ? (task.percentage || 25) : 0;
+        } else {
+          progress = 0;
+        }
+
+        // Enhanced timing information
+        const timing = {
           start: task.expectedStart || '09:00',
-          duration: task.actualDuration || `${task.duration}m`,
-          avgDuration: `${task.duration}m`,
+          duration: task.actualDuration || `${task.duration || 0}m`,
+          avgDuration: `${task.duration || 0}m`,
           avgStart: task.expectedStart || '09:00'
-        },
-        stats: {
-          success: '95%',
-          lastRun: null
-        },
-        meta: {
-          updatedBy: task.updatedBy,
-          updatedOn: task.updatedAt,
-          lockedBy: (task as any).lockedBy || null,
-          lockedOn: (task as any).lockedOn || null,
-          completedBy: task.status === 'completed' ? ((task as any).completedBy || task.updatedBy) : null,
-          completedOn: task.status === 'completed' ? ((task as any).completedOn || task.updatedAt) : null
-        },
-        files: task.documents?.map(doc => ({
-          name: doc.name,
-          type: 'download',
-          size: doc.size
-        })) || [],
-        messages: task.messages || [],
-        dependencies: task.dependencies?.map(dep => ({
+        };
+
+        // Enhanced metadata with all available API fields
+        const meta = {
+          updatedBy: task.updatedBy || null,
+          updatedOn: task.updatedAt || null,
+          lockedBy: task.lockedBy || null,
+          lockedOn: task.lockedOn || null,
+          completedBy: task.completedBy || null,
+          completedOn: task.completedOn || null
+        };
+
+        // Enhanced file mapping with better type detection
+        const files = task.documents?.map(doc => {
+          const fileExtension = doc.name.split('.').pop()?.toLowerCase() || '';
+          let fileType = 'download'; // default
+          
+          // Determine file type based on task properties and file extension
+          if (task.uploadAllowed === 'Y' && ['xlsx', 'csv', 'txt', 'json'].includes(fileExtension)) {
+            fileType = 'upload';
+          } else if (['log', 'txt', 'json', 'xml'].includes(fileExtension)) {
+            fileType = 'preview';
+          }
+          
+          return {
+            name: doc.name,
+            type: fileType,
+            size: doc.size
+          };
+        }) || [];
+
+        // Enhanced messages with API-specific information
+        const messages = [...(task.messages || [])];
+        
+        // Add additional contextual messages based on API fields
+        if (task.isLocked === 'Y' && task.lockedBy) {
+          messages.push(`Process locked by ${task.lockedBy}`);
+        }
+        
+        if (task.attestRequired === 'Y' && !task.attestedBy) {
+          messages.push('Attestation required before completion');
+        } else if (task.attestRequired === 'Y' && task.attestedBy) {
+          messages.push(`Attested by ${task.attestedBy}`);
+        }
+        
+        if (task.approval === 'Y') {
+          messages.push('Requires approval');
+        }
+        
+        if (task.isRTB) {
+          messages.push('Run-The-Bank (RTB) process');
+        }
+        
+        if (task.isAlteryx === 'Y') {
+          messages.push('Alteryx workflow process');
+        }
+
+        // Enhanced dependencies with better status mapping
+        const dependencies = task.dependencies?.map(dep => ({
           name: dep.name,
-          status: dep.status,
+          status: dep.status === 'in_progress' ? 'in-progress' : dep.status,
           id: dep.name.toLowerCase().replace(/\s+/g, '_')
-        })) || []
-      }));
+        })) || [];
+
+        return {
+          id: task.id,
+          name: task.name,
+          type: (task.auto === 'y' || task.auto === 'Y') ? 'auto' as const : 'manual' as const,
+          status: task.status === 'in_progress' ? 'in-progress' as const : task.status,
+          progress,
+          processId: task.processId,
+          sequence: task.subStageSeq || index + 1,
+          timing,
+          stats: {
+            success: '95%', // Could be enhanced with historical data
+            lastRun: task.completedOn || null
+          },
+          meta,
+          files,
+          messages,
+          dependencies,
+          
+          // Additional configuration based on API fields
+          config: {
+            canTrigger: task.isActive === 'y' && task.status === 'not_started',
+            canRerun: task.status === 'completed' || task.status === 'failed',
+            canForceStart: task.adhoc === 'Y',
+            canSkip: task.status === 'not_started' || task.status === 'in_progress',
+            canSendEmail: true // Could be based on notification settings
+          },
+          
+          // Store original API data for right panel access
+          apiData: {
+            workflowProcessId: task.workflowProcessId,
+            workflowAppConfigId: task.workflowAppConfigId,
+            stageId: task.stageId,
+            subStageId: task.subStageId,
+            stageName: task.stageName,
+            subStageName: task.subStageName,
+            serviceLink: task.serviceLink,
+            businessDate: task.businessDate,
+            componentName: task.componentName,
+            resolvedComponentName: task.resolvedComponentName,
+            producer: task.producer,
+            approver: task.approver,
+            entitlementMapping: task.entitlementMapping,
+            userCommentary: task.userCommentary,
+            skipCommentary: task.skipCommentary
+          }
+        };
+      });
+      
+      console.log('[WorkflowDetailView] Converted stage tasks with enhanced API mapping:', {
+        stageId: activeStage,
+        taskCount: stageTasks.length,
+        sampleTask: stageTasks[0]
+      });
       
       setStageSpecificSubStages(stageTasks);
       
-      // For documents, we can extract them from the tasks or use a fallback
+      // Enhanced document extraction with better categorization
       const stageDocuments = tasks[activeStage].reduce((docs: any[], task) => {
         if (task.documents) {
           task.documents.forEach((doc, index) => {
+            const fileExtension = doc.name.split('.').pop()?.toLowerCase() || 'unknown';
             docs.push({
               id: `${task.id}-doc-${index}`,
               name: doc.name,
-              type: doc.name.split('.').pop()?.toLowerCase() || 'unknown',
+              type: fileExtension,
               size: doc.size,
-              updatedAt: task.updatedAt,
-              updatedBy: task.updatedBy
+              updatedAt: task.updatedAt || new Date().toISOString(),
+              updatedBy: task.updatedBy || 'System',
+              category: task.uploadAllowed === 'Y' ? 'upload' : 'download',
+              processId: task.processId,
+              workflowProcessId: task.workflowProcessId
             });
           });
         }

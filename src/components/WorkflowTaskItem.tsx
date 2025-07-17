@@ -27,6 +27,47 @@ export interface WorkflowTask {
   messages?: string[];
   updatedBy?: string;
   updatedAt?: string;
+  
+  // Enhanced fields from GetWorkflowSummary API
+  workflowProcessId?: number;
+  workflowAppConfigId?: number;
+  stageId?: number;
+  subStageId?: number;
+  subStageSeq?: number;
+  stageName?: string;
+  subStageName?: string;
+  serviceLink?: string;
+  auto?: string; // "y" | "n"
+  adhoc?: string; // "Y" | "N"
+  isAlteryx?: string; // "Y" | "N"
+  upload?: string; // "Y" | "N"
+  attest?: string; // "Y" | "N"
+  uploadAllowed?: string; // "Y" | "N"
+  downloadAllowed?: string; // "Y" | "N"
+  attestRequired?: string; // "Y" | "N"
+  componentName?: string | null;
+  resolvedComponentName?: string | null;
+  businessDate?: string;
+  attestedBy?: string | null;
+  attestedOn?: string | null;
+  completedBy?: string | null;
+  completedOn?: string | null;
+  isLocked?: string | null;
+  lockedBy?: string | null;
+  lockedOn?: string | null;
+  approval?: string; // "Y" | "N"
+  isActive?: string; // "y" | "n"
+  percentage?: number;
+  producer?: number;
+  approver?: number;
+  entitlementMapping?: number;
+  isRTB?: boolean;
+  hasDependencies?: string; // "y" | "n"
+  dependencySubstageId?: number | null;
+  depSubStageSeq?: number | null;
+  userCommentary?: string | null;
+  skipCommentary?: string | null;
+  partialComplete?: string;
 }
 
 interface WorkflowTaskItemProps {

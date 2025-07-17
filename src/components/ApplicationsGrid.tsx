@@ -353,131 +353,176 @@ const ApplicationsGrid = () => {
         stage.steps.set(subStageKey, []);
       }
       
-      // Map status from API format to UI format
+      // Enhanced status mapping with more comprehensive coverage
       let uiStatus: 'completed' | 'in_progress' | 'not_started' | 'skipped' = 'not_started';
-      const apiStatus = (process.status || '').toLowerCase();
+      const apiStatus = (process.status || '').toUpperCase().trim();
       
       switch (apiStatus) {
-        case 'completed':
-        case 'complete':
+        case 'COMPLETED':
+        case 'COMPLETE':
           uiStatus = 'completed';
           break;
-        case 'in progress':
-        case 'in_progress':
-        case 'running':
+        case 'IN PROGRESS':
+        case 'IN_PROGRESS':
+        case 'RUNNING':
+        case 'PROCESSING':
           uiStatus = 'in_progress';
           break;
-        case 'failed':
-        case 'error':
+        case 'FAILED':
+        case 'ERROR':
+        case 'REJECTED':
           uiStatus = 'not_started'; // Failed tasks show as not started for retry
           break;
-        case 'skipped':
-        case 'skip':
+        case 'SKIPPED':
+        case 'SKIP':
+        case 'POST MANUAL':
           uiStatus = 'skipped';
           break;
+        case 'NOT STARTED':
+        case 'PENDING':
+        case 'WAITING':
         default:
           uiStatus = 'not_started';
       }
 
-      // Create documents array from file data if available
+      // Enhanced document creation from fileData with better filtering
       const processDocuments: WorkflowTaskDocument[] = [];
       const fileData = summary.fileData || [];
       const processFiles = fileData.filter(file => 
-        file.workflow_Process_Id === process.workflow_Process_Id
+        file.workflow_Process_Id === process.workflow_Process_Id && file.name
       );
       
       processFiles.forEach(file => {
-        if (file.name) {
-          processDocuments.push({
-            name: file.name,
-            size: file.file_Upload || 'Unknown size'
-          });
-        }
+        processDocuments.push({
+          name: file.name!,
+          size: file.file_Upload === 'Y' ? (file.value || 'Uploaded') : 'Available for download'
+        });
       });
 
-      // Create dependencies array from dependency data
+      // Enhanced dependency creation with better status mapping
       const processDependencies: WorkflowTaskDependency[] = [];
       const dependencyData = summary.dependencyData || [];
       const processDeps = dependencyData.filter(dep => 
-        dep.workflow_Process_Id === process.workflow_Process_Id
+        dep.workflow_Process_Id === process.workflow_Process_Id && 
+        dep.dependency_Substage_Id && 
+        dep.dependency_Substage_Id !== 0
       );
       
       processDeps.forEach(dep => {
-        if (dep.dependency_Substage_Id && dep.dependency_Substage_Id !== 0) {
-          // Find the dependency process name
-          const depProcess = processData.find(p => 
-            p.workflow_Process_Id === dep.dependency_Substage_Id
-          );
-          
-          let depStatus: 'completed' | 'in_progress' | 'not_started' | 'skipped' = 'not_started';
-          const depApiStatus = (dep.dep_Status || '').toLowerCase();
-          
-          switch (depApiStatus) {
-            case 'completed':
-            case 'complete':
-              depStatus = 'completed';
-              break;
-            case 'in progress':
-            case 'in_progress':
-            case 'running':
-              depStatus = 'in_progress';
-              break;
-            case 'failed':
-            case 'error':
-              depStatus = 'not_started';
-              break;
-            case 'skipped':
-            case 'skip':
-              depStatus = 'skipped';
-              break;
-            default:
-              depStatus = 'not_started';
-          }
-          
-          processDependencies.push({
-            name: depProcess?.subStage_Name || `Process ${dep.dependency_Substage_Id}`,
-            status: depStatus
-          });
+        // Find the dependency process name using subStage_Id
+        const depProcess = processData.find(p => 
+          p.subStage_Id === dep.dependency_Substage_Id
+        );
+        
+        let depStatus: 'completed' | 'in_progress' | 'not_started' | 'skipped' = 'not_started';
+        const depApiStatus = (dep.dep_Status || '').toUpperCase().trim();
+        
+        switch (depApiStatus) {
+          case 'COMPLETED':
+          case 'COMPLETE':
+            depStatus = 'completed';
+            break;
+          case 'IN PROGRESS':
+          case 'IN_PROGRESS':
+          case 'RUNNING':
+            depStatus = 'in_progress';
+            break;
+          case 'FAILED':
+          case 'ERROR':
+          case 'REJECTED':
+            depStatus = 'not_started';
+            break;
+          case 'SKIPPED':
+          case 'SKIP':
+            depStatus = 'skipped';
+            break;
+          default:
+            depStatus = 'not_started';
         }
+        
+        processDependencies.push({
+          name: depProcess?.subStage_Name || `Dependency ${dep.dependency_Substage_Id}`,
+          status: depStatus
+        });
       });
 
-      // Create messages array
+      // Enhanced message creation with more context
       const messages: string[] = [];
+      
+      // Add primary message if available
       if (process.message) {
         messages.push(process.message);
       }
       
-      // Add status-specific messages
+      // Add user commentary if available
+      if (process.userCommentary) {
+        messages.push(`User Comment: ${process.userCommentary}`);
+      }
+      
+      // Add skip commentary if available
+      if (process.skipCommentary) {
+        messages.push(`Skip Reason: ${process.skipCommentary}`);
+      }
+      
+      // Add status-specific contextual messages
       if (process.status === 'FAILED' && process.message) {
-        messages.push(`Error: ${process.message}`);
+        messages.push(`Error Details: ${process.message}`);
       } else if (process.status === 'COMPLETED') {
-        messages.push('Process completed successfully');
+        if (process.completedBy && process.completedon) {
+          messages.push(`Completed by ${process.completedBy} on ${new Date(process.completedon).toLocaleString()}`);
+        } else {
+          messages.push('Process completed successfully');
+        }
+      } else if (process.status === 'IN PROGRESS') {
+        messages.push(`Currently processing... (${process.percentage || 0}% complete)`);
+      }
+      
+      // Add attestation info if required and available
+      if (process.attest === 'Y' && process.attestedBy) {
+        messages.push(`Attested by ${process.attestedBy} on ${new Date(process.attestedon || '').toLocaleString()}`);
+      } else if (process.attest === 'Y' && !process.attestedBy) {
+        messages.push('Attestation required');
+      }
+      
+      // Add lock information if locked
+      if (process.isLocked && process.lockedBy) {
+        messages.push(`Locked by ${process.lockedBy} on ${new Date(process.lockedOn || '').toLocaleString()}`);
       }
 
-      // Create the workflow task
+      // Create the enhanced workflow task with all API fields properly mapped
       const task: WorkflowTask = {
         id: `task-${process.workflow_Process_Id}`,
         name: process.subStage_Name || 'Unknown Task',
         processId: `PROC-${process.workflow_Process_Id}`,
         status: uiStatus,
         duration: process.duration || 0,
-        expectedStart: '09:00', // Default time - could be enhanced with actual timing data
+        expectedStart: '09:00', // Could be enhanced with actual timing data from serviceLink or other fields
         actualDuration: process.duration ? `${process.duration}m` : undefined,
         documents: processDocuments.length > 0 ? processDocuments : undefined,
         messages: messages.length > 0 ? messages : undefined,
         updatedBy: process.updatedBy || 'System',
         updatedAt: process.updatedon || new Date().toISOString(),
         dependencies: processDependencies.length > 0 ? processDependencies : undefined,
-        // Add additional fields for right panel binding
+        
+        // Enhanced additional fields for comprehensive right panel binding
         workflowProcessId: process.workflow_Process_Id,
+        workflowAppConfigId: process.workflow_App_Config_Id,
         stageId: process.stage_Id,
         subStageId: process.subStage_Id,
         subStageSeq: process.subStage_Seq,
+        stageName: process.stage_Name,
+        subStageName: process.subStage_Name,
+        serviceLink: process.serviceLink,
         auto: process.auto,
         adhoc: process.adhoc,
+        isAlteryx: process.isAlteryx,
         upload: process.upload,
         attest: process.attest,
+        uploadAllowed: process.upload_Allowed,
+        downloadAllowed: process.download_Allowed,
+        attestRequired: process.attest_Reqd,
         componentName: process.componentName,
+        resolvedComponentName: process.resolvedComponentName,
         businessDate: process.businessdate,
         attestedBy: process.attestedBy,
         attestedOn: process.attestedon,
@@ -486,7 +531,19 @@ const ApplicationsGrid = () => {
         isLocked: process.isLocked,
         lockedBy: process.lockedBy,
         lockedOn: process.lockedOn,
-        percentage: process.percentage
+        approval: process.approval,
+        isActive: process.isActive,
+        percentage: process.percentage,
+        producer: process.producer,
+        approver: process.approver,
+        entitlementMapping: process.entitlementMapping,
+        isRTB: process.isRTB,
+        hasDependencies: process.hasDependencies,
+        dependencySubstageId: process.dependency_Substage_Id,
+        depSubStageSeq: process.dep_Sub_Stage_Seq,
+        userCommentary: process.userCommentary,
+        skipCommentary: process.skipCommentary,
+        partialComplete: process.partialComplete
       };
 
       stage.steps.get(subStageKey)!.push(task);
@@ -535,29 +592,31 @@ const ApplicationsGrid = () => {
       
       const defaultTasks: WorkflowTask[] = [];
       
-      // Add all processes to the default stage
+      // Add all processes to the default stage with enhanced mapping
       processData.forEach((process, index) => {
         if (!process) return;
         
         let uiStatus: 'completed' | 'in_progress' | 'not_started' | 'skipped' = 'not_started';
-        const apiStatus = (process.status || '').toLowerCase();
+        const apiStatus = (process.status || '').toUpperCase().trim();
         
         switch (apiStatus) {
-          case 'completed':
-          case 'complete':
+          case 'COMPLETED':
+          case 'COMPLETE':
             uiStatus = 'completed';
             break;
-          case 'in progress':
-          case 'in_progress':
-          case 'running':
+          case 'IN PROGRESS':
+          case 'IN_PROGRESS':
+          case 'RUNNING':
             uiStatus = 'in_progress';
             break;
-          case 'failed':
-          case 'error':
+          case 'FAILED':
+          case 'ERROR':
+          case 'REJECTED':
             uiStatus = 'not_started';
             break;
-          case 'skipped':
-          case 'skip':
+          case 'SKIPPED':
+          case 'SKIP':
+          case 'POST MANUAL':
             uiStatus = 'skipped';
             break;
           default:
@@ -567,6 +626,9 @@ const ApplicationsGrid = () => {
         const messages: string[] = [];
         if (process.message) {
           messages.push(process.message);
+        }
+        if (process.userCommentary) {
+          messages.push(`User Comment: ${process.userCommentary}`);
         }
 
         defaultTasks.push({
@@ -580,16 +642,26 @@ const ApplicationsGrid = () => {
           messages: messages.length > 0 ? messages : undefined,
           updatedBy: process.updatedBy || 'System',
           updatedAt: process.updatedon || new Date().toISOString(),
-          // Add additional fields
+          
+          // Enhanced additional fields
           workflowProcessId: process.workflow_Process_Id,
+          workflowAppConfigId: process.workflow_App_Config_Id,
           stageId: process.stage_Id,
           subStageId: process.subStage_Id,
           subStageSeq: process.subStage_Seq,
+          stageName: process.stage_Name,
+          subStageName: process.subStage_Name,
+          serviceLink: process.serviceLink,
           auto: process.auto,
           adhoc: process.adhoc,
+          isAlteryx: process.isAlteryx,
           upload: process.upload,
           attest: process.attest,
+          uploadAllowed: process.upload_Allowed,
+          downloadAllowed: process.download_Allowed,
+          attestRequired: process.attest_Reqd,
           componentName: process.componentName,
+          resolvedComponentName: process.resolvedComponentName,
           businessDate: process.businessdate,
           attestedBy: process.attestedBy,
           attestedOn: process.attestedon,
@@ -598,7 +670,19 @@ const ApplicationsGrid = () => {
           isLocked: process.isLocked,
           lockedBy: process.lockedBy,
           lockedOn: process.lockedOn,
-          percentage: process.percentage
+          approval: process.approval,
+          isActive: process.isActive,
+          percentage: process.percentage,
+          producer: process.producer,
+          approver: process.approver,
+          entitlementMapping: process.entitlementMapping,
+          isRTB: process.isRTB,
+          hasDependencies: process.hasDependencies,
+          dependencySubstageId: process.dependency_Substage_Id,
+          depSubStageSeq: process.dep_Sub_Stage_Seq,
+          userCommentary: process.userCommentary,
+          skipCommentary: process.skipCommentary,
+          partialComplete: process.partialComplete
         });
       });
       
@@ -616,7 +700,7 @@ const ApplicationsGrid = () => {
 
     // Log the first few tasks for debugging
     if (stages.length > 0 && tasks[stages[0].id]?.length > 0) {
-      console.log('[ApplicationsGrid] Sample task:', tasks[stages[0].id][0]);
+      console.log('[ApplicationsGrid] Sample task with enhanced fields:', tasks[stages[0].id][0]);
     }
 
     // Log any issues with empty data
@@ -628,7 +712,7 @@ const ApplicationsGrid = () => {
       console.error('[ApplicationsGrid] No tasks created! This will cause the UI to show empty stages.');
     }
 
-    // Store the summary data globally for right panel access
+    // Store the summary data globally for right panel access with enhanced structure
     (window as any).currentWorkflowSummary = summary;
     (window as any).currentWorkflowApplication = application;
     (window as any).currentWorkflowNode = node;

@@ -12,7 +12,19 @@ import {
   BarChart, 
   FileText,
   Network,
-  RefreshCw
+  RefreshCw,
+  Bot,
+  UserCircle,
+  Shield,
+  Upload,
+  Download,
+  Database,
+  Link,
+  MessageSquare,
+  Lock,
+  Unlock,
+  Activity,
+  XCircle
 } from 'lucide-react';
 
 interface ProcessOverviewProps {
@@ -21,64 +33,180 @@ interface ProcessOverviewProps {
 }
 
 const ProcessOverview: React.FC<ProcessOverviewProps> = ({ processId, processName }) => {
-  // Mock data for process overview
-  const processDetails = {
-    id: processId,
-    name: processName,
-    status: 'in-progress',
-    progress: 45,
-    startTime: '2025-05-19 08:30:00',
-    expectedEndTime: '2025-05-19 10:30:00',
-    owner: 'John Doe',
-    priority: 'high',
-    type: 'manual',
-    businessDate: '2025-05-19',
-    region: 'EMEA',
-    description: 'This process handles the daily PnL calculation for the EMEA region, including data validation, adjustments, and reporting.',
-    metrics: {
-      successRate: '95%',
-      averageDuration: '120 minutes',
-      lastRunDuration: '118 minutes',
-      completionTrend: 'improving',
-    },
-    dependencies: {
-      total: 5,
-      completed: 3,
-      pending: 2,
-      failed: 0,
-    },
-    documents: {
-      total: 7,
-      inputs: 3,
-      outputs: 4,
+  // Get enhanced process data from global storage or use mock data
+  const getProcessData = () => {
+    const summaryData = (window as any).currentWorkflowSummary;
+    const applicationData = (window as any).currentWorkflowApplication;
+    
+    if (summaryData && summaryData.processData) {
+      // Find the specific process by ID
+      const process = summaryData.processData.find((p: any) => 
+        p.workflow_Process_Id.toString() === processId.replace('PROC-', '') ||
+        `PROC-${p.workflow_Process_Id}` === processId
+      );
+      
+      if (process) {
+        // Map API data to UI format with enhanced fields
+        return {
+          id: processId,
+          name: process.subStage_Name || processName,
+          stageName: process.stage_Name,
+          status: process.status?.toLowerCase().replace(' ', '-') || 'not-started',
+          progress: process.percentage || 0,
+          type: (process.auto === 'y' || process.auto === 'Y') ? 'auto' : 'manual',
+          duration: process.duration ? `${process.duration}m` : 'N/A',
+          startTime: process.updatedon ? new Date(process.updatedon).toLocaleString() : 'N/A',
+          expectedEndTime: 'N/A', // Could be calculated
+          owner: process.updatedBy || 'System',
+          businessDate: process.businessdate,
+          region: 'N/A', // Not in API data
+          description: process.message || 'No description available',
+          
+          // Enhanced API fields
+          serviceLink: process.serviceLink,
+          componentName: process.componentName,
+          resolvedComponentName: process.resolvedComponentName,
+          isAlteryx: process.isAlteryx === 'Y',
+          isRTB: process.isRTB,
+          adhoc: process.adhoc === 'Y',
+          uploadAllowed: process.upload_Allowed === 'Y',
+          downloadAllowed: process.download_Allowed === 'Y',
+          attestRequired: process.attest_Reqd === 'Y',
+          approvalRequired: process.approval === 'Y',
+          isActive: process.isActive === 'y',
+          isLocked: process.isLocked === 'Y',
+          lockedBy: process.lockedBy,
+          lockedOn: process.lockedOn,
+          completedBy: process.completedBy,
+          completedOn: process.completedon,
+          attestedBy: process.attestedBy,
+          attestedOn: process.attestedon,
+          hasDependencies: process.hasDependencies === 'y',
+          partialComplete: process.partialComplete,
+          userCommentary: process.userCommentary,
+          skipCommentary: process.skipCommentary,
+          
+          // Get related data counts
+          dependencies: {
+            total: summaryData.dependencyData?.filter((dep: any) => 
+              dep.workflow_Process_Id === process.workflow_Process_Id
+            ).length || 0,
+            completed: summaryData.dependencyData?.filter((dep: any) => 
+              dep.workflow_Process_Id === process.workflow_Process_Id && 
+              dep.dep_Status === 'COMPLETED'
+            ).length || 0,
+            pending: summaryData.dependencyData?.filter((dep: any) => 
+              dep.workflow_Process_Id === process.workflow_Process_Id && 
+              dep.dep_Status !== 'COMPLETED'
+            ).length || 0,
+            failed: 0 // Would need to check for failed status
+          },
+          
+          documents: {
+            total: summaryData.fileData?.filter((file: any) => 
+              file.workflow_Process_Id === process.workflow_Process_Id && file.name
+            ).length || 0,
+            inputs: summaryData.fileData?.filter((file: any) => 
+              file.workflow_Process_Id === process.workflow_Process_Id && 
+              file.name && file.file_Upload !== 'Y'
+            ).length || 0,
+            outputs: summaryData.fileData?.filter((file: any) => 
+              file.workflow_Process_Id === process.workflow_Process_Id && 
+              file.name && file.file_Upload === 'Y'
+            ).length || 0
+          },
+          
+          metrics: {
+            successRate: '95%', // Could be calculated from historical data
+            averageDuration: process.duration ? `${process.duration} minutes` : 'N/A',
+            lastRunDuration: process.duration ? `${process.duration} minutes` : 'N/A',
+            completionTrend: 'stable'
+          }
+        };
+      }
     }
+    
+    // Fallback to mock data
+    return {
+      id: processId,
+      name: processName,
+      stageName: 'Unknown Stage',
+      status: 'in-progress',
+      progress: 45,
+      type: 'manual',
+      duration: '15m',
+      startTime: '2025-05-19 08:30:00',
+      expectedEndTime: '2025-05-19 10:30:00',
+      owner: 'John Doe',
+      businessDate: '2025-05-19',
+      region: 'EMEA',
+      description: 'This process handles the daily PnL calculation for the EMEA region, including data validation, adjustments, and reporting.',
+      serviceLink: null,
+      componentName: null,
+      isAlteryx: false,
+      isRTB: false,
+      adhoc: false,
+      uploadAllowed: false,
+      downloadAllowed: true,
+      attestRequired: false,
+      approvalRequired: false,
+      isActive: true,
+      isLocked: false,
+      lockedBy: null,
+      hasDependencies: true,
+      userCommentary: null,
+      skipCommentary: null,
+      metrics: {
+        successRate: '95%',
+        averageDuration: '120 minutes',
+        lastRunDuration: '118 minutes',
+        completionTrend: 'improving',
+      },
+      dependencies: {
+        total: 5,
+        completed: 3,
+        pending: 2,
+        failed: 0,
+      },
+      documents: {
+        total: 7,
+        inputs: 3,
+        outputs: 4,
+      }
+    };
   };
+
+  const processDetails = getProcessData();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-500/10 text-green-500">Completed</Badge>;
+        return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Completed</Badge>;
       case 'in-progress':
-        return <Badge className="bg-blue-500/10 text-blue-500">In Progress</Badge>;
+        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20">In Progress</Badge>;
       case 'not-started':
-        return <Badge className="bg-gray-500/10 text-gray-500">Not Started</Badge>;
+        return <Badge className="bg-gray-500/10 text-gray-500 border-gray-500/20">Not Started</Badge>;
       case 'failed':
-        return <Badge className="bg-red-500/10 text-red-500">Failed</Badge>;
+        return <Badge className="bg-red-500/10 text-red-500 border-red-500/20">Failed</Badge>;
+      case 'rejected':
+        return <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20">Rejected</Badge>;
+      case 'skipped':
+        return <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20">Skipped</Badge>;
       default:
-        return <Badge>Unknown</Badge>;
+        return <Badge variant="outline">Unknown</Badge>;
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return <Badge className="bg-red-500/10 text-red-500">High</Badge>;
-      case 'medium':
-        return <Badge className="bg-yellow-500/10 text-yellow-500">Medium</Badge>;
-      case 'low':
-        return <Badge className="bg-green-500/10 text-green-500">Low</Badge>;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'in-progress':
+        return <Activity className="h-4 w-4 text-blue-500 animate-pulse" />;
+      case 'failed':
+        return <XCircle className="h-4 w-4 text-red-500" />;
       default:
-        return <Badge>Unknown</Badge>;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
