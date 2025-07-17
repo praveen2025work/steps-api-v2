@@ -14,7 +14,7 @@ import {
   WorkflowNode, 
   WorkflowSummary 
 } from '@/types/workflow-dashboard-types';
-import { WorkflowTask } from './WorkflowTaskItem';
+import { WorkflowTask, WorkflowTaskDocument, WorkflowTaskDependency } from './WorkflowTaskItem';
 import applicationsData from '@/data/applications.json';
 import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
 import { 
@@ -156,6 +156,13 @@ const ApplicationsGrid = () => {
       setLoadingSummary(true);
       setSummaryError(null);
       
+      console.log('[ApplicationsGrid] Loading workflow summary for terminal node:', {
+        configId: node.configId,
+        appId: node.appId,
+        configName: node.configName,
+        date: dateString
+      });
+      
       try {
         const response = await workflowService.getWorkflowSummary({
           date: dateString,
@@ -163,7 +170,32 @@ const ApplicationsGrid = () => {
           appId: node.appId
         });
         
+        console.log('[ApplicationsGrid] Workflow summary response:', {
+          success: response.success,
+          error: response.error,
+          dataKeys: response.data ? Object.keys(response.data) : [],
+          processDataLength: response.data?.processData?.length || 0
+        });
+        
         if (response.success) {
+          // Validate that we have the required data structure
+          if (!response.data) {
+            setSummaryError('No data received from workflow summary API');
+            return;
+          }
+          
+          // Log the structure for debugging
+          console.log('[ApplicationsGrid] Workflow summary data structure:', {
+            processData: response.data.processData?.length || 0,
+            fileData: response.data.fileData?.length || 0,
+            dependencyData: response.data.dependencyData?.length || 0,
+            attestationData: response.data.attestationData?.length || 0,
+            dailyParams: response.data.dailyParams?.length || 0,
+            applications: response.data.applications?.length || 0,
+            appParams: response.data.appParams?.length || 0,
+            processParams: response.data.processParams?.length || 0
+          });
+          
           // Find the original application
           const originalApp = workflowApps.find(app => app.appId === node.appId);
           if (originalApp) {
@@ -172,11 +204,14 @@ const ApplicationsGrid = () => {
               application: originalApp,
               node: node
             });
+          } else {
+            setSummaryError(`Could not find application with ID ${node.appId} in workflow applications list`);
           }
         } else {
           setSummaryError(response.error || 'Failed to load workflow summary');
         }
       } catch (err: any) {
+        console.error('[ApplicationsGrid] Error loading workflow summary:', err);
         setSummaryError(err.message || 'An unexpected error occurred');
       } finally {
         setLoadingSummary(false);
@@ -262,18 +297,38 @@ const ApplicationsGrid = () => {
     application: WorkflowApplication, 
     node: WorkflowNode
   ) => {
+    console.log('[ApplicationsGrid] Converting workflow summary to UI format:', {
+      processDataCount: summary.processData?.length || 0,
+      fileDataCount: summary.fileData?.length || 0,
+      dependencyDataCount: summary.dependencyData?.length || 0,
+      attestationDataCount: summary.attestationData?.length || 0,
+      dailyParamsCount: summary.dailyParams?.length || 0,
+      applicationsCount: summary.applications?.length || 0,
+      appParamsCount: summary.appParams?.length || 0,
+      processParamsCount: summary.processParams?.length || 0
+    });
+
     // Build progress steps from navigation path
     const progressSteps = navigationPath.map((item, index) => ({
       name: item.name,
       progress: index === navigationPath.length - 1 ? node.percentageCompleted : 75
     }));
 
-    // Convert process data to stages and tasks
+    // Convert process data to stages and tasks with proper null checks
     const stageMap = new Map<string, { id: string; name: string; tasks: WorkflowTask[] }>();
     
-    summary.processData.forEach((process, index) => {
+    // Ensure processData exists and is an array
+    const processData = summary.processData || [];
+    console.log('[ApplicationsGrid] Processing', processData.length, 'process data items');
+    
+    processData.forEach((process, index) => {
+      if (!process) {
+        console.warn('[ApplicationsGrid] Skipping null/undefined process at index', index);
+        return;
+      }
+
       const stageId = `stage-${process.stage_Id}`;
-      const stageName = process.stage_Name;
+      const stageName = process.stage_Name || 'Unknown Stage';
       
       if (!stageMap.has(stageId)) {
         stageMap.set(stageId, {
@@ -284,18 +339,121 @@ const ApplicationsGrid = () => {
       }
       
       const stage = stageMap.get(stageId)!;
+      
+      // Map status from API format to UI format
+      let uiStatus: 'completed' | 'in_progress' | 'not_started' | 'skipped' = 'not_started';
+      const apiStatus = (process.status || '').toLowerCase();
+      
+      switch (apiStatus) {
+        case 'completed':
+        case 'complete':
+          uiStatus = 'completed';
+          break;
+        case 'in progress':
+        case 'in_progress':
+        case 'running':
+          uiStatus = 'in_progress';
+          break;
+        case 'failed':
+        case 'error':
+          uiStatus = 'not_started'; // Failed tasks show as not started for retry
+          break;
+        case 'skipped':
+        case 'skip':
+          uiStatus = 'skipped';
+          break;
+        default:
+          uiStatus = 'not_started';
+      }
+
+      // Create documents array from file data if available
+      const processDocuments: WorkflowTaskDocument[] = [];
+      const fileData = summary.fileData || [];
+      const processFiles = fileData.filter(file => 
+        file.workflow_Process_Id === process.workflow_Process_Id
+      );
+      
+      processFiles.forEach(file => {
+        if (file.name) {
+          processDocuments.push({
+            name: file.name,
+            size: file.file_Upload || 'Unknown size'
+          });
+        }
+      });
+
+      // Create dependencies array from dependency data
+      const processDependencies: WorkflowTaskDependency[] = [];
+      const dependencyData = summary.dependencyData || [];
+      const processDeps = dependencyData.filter(dep => 
+        dep.workflow_Process_Id === process.workflow_Process_Id
+      );
+      
+      processDeps.forEach(dep => {
+        if (dep.dependency_Substage_Id && dep.dependency_Substage_Id !== 0) {
+          // Find the dependency process name
+          const depProcess = processData.find(p => 
+            p.workflow_Process_Id === dep.dependency_Substage_Id
+          );
+          
+          let depStatus: 'completed' | 'in_progress' | 'not_started' | 'skipped' = 'not_started';
+          const depApiStatus = (dep.dep_Status || '').toLowerCase();
+          
+          switch (depApiStatus) {
+            case 'completed':
+            case 'complete':
+              depStatus = 'completed';
+              break;
+            case 'in progress':
+            case 'in_progress':
+            case 'running':
+              depStatus = 'in_progress';
+              break;
+            case 'failed':
+            case 'error':
+              depStatus = 'not_started';
+              break;
+            case 'skipped':
+            case 'skip':
+              depStatus = 'skipped';
+              break;
+            default:
+              depStatus = 'not_started';
+          }
+          
+          processDependencies.push({
+            name: depProcess?.subStage_Name || `Process ${dep.dependency_Substage_Id}`,
+            status: depStatus
+          });
+        }
+      });
+
+      // Create messages array
+      const messages: string[] = [];
+      if (process.message) {
+        messages.push(process.message);
+      }
+      
+      // Add status-specific messages
+      if (process.status === 'FAILED' && process.message) {
+        messages.push(`Error: ${process.message}`);
+      } else if (process.status === 'COMPLETED') {
+        messages.push('Process completed successfully');
+      }
+
       stage.tasks.push({
         id: `task-${process.workflow_Process_Id}`,
-        name: process.subStage_Name,
+        name: process.subStage_Name || 'Unknown Task',
         processId: `PROC-${process.workflow_Process_Id}`,
-        status: process.status.toLowerCase() as any,
+        status: uiStatus,
         duration: process.duration || 0,
-        expectedStart: '09:00', // Default time
-        documents: [],
-        messages: process.message ? [process.message] : [],
+        expectedStart: '09:00', // Default time - could be enhanced with actual timing data
+        actualDuration: process.duration ? `${process.duration}m` : undefined,
+        documents: processDocuments.length > 0 ? processDocuments : undefined,
+        messages: messages.length > 0 ? messages : undefined,
         updatedBy: process.updatedBy || 'System',
         updatedAt: process.updatedon || new Date().toISOString(),
-        dependencies: []
+        dependencies: processDependencies.length > 0 ? processDependencies : undefined
       });
     });
 
@@ -304,6 +462,89 @@ const ApplicationsGrid = () => {
     stages.forEach(stage => {
       tasks[stage.id] = stage.tasks;
     });
+
+    // If no stages were created from processData, create a default stage
+    if (stages.length === 0 && processData.length > 0) {
+      console.warn('[ApplicationsGrid] No stages created from process data, creating default stage');
+      const defaultStage = {
+        id: 'stage-default',
+        name: 'Workflow Processes',
+        tasks: []
+      };
+      
+      // Add all processes to the default stage
+      processData.forEach((process, index) => {
+        if (!process) return;
+        
+        let uiStatus: 'completed' | 'in_progress' | 'not_started' | 'skipped' = 'not_started';
+        const apiStatus = (process.status || '').toLowerCase();
+        
+        switch (apiStatus) {
+          case 'completed':
+          case 'complete':
+            uiStatus = 'completed';
+            break;
+          case 'in progress':
+          case 'in_progress':
+          case 'running':
+            uiStatus = 'in_progress';
+            break;
+          case 'failed':
+          case 'error':
+            uiStatus = 'not_started';
+            break;
+          case 'skipped':
+          case 'skip':
+            uiStatus = 'skipped';
+            break;
+          default:
+            uiStatus = 'not_started';
+        }
+
+        const messages: string[] = [];
+        if (process.message) {
+          messages.push(process.message);
+        }
+
+        defaultStage.tasks.push({
+          id: `task-${process.workflow_Process_Id}`,
+          name: process.subStage_Name || 'Unknown Task',
+          processId: `PROC-${process.workflow_Process_Id}`,
+          status: uiStatus,
+          duration: process.duration || 0,
+          expectedStart: '09:00',
+          actualDuration: process.duration ? `${process.duration}m` : undefined,
+          messages: messages.length > 0 ? messages : undefined,
+          updatedBy: process.updatedBy || 'System',
+          updatedAt: process.updatedon || new Date().toISOString()
+        });
+      });
+      
+      stages.push(defaultStage);
+      tasks[defaultStage.id] = defaultStage.tasks;
+    }
+
+    console.log('[ApplicationsGrid] Conversion complete:', {
+      stagesCount: stages.length,
+      totalTasks: Object.values(tasks).reduce((sum, stageTasks) => sum + stageTasks.length, 0),
+      stageNames: stages.map(s => s.name),
+      processDataLength: processData.length,
+      hasDefaultStage: stages.some(s => s.id === 'stage-default')
+    });
+
+    // Log the first few tasks for debugging
+    if (stages.length > 0 && tasks[stages[0].id]?.length > 0) {
+      console.log('[ApplicationsGrid] Sample task:', tasks[stages[0].id][0]);
+    }
+
+    // Log any issues with empty data
+    if (stages.length === 0) {
+      console.error('[ApplicationsGrid] No stages created! This will cause the UI to not display any data.');
+    }
+
+    if (Object.values(tasks).every(stageTasks => stageTasks.length === 0)) {
+      console.error('[ApplicationsGrid] No tasks created! This will cause the UI to show empty stages.');
+    }
 
     return {
       workflowTitle: `${application.configName} - ${node.configName}`,
