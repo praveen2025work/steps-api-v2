@@ -23,6 +23,16 @@ import {
   ApplicationToHierarchyMap, 
   SetApplicationHierarchyMapRequest 
 } from '@/types/hierarchy-api-types';
+import {
+  WorkflowApplication,
+  WorkflowNode,
+  WorkflowSummary,
+  WorkflowDashboardApiResponse,
+  GetWorkflowApplicationsParams,
+  GetWorkflowNodesParams,
+  GetWorkflowSummaryParams,
+  MockWorkflowData
+} from '@/types/workflow-dashboard-types';
 
 // Metadata types
 interface MetadataApplication {
@@ -2747,6 +2757,537 @@ class WorkflowService {
       javaBaseUrl: this.javaBaseUrl,
       isMock: this.isMockMode()
     };
+  }
+
+  // ===== WORKFLOW DASHBOARD API METHODS =====
+
+  // Get all workflow applications for a specific date
+  async getAllWorkflowApplications(params: GetWorkflowApplicationsParams): Promise<WorkflowDashboardApiResponse<WorkflowApplication[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for workflow applications');
+        await this.simulateNetworkDelay();
+        
+        // Mock data based on your API response
+        const mockApplications: WorkflowApplication[] = [
+          {
+            appId: 17,
+            previousLevel: 0,
+            currentLevel: 0,
+            nextLevel: 1,
+            isUsedForWorkflowInstance: false,
+            percentageCompleted: 0,
+            isConfigured: true,
+            isWeekly: null,
+            configType: "APPLICATION",
+            configId: "17",
+            configName: "Basel"
+          },
+          {
+            appId: 17,
+            previousLevel: 0,
+            currentLevel: 0,
+            nextLevel: 2,
+            isUsedForWorkflowInstance: false,
+            percentageCompleted: 0,
+            isConfigured: true,
+            isWeekly: null,
+            configType: "APPLICATION",
+            configId: "17",
+            configName: "Basel"
+          },
+          {
+            appId: 1,
+            previousLevel: 0,
+            currentLevel: 0,
+            nextLevel: 1,
+            isUsedForWorkflowInstance: false,
+            percentageCompleted: 0,
+            isConfigured: true,
+            isWeekly: null,
+            configType: "APPLICATION",
+            configId: "1",
+            configName: "Daily Named Pal"
+          }
+        ];
+        
+        return {
+          data: mockApplications,
+          success: true,
+          timestamp: new Date().toISOString(),
+          environment: 'Mock Data'
+        };
+      }
+
+      console.log('[Workflow Service] Fetching workflow applications from API for date:', params.date);
+      const response = await this.dotNetAxiosInstance.get<WorkflowApplication[]>(`/GetAllWorkflowApplications/${encodeURIComponent(params.date)}`);
+      
+      return {
+        data: response.data,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching workflow applications:', error);
+      
+      return {
+        data: [],
+        success: false,
+        error: error.response?.data?.message || error.message || 'Failed to fetch workflow applications',
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+    }
+  }
+
+  // Get workflow nodes for specific parameters
+  async getWorkflowNodes(params: GetWorkflowNodesParams): Promise<WorkflowDashboardApiResponse<WorkflowNode[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for workflow nodes');
+        await this.simulateNetworkDelay();
+        
+        // Mock data based on your API response
+        const mockNodes: WorkflowNode[] = [
+          {
+            appId: 1,
+            previousLevel: 8,
+            currentLevel: 1,
+            nextLevel: 2,
+            isUsedForWorkflowInstance: false,
+            percentageCompleted: 0,
+            isConfigured: true,
+            isWeekly: "N",
+            configType: "Asset Class",
+            configId: "500161",
+            configName: "Advisory"
+          },
+          {
+            appId: 1,
+            previousLevel: 8,
+            currentLevel: 1,
+            nextLevel: 2,
+            isUsedForWorkflowInstance: false,
+            percentageCompleted: 0,
+            isConfigured: true,
+            isWeekly: "N",
+            configType: "Asset Class",
+            configId: "500016",
+            configName: "BI Funding and Risk Management"
+          },
+          {
+            appId: 1,
+            previousLevel: 0,
+            currentLevel: 1,
+            nextLevel: 2,
+            isUsedForWorkflowInstance: false,
+            percentageCompleted: 0,
+            isConfigured: true,
+            isWeekly: "N",
+            configType: "Asset Class",
+            configId: "1140452",
+            configName: "Barclays Investment Managers"
+          }
+        ];
+        
+        return {
+          data: mockNodes,
+          success: true,
+          timestamp: new Date().toISOString(),
+          environment: 'Mock Data'
+        };
+      }
+
+      console.log('[Workflow Service] Fetching workflow nodes from API:', params);
+      const url = `/GetWorkflowNodes/${encodeURIComponent(params.date)}/${params.appId}/${encodeURIComponent(params.configId)}/${params.currentLevel}/${params.nextLevel}`;
+      const response = await this.dotNetAxiosInstance.get<WorkflowNode[]>(url);
+      
+      return {
+        data: response.data,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching workflow nodes:', error);
+      
+      return {
+        data: [],
+        success: false,
+        error: error.response?.data?.message || error.message || 'Failed to fetch workflow nodes',
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+    }
+  }
+
+  // Get comprehensive workflow summary
+  async getWorkflowSummary(params: GetWorkflowSummaryParams): Promise<WorkflowDashboardApiResponse<WorkflowSummary>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Workflow Service] Using mock data for workflow summary');
+        await this.simulateNetworkDelay();
+        
+        // Mock data based on your comprehensive API response
+        const mockSummary: WorkflowSummary = {
+          processData: [
+            {
+              app_Id: 1,
+              app_Group_Id: 5693,
+              stage_Id: 28,
+              subStage_Id: 52,
+              subStage_Seq: 1,
+              stage_Name: "PRE WF",
+              subStage_Name: "SOD Roll",
+              serviceLink: "http://$FAS_SERVICES:$FAS_SERVICE_PORTS/fas-feign-client/start-of-day",
+              auto: "y",
+              adhoc: "N",
+              isAlteryx: "N",
+              upload: "N",
+              attest: "N",
+              workflow_Process_Id: 21979165,
+              workflow_App_Config_Id: 130549,
+              businessdate: "30/05/2025",
+              status: "FAILED",
+              updatedBy: "SYSTEM",
+              updatedon: "02/06/2025 00:15:36",
+              attestedBy: null,
+              attestedon: null,
+              completedBy: null,
+              completedon: null,
+              duration: 0,
+              dependency_Substage_Id: null,
+              upload_Allowed: "N",
+              download_Allowed: "N",
+              attest_Reqd: "N",
+              dep_Sub_Stage_Seq: null,
+              userCommentary: null,
+              skipCommentary: null,
+              hasDependencies: "y",
+              componentName: null,
+              message: "org.springframework.web.client.ResourceAccessException: I/O error on POST request",
+              producer: -1,
+              approver: -1,
+              entitlementMapping: 1,
+              isRTB: false,
+              isLocked: null,
+              lockedBy: null,
+              lockedOn: null,
+              approval: "N",
+              isActive: "y",
+              percentage: 0,
+              resolvedComponentName: null,
+              partialComplete: "NA"
+            }
+          ],
+          fileData: [
+            {
+              workflow_Process_Id: 21979156,
+              workflow_App_Config_Id: 130528,
+              businessdate: "30/05/2025 00:00:00",
+              name: null,
+              param_Type: null,
+              value: null,
+              required: null,
+              expectedValue: null,
+              file_Upload: null,
+              email_File: null
+            },
+            {
+              workflow_Process_Id: 21979157,
+              workflow_App_Config_Id: 130529,
+              businessdate: "30/05/2025 00:00:00",
+              name: null,
+              param_Type: null,
+              value: null,
+              required: null,
+              expectedValue: null,
+              file_Upload: null,
+              email_File: null
+            }
+          ],
+          dependencyData: [
+            {
+              workflow_Process_Id: 21979156,
+              workflow_App_Config_Id: 130528,
+              businessdate: "30/05/2025 00:00:00",
+              dependency_Substage_Id: 21979165,
+              dep_Status: "NOT STARTED",
+              dep_UpdatedBy: null,
+              dep_Updatedon: null
+            },
+            {
+              workflow_Process_Id: 21979157,
+              workflow_App_Config_Id: 130529,
+              businessdate: "30/05/2025 00:00:00",
+              dependency_Substage_Id: 21979156,
+              dep_Status: "NOT STARTED",
+              dep_UpdatedBy: null,
+              dep_Updatedon: null
+            },
+            {
+              workflow_Process_Id: 21979165,
+              workflow_App_Config_Id: 130549,
+              businessdate: "30/05/2025 00:00:00",
+              dependency_Substage_Id: 0,
+              dep_Status: null,
+              dep_UpdatedBy: null,
+              dep_Updatedon: null
+            }
+          ],
+          attestationData: [
+            {
+              workflow_Process_Id: 21979156,
+              workflow_App_Config_Id: 130528,
+              businessdate: "30/05/2025 00:00:00",
+              attestation_Id: 0,
+              attest_Status: null,
+              attest_AttestedOn: null,
+              attest_Name: null,
+              attest_Description: null
+            },
+            {
+              workflow_Process_Id: 21979157,
+              workflow_App_Config_Id: 130529,
+              businessdate: "30/05/2025 00:00:00",
+              attestation_Id: 0,
+              attest_Status: null,
+              attest_AttestedOn: null,
+              attest_Name: null,
+              attest_Description: null
+            },
+            {
+              workflow_Process_Id: 21979165,
+              workflow_App_Config_Id: 130549,
+              businessdate: "30/05/2025 00:00:00",
+              attestation_Id: 8,
+              attest_Status: null,
+              attest_AttestedOn: null,
+              attest_Name: null,
+              attest_Description: null
+            }
+          ],
+          dailyParams: [
+            {
+              param_Id: 6542099,
+              businessDate: "30/05/2025 00:00:00",
+              app_Group_Id: 5693,
+              app_Id: 1,
+              name: "Book_System",
+              value: "SMS_SUM",
+              comments: null,
+              isEditable: "N",
+              updatedBy: "SYSTEM",
+              updatedOn: "02/06/2025 00:00:00"
+            },
+            {
+              param_Id: 6542071,
+              businessDate: "30/05/2025 00:00:00",
+              app_Group_Id: 5693,
+              app_Id: 1,
+              name: "GMIS_SUBMISSION_CURRENCY",
+              value: "GBP",
+              comments: null,
+              isEditable: "N",
+              updatedBy: "SYSTEM",
+              updatedOn: "02/06/2025 00:00:00"
+            },
+            {
+              param_Id: 6542072,
+              businessDate: "30/05/2025 00:00:00",
+              app_Group_Id: 5693,
+              app_Id: 1,
+              name: "GMIS_SUBMISSION_NODE",
+              value: "ZZZZ",
+              comments: null,
+              isEditable: "N",
+              updatedBy: "SYSTEM",
+              updatedOn: "02/06/2025 00:00:00"
+            }
+          ],
+          applications: [
+            {
+              appId: 1,
+              name: "Daily Named Pnl",
+              category: "NPL AD",
+              service_URL: null,
+              description: "Daily Named Pnl",
+              isActive: "*",
+              updatedBy: "X01279711",
+              updatedOn: "28/10/2024 13:46:55",
+              entitlementMapping: 12,
+              isLockingEnabled: true,
+              lockingRole: 2,
+              allowLock: false,
+              cronExpression: "9 10 22 * MON-FRI ",
+              startDate: "28/10/2024 13:46:55",
+              expiryDate: "31/12/9999 00:00:00"
+            },
+            {
+              appId: 4,
+              name: "Daizy Named Pnl",
+              category: "NPL ID",
+              service_URL: null,
+              description: "Daily Named Pnl",
+              isActive: "",
+              updatedBy: "X01279741",
+              updatedOn: "28/10/2024 13:37:41",
+              entitlementMapping: 12,
+              isLockingEnabled: true,
+              lockingRole: 2,
+              allowLock: false,
+              cronExpression: "0 39 13 * MON-FRI *",
+              startDate: "28/10/2024 13:37:43",
+              expiryDate: "28/10/2024 13:41:43"
+            }
+          ],
+          appParams: [
+            {
+              param_Id: 82,
+              app_Id: 1,
+              name: "FAS_SERVICE_PORT",
+              value: "8762",
+              updatedBy: "kumarp15",
+              updatedOn: "29/07/2021 20:21:32"
+            },
+            {
+              param_Id: 204,
+              app_Id: 7,
+              name: "W_SEND_EMAIL_WHEN_REJECT_OR_FAILED",
+              value: "N",
+              updatedBy: "X01279711",
+              updatedOn: "07/01/2025 19:31:09"
+            },
+            {
+              param_Id: 201,
+              app_Id: 1,
+              name: "WE_DISABLE_FORCE_START_ON_ATTEST_STEP",
+              value: "N",
+              updatedBy: "x01306998",
+              updatedOn: "22/07/2024 19:07:41"
+            },
+            {
+              param_Id: 282,
+              app_Id: 1,
+              name: "EQD_INST_PLEX_DIMENSION",
+              value: "BusinessDate|ChorusL8|ChorusL9|Masterbook|Masterbook",
+              updatedBy: "x01306998",
+              updatedOn: "08/06/2022 11:33:38"
+            },
+            {
+              param_Id: 362,
+              app_Id: 1,
+              name: "WF_ENABLE_TG_Lock",
+              value: "",
+              updatedBy: "",
+              updatedOn: ""
+            }
+          ],
+          processParams: [
+            {
+              workflow_Process_Id: 21979157,
+              substage_Name: "parameterName",
+              parameterName: "hasGBSBook",
+              parameterValue: "Y",
+              resolvedParameterName: "",
+              resolvedParameterValue: ""
+            },
+            {
+              workflow_Process_Id: 21979157,
+              substage_Name: "parameterName",
+              parameterName: "hasSMSBook",
+              parameterValue: "Y",
+              resolvedParameterName: "",
+              resolvedParameterValue: ""
+            },
+            {
+              workflow_Process_Id: 21979157,
+              substage_Name: "parameterName",
+              parameterName: "hasSUMMITBook",
+              parameterValue: "Y",
+              resolvedParameterName: "",
+              resolvedParameterValue: ""
+            },
+            {
+              workflow_Process_Id: 21979157,
+              substage_Name: "parameterName",
+              parameterName: "masterBookRegion",
+              parameterValue: "APAC",
+              resolvedParameterName: "",
+              resolvedParameterValue: ""
+            },
+            {
+              workflow_Process_Id: 21979156,
+              substage_Name: "parameterName",
+              parameterName: "hasGBSBook",
+              parameterValue: "Y",
+              resolvedParameterName: "",
+              resolvedParameterValue: ""
+            }
+          ]
+        };
+        
+        return {
+          data: mockSummary,
+          success: true,
+          timestamp: new Date().toISOString(),
+          environment: 'Mock Data'
+        };
+      }
+
+      console.log('[Workflow Service] Fetching workflow summary from API:', params);
+      const url = `/GetWorkflowSummary/${encodeURIComponent(params.date)}/${encodeURIComponent(params.configId)}/${params.appId}`;
+      const response = await this.dotNetAxiosInstance.get<WorkflowSummary>(url);
+      
+      return {
+        data: response.data,
+        success: true,
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+    } catch (error: any) {
+      console.error('[Workflow Service] Error fetching workflow summary:', error);
+      
+      return {
+        data: {
+          processData: [],
+          fileData: [],
+          dependencyData: [],
+          attestationData: [],
+          dailyParams: [],
+          applications: [],
+          appParams: [],
+          processParams: []
+        },
+        success: false,
+        error: error.response?.data?.message || error.message || 'Failed to fetch workflow summary',
+        timestamp: new Date().toISOString(),
+        environment: `DotNet: ${this.dotNetBaseUrl}`
+      };
+    }
+  }
+
+  // Helper method to format date for API calls
+  private formatDateForApi(date: Date): string {
+    const day = date.getDate();
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  }
+
+  // Convenience method to get workflow applications for today
+  async getTodayWorkflowApplications(): Promise<WorkflowDashboardApiResponse<WorkflowApplication[]>> {
+    const today = new Date();
+    const dateString = this.formatDateForApi(today);
+    return this.getAllWorkflowApplications({ date: dateString });
+  }
+
+  // Convenience method to get workflow summary for today
+  async getTodayWorkflowSummary(configId: string, appId: number): Promise<WorkflowDashboardApiResponse<WorkflowSummary>> {
+    const today = new Date();
+    const dateString = this.formatDateForApi(today);
+    return this.getWorkflowSummary({ date: dateString, configId, appId });
   }
 }
 
