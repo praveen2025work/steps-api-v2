@@ -314,12 +314,17 @@ const ApplicationsGrid = () => {
       progress: index === navigationPath.length - 1 ? node.percentageCompleted : 75
     }));
 
-    // Convert process data to stages and tasks with proper null checks
-    const stageMap = new Map<string, { id: string; name: string; tasks: WorkflowTask[] }>();
-    
     // Ensure processData exists and is an array
     const processData = summary.processData || [];
     console.log('[ApplicationsGrid] Processing', processData.length, 'process data items');
+
+    // Step 1: Group processData by stage_Id to create stages
+    const stageMap = new Map<number, { 
+      id: string; 
+      name: string; 
+      stageId: number;
+      steps: Map<string, WorkflowTask[]>; // Map of subStage key to tasks
+    }>();
     
     processData.forEach((process, index) => {
       if (!process) {
@@ -327,18 +332,26 @@ const ApplicationsGrid = () => {
         return;
       }
 
-      const stageId = `stage-${process.stage_Id}`;
-      const stageName = process.stage_Name || 'Unknown Stage';
+      const stageId = process.stage_Id;
+      const stageName = process.stage_Name || `Stage ${stageId}`;
       
       if (!stageMap.has(stageId)) {
         stageMap.set(stageId, {
-          id: stageId,
+          id: `stage-${stageId}`,
           name: stageName,
-          tasks: []
+          stageId: stageId,
+          steps: new Map()
         });
       }
       
       const stage = stageMap.get(stageId)!;
+      
+      // Step 2: Within each stage, group by subStage_Id or subStage_Seq to create steps
+      const subStageKey = process.subStage_Id ? `substage-${process.subStage_Id}` : `substage-seq-${process.subStage_Seq}`;
+      
+      if (!stage.steps.has(subStageKey)) {
+        stage.steps.set(subStageKey, []);
+      }
       
       // Map status from API format to UI format
       let uiStatus: 'completed' | 'in_progress' | 'not_started' | 'skipped' = 'not_started';
@@ -441,7 +454,8 @@ const ApplicationsGrid = () => {
         messages.push('Process completed successfully');
       }
 
-      stage.tasks.push({
+      // Create the workflow task
+      const task: WorkflowTask = {
         id: `task-${process.workflow_Process_Id}`,
         name: process.subStage_Name || 'Unknown Task',
         processId: `PROC-${process.workflow_Process_Id}`,
@@ -453,14 +467,53 @@ const ApplicationsGrid = () => {
         messages: messages.length > 0 ? messages : undefined,
         updatedBy: process.updatedBy || 'System',
         updatedAt: process.updatedon || new Date().toISOString(),
-        dependencies: processDependencies.length > 0 ? processDependencies : undefined
-      });
+        dependencies: processDependencies.length > 0 ? processDependencies : undefined,
+        // Add additional fields for right panel binding
+        workflowProcessId: process.workflow_Process_Id,
+        stageId: process.stage_Id,
+        subStageId: process.subStage_Id,
+        subStageSeq: process.subStage_Seq,
+        auto: process.auto,
+        adhoc: process.adhoc,
+        upload: process.upload,
+        attest: process.attest,
+        componentName: process.componentName,
+        businessDate: process.businessdate,
+        attestedBy: process.attestedBy,
+        attestedOn: process.attestedon,
+        completedBy: process.completedBy,
+        completedOn: process.completedon,
+        isLocked: process.isLocked,
+        lockedBy: process.lockedBy,
+        lockedOn: process.lockedOn,
+        percentage: process.percentage
+      };
+
+      stage.steps.get(subStageKey)!.push(task);
     });
 
-    const stages = Array.from(stageMap.values());
+    // Step 3: Convert stage map to the format expected by WorkflowDetailView
+    const stages = Array.from(stageMap.values()).map(stage => ({
+      id: stage.id,
+      name: stage.name
+    }));
+
     const tasks: Record<string, WorkflowTask[]> = {};
-    stages.forEach(stage => {
-      tasks[stage.id] = stage.tasks;
+    stageMap.forEach((stage, stageId) => {
+      // Flatten all steps within a stage into a single task array
+      const stageTasks: WorkflowTask[] = [];
+      stage.steps.forEach((stepTasks) => {
+        stageTasks.push(...stepTasks);
+      });
+      
+      // Sort tasks by subStage_Seq to maintain proper order
+      stageTasks.sort((a, b) => {
+        const aSeq = (a as any).subStageSeq || 0;
+        const bSeq = (b as any).subStageSeq || 0;
+        return aSeq - bSeq;
+      });
+      
+      tasks[stage.id] = stageTasks;
     });
 
     // If no stages were created from processData, create a default stage
@@ -468,9 +521,10 @@ const ApplicationsGrid = () => {
       console.warn('[ApplicationsGrid] No stages created from process data, creating default stage');
       const defaultStage = {
         id: 'stage-default',
-        name: 'Workflow Processes',
-        tasks: []
+        name: 'Workflow Processes'
       };
+      
+      const defaultTasks: WorkflowTask[] = [];
       
       // Add all processes to the default stage
       processData.forEach((process, index) => {
@@ -506,7 +560,7 @@ const ApplicationsGrid = () => {
           messages.push(process.message);
         }
 
-        defaultStage.tasks.push({
+        defaultTasks.push({
           id: `task-${process.workflow_Process_Id}`,
           name: process.subStage_Name || 'Unknown Task',
           processId: `PROC-${process.workflow_Process_Id}`,
@@ -516,12 +570,31 @@ const ApplicationsGrid = () => {
           actualDuration: process.duration ? `${process.duration}m` : undefined,
           messages: messages.length > 0 ? messages : undefined,
           updatedBy: process.updatedBy || 'System',
-          updatedAt: process.updatedon || new Date().toISOString()
+          updatedAt: process.updatedon || new Date().toISOString(),
+          // Add additional fields
+          workflowProcessId: process.workflow_Process_Id,
+          stageId: process.stage_Id,
+          subStageId: process.subStage_Id,
+          subStageSeq: process.subStage_Seq,
+          auto: process.auto,
+          adhoc: process.adhoc,
+          upload: process.upload,
+          attest: process.attest,
+          componentName: process.componentName,
+          businessDate: process.businessdate,
+          attestedBy: process.attestedBy,
+          attestedOn: process.attestedon,
+          completedBy: process.completedBy,
+          completedOn: process.completedon,
+          isLocked: process.isLocked,
+          lockedBy: process.lockedBy,
+          lockedOn: process.lockedOn,
+          percentage: process.percentage
         });
       });
       
       stages.push(defaultStage);
-      tasks[defaultStage.id] = defaultStage.tasks;
+      tasks[defaultStage.id] = defaultTasks;
     }
 
     console.log('[ApplicationsGrid] Conversion complete:', {
@@ -546,11 +619,20 @@ const ApplicationsGrid = () => {
       console.error('[ApplicationsGrid] No tasks created! This will cause the UI to show empty stages.');
     }
 
+    // Store the summary data globally for right panel access
+    (window as any).currentWorkflowSummary = summary;
+    (window as any).currentWorkflowApplication = application;
+    (window as any).currentWorkflowNode = node;
+
     return {
       workflowTitle: `${application.configName} - ${node.configName}`,
       progressSteps,
       stages,
-      tasks
+      tasks,
+      // Pass the raw summary data for right panel components
+      summaryData: summary,
+      applicationData: application,
+      nodeData: node
     };
   };
 
@@ -587,6 +669,9 @@ const ApplicationsGrid = () => {
           progressSteps={workflowData.progressSteps}
           stages={workflowData.stages}
           tasks={workflowData.tasks}
+          summaryData={selectedWorkflow.summary}
+          applicationData={selectedWorkflow.application}
+          nodeData={selectedWorkflow.node}
         />
       </div>
     );

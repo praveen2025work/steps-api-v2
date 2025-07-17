@@ -21,28 +21,49 @@ interface GlobalParametersProps {
 }
 
 const GlobalParameters: React.FC<GlobalParametersProps> = ({ processId, processName }) => {
-  // Mock data for global parameters
-  const [parameters, setParameters] = React.useState<GlobalParameter[]>([
-    { name: 'ENV', value: 'PRODUCTION', description: 'Environment', category: 'system' },
-    { name: 'LOG_LEVEL', value: 'INFO', description: 'Logging level', category: 'system' },
-    { name: 'BUSINESS_DATE', value: '2025-05-19', description: 'Current business date', category: 'business' },
-    { name: 'REGION', value: 'EMEA', description: 'Operating region', category: 'business' },
-    { name: 'AUTH_TIMEOUT', value: '1800', description: 'Authentication timeout in seconds', category: 'security' },
-    { name: 'MAX_LOGIN_ATTEMPTS', value: '5', description: 'Maximum login attempts before lockout', category: 'security' },
-  ]);
+  // Get the workflow summary data from global storage
+  const summaryData = (window as any).currentWorkflowSummary;
+  const applicationData = (window as any).currentWorkflowApplication;
+  
+  // Extract daily parameters from the summary data
+  const dailyParams = summaryData?.dailyParams || [];
+  const applications = summaryData?.applications || [];
+  
+  // Find the current application info
+  const currentApp = applications.find((app: any) => 
+    app.appId === applicationData?.appId
+  ) || { appId: applicationData?.appId || 0, name: 'Unknown Application' };
 
+  const [loading, setLoading] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [categoryFilter, setCategoryFilter] = React.useState<string | null>(null);
 
-  const filteredParameters = parameters.filter(param => 
+  // Transform API data to display format
+  const parameters = dailyParams.map((param: any) => ({
+    name: param.name,
+    value: param.value,
+    description: param.comments || 'No description available',
+    category: param.name.includes('AUTH') || param.name.includes('SECURITY') ? 'security' :
+              param.name.includes('DATE') || param.name.includes('REGION') ? 'business' : 'system',
+    isEditable: param.isEditable === 'Y',
+    updatedBy: param.updatedBy,
+    updatedOn: param.updatedOn,
+    businessDate: param.businessDate
+  }));
+
+  const filteredParameters = parameters.filter((param: any) => 
     (param.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
      param.description.toLowerCase().includes(searchTerm.toLowerCase())) &&
     (categoryFilter === null || param.category === categoryFilter)
   );
 
   const handleRefresh = () => {
-    // In a real application, this would fetch fresh data
-    showSuccessToast("Global parameters refreshed successfully");
+    setLoading(true);
+    // Simulate refresh - in real app this would refetch data
+    setTimeout(() => {
+      setLoading(false);
+      showSuccessToast("Daily parameters refreshed successfully");
+    }, 1000);
   };
 
   const getCategoryBadge = (category: string) => {

@@ -77,6 +77,10 @@ interface WorkflowDetailViewProps {
   tasks: Record<string, WorkflowTask[]>; // Map of stageId to tasks
   viewMode?: 'classic' | 'alternative';
   onViewToggle?: (mode: 'classic' | 'alternative') => void;
+  // Enhanced props for right panel binding
+  summaryData?: any; // WorkflowSummary from API
+  applicationData?: any; // WorkflowApplication from API
+  nodeData?: any; // WorkflowNode from API
 }
 
 interface ActivityLogItem {
@@ -125,7 +129,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   stages,
   tasks,
   viewMode = 'classic',
-  onViewToggle
+  onViewToggle,
+  summaryData,
+  applicationData,
+  nodeData
 }) => {
   const { selectedDate } = useDate();
   const [activeStage, setActiveStage] = useState<string>(stages[0]?.id || '');

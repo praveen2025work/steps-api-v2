@@ -19,131 +19,154 @@ interface ProcessParametersProps {
 }
 
 const ProcessParameters: React.FC<ProcessParametersProps> = ({ processId, processName }) => {
-  // Mock data for parameters
-  const [parameters, setParameters] = React.useState<Parameter[]>([
-    { name: 'BATCH_SIZE', value: '1000', description: 'Number of records to process in a batch' },
-    { name: 'VALIDATION_THRESHOLD', value: '0.95', description: 'Minimum validation score' },
-    { name: 'RETRY_COUNT', value: '3', description: 'Number of retry attempts' },
-    { name: 'TIMEOUT_SECONDS', value: '300', description: 'Operation timeout in seconds' },
-    { name: 'LOG_LEVEL', value: 'INFO', description: 'Logging level for this process' },
-  ]);
+  // Get the workflow summary data from global storage
+  const summaryData = (window as any).currentWorkflowSummary;
+  
+  // Extract process parameters from the summary data
+  const processParams = summaryData?.processParams || [];
+  
+  // Filter parameters for the current process
+  const currentProcessParams = processParams.filter((param: any) => 
+    param.workflow_Process_Id.toString() === processId.replace('PROC-', '') ||
+    param.substage_Name === processName
+  );
 
+  const [loading, setLoading] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [editingParam, setEditingParam] = React.useState<string | null>(null);
   const [editValue, setEditValue] = React.useState('');
 
-  const filteredParameters = parameters.filter(param => 
+  // Transform API data to display format
+  const parameters = currentProcessParams.map((param: any) => ({
+    workflow_Process_Id: param.workflow_Process_Id,
+    name: param.parameterName || param.resolvedParameterName || 'Unknown Parameter',
+    value: param.parameterValue || param.resolvedParameterValue || '',
+    description: `Parameter for ${param.substage_Name}`,
+    isEditing: false
+  }));
+
+  const filteredParameters = parameters.filter((param: any) => 
     param.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     param.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEdit = (index: number) => {
-    const newParameters = [...parameters];
-    newParameters[index].isEditing = true;
-    setEditValue(newParameters[index].value);
-    setParameters(newParameters);
+  const handleEdit = (param: any) => {
+    setEditingParam(param.workflow_Process_Id + param.name);
+    setEditValue(param.value);
   };
 
-  const handleSave = (index: number) => {
-    const newParameters = [...parameters];
-    newParameters[index].value = editValue;
-    newParameters[index].isEditing = false;
-    setParameters(newParameters);
-    showSuccessToast(`Parameter ${newParameters[index].name} updated successfully`);
+  const handleSave = (param: any) => {
+    // In a real application, this would make an API call to update the parameter
+    setEditingParam(null);
+    showSuccessToast(`Parameter ${param.name} updated successfully`);
   };
 
-  const handleCancel = (index: number) => {
-    const newParameters = [...parameters];
-    newParameters[index].isEditing = false;
-    setParameters(newParameters);
+  const handleCancel = () => {
+    setEditingParam(null);
+    setEditValue('');
   };
 
   const handleRefresh = () => {
-    // In a real application, this would fetch fresh data
-    showSuccessToast("Parameters refreshed successfully");
+    setLoading(true);
+    // Simulate refresh - in real app this would refetch data
+    setTimeout(() => {
+      setLoading(false);
+      showSuccessToast("Process parameters refreshed successfully");
+    }, 1000);
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium">Process Parameters</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {processId} - {processName}
-        </p>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between mb-4">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search parameters..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">Process Parameters</h3>
+          <p className="text-sm text-muted-foreground">
+            {processId} - {processName}
+          </p>
         </div>
+        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
 
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
+      <div className="relative w-full max-w-sm">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search parameters..."
+          className="pl-8"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[30%]">Name</TableHead>
+              <TableHead className="w-[40%]">Value</TableHead>
+              <TableHead className="w-[30%]">Description</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
               <TableRow>
-                <TableHead className="w-[30%]">Name</TableHead>
-                <TableHead className="w-[30%]">Value</TableHead>
-                <TableHead className="w-[30%]">Description</TableHead>
-                <TableHead className="w-[10%]">Actions</TableHead>
+                <TableCell colSpan={3} className="text-center py-4">
+                  Loading parameters...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredParameters.length > 0 ? (
-                filteredParameters.map((param, index) => (
-                  <TableRow key={param.name}>
+            ) : filteredParameters.length > 0 ? (
+              filteredParameters.map((param: any, index: number) => {
+                const paramKey = param.workflow_Process_Id + param.name;
+                const isEditing = editingParam === paramKey;
+                
+                return (
+                  <TableRow key={paramKey}>
                     <TableCell className="font-medium">{param.name}</TableCell>
                     <TableCell>
-                      {param.isEditing ? (
-                        <Input 
-                          value={editValue} 
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="h-8"
-                        />
-                      ) : (
-                        param.value
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{param.description}</TableCell>
-                    <TableCell>
-                      {param.isEditing ? (
-                        <div className="flex space-x-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSave(index)}>
+                      {isEditing ? (
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            value={editValue} 
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="h-8"
+                          />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSave(param)}>
                             <Save className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCancel(index)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancel}>
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       ) : (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(index)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-sm">{param.value}</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(param)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{param.description}</TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                    No parameters found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                );
+              })
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                  <div className="flex flex-col items-center gap-2">
+                    <Search className="h-8 w-8 text-muted-foreground/50" />
+                    <p>No process parameters found</p>
+                    <p className="text-xs">Parameters will appear here when available for this process</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 };
 
