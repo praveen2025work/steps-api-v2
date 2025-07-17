@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/DashboardLayout';
-import { workflowService } from '@/services/workflowService';
+import { useWorkflowDashboard, useWorkflowEnvironment } from '@/hooks/useWorkflowDashboard';
 import { useDate } from '@/contexts/DateContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,8 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -43,48 +44,21 @@ const DynamicWorkflowIndexPage: React.FC = () => {
   const router = useRouter();
   const { selectedDate } = useDate();
   
-  const [isLoading, setIsLoading] = useState(false);
-  const [applications, setApplications] = useState<WorkflowApplication[]>([]);
+  // Use the new workflow dashboard hook
+  const {
+    applications,
+    loading: isLoading,
+    error,
+    lastFetch,
+    dateString,
+    refresh
+  } = useWorkflowDashboard();
+  
+  // Get environment info
+  const envInfo = useWorkflowEnvironment();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAppId, setSelectedAppId] = useState<number | null>(null);
-  const [customDate, setCustomDate] = useState('');
-
-  // Format date for API calls
-  const formatDateForApi = (date: Date): string => {
-    const day = date.getDate();
-    const month = date.toLocaleString('en-US', { month: 'short' });
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  };
-
-  // Load workflow applications
-  const loadApplications = async (date?: string) => {
-    setIsLoading(true);
-    try {
-      const dateString = date || formatDateForApi(selectedDate);
-      showInfoToast(`Loading workflow applications for ${dateString}...`);
-      
-      const response = await workflowService.getAllWorkflowApplications({ date: dateString });
-      
-      if (response.success) {
-        setApplications(response.data);
-        showSuccessToast(`Loaded ${response.data.length} workflow applications`);
-      } else {
-        showErrorToast(response.error || 'Failed to load applications');
-        setApplications([]);
-      }
-    } catch (error: any) {
-      showErrorToast(`Error loading applications: ${error.message}`);
-      setApplications([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initial load
-  useEffect(() => {
-    loadApplications();
-  }, [selectedDate]);
 
   // Filter applications based on search term
   const filteredApplications = applications.filter(app =>
@@ -104,29 +78,45 @@ const DynamicWorkflowIndexPage: React.FC = () => {
     router.push('/workflow/dynamic/all-workflows');
   };
 
-  // Handle custom date load
-  const handleCustomDateLoad = () => {
-    if (customDate) {
-      loadApplications(customDate);
-    }
+  // Handle refresh
+  const handleRefresh = () => {
+    refresh();
+    showInfoToast(`Refreshing workflow applications for ${dateString}...`);
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* API Status Banner */}
+        {envInfo.isMock ? (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Running in <strong>Mock Data Mode</strong> - Environment: {envInfo.mode} | Base URL: {envInfo.dotNetBaseUrl}
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert>
+            <RefreshCw className="h-4 w-4" />
+            <AlertDescription>
+              Connected to <strong>Live API</strong> - Environment: {envInfo.mode} | Base URL: {envInfo.dotNetBaseUrl}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Dynamic Workflow Integration</h1>
             <p className="text-muted-foreground">
-              Recursive API integration for workflow details loading
+              Recursive API integration for workflow details loading - {dateString}
             </p>
           </div>
           
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="flex items-center gap-1">
+            <Badge variant={envInfo.isMock ? "secondary" : "default"} className="flex items-center gap-1">
               <Database className="h-3 w-3" />
-              Live API
+              {envInfo.isMock ? 'Mock Data' : 'Live API'}
             </Badge>
             
             <Badge variant="outline" className="flex items-center gap-1">
@@ -169,23 +159,21 @@ const DynamicWorkflowIndexPage: React.FC = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Custom Date
+                Current Date
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Input
-                placeholder="e.g., 14 Jul 2025"
-                value={customDate}
-                onChange={(e) => setCustomDate(e.target.value)}
-              />
-              <Button 
-                size="sm" 
-                onClick={handleCustomDateLoad}
-                disabled={!customDate || isLoading}
-                className="w-full"
-              >
-                Load
-              </Button>
+              <div className="text-sm text-muted-foreground">
+                Using date from header selector
+              </div>
+              <div className="font-mono text-sm bg-muted p-2 rounded">
+                {dateString}
+              </div>
+              {lastFetch && (
+                <div className="text-xs text-muted-foreground">
+                  Last updated: {lastFetch.toLocaleTimeString()}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -199,7 +187,7 @@ const DynamicWorkflowIndexPage: React.FC = () => {
             <CardContent className="space-y-2">
               <Button 
                 size="sm" 
-                onClick={() => loadApplications()}
+                onClick={handleRefresh}
                 disabled={isLoading}
                 className="w-full"
               >
@@ -232,7 +220,7 @@ const DynamicWorkflowIndexPage: React.FC = () => {
               </CardTitle>
               
               <div className="text-sm text-muted-foreground">
-                Date: {formatDateForApi(selectedDate)}
+                Date: {dateString}
               </div>
             </div>
           </CardHeader>

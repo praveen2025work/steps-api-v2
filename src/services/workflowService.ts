@@ -1086,6 +1086,12 @@ class WorkflowService {
       return false;
     }
     
+    // Check environment variables for real API usage
+    const coDevEnv = process.env.NEXT_PUBLIC_CO_DEV_ENV;
+    if (coDevEnv === 'true' || forceRealApi === 'true') {
+      return false;
+    }
+    
     // Default behavior: use mock for localhost and preview environments
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;

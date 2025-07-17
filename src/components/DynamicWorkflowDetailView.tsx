@@ -94,6 +94,9 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
     return `${day} ${month} ${year}`;
   }, []);
 
+  // Get environment info to show API status
+  const envInfo = workflowService.getEnvironmentInfo();
+
   // Load workflow data using the 3-step recursive process
   const loadWorkflowData = useCallback(async (showToast: boolean = true) => {
     try {
@@ -434,13 +437,30 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* API Status Banner */}
+      {envInfo.isMock ? (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Running in <strong>Mock Data Mode</strong> - Environment: {envInfo.mode} | Base URL: {envInfo.dotNetBaseUrl}
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert>
+          <RefreshCw className="h-4 w-4" />
+          <AlertDescription>
+            Connected to <strong>Live API</strong> - Environment: {envInfo.mode} | Base URL: {envInfo.dotNetBaseUrl}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Data Summary Card */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              Workflow Data Summary
+              Workflow Data Summary - {formatDateForApi(selectedDate)}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button
