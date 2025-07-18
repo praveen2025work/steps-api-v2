@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import DashboardLayout from '@/components/DashboardLayout';
 import DynamicWorkflowDetailView from '@/components/DynamicWorkflowDetailView';
+import DynamicWorkflowBreadcrumb, { BreadcrumbLevel } from '@/components/workflow/DynamicWorkflowBreadcrumb';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,8 +45,94 @@ const DynamicWorkflowPage: React.FC<DynamicWorkflowPageProps> = ({
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
+  // Create breadcrumb levels based on current navigation state
+  const breadcrumbLevels: BreadcrumbLevel[] = [
+    {
+      id: 'applications',
+      name: 'Applications',
+      level: 'applications',
+      metadata: {}
+    }
+  ];
+
+  // Add application level if we have applicationId
+  if (applicationId) {
+    breadcrumbLevels.push({
+      id: `app-${applicationId}`,
+      name: workflowTitle,
+      level: 'application-nodes',
+      metadata: {
+        appId: applicationId.toString(),
+        configId: configId
+      }
+    });
+  }
+
+  // Add node group level if we have specific navigation parameters
+  if (applicationId && configId && currentLevel !== undefined) {
+    breadcrumbLevels.push({
+      id: `node-${configId}`,
+      name: `Level ${currentLevel}`,
+      level: 'node-group-details',
+      metadata: {
+        appId: applicationId.toString(),
+        configId: configId,
+        groupId: configId
+      }
+    });
+  }
+
+  // Add workflow instance level if we're at the deepest level
+  if (applicationId && configId && currentLevel !== undefined && nextLevel !== undefined) {
+    breadcrumbLevels.push({
+      id: `workflow-${configId}-${currentLevel}`,
+      name: 'Workflow Instance',
+      level: 'workflow-instance',
+      metadata: {
+        appId: applicationId.toString(),
+        configId: configId,
+        isUsedForWorkflowInstance: true
+      }
+    });
+  }
+
   const handleViewToggle = (mode: 'classic' | 'alternative') => {
     setViewMode(mode);
+  };
+
+  // Handle breadcrumb navigation
+  const handleBreadcrumbNavigate = (level: BreadcrumbLevel, index: number) => {
+    console.log('[DynamicWorkflowPage] Breadcrumb navigation:', level, index);
+    
+    switch (level.level) {
+      case 'applications':
+        // Navigate to applications list
+        router.push('/workflow/dynamic');
+        break;
+        
+      case 'application-nodes':
+        // Navigate to application nodes view
+        if (level.metadata?.appId) {
+          router.push(`/workflow/dynamic/${workflowId}?appId=${level.metadata.appId}`);
+        }
+        break;
+        
+      case 'node-group-details':
+        // Navigate to node group details
+        if (level.metadata?.appId && level.metadata?.configId) {
+          router.push(`/workflow/dynamic/${workflowId}?appId=${level.metadata.appId}&configId=${level.metadata.configId}&currentLevel=0&nextLevel=1`);
+        }
+        break;
+        
+      case 'workflow-instance':
+        // Already at workflow instance level
+        console.log('Already at workflow instance level');
+        break;
+        
+      default:
+        console.warn('Unknown breadcrumb level:', level.level);
+        break;
+    }
   };
 
   return (
@@ -160,6 +247,21 @@ const DynamicWorkflowPage: React.FC<DynamicWorkflowPageProps> = ({
           </TabsList>
 
           <TabsContent value="workflow" className="space-y-4">
+            {/* Breadcrumb Navigation */}
+            {breadcrumbLevels.length > 1 && (
+              <Card>
+                <CardContent className="py-3">
+                  <DynamicWorkflowBreadcrumb
+                    levels={breadcrumbLevels}
+                    currentWorkflowTitle={workflowTitle}
+                    onNavigate={handleBreadcrumbNavigate}
+                    showBackButton={true}
+                    showHomeButton={true}
+                  />
+                </CardContent>
+              </Card>
+            )}
+            
             <DynamicWorkflowDetailView
               workflowTitle={workflowTitle}
               applicationId={applicationId}
@@ -168,6 +270,7 @@ const DynamicWorkflowPage: React.FC<DynamicWorkflowPageProps> = ({
               nextLevel={nextLevel}
               viewMode={viewMode}
               onViewToggle={handleViewToggle}
+              onBreadcrumbNavigate={handleBreadcrumbNavigate}
             />
           </TabsContent>
 

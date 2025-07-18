@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
+import { useUserActivity } from '@/hooks/useUserActivity';
 import {
   WorkflowApplication,
   WorkflowNode,
@@ -31,7 +32,9 @@ import {
   FileText,
   Settings,
   AlertCircle,
-  Info
+  Info,
+  Pause,
+  Play
 } from 'lucide-react';
 
 interface DynamicWorkflowDetailViewProps {
@@ -42,6 +45,7 @@ interface DynamicWorkflowDetailViewProps {
   nextLevel?: number;
   viewMode?: 'classic' | 'alternative';
   onViewToggle?: (mode: 'classic' | 'alternative') => void;
+  onBreadcrumbNavigate?: (level: any, index: number) => void;
 }
 
 interface LoadingState {
@@ -65,7 +69,8 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
   currentLevel,
   nextLevel,
   viewMode = 'classic',
-  onViewToggle
+  onViewToggle,
+  onBreadcrumbNavigate
 }) => {
   const { selectedDate } = useDate();
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -85,6 +90,11 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(30); // seconds
+  
+  // User activity detection for auto-refresh control
+  const { isActive, lastActivity } = useUserActivity({
+    timeout: 2 * 60 * 1000 // 2 minutes
+  });
 
   // Format date for API calls
   const formatDateForApi = useCallback((date: Date): string => {
@@ -173,6 +183,7 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
       if (response && response.success) {
         setLastRefreshed(new Date());
         
+        // Only show success toast for manual refresh, not auto-refresh
         if (showToast) {
           const { terminalNodes, workflowSummaries, errors } = response.data;
           showSuccessToast(
@@ -213,16 +224,16 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
     loadWorkflowData(false);
   }, [loadWorkflowData]);
 
-  // Auto-refresh effect
+  // Auto-refresh effect with user activity detection
   useEffect(() => {
-    if (!autoRefreshEnabled) return;
+    if (!autoRefreshEnabled || !isActive) return;
 
     const interval = setInterval(() => {
       loadWorkflowData(false);
     }, refreshInterval * 1000);
 
     return () => clearInterval(interval);
-  }, [autoRefreshEnabled, refreshInterval, loadWorkflowData]);
+  }, [autoRefreshEnabled, refreshInterval, loadWorkflowData, isActive]);
 
   // Convert workflow summaries to the format expected by WorkflowDetailView
   const convertToWorkflowDetailFormat = useCallback(() => {
@@ -463,13 +474,33 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
               Workflow Data Summary - {formatDateForApi(selectedDate)}
             </CardTitle>
             <div className="flex items-center gap-2">
+              {/* User Activity Status */}
+              {autoRefreshEnabled && (
+                <Badge 
+                  variant={isActive ? "default" : "secondary"} 
+                  className="flex items-center gap-1"
+                >
+                  {isActive ? (
+                    <>
+                      <Play className="h-3 w-3" />
+                      Active
+                    </>
+                  ) : (
+                    <>
+                      <Pause className="h-3 w-3" />
+                      Paused
+                    </>
+                  )}
+                </Badge>
+              )}
+              
               <Button
                 variant="outline"
                 size="sm"
                 onClick={toggleAutoRefresh}
                 className={autoRefreshEnabled ? 'bg-green-50 border-green-200' : ''}
               >
-                <RefreshCw className={`h-4 w-4 mr-1 ${autoRefreshEnabled ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 mr-1 ${autoRefreshEnabled && isActive ? 'animate-spin' : ''}`} />
                 Auto-refresh {autoRefreshEnabled ? 'ON' : 'OFF'}
               </Button>
               <Button variant="outline" size="sm" onClick={handleRefresh}>
