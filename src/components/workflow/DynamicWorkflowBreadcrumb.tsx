@@ -160,17 +160,17 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
 
   return (
     <div className={`flex items-center gap-2 text-sm ${className}`}>
-      {/* Back Button */}
+      {/* Back Button - Removed text, only icon */}
       {showBackButton && (
         <>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-6 px-2 flex items-center gap-1 hover:bg-secondary/50"
+            className="h-6 w-6 p-0 flex items-center justify-center hover:bg-secondary/50"
             onClick={handleBackClick}
+            title="Go back"
           >
             <ArrowLeft className="h-3 w-3" />
-            <span>Back</span>
           </Button>
           <Separator orientation="vertical" className="h-4" />
         </>
