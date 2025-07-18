@@ -190,7 +190,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     timeout: 2 * 60 * 1000, // 2 minutes
     events: ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click', 'keydown']
   });
-=======
 
   // Dependency mapping state
   const [dependencyMap, setDependencyMap] = useState<Map<string, SubStage>>(new Map());
