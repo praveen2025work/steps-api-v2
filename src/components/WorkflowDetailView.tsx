@@ -407,13 +407,19 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           id: dep.name.toLowerCase().replace(/\s+/g, '_')
         })) || [];
 
+        // Clean up processId format - convert "task-1234" to "PROC-1234" for consistency
+        let cleanProcessId = task.processId;
+        if (task.processId && task.processId.startsWith('task-')) {
+          cleanProcessId = task.processId.replace('task-', 'PROC-');
+        }
+        
         return {
           id: task.id,
           name: task.name,
           type: (task.auto === 'y' || task.auto === 'Y') ? 'auto' as const : 'manual' as const,
           status: task.status === 'in_progress' ? 'in-progress' as const : task.status,
           progress,
-          processId: task.processId,
+          processId: cleanProcessId,
           sequence: task.subStageSeq || index + 1,
           timing,
           stats: {
@@ -714,12 +720,51 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         
         if (selectedSubStage) {
           // Show files for the selected process only
-          const numericProcessId = currentProcessId.replace('PROC-', '');
+          // Handle different processId formats: "PROC-1234", "task-1234", or just "1234"
+          let numericProcessId = currentProcessId;
+          if (currentProcessId.startsWith('PROC-')) {
+            numericProcessId = currentProcessId.replace('PROC-', '');
+          } else if (currentProcessId.startsWith('task-')) {
+            numericProcessId = currentProcessId.replace('task-', '');
+          }
+          
+          console.log('[WorkflowDetailView] File filtering debug:', {
+            currentProcessId,
+            numericProcessId,
+            selectedSubStage,
+            fileDataSample: fileData.slice(0, 3).map((f: any) => ({
+              workflow_Process_Id: f.workflow_Process_Id,
+              name: f.name,
+              value: f.value
+            }))
+          });
           
           // Get files from API data for this specific process
-          const processFiles = fileData.filter((file: any) => 
-            file.workflow_Process_Id?.toString() === numericProcessId && file.name
-          );
+          // Try multiple matching strategies to handle different data formats
+          const processFiles = fileData.filter((file: any) => {
+            if (!file.name) return false;
+            
+            const fileProcessId = file.workflow_Process_Id?.toString();
+            
+            // Try exact match with numeric process ID
+            if (fileProcessId === numericProcessId) return true;
+            
+            // Try match with original process ID
+            if (fileProcessId === currentProcessId) return true;
+            
+            // Try match with PROC- prefix
+            if (fileProcessId === `PROC-${numericProcessId}`) return true;
+            
+            // Try match with task- prefix
+            if (fileProcessId === `task-${numericProcessId}`) return true;
+            
+            return false;
+          });
+          
+          console.log('[WorkflowDetailView] Process files found:', {
+            processFilesCount: processFiles.length,
+            sampleProcessFile: processFiles[0]
+          });
           
           // Find the selected process to get its status
           const selectedProcess = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
