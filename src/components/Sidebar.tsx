@@ -332,10 +332,15 @@ const Sidebar = () => {
                       ) : (
                         <Link 
                           href={item.href}
-                          onClick={() => {
-                            // Don't prevent default navigation
-                            // Just close the sidebar after navigation
-                            setTimeout(() => closeSidebar(), 100);
+                          onClick={(e) => {
+                            // Ensure navigation happens immediately
+                            closeSidebar();
+                            
+                            // Force navigation for complex pages like workflow detail
+                            if (router.pathname.includes('/workflow/')) {
+                              e.preventDefault();
+                              router.push(item.href);
+                            }
                           }}
                           className={cn(
                             "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",

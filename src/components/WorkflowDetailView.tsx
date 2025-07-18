@@ -392,6 +392,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     return () => {
       if (autoRefreshTimerRef.current) {
         clearInterval(autoRefreshTimerRef.current);
+        autoRefreshTimerRef.current = null;
       }
     };
   }, [autoRefreshEnabled, refreshInterval, handleRefresh, isUserActive]);
