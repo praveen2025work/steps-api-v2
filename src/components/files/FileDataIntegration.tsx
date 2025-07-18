@@ -57,7 +57,13 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
         type: typeof directValue
       });
       
-      // Return the value even if it's null - let the API handle it
+      // If value is null, it means this process doesn't have files
+      if (directValue === null) {
+        console.log('[FileDataIntegration] Process has no files (value is null)');
+        return null;
+      }
+      
+      // Return the value if it exists and is not empty
       if (directValue !== undefined && directValue !== '') {
         return directValue;
       }
@@ -76,7 +82,13 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
           isEmpty: parsed.value === ''
         });
         
-        // Return the value even if it's null - let the API handle it
+        // If value is null, it means this process doesn't have files
+        if (parsed.value === null) {
+          console.log('[FileDataIntegration] Process has no files (parsed value is null)');
+          return null;
+        }
+        
+        // Return the value if it exists and is not empty
         if (parsed.value !== undefined && parsed.value !== '') {
           return parsed.value;
         }
@@ -85,7 +97,7 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
       }
     }
 
-    console.warn('[FileDataIntegration] No valid location found in item - this will disable the preview button');
+    console.log('[FileDataIntegration] No valid location found in item');
     return null;
   };
 
@@ -158,69 +170,72 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <FileSpreadsheet className="h-5 w-5 text-green-600 flex-shrink-0" />
                   
-                  {/* Better Eye Icon for Preview */}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          className="h-6 w-6 p-0 hover:bg-muted flex-shrink-0"
-                          onClick={async () => {
-                            // Select this file first
-                            onFileSelect?.(index);
-                            
-                            // Get the location for this specific file
-                            const location = getLocationFromItem(file);
-                            
-                            console.log('[FileDataIntegration] Preview button clicked:', {
-                              fileIndex: index,
-                              fileName: file.fileName,
-                              location: location,
-                              hasLocation: location !== null && location !== undefined,
-                              fileItem: file.item,
-                              fileObject: file,
-                              parsedItem: (() => {
+                  {/* Better Eye Icon for Preview - Only show if file has valid location */}
+                  {(() => {
+                    const location = getLocationFromItem(file);
+                    return location ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              className="h-6 w-6 p-0 hover:bg-muted flex-shrink-0"
+                              onClick={async () => {
+                                // Select this file first
+                                onFileSelect?.(index);
+                                
+                                console.log('[FileDataIntegration] Preview button clicked:', {
+                                  fileIndex: index,
+                                  fileName: file.fileName,
+                                  location: location,
+                                  hasValidLocation: true,
+                                  fileItem: file.item,
+                                  fileObject: file,
+                                  parsedItem: (() => {
+                                    try {
+                                      return JSON.parse(file.item);
+                                    } catch {
+                                      return 'Failed to parse';
+                                    }
+                                  })(),
+                                  directValueAccess: (file as any).value,
+                                  locationExtractionMethod: 'getLocationFromItem',
+                                  locationResult: location
+                                });
+                                
+                                // Set loading state
+                                setLoadingPreview(true);
+                                
                                 try {
-                                  return JSON.parse(file.item);
-                                } catch {
-                                  return 'Failed to parse';
+                                  // Show preview which will trigger the API call in ExcelDataViewer
+                                  setShowPreview(true);
+                                } catch (error) {
+                                  console.error('Error initiating preview:', error);
+                                } finally {
+                                  setLoadingPreview(false);
                                 }
-                              })(),
-                              directValueAccess: (file as any).value,
-                              locationExtractionMethod: 'getLocationFromItem',
-                              locationResult: location
-                            });
-                            
-                            // Log the location but proceed with API call even if null
-                            console.log('[FileDataIntegration] Proceeding with API call, location:', location);
-                            
-                            // Set loading state
-                            setLoadingPreview(true);
-                            
-                            try {
-                              // Show preview which will trigger the API call in ExcelDataViewer
-                              setShowPreview(true);
-                            } catch (error) {
-                              console.error('Error initiating preview:', error);
-                            } finally {
-                              setLoadingPreview(false);
-                            }
-                          }}
-                          disabled={loadingPreview}
-                        >
-                          {loadingPreview && selectedFileIndex === index ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Eye className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Preview file data</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                              }}
+                              disabled={loadingPreview}
+                            >
+                              {loadingPreview && selectedFileIndex === index ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Eye className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Preview file data</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <div className="h-6 w-6 flex items-center justify-center text-muted-foreground">
+                        <span className="text-xs">N/A</span>
+                      </div>
+                    );
+                  })()}
                   
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium truncate">

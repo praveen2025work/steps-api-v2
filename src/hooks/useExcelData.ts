@@ -29,7 +29,7 @@ export interface UseExcelDataReturn {
 
 // Mock data for development/testing
 const mockExcelData: ExcelDataResponse = {
-  fileName: "\\\\Intranet.barcapint.com\\DFS-EMEA\\GROUP\\Ldn\\Risk\\PCon\\GCD\\EUROPE\\FAS\\UAT\\FICREDITGCFSASIA\\2025-06-27\\",
+  fileName: "sample_data_file.xlsx",
   sheets: [
     {
       name: "Closed Expired books",
