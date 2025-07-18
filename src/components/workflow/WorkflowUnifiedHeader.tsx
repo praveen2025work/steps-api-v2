@@ -121,35 +121,38 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
             </Badge>
           )}
           
-          {/* View toggle buttons */}
+          {/* Enhanced View toggle buttons with labels */}
           {onViewToggle && (
-            <div className="bg-muted rounded-lg p-1 flex ml-2">
+            <div className="bg-muted rounded-lg p-1 flex ml-2 gap-1">
               <Button
                 variant={viewMode === 'classic' ? "default" : "ghost"}
-                size="icon"
+                size="sm"
                 onClick={() => onViewToggle('classic')}
                 title="Classic View"
-                className="h-6 w-6"
+                className="h-6 px-2 text-xs"
               >
-                <Layers className="h-3.5 w-3.5" />
+                <Layers className="h-3 w-3 mr-1" />
+                Classic View
               </Button>
               <Button
                 variant={viewMode === 'alternative' ? "default" : "ghost"}
-                size="icon"
+                size="sm"
                 onClick={() => onViewToggle('alternative')}
                 title="Modern View"
-                className="h-6 w-6"
+                className="h-6 px-2 text-xs"
               >
-                <Sparkles className="h-3.5 w-3.5" />
+                <Sparkles className="h-3 w-3 mr-1" />
+                Modern View
               </Button>
               <Button
                 variant={viewMode === 'stepfunction' ? "default" : "ghost"}
-                size="icon"
+                size="sm"
                 onClick={() => onViewToggle('stepfunction')}
                 title="Step Function View"
-                className="h-6 w-6"
+                className="h-6 px-2 text-xs"
               >
-                <GitBranch className="h-3.5 w-3.5" />
+                <GitBranch className="h-3 w-3 mr-1" />
+                Step Function View
               </Button>
             </div>
           )}
@@ -228,15 +231,36 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                       size="sm" 
                       className="h-5 px-1.5 flex items-center gap-1 hover:bg-secondary/50"
                       onClick={() => {
-                        // Navigate to the appropriate level
-                        if (node.level === 'app') {
-                          router.push(`/application/${node.id}`);
-                        } else if (index < hierarchyPath.length - 1) {
-                          // If not the last node (current level), navigate to application with this level selected
-                          const appNode = hierarchyPath.find(n => n.level === 'app');
-                          if (appNode) {
-                            router.push(`/application/${appNode.id}`);
+                        try {
+                          // Enhanced navigation with proper error handling
+                          console.log(`[WorkflowUnifiedHeader] Navigating to ${node.level} level: ${node.name}`);
+                          
+                          if (node.level === 'app') {
+                            // Navigate to application cards view (App Level)
+                            console.log('[WorkflowUnifiedHeader] Navigating to App Level view');
+                            router.push('/');
+                          } else if (index < hierarchyPath.length - 1) {
+                            // Navigate to corresponding detail view
+                            const appNode = hierarchyPath.find(n => n.level === 'app');
+                            if (appNode) {
+                              if (index === 1) {
+                                // Level 1 navigation (Advisory)
+                                console.log('[WorkflowUnifiedHeader] Navigating to Level 1 view');
+                                router.push(`/hierarchy/${appNode.id}`);
+                              } else {
+                                // Level 2+ navigation (Advisory EMA)
+                                console.log('[WorkflowUnifiedHeader] Navigating to Level 2 view');
+                                router.push(`/workflow/${node.id}`);
+                              }
+                            } else {
+                              console.warn('[WorkflowUnifiedHeader] App node not found in hierarchy path');
+                            }
+                          } else {
+                            // Current level - stay on current view
+                            console.log('[WorkflowUnifiedHeader] Already on current level');
                           }
+                        } catch (error) {
+                          console.error('[WorkflowUnifiedHeader] Error in breadcrumb navigation:', error);
                         }
                       }}
                     >
@@ -259,10 +283,28 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
               ))}
             </div>
           
-          <div className="flex flex-wrap gap-2 mt-1 items-center justify-end">
+          <div className="flex flex-wrap gap-2 mt-1 items-center justify-between">
+            {/* Workflow Instance Summary */}
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-medium">
+                App: {hierarchyPath.length > 0 ? hierarchyPath[0]?.name : workflowTitle}
+                {hierarchyPath.length > 1 && (
+                  <span className="text-muted-foreground"> - {hierarchyPath[hierarchyPath.length - 1]?.name}</span>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Instance: Basel ({progress}%)
+              </div>
+              {/* Support tags */}
+              <div className="flex gap-1">
+                <Badge variant="outline" className="text-xs">Finance</Badge>
+                <Badge variant="outline" className="text-xs">Support</Badge>
+              </div>
+            </div>
+            
             {/* Status Counts and Action Buttons moved to the right */}
             <div className="flex items-center gap-3">
-              {/* Status Counts in a more compact layout */}
+              {/* Enhanced Status Counts with accurate values */}
               <div className="flex gap-2 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>

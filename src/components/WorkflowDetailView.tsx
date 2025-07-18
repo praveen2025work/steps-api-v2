@@ -224,25 +224,43 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     }
   }, [progressSteps]);
 
-  // Enhanced breadcrumb navigation
+  // Enhanced breadcrumb navigation with proper error handling
   const handleBreadcrumbNavigation = useCallback((node: HierarchyNode, index: number) => {
-    console.log(`[WorkflowDetailView] Navigating to ${node.level} level: ${node.name}`);
-    
-    if (node.level === 'app') {
-      // Navigate to application cards view
-      router.push('/');
-    } else if (index < hierarchyPath.length - 1) {
-      // Navigate to corresponding detail view
-      const appNode = hierarchyPath.find(n => n.level === 'app');
-      if (appNode) {
-        if (index === 1) {
-          // Level 1 navigation
-          router.push(`/hierarchy/${appNode.id}`);
-        } else {
-          // Level 2+ navigation
-          router.push(`/workflow/${node.id}`);
-        }
+    try {
+      console.log(`[WorkflowDetailView] Navigating to ${node.level} level: ${node.name}`);
+      
+      if (!node || !node.level) {
+        console.warn('[WorkflowDetailView] Invalid node for navigation:', node);
+        return;
       }
+      
+      if (node.level === 'app') {
+        // Navigate to application cards view (App Level)
+        console.log('[WorkflowDetailView] Navigating to App Level view');
+        router.push('/');
+      } else if (index < hierarchyPath.length - 1) {
+        // Navigate to corresponding detail view
+        const appNode = hierarchyPath.find(n => n.level === 'app');
+        if (appNode) {
+          if (index === 1) {
+            // Level 1 navigation (Advisory)
+            console.log('[WorkflowDetailView] Navigating to Level 1 view');
+            router.push(`/hierarchy/${appNode.id}`);
+          } else {
+            // Level 2+ navigation (Advisory EMA)
+            console.log('[WorkflowDetailView] Navigating to Level 2 view');
+            router.push(`/workflow/${node.id}`);
+          }
+        } else {
+          console.warn('[WorkflowDetailView] App node not found in hierarchy path');
+        }
+      } else {
+        // Current level - stay on current view
+        console.log('[WorkflowDetailView] Already on current level');
+      }
+    } catch (error) {
+      console.error('[WorkflowDetailView] Error in breadcrumb navigation:', error);
+      showErrorToast('Navigation failed. Please try again.');
     }
   }, [hierarchyPath, router]);
 
@@ -1158,45 +1176,109 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     }
   };
 
-  // Calculate overall workflow progress
-  const calculateOverallProgress = () => {
-    // If we have hierarchy path, use the last node's progress
-    if (hierarchyPath.length > 0) {
-      return hierarchyPath[hierarchyPath.length - 1].progress;
-    }
-    
-    // Otherwise calculate from tasks
-    let totalTasks = 0;
-    let completedTasks = 0;
-    
-    Object.values(tasks).forEach(stageTasks => {
-      totalTasks += stageTasks.length;
-      completedTasks += stageTasks.filter(task => task.status === 'completed').length;
-    });
-    
-    return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  };
-
-  // Calculate task counts
-  const calculateTaskCounts = () => {
-    let completed = 0;
-    let failed = 0;
-    let rejected = 0;
-    let pending = 0;
-    let processing = 0;
-    
-    Object.values(tasks).forEach(stageTasks => {
-      stageTasks.forEach(task => {
-        if (task.status === 'completed') completed++;
-        else if (task.status === 'failed') failed++;
-        else if (task.status === 'rejected') rejected++;
-        else if (task.status === 'in_progress' || task.status === 'in-progress') processing++;
-        else pending++;
+  // Enhanced calculation of overall workflow progress with proper data binding
+  const calculateOverallProgress = useCallback(() => {
+    try {
+      // First priority: Use hierarchy path progress if available
+      if (hierarchyPath.length > 0) {
+        const lastNode = hierarchyPath[hierarchyPath.length - 1];
+        if (lastNode && typeof lastNode.progress === 'number') {
+          return Math.round(lastNode.progress);
+        }
+      }
+      
+      // Second priority: Calculate from processData if available
+      const summaryData = (window as any).currentWorkflowSummary;
+      if (summaryData && summaryData.processData && summaryData.processData.length > 0) {
+        const processData = summaryData.processData;
+        const totalProcesses = processData.length;
+        const completedProcesses = processData.filter((p: any) => 
+          p.status === 'COMPLETED' || p.status === 'completed'
+        ).length;
+        
+        return totalProcesses > 0 ? Math.round((completedProcesses / totalProcesses) * 100) : 0;
+      }
+      
+      // Third priority: Calculate from stage-specific sub-stages
+      if (stageSpecificSubStages.length > 0) {
+        const totalSubStages = stageSpecificSubStages.length;
+        const completedSubStages = stageSpecificSubStages.filter(subStage => 
+          subStage.status === 'completed'
+        ).length;
+        
+        return totalSubStages > 0 ? Math.round((completedSubStages / totalSubStages) * 100) : 0;
+      }
+      
+      // Fallback: Calculate from tasks
+      let totalTasks = 0;
+      let completedTasks = 0;
+      
+      Object.values(tasks).forEach(stageTasks => {
+        totalTasks += stageTasks.length;
+        completedTasks += stageTasks.filter(task => task.status === 'completed').length;
       });
-    });
-    
-    return { completed, failed, rejected, pending, processing };
-  };
+      
+      return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    } catch (error) {
+      console.error('[WorkflowDetailView] Error calculating overall progress:', error);
+      return 0;
+    }
+  }, [hierarchyPath, stageSpecificSubStages, tasks]);
+
+  // Enhanced calculation of task counts with proper data binding
+  const calculateTaskCounts = useCallback(() => {
+    try {
+      let completed = 0;
+      let failed = 0;
+      let rejected = 0;
+      let pending = 0;
+      let processing = 0;
+      
+      // First priority: Use processData from workflow summary if available
+      const summaryData = (window as any).currentWorkflowSummary;
+      if (summaryData && summaryData.processData && summaryData.processData.length > 0) {
+        summaryData.processData.forEach((process: any) => {
+          const status = process.status?.toLowerCase();
+          if (status === 'completed') completed++;
+          else if (status === 'failed') failed++;
+          else if (status === 'rejected') rejected++;
+          else if (status === 'in_progress' || status === 'in-progress' || status === 'running') processing++;
+          else pending++;
+        });
+        
+        return { completed, failed, rejected, pending, processing };
+      }
+      
+      // Second priority: Use stage-specific sub-stages
+      if (stageSpecificSubStages.length > 0) {
+        stageSpecificSubStages.forEach(subStage => {
+          if (subStage.status === 'completed') completed++;
+          else if (subStage.status === 'failed') failed++;
+          else if (subStage.status === 'rejected') rejected++;
+          else if (subStage.status === 'in-progress') processing++;
+          else pending++;
+        });
+        
+        return { completed, failed, rejected, pending, processing };
+      }
+      
+      // Fallback: Use tasks
+      Object.values(tasks).forEach(stageTasks => {
+        stageTasks.forEach(task => {
+          if (task.status === 'completed') completed++;
+          else if (task.status === 'failed') failed++;
+          else if (task.status === 'rejected') rejected++;
+          else if (task.status === 'in_progress' || task.status === 'in-progress') processing++;
+          else pending++;
+        });
+      });
+      
+      return { completed, failed, rejected, pending, processing };
+    } catch (error) {
+      console.error('[WorkflowDetailView] Error calculating task counts:', error);
+      return { completed: 0, failed: 0, rejected: 0, pending: 0, processing: 0 };
+    }
+  }, [stageSpecificSubStages, tasks]);
 
   return (
     <div className="space-y-2">
