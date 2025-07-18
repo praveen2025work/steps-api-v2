@@ -58,13 +58,14 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
       });
       
       // If value is null, it means this process doesn't have files
-      if (directValue === null) {
-        console.log('[FileDataIntegration] Process has no files (value is null)');
+      if (directValue === null || directValue === undefined) {
+        console.log('[FileDataIntegration] Process has no files (value is null/undefined)');
         return null;
       }
       
       // Return the value if it exists and is not empty
-      if (directValue !== undefined && directValue !== '') {
+      if (directValue !== '') {
+        console.log('[FileDataIntegration] Using direct value:', directValue);
         return directValue;
       }
     }
@@ -83,13 +84,14 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
         });
         
         // If value is null, it means this process doesn't have files
-        if (parsed.value === null) {
-          console.log('[FileDataIntegration] Process has no files (parsed value is null)');
+        if (parsed.value === null || parsed.value === undefined) {
+          console.log('[FileDataIntegration] Process has no files (parsed value is null/undefined)');
           return null;
         }
         
         // Return the value if it exists and is not empty
-        if (parsed.value !== undefined && parsed.value !== '') {
+        if (parsed.value !== '') {
+          console.log('[FileDataIntegration] Using parsed value:', parsed.value);
           return parsed.value;
         }
       } catch (parseError) {
