@@ -37,10 +37,10 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
     try {
       // Parse the item string to extract the "value" property
       const parsed = JSON.parse(item.item);
-      return parsed.value || item.item;
+      return parsed.value || '';
     } catch {
-      // If parsing fails, use the item string directly
-      return item.item;
+      // If parsing fails, return empty string to indicate no valid location
+      return '';
     }
   };
 
@@ -113,7 +113,7 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <FileSpreadsheet className="h-5 w-5 text-green-600 flex-shrink-0" />
                   
-                  {/* Preview Icon - Eye emoji */}
+                  {/* Single Preview Icon - Eye emoji */}
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -162,26 +162,6 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                 </div>
                 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => {
-                            onFileSelect?.(index);
-                            setShowPreview(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>View Excel document</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>

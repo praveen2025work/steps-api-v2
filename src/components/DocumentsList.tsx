@@ -253,23 +253,21 @@ interface DocumentsListGridProps {
 
 export const DocumentsListGrid: React.FC<DocumentsListGridProps> = ({ documents, onDownload, onUpload, onPreview }) => {
   const [loadingPreview, setLoadingPreview] = useState<string | null>(null);
-  const [previewData, setPreviewData] = useState<any>(null);
-  const [showExcelViewer, setShowExcelViewer] = useState<boolean>(false);
 
   if (documents.length === 0) {
     return <p className="text-muted-foreground">No documents found.</p>;
   }
 
-  // Handle custom preview icon click
-  const handleCustomPreview = async (document: Document) => {
+  // Handle preview icon click - use the location from document.location (which should be fileData.value)
+  const handlePreviewClick = async (document: Document) => {
     setLoadingPreview(document.id);
     
     try {
       const baseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL;
-      const locationToUse = document.location || document.name;
+      // Use document.location which should contain the value from fileData.value
+      const locationToUse = document.location;
       
-      // Enhanced debugging for custom preview
-      console.log('[DocumentsList] Custom preview debug:', {
+      console.log('[DocumentsList] Preview API call debug:', {
         NEXT_PUBLIC_JAVA_BASE_URL: baseUrl,
         document: {
           id: document.id,
@@ -292,13 +290,17 @@ export const DocumentsListGrid: React.FC<DocumentsListGridProps> = ({ documents,
         throw new Error('NEXT_PUBLIC_JAVA_BASE_URL environment variable is not set');
       }
       
+      if (!locationToUse) {
+        throw new Error('No location available for this file');
+      }
+      
       const apiUrl = `${baseUrl}/api/process/data`;
       const requestPayload = {
-        location: locationToUse,
+        location: locationToUse, // This should be the value from fileData.value
         name: null
       };
       
-      console.log('[DocumentsList] Making custom preview API call:', {
+      console.log('[DocumentsList] Making preview API call:', {
         url: apiUrl,
         method: 'PUT',
         payload: requestPayload
@@ -317,30 +319,9 @@ export const DocumentsListGrid: React.FC<DocumentsListGridProps> = ({ documents,
       }
 
       const data = await response.json();
-      console.log('Custom preview data received:', data);
+      console.log('Preview data received:', data);
       
-      // Check if data contains sheets with "NO DATA FOUND"
-      const hasNoData = data.sheets?.every((sheet: any) => 
-        sheet.data?.length === 1 && 
-        sheet.data[0]?.length === 2 && 
-        sheet.data[0][0] === "NO DATA FOUND" && 
-        sheet.data[0][1] === null
-      );
-      
-      if (hasNoData) {
-        // Show friendly message for no data
-        setPreviewData({
-          fileName: data.fileName || document.name,
-          sheets: [],
-          noDataMessage: "No preview available."
-        });
-      } else {
-        setPreviewData(data);
-      }
-      
-      setShowExcelViewer(true);
-      
-      // Also call the external preview handler if provided
+      // Create enhanced document with Excel data and call the external preview handler
       if (onPreview) {
         const enhancedDocument = {
           ...document,
@@ -351,176 +332,96 @@ export const DocumentsListGrid: React.FC<DocumentsListGridProps> = ({ documents,
       }
       
     } catch (error) {
-      console.error('Error fetching custom preview data:', error);
+      console.error('Error fetching preview data:', error);
       
-      // Show error message
-      setPreviewData({
-        fileName: document.name,
-        sheets: [],
-        errorMessage: `Failed to load preview: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-      setShowExcelViewer(true);
+      // Still call the external preview handler even on error
+      if (onPreview) {
+        onPreview(document);
+      }
       
     } finally {
       setLoadingPreview(null);
     }
   };
 
-  const handleCloseExcelViewer = () => {
-    setShowExcelViewer(false);
-    setPreviewData(null);
-  };
-
   return (
-    <>
-      <div className="space-y-4">
-        {documents.map((document) => (
-          <div 
-            key={document.id} 
-            className="flex items-center justify-between p-3 border rounded-lg"
-          >
-            <div className="flex items-center gap-3">
-              {getFileIcon(document.type, document.name)}
-              <div className="flex items-center gap-2">
-                {/* Custom Preview Icon - Eye emoji */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        className="h-6 w-6 p-0 hover:bg-muted"
-                        onClick={() => handleCustomPreview(document)}
-                        disabled={loadingPreview === document.id}
-                      >
-                        {loadingPreview === document.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <span className="text-sm">👁️</span>
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Preview file data</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
-                <div>
-                  <p className="font-medium">{document.name}</p>
-                  <div className="flex items-center gap-4 mt-1">
-                    <span className="text-xs text-muted-foreground">{document.size}</span>
-                    <span className="text-xs text-muted-foreground">Updated: {document.updatedAt}</span>
-                    <span className="text-xs text-muted-foreground">By: {document.updatedBy}</span>
-                    {document.subStage && (
-                      <Badge variant="outline" className="text-xs">{document.subStage}</Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+    <div className="space-y-4">
+      {documents.map((document) => (
+        <div 
+          key={document.id} 
+          className="flex items-center justify-between p-3 border rounded-lg"
+        >
+          <div className="flex items-center gap-3">
+            {getFileIcon(document.type, document.name)}
             <div className="flex items-center gap-2">
+              {/* Single Preview Icon - Eye emoji */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
                       size="sm" 
                       variant="ghost"
-                      onClick={() => onPreview(document)}
+                      className="h-6 w-6 p-0 hover:bg-muted"
+                      onClick={() => handlePreviewClick(document)}
+                      disabled={loadingPreview === document.id}
                     >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>
-                      {(() => {
-                        const extension = document.name.split('.').pop()?.toLowerCase();
-                        switch (extension) {
-                          case 'xlsx':
-                          case 'xls':
-                            return 'View Excel document';
-                          case 'pdf':
-                            return 'View PDF document';
-                          case 'html':
-                            return 'View HTML document';
-                          case 'css':
-                            return 'View CSS code';
-                          case 'msg':
-                            return 'View email message';
-                          case 'zip':
-                            return 'View archive contents';
-                          default:
-                            return 'Preview document';
-                        }
-                      })()}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => document.category === 'upload' ? onUpload(document.id) : onDownload(document.id)}
-                    >
-                      {document.category === 'upload' ? (
-                        <>
-                          <Upload className="h-4 w-4 mr-1" />
-                          Upload
-                        </>
+                      {loadingPreview === document.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
-                        <>
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </>
+                        <span className="text-sm">👁️</span>
                       )}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{document.category === 'upload' ? 'Upload document' : 'Download document'}</p>
+                    <p>Preview file data</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              
+              <div>
+                <p className="font-medium">{document.name}</p>
+                <div className="flex items-center gap-4 mt-1">
+                  <span className="text-xs text-muted-foreground">{document.size}</span>
+                  <span className="text-xs text-muted-foreground">Updated: {document.updatedAt}</span>
+                  <span className="text-xs text-muted-foreground">By: {document.updatedBy}</span>
+                  {document.subStage && (
+                    <Badge variant="outline" className="text-xs">{document.subStage}</Badge>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Excel Data Viewer Modal */}
-      {showExcelViewer && previewData && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-background rounded-lg shadow-lg max-w-6xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">File Preview</h2>
-              <Button variant="ghost" size="sm" onClick={handleCloseExcelViewer}>
-                ✕
-              </Button>
-            </div>
-            <div className="overflow-auto max-h-[calc(90vh-80px)]">
-              {previewData.errorMessage ? (
-                <div className="p-6 text-center">
-                  <div className="text-red-500 mb-2">⚠️</div>
-                  <p className="text-muted-foreground">{previewData.errorMessage}</p>
-                </div>
-              ) : previewData.noDataMessage ? (
-                <div className="p-6 text-center">
-                  <div className="text-muted-foreground mb-2">📄</div>
-                  <p className="text-muted-foreground">{previewData.noDataMessage}</p>
-                </div>
-              ) : (
-                <SimpleExcelViewer 
-                  data={previewData}
-                  className="border-0 shadow-none"
-                />
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => document.category === 'upload' ? onUpload(document.id) : onDownload(document.id)}
+                  >
+                    {document.category === 'upload' ? (
+                      <>
+                        <Upload className="h-4 w-4 mr-1" />
+                        Upload
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{document.category === 'upload' ? 'Upload document' : 'Download document'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
-      )}
-    </>
+      ))}
+    </div>
   );
 };
 
