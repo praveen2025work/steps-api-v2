@@ -112,12 +112,14 @@ export const useExcelData = ({
       locationIsNull: location === null,
       locationIsUndefined: location === undefined,
       locationIsEmptyString: location === '',
-      locationValue: location
+      locationValue: location,
+      locationLength: location?.length
     });
 
-    if (!location && location !== null) {
-      console.log('[useExcelData] Location parameter is required but not provided');
-      setError('Location parameter is required');
+    // Allow null location but not undefined or empty string
+    if (location === undefined || location === '') {
+      console.error('[useExcelData] Invalid location parameter:', location);
+      setError('Invalid location parameter');
       return;
     }
 
@@ -130,7 +132,7 @@ export const useExcelData = ({
       const apiUrl = `${javaBaseUrl}/api/process/data`;
       
       const requestPayload = {
-        location: location,
+        location: location, // This should be the value from fileData[item].value
         name: name
       };
       
@@ -139,10 +141,19 @@ export const useExcelData = ({
         method: 'PUT',
         payload: requestPayload,
         javaBaseUrl,
+        environmentVariable: process.env.NEXT_PUBLIC_JAVA_BASE_URL,
         locationInPayload: requestPayload.location,
         nameInPayload: requestPayload.name,
-        payloadStringified: JSON.stringify(requestPayload)
+        payloadStringified: JSON.stringify(requestPayload),
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+
+      // Validate that we have the correct base URL
+      if (!process.env.NEXT_PUBLIC_JAVA_BASE_URL) {
+        console.warn('[useExcelData] NEXT_PUBLIC_JAVA_BASE_URL not found in environment, using fallback');
+      }
 
       const response = await fetch(apiUrl, {
         method: 'PUT',
@@ -152,15 +163,19 @@ export const useExcelData = ({
         body: JSON.stringify(requestPayload)
       });
 
-      console.log('[useExcelData] API response:', {
+      console.log('[useExcelData] API response received:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries()),
+        type: response.type
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('[useExcelData] API error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}. Response: ${errorText}`);
       }
 
       const result: ExcelDataResponse = await response.json();
@@ -168,6 +183,7 @@ export const useExcelData = ({
         fileName: result.fileName,
         sheetsCount: result.sheets?.length || 0,
         firstSheetName: result.sheets?.[0]?.name,
+        hasValidData: !!(result.sheets && result.sheets.length > 0),
         result
       });
       

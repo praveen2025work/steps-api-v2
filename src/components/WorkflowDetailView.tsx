@@ -866,15 +866,30 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         );
 
         // Convert documents to FileDataIntegration format
-        const fileDataForIntegration = documentsToShow.map(doc => ({
-          item: JSON.stringify({ value: doc.location }), // Use location from fileData.value (may be null)
-          fileName: doc.name,
-          fileType: doc.type,
-          size: doc.size,
-          lastModified: doc.updatedAt,
-          // Also include the raw location for direct access
-          value: doc.location
-        }));
+        const fileDataForIntegration = documentsToShow.map(doc => {
+          console.log('[WorkflowDetailView] Converting document to FileDataIntegration format:', {
+            docName: doc.name,
+            docLocation: doc.location,
+            hasLocation: !!doc.location,
+            locationValue: doc.location
+          });
+          
+          return {
+            item: JSON.stringify({ value: doc.location }), // Use location from fileData.value (may be null)
+            fileName: doc.name,
+            fileType: doc.type,
+            size: doc.size,
+            lastModified: doc.updatedAt,
+            // Also include the raw location for direct access - this is the key fix
+            value: doc.location
+          };
+        });
+
+        console.log('[WorkflowDetailView] FileDataIntegration format created:', {
+          fileDataForIntegrationLength: fileDataForIntegration.length,
+          sampleFileDataItem: fileDataForIntegration[0],
+          allLocationValues: fileDataForIntegration.map(f => ({ name: f.fileName, location: f.value }))
+        });
 
         return (
           <div>

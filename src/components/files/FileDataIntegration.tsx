@@ -34,20 +34,34 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
   const [loadingPreview, setLoadingPreview] = useState<boolean>(false);
   
   // Extract location from fileData item
-  const getLocationFromItem = (item: FileDataItem): string => {
-    try {
-      // First try to parse the item string to extract the "value" property
-      const parsed = JSON.parse(item.item);
-      // Return the value even if it's null - this is important for the API call
-      return parsed.value;
-    } catch {
-      // If parsing fails, check if the item itself has a value property (direct API data)
-      if (item && typeof item === 'object' && 'value' in item) {
-        return (item as any).value;
-      }
-      // If no valid location found, return null to indicate no valid location
-      return null;
+  const getLocationFromItem = (item: FileDataItem): string | null => {
+    console.log('[FileDataIntegration] getLocationFromItem called with:', {
+      item,
+      hasItemProperty: !!item.item,
+      hasValueProperty: !!(item as any).value,
+      itemType: typeof item.item
+    });
+
+    // First check if the item has a direct 'value' property (from WorkflowDetailView mapping)
+    if (item && typeof item === 'object' && 'value' in item) {
+      const directValue = (item as any).value;
+      console.log('[FileDataIntegration] Found direct value property:', directValue);
+      return directValue;
     }
+
+    // Then try to parse the item string to extract the "value" property
+    if (item.item) {
+      try {
+        const parsed = JSON.parse(item.item);
+        console.log('[FileDataIntegration] Parsed item string:', parsed);
+        return parsed.value || null;
+      } catch (parseError) {
+        console.warn('[FileDataIntegration] Failed to parse item string:', parseError);
+      }
+    }
+
+    console.warn('[FileDataIntegration] No valid location found in item');
+    return null;
   };
 
   // Check if file is Excel-compatible
@@ -104,7 +118,7 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
             Excel Files ({excelFiles.length})
           </CardTitle>
           <CardDescription>
-            Click the preview icon (👁️) to view file contents
+            Click the preview icon to view file contents
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -119,7 +133,7 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <FileSpreadsheet className="h-5 w-5 text-green-600 flex-shrink-0" />
                   
-                  {/* Single Preview Icon - Eye emoji */}
+                  {/* Better Eye Icon for Preview */}
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -148,10 +162,16 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                                   return 'Failed to parse';
                                 }
                               })(),
-                              directValueAccess: file.value,
+                              directValueAccess: (file as any).value,
                               locationExtractionMethod: 'getLocationFromItem',
                               locationResult: location
                             });
+                            
+                            // Check if we have a valid location
+                            if (!location) {
+                              console.error('[FileDataIntegration] No valid location found for file preview');
+                              return;
+                            }
                             
                             // Set loading state
                             setLoadingPreview(true);
@@ -165,12 +185,12 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                               setLoadingPreview(false);
                             }
                           }}
-                          disabled={loadingPreview}
+                          disabled={loadingPreview || !getLocationFromItem(file)}
                         >
                           {loadingPreview && selectedFileIndex === index ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
-                            <span className="text-sm">👁️</span>
+                            <Eye className="h-3 w-3" />
                           )}
                         </Button>
                       </TooltipTrigger>
