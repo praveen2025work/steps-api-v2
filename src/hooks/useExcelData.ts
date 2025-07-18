@@ -115,7 +115,18 @@ export const useExcelData = ({
     setError(null);
 
     try {
-      const response = await fetch('http://api-java.com/api/process/data', {
+      // Use the environment variable for the Java API base URL
+      const javaBaseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL || 'http://api-java.com';
+      const apiUrl = `${javaBaseUrl}/api/process/data`;
+      
+      console.log('Excel data API call:', {
+        url: apiUrl,
+        method: 'POST',
+        payload: { location, name },
+        javaBaseUrl
+      });
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
