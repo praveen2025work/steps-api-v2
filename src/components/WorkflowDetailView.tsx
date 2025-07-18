@@ -871,7 +871,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           fileName: doc.name,
           fileType: doc.type,
           size: doc.size,
-          lastModified: doc.updatedAt
+          lastModified: doc.updatedAt,
+          // Also include the raw location for direct access
+          value: doc.location
         }));
 
         return (

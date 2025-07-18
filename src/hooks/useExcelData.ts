@@ -106,7 +106,17 @@ export const useExcelData = ({
 
   // Fetch data from the Java API
   const fetchExcelData = useCallback(async () => {
-    if (!location) {
+    console.log('[useExcelData] fetchExcelData called with:', {
+      location,
+      name,
+      locationIsNull: location === null,
+      locationIsUndefined: location === undefined,
+      locationIsEmptyString: location === '',
+      locationValue: location
+    });
+
+    if (!location && location !== null) {
+      console.log('[useExcelData] Location parameter is required but not provided');
       setError('Location parameter is required');
       return;
     }
@@ -119,11 +129,19 @@ export const useExcelData = ({
       const javaBaseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL || 'http://api-java.com';
       const apiUrl = `${javaBaseUrl}/api/process/data`;
       
-      console.log('Excel data API call:', {
+      const requestPayload = {
+        location: location,
+        name: name
+      };
+      
+      console.log('[useExcelData] Making API call:', {
         url: apiUrl,
         method: 'PUT',
-        payload: { location, name },
-        javaBaseUrl
+        payload: requestPayload,
+        javaBaseUrl,
+        locationInPayload: requestPayload.location,
+        nameInPayload: requestPayload.name,
+        payloadStringified: JSON.stringify(requestPayload)
       });
 
       const response = await fetch(apiUrl, {
@@ -131,25 +149,36 @@ export const useExcelData = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          location: location,
-          name: name
-        })
+        body: JSON.stringify(requestPayload)
+      });
+
+      console.log('[useExcelData] API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
       }
 
       const result: ExcelDataResponse = await response.json();
+      console.log('[useExcelData] API response data:', {
+        fileName: result.fileName,
+        sheetsCount: result.sheets?.length || 0,
+        firstSheetName: result.sheets?.[0]?.name,
+        result
+      });
+      
       setData(result);
     } catch (err) {
-      console.error('Error fetching Excel data:', err);
+      console.error('[useExcelData] Error fetching Excel data:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
       setError(errorMessage);
       
       // Use mock data in case of error for development
-      console.log('Using mock data for development');
+      console.log('[useExcelData] Using mock data for development due to error');
       setData(mockExcelData);
     } finally {
       setLoading(false);

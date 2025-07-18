@@ -35,15 +35,20 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
   // Extract location from fileData item
   const getLocationFromItem = (item: FileDataItem): string => {
     try {
-      // Parse the item string to extract the "value" property
+      // First try to parse the item string to extract the "value" property
       const parsed = JSON.parse(item.item);
       // Return the value even if it's null - this is important for the API call
       return parsed.value;
     } catch {
-      // If parsing fails, return null to indicate no valid location
+      // If parsing fails, check if the item itself has a value property (direct API data)
+      if (item && typeof item === 'object' && 'value' in item) {
+        return (item as any).value;
+      }
+      // If no valid location found, return null to indicate no valid location
       return null;
     }
   };
+=======
 
   // Check if file is Excel-compatible
   const isExcelFile = (item: FileDataItem): boolean => {
@@ -134,7 +139,18 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                               fileName: file.fileName,
                               location: location,
                               hasLocation: location !== null && location !== undefined,
-                              fileItem: file.item
+                              fileItem: file.item,
+                              fileObject: file,
+                              parsedItem: (() => {
+                                try {
+                                  return JSON.parse(file.item);
+                                } catch {
+                                  return 'Failed to parse';
+                                }
+                              })(),
+                              directValueAccess: file.value,
+                              locationExtractionMethod: 'getLocationFromItem',
+                              locationResult: location
                             });
                             
                             // Set loading state
