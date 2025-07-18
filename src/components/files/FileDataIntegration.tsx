@@ -172,72 +172,70 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <FileSpreadsheet className="h-5 w-5 text-green-600 flex-shrink-0" />
                   
-                  {/* Better Eye Icon for Preview - Only show if file has valid location */}
-                  {(() => {
-                    const location = getLocationFromItem(file);
-                    return location ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              className="h-6 w-6 p-0 hover:bg-muted flex-shrink-0"
-                              onClick={async () => {
-                                // Select this file first
-                                onFileSelect?.(index);
-                                
-                                console.log('[FileDataIntegration] Preview button clicked:', {
-                                  fileIndex: index,
-                                  fileName: file.fileName,
-                                  location: location,
-                                  hasValidLocation: true,
-                                  fileItem: file.item,
-                                  fileObject: file,
-                                  parsedItem: (() => {
-                                    try {
-                                      return JSON.parse(file.item);
-                                    } catch {
-                                      return 'Failed to parse';
-                                    }
-                                  })(),
-                                  directValueAccess: (file as any).value,
-                                  locationExtractionMethod: 'getLocationFromItem',
-                                  locationResult: location
-                                });
-                                
-                                // Set loading state
-                                setLoadingPreview(true);
-                                
+                  {/* Preview Button - Always show for testing API calls */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-muted flex-shrink-0"
+                          onClick={async () => {
+                            // Select this file first
+                            onFileSelect?.(index);
+                            
+                            const location = getLocationFromItem(file);
+                            
+                            console.log('[FileDataIntegration] Preview button clicked (ALWAYS AVAILABLE):', {
+                              fileIndex: index,
+                              fileName: file.fileName,
+                              location: location,
+                              hasValidLocation: !!location,
+                              fileItem: file.item,
+                              fileObject: file,
+                              parsedItem: (() => {
                                 try {
-                                  // Show preview which will trigger the API call in ExcelDataViewer
-                                  setShowPreview(true);
-                                } catch (error) {
-                                  console.error('Error initiating preview:', error);
-                                } finally {
-                                  setLoadingPreview(false);
+                                  return JSON.parse(file.item);
+                                } catch {
+                                  return 'Failed to parse';
                                 }
-                              }}
-                              disabled={loadingPreview}
-                            >
-                              {loadingPreview && selectedFileIndex === index ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Eye className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Preview file data</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : (
-                      <div className="h-6 w-6 flex items-center justify-center text-muted-foreground">
-                        <span className="text-xs">N/A</span>
-                      </div>
-                    );
-                  })()}
+                              })(),
+                              directValueAccess: (file as any).value,
+                              locationExtractionMethod: 'getLocationFromItem',
+                              locationResult: location,
+                              willMakeAPICall: true,
+                              apiPayload: {
+                                location: location || 'LOCATION_NOT_FOUND',
+                                name: null
+                              }
+                            });
+                            
+                            // Set loading state
+                            setLoadingPreview(true);
+                            
+                            try {
+                              // Show preview which will trigger the API call in ExcelDataViewer
+                              setShowPreview(true);
+                            } catch (error) {
+                              console.error('Error initiating preview:', error);
+                            } finally {
+                              setLoadingPreview(false);
+                            }
+                          }}
+                          disabled={loadingPreview}
+                        >
+                          {loadingPreview && selectedFileIndex === index ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Eye className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Preview file data (Test API Call)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium truncate">
