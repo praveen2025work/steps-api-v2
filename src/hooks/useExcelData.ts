@@ -138,7 +138,7 @@ export const useExcelData = ({
       
       const requestPayload = {
         location: location, // This should be the value from fileData[item].value
-        name: name
+        name: null // Always send name as null as per requirement
       };
       
       console.log('[useExcelData] Making API call:', {

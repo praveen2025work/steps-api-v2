@@ -57,7 +57,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
   // Use Excel data hook for the selected file
   const { data: excelData, loading: excelLoading, error: excelError } = useExcelData({
     location: selectedFile?.location || null,
-    name: selectedFile?.name || null,
+    name: null, // Always send name as null as per requirement
     autoFetch: previewMode && !!selectedFile
   });
 
@@ -124,28 +124,44 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
     );
 
     if (isExcelFile && excelData) {
+      // Find the first sheet with data to set as default
+      const firstDataSheet = excelData.sheets.find(sheet => 
+        !(sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND")
+      );
+      const defaultSheetName = firstDataSheet?.name || excelData.sheets[0]?.name;
+
       return (
         <div className="space-y-4">
-          <Tabs defaultValue={excelData.sheets[0]?.name} className="w-full">
-            <TabsList className="grid w-full grid-cols-auto overflow-x-auto">
-              {excelData.sheets.map((sheet) => (
-                <TabsTrigger 
-                  key={sheet.name} 
-                  value={sheet.name}
-                  className="whitespace-nowrap"
-                >
-                  {sheet.name}
-                  {sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND" && (
-                    <Badge variant="secondary" className="ml-2 h-4 px-1 text-xs">
-                      Empty
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+          <Tabs defaultValue={defaultSheetName} className="w-full">
+            {/* Horizontal sheet cards instead of vertical tabs */}
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+              {excelData.sheets.map((sheet) => {
+                const isEmpty = sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND";
+                return (
+                  <TabsTrigger 
+                    key={sheet.name} 
+                    value={sheet.name}
+                    className="flex-shrink-0 px-4 py-2 rounded-lg border bg-card hover:bg-accent transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="whitespace-nowrap font-medium">{sheet.name}</span>
+                      {isEmpty ? (
+                        <Badge variant="secondary" className="h-4 px-1 text-xs">
+                          No Data
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="h-4 px-1 text-xs">
+                          {sheet.data.length - 1} rows
+                        </Badge>
+                      )}
+                    </div>
+                  </TabsTrigger>
+                );
+              })}
+            </div>
             
             {excelData.sheets.map((sheet) => (
-              <TabsContent key={sheet.name} value={sheet.name} className="mt-4">
+              <TabsContent key={sheet.name} value={sheet.name} className="mt-0">
                 {sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND" ? (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                     <Database className="h-12 w-12 mb-4 opacity-50" />
@@ -153,30 +169,37 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
                     <p className="text-sm">This sheet contains no data to display</p>
                   </div>
                 ) : (
-                  <ScrollArea className="w-full h-96">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          {sheet.data[0]?.map((header, index) => (
-                            <TableHead key={index} className="whitespace-nowrap font-semibold">
-                              {header || `Column ${index + 1}`}
-                            </TableHead>
-                          ))}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {sheet.data.slice(1).map((row, rowIndex) => (
-                          <TableRow key={rowIndex}>
-                            {sheet.data[0]?.map((_, colIndex) => (
-                              <TableCell key={colIndex} className="whitespace-nowrap">
-                                {row[colIndex] || ''}
-                              </TableCell>
+                  <div className="space-y-2">
+                    {/* Show record count at the top */}
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>Showing {sheet.data.length - 1} records</span>
+                      <span>Sheet: {sheet.name}</span>
+                    </div>
+                    <ScrollArea className="w-full h-96 border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            {sheet.data[0]?.map((header, index) => (
+                              <TableHead key={index} className="whitespace-nowrap font-semibold bg-muted/50">
+                                {header || `Column ${index + 1}`}
+                              </TableHead>
                             ))}
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
+                        </TableHeader>
+                        <TableBody>
+                          {sheet.data.slice(1).map((row, rowIndex) => (
+                            <TableRow key={rowIndex} className="hover:bg-muted/30">
+                              {sheet.data[0]?.map((_, colIndex) => (
+                                <TableCell key={colIndex} className="whitespace-nowrap">
+                                  {row[colIndex] || ''}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </div>
                 )}
               </TabsContent>
             ))}
