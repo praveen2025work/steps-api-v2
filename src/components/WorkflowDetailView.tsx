@@ -1282,66 +1282,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
   return (
     <div className="space-y-2">
-      {/* Enhanced Auto-Refresh Controls */}
-      <Card className="mb-2">
-        <CardContent className="py-2 px-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={autoRefreshEnabled}
-                  onCheckedChange={setAutoRefreshEnabled}
-                  id="auto-refresh"
-                />
-                <label htmlFor="auto-refresh" className="text-sm font-medium">
-                  Auto-refresh
-                </label>
-                {autoRefreshEnabled ? (
-                  <Pause className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <Play className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Timer className="h-4 w-4" />
-                <span>
-                  {autoRefreshEnabled 
-                    ? `Next refresh in ${countdown}s` 
-                    : 'Auto-refresh disabled'
-                  }
-                </span>
-              </div>
-              
-              {isRefreshing && (
-                <div className="flex items-center gap-2 text-sm text-blue-600">
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  <span>Refreshing...</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="h-7"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-                Refresh Now
-              </Button>
-              
-              <div className="text-xs text-muted-foreground">
-                Last updated: {lastRefreshed.toLocaleTimeString()}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Unified Workflow Header Card */}
+      {/* Unified Workflow Header Card with Auto-Refresh Controls */}
       <WorkflowUnifiedHeader
         workflowId={hierarchyPath[hierarchyPath.length-1]?.id || ''}
         workflowTitle={workflowTitle}
@@ -1355,6 +1296,11 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         lastRefreshed={lastRefreshed}
         viewMode={viewMode}
         onViewToggle={onViewToggle}
+        autoRefreshEnabled={autoRefreshEnabled}
+        onAutoRefreshToggle={setAutoRefreshEnabled}
+        refreshInterval={refreshInterval}
+        countdown={countdown}
+        isRefreshing={isRefreshing}
       />
 
       {/* Modified to include completion percentage */}

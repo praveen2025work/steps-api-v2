@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { 
   BarChart4, 
   AlertCircle, 
@@ -17,7 +18,10 @@ import {
   Clock,
   Layers,
   Sparkles,
-  GitBranch
+  GitBranch,
+  Timer,
+  Pause,
+  Play
 } from 'lucide-react';
 import { useDate } from '@/contexts/DateContext';
 import { formatDate } from '@/lib/dateUtils';
@@ -44,6 +48,12 @@ interface WorkflowUnifiedHeaderProps {
   lastRefreshed?: Date;
   viewMode?: 'classic' | 'alternative' | 'stepfunction';
   onViewToggle?: (mode: 'classic' | 'alternative' | 'stepfunction') => void;
+  // Auto-refresh props
+  autoRefreshEnabled?: boolean;
+  onAutoRefreshToggle?: (enabled: boolean) => void;
+  refreshInterval?: number;
+  countdown?: number;
+  isRefreshing?: boolean;
 }
 
 const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
@@ -58,11 +68,15 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
   taskCounts,
   lastRefreshed = new Date(),
   viewMode = 'classic',
-  onViewToggle
+  onViewToggle,
+  autoRefreshEnabled = true,
+  onAutoRefreshToggle,
+  refreshInterval = 10,
+  countdown = 10,
+  isRefreshing = false
 }) => {
   const router = useRouter();
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
-  const [countdown, setCountdown] = useState<number>(15);
   
   // Calculate task counts if not provided
   const defaultTaskCounts = taskCounts || {
@@ -78,13 +92,6 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
     const timer = setInterval(() => {
       const seconds = Math.floor((new Date().getTime() - lastRefreshed.getTime()) / 1000);
       setSecondsSinceRefresh(seconds);
-      
-      setCountdown(prev => {
-        if (prev <= 1) {
-          return 15;
-        }
-        return prev - 1;
-      });
     }, 1000);
     
     return () => clearInterval(timer);
@@ -158,9 +165,40 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
           )}
         </div>
         <div className="flex items-center gap-1">
-          <div className="flex items-center mr-3 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3 mr-1" />
-            <span>Last refreshed: {secondsSinceRefresh}s | Auto-refresh in: {countdown}s</span>
+          {/* Auto-refresh controls */}
+          <div className="flex items-center gap-2 mr-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={autoRefreshEnabled}
+                onCheckedChange={onAutoRefreshToggle}
+                id="auto-refresh"
+              />
+              <label htmlFor="auto-refresh" className="text-xs font-medium">
+                Auto-refresh
+              </label>
+              {autoRefreshEnabled ? (
+                <Pause className="h-3 w-3 text-muted-foreground" />
+              ) : (
+                <Play className="h-3 w-3 text-muted-foreground" />
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Timer className="h-3 w-3" />
+              <span>
+                {autoRefreshEnabled 
+                  ? `Next refresh in ${countdown}s` 
+                  : 'Auto-refresh disabled'
+                }
+              </span>
+            </div>
+            
+            {isRefreshing && (
+              <div className="flex items-center gap-1 text-xs text-blue-600">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                <span>Refreshing...</span>
+              </div>
+            )}
           </div>
           
           <Button 
@@ -208,13 +246,15 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
           </Button>
           
           <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7"
+            variant="outline" 
+            size="sm" 
+            className="h-7"
             onClick={onRefresh}
-            title="Refresh"
+            disabled={isRefreshing}
+            title="Refresh Now"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh Now
           </Button>
         </div>
       </CardHeader>
@@ -357,6 +397,19 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      </CardContent>
+      
+      {/* Workflow Details Section */}
+      <CardContent className="py-1 px-3 border-t bg-muted/20">
+        <div className="text-xs text-muted-foreground">
+          Showing workflow details for workflow: <span className="font-medium text-foreground">{workflowTitle}</span>
+          {hierarchyPath.length > 1 && (
+            <span> - {hierarchyPath[hierarchyPath.length - 1]?.name}</span>
+          )}
+          <span className="ml-2">
+            Last updated: {lastRefreshed.toLocaleTimeString()}
+          </span>
         </div>
       </CardContent>
     </Card>
