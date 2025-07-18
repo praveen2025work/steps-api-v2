@@ -1282,6 +1282,13 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
   return (
     <div className="space-y-2">
+      {/* Debug: Log any potential text sources */}
+      {(() => {
+        console.log('[WorkflowDetailView] Rendering with workflowTitle:', workflowTitle);
+        console.log('[WorkflowDetailView] HierarchyPath:', hierarchyPath);
+        return null;
+      })()}
+      
       {/* Unified Workflow Header Card with Auto-Refresh Controls */}
       <WorkflowUnifiedHeader
         workflowId={hierarchyPath[hierarchyPath.length-1]?.id || ''}
