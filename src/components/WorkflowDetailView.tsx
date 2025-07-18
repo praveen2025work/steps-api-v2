@@ -24,6 +24,7 @@ import { generateSampleWorkflowDiagram } from '@/lib/workflowDiagramUtils';
 import { EnhancedFilePreview } from './files/EnhancedFilePreview';
 import AdvancedFilePreview from './files/AdvancedFilePreview';
 import FileDataIntegration from './files/FileDataIntegration';
+import FileLocationDebugger from './files/FileLocationDebugger';
 import { 
   FileText, 
   Lock, 
@@ -912,6 +913,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                 {selectedSubStage ? `Files - ${currentProcessName}` : 'Stage Files'}
               </h3>
             </div>
+
+            {/* Add File Location Debugger */}
+            <FileLocationDebugger className="mb-4" />
 
             {/* Show Excel viewer if we have Excel files, otherwise show regular document list */}
             {excelFiles.length > 0 ? (
