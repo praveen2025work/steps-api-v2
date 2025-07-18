@@ -1182,7 +1182,20 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             name: file.name,
             type: file.name.split('.').pop() || 'unknown',
             size: 'Unknown Size', // Keep size as display field
-            location: file.value || '', // Add location field for API calls
+            location: file.value || '', // Add location field for API calls (this is the file path)
+            updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
+            updatedBy: file.updatedBy || 'System',
+            category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
+            subStage: currentProcessName
+          }));
+=======
+          // Convert API files to document format
+          documentsToShow = processFiles.map((file: any, index: number) => ({
+            id: `file-${file.workflow_Process_Id}-${index}`,
+            name: file.name,
+            type: file.name.split('.').pop() || 'unknown',
+            size: 'Unknown Size', // Keep size as display field
+            location: file.value || '', // Add location field for API calls (this is the file path)
             updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
             updatedBy: file.updatedBy || 'System',
             category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,

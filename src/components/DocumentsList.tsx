@@ -98,8 +98,13 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents, onPreview }) =
           }
         });
         
-        // Call the Java API endpoint
-        const response = await fetch('http://api-java.com/api/process/data', {
+        // Call the Java API endpoint using environment variable
+        const baseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL;
+        if (!baseUrl) {
+          throw new Error('NEXT_PUBLIC_JAVA_BASE_URL environment variable is not set');
+        }
+        
+        const response = await fetch(`${baseUrl}/api/process/data`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -242,7 +247,11 @@ export const DocumentsListGrid: React.FC<DocumentsListGridProps> = ({ documents,
     setLoadingPreview(document.id);
     
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL || 'http://api-java.com';
+      const baseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL;
+      if (!baseUrl) {
+        throw new Error('NEXT_PUBLIC_JAVA_BASE_URL environment variable is not set');
+      }
+      
       const locationToUse = document.location || document.name;
       
       console.log('Making custom preview API call:', {
