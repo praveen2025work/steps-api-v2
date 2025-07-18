@@ -90,18 +90,14 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents, onPreview }) =
         
         // Enhanced debugging for environment variable and API call
         const baseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL;
-        console.log('[DocumentsList] Environment variable debug:', {
+        console.log('[DocumentsList] File preview API call debug:', {
           NEXT_PUBLIC_JAVA_BASE_URL: baseUrl,
-          allEnvVars: {
-            NEXT_PUBLIC_JAVA_BASE_URL: process.env.NEXT_PUBLIC_JAVA_BASE_URL,
-            NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
-            NEXT_PUBLIC_DOTNET_BASE_URL: process.env.NEXT_PUBLIC_DOTNET_BASE_URL
-          },
           document: {
             id: document.id,
             name: document.name,
             location: document.location,
-            hasLocation: !!document.location
+            hasLocation: !!document.location,
+            locationToUse: locationToUse
           },
           apiCall: {
             url: `${baseUrl}/api/process/data`,

@@ -121,13 +121,13 @@ export const useExcelData = ({
       
       console.log('Excel data API call:', {
         url: apiUrl,
-        method: 'POST',
+        method: 'PUT',
         payload: { location, name },
         javaBaseUrl
       });
 
       const response = await fetch(apiUrl, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },

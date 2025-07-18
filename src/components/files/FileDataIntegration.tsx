@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileSpreadsheet, ExternalLink, Download } from 'lucide-react';
+import { FileSpreadsheet, ExternalLink, Download, Eye, Loader2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ExcelDataViewer from './ExcelDataViewer';
 
 interface FileDataItem {
@@ -19,14 +20,18 @@ interface FileDataIntegrationProps {
   selectedFileIndex?: number;
   onFileSelect?: (index: number) => void;
   className?: string;
+  showPreviewByDefault?: boolean; // New prop to control default preview behavior
 }
 
 const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
   fileData,
   selectedFileIndex,
   onFileSelect,
-  className = ""
+  className = "",
+  showPreviewByDefault = false // Default to false - no auto-preview
 }) => {
+  const [showPreview, setShowPreview] = useState<boolean>(showPreviewByDefault);
+  const [loadingPreview, setLoadingPreview] = useState<boolean>(false);
   // Extract location from fileData item
   const getLocationFromItem = (item: FileDataItem): string => {
     try {
@@ -68,91 +73,169 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
   const selectedFile = selectedFileIndex !== undefined ? excelFiles[selectedFileIndex] : excelFiles[0];
   const selectedLocation = selectedFile ? getLocationFromItem(selectedFile) : '';
 
+  // Handle preview button click
+  const handlePreviewClick = async () => {
+    if (!selectedLocation) return;
+    
+    setLoadingPreview(true);
+    try {
+      // Just show the preview - the ExcelDataViewer will handle the API call
+      setShowPreview(true);
+    } catch (error) {
+      console.error('Error initiating preview:', error);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* File Selection */}
-      {excelFiles.length > 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center">
-              <FileSpreadsheet className="h-5 w-5 mr-2" />
-              Available Excel Files
-            </CardTitle>
-            <CardDescription>
-              Select an Excel file to view its contents
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {excelFiles.map((file, index) => (
-                <Card 
-                  key={index}
-                  className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-                    selectedFileIndex === index ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => onFileSelect?.(index)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium truncate">
-                          {file.fileName || `File ${index + 1}`}
-                        </h4>
-                        <p className="text-sm text-muted-foreground truncate mt-1">
-                          {getLocationFromItem(file)}
-                        </p>
-                        <div className="flex items-center space-x-2 mt-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {file.fileType || 'Excel'}
-                          </Badge>
-                          {file.size && (
-                            <Badge variant="outline" className="text-xs">
-                              {file.size}
-                            </Badge>
+      {/* File List with Preview Icons */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center">
+            <FileSpreadsheet className="h-5 w-5 mr-2" />
+            Excel Files ({excelFiles.length})
+          </CardTitle>
+          <CardDescription>
+            Click the preview icon (👁️) to view file contents
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {excelFiles.map((file, index) => (
+              <div 
+                key={index}
+                className={`flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors ${
+                  selectedFileIndex === index ? 'ring-2 ring-primary bg-primary/5' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <FileSpreadsheet className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  
+                  {/* Preview Icon - Eye emoji */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-muted flex-shrink-0"
+                          onClick={() => {
+                            // Select this file and show preview
+                            onFileSelect?.(index);
+                            setShowPreview(true);
+                          }}
+                          disabled={loadingPreview}
+                        >
+                          {loadingPreview && selectedFileIndex === index ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <span className="text-sm">👁️</span>
                           )}
-                        </div>
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Preview file data</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate">
+                      {file.fileName || `File ${index + 1}`}
+                    </h4>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {getLocationFromItem(file)}
+                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {file.fileType || 'Excel'}
+                      </Badge>
+                      {file.size && (
+                        <Badge variant="outline" className="text-xs">
+                          {file.size}
+                        </Badge>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Selected File Info */}
-      {selectedFile && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <FileSpreadsheet className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">
-                  {selectedFile.fileName || 'Selected Excel File'}
-                </CardTitle>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => {
+                            onFileSelect?.(index);
+                            setShowPreview(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>View Excel document</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Download file</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Excel Data Viewer - Only shown when preview is requested */}
+      {showPreview && selectedLocation && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <FileSpreadsheet className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg">
+                    File Preview: {selectedFile?.fileName || 'Excel File'}
+                  </CardTitle>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowPreview(false)}
+                >
+                  Close Preview
                 </Button>
               </div>
-            </div>
-            <CardDescription className="break-all">
-              Location: {selectedLocation}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
-
-      {/* Excel Data Viewer */}
-      {selectedLocation && (
-        <ExcelDataViewer 
-          location={selectedLocation}
-          name={selectedFile?.fileName || null}
-        />
+              <CardDescription className="break-all">
+                Location: {selectedLocation}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+          
+          <ExcelDataViewer 
+            location={selectedLocation}
+            name={selectedFile?.fileName || null}
+          />
+        </div>
       )}
     </div>
   );
