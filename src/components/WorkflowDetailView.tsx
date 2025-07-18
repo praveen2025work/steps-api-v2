@@ -1282,8 +1282,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
   return (
     <div className="space-y-2">
-
-      
       {/* Unified Workflow Header Card with Auto-Refresh Controls */}
       <WorkflowUnifiedHeader
         workflowId={hierarchyPath[hierarchyPath.length-1]?.id || ''}
