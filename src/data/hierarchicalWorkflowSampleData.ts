@@ -91,7 +91,7 @@ export const sampleApplications: Application[] = [
 export const sampleBusinessAreas: BusinessArea[] = [
   {
     configId: 5000161,
-    name: "BI Funding and Risk Management",
+    name: "Advisory",
     configType: "Asset Class",
     isConfigured: true,
     percentageCompleted: 19,
@@ -127,7 +127,7 @@ export const sampleWorkflowInstances: WorkflowInstance[] = [
     percentageCompleted: 56,
     isWeekly: false,
     nextLevel: 3,
-    businessAreaId: 5000161 // Associated with BI Funding and Risk Management
+    businessAreaId: 5000161 // Associated with Advisory
   },
   {
     configId: 5113,

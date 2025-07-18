@@ -1282,25 +1282,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
   return (
     <div className="space-y-2">
-      {/* Debug: Log any potential text sources and check for unwanted text */}
-      {(() => {
-        console.log('[WorkflowDetailView] Rendering with workflowTitle:', workflowTitle);
-        console.log('[WorkflowDetailView] HierarchyPath:', hierarchyPath);
-        
-        // Check if workflowTitle contains the problematic text
-        if (workflowTitle && workflowTitle.includes('BI Funding and Risk Management')) {
-          console.warn('[WorkflowDetailView] Found problematic workflowTitle:', workflowTitle);
-        }
-        
-        // Check hierarchy path for problematic names
-        hierarchyPath.forEach((node, index) => {
-          if (node.name && node.name.includes('BI Funding and Risk Management')) {
-            console.warn(`[WorkflowDetailView] Found problematic hierarchy node at index ${index}:`, node);
-          }
-        });
-        
-        return null;
-      })()}
+
       
       {/* Unified Workflow Header Card with Auto-Refresh Controls */}
       <WorkflowUnifiedHeader
