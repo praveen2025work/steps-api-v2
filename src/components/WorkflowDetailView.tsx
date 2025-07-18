@@ -752,10 +752,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           
           // Convert API files to document format
           documentsToShow = processFiles.map((file: any, index: number) => {
+            // Ensure we have the correct location value from fileData
+            const locationValue = file.value || file.name || '';
+            
             console.log('[WorkflowDetailView] Processing file for API call:', {
               fileName: file.name,
               value: file.value,
               hasValue: !!file.value,
+              locationValue: locationValue,
               fileObject: file
             });
             
@@ -763,8 +767,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               id: `file-${file.workflow_Process_Id}-${index}`,
               name: file.name || 'Unknown File',
               type: (file.name || '').split('.').pop() || 'unknown',
-              size: 'Unknown Size', // Keep size as display field
-              location: file.value || file.name || '', // Use value as primary location, fallback to name
+              size: file.size || 'Unknown Size', // Use actual size from API if available
+              location: locationValue, // Use value as primary location, fallback to name
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
@@ -808,13 +812,15 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           documentsToShow = stageFiles.map((file: any, index: number) => {
             // Find the process name for this file
             const process = stageProcesses.find(p => p.workflowProcessId === file.workflow_Process_Id);
+            // Ensure we have the correct location value from fileData
+            const locationValue = file.value || file.name || '';
             
             return {
               id: `file-${file.workflow_Process_Id}-${index}`,
               name: file.name,
               type: file.name.split('.').pop() || 'unknown',
-              size: file.value || 'Unknown Size',
-              location: file.value || '', // Add location field for API calls
+              size: file.size || 'Unknown Size', // Use actual size from API if available
+              location: locationValue, // Use value as primary location, fallback to name
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,

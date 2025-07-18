@@ -88,31 +88,53 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents, onPreview }) =
       try {
         const locationToUse = document.location || document.name; // Fallback to name if location not available
         
-        console.log('Making Java API call for Excel file:', {
-          location: locationToUse,
-          name: null,
-          documentInfo: {
+        // Enhanced debugging for environment variable and API call
+        const baseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL;
+        console.log('[DocumentsList] Environment variable debug:', {
+          NEXT_PUBLIC_JAVA_BASE_URL: baseUrl,
+          allEnvVars: {
+            NEXT_PUBLIC_JAVA_BASE_URL: process.env.NEXT_PUBLIC_JAVA_BASE_URL,
+            NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+            NEXT_PUBLIC_DOTNET_BASE_URL: process.env.NEXT_PUBLIC_DOTNET_BASE_URL
+          },
+          document: {
             id: document.id,
             name: document.name,
+            location: document.location,
             hasLocation: !!document.location
+          },
+          apiCall: {
+            url: `${baseUrl}/api/process/data`,
+            method: 'PUT',
+            payload: {
+              location: locationToUse,
+              name: null
+            }
           }
         });
         
-        // Call the Java API endpoint using environment variable
-        const baseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL;
         if (!baseUrl) {
           throw new Error('NEXT_PUBLIC_JAVA_BASE_URL environment variable is not set');
         }
         
-        const response = await fetch(`${baseUrl}/api/process/data`, {
+        const apiUrl = `${baseUrl}/api/process/data`;
+        const requestPayload = {
+          location: locationToUse, // Use resolved location path from fileData.value
+          name: null // Set name to null as requested
+        };
+        
+        console.log('[DocumentsList] Making Java API call:', {
+          url: apiUrl,
+          method: 'PUT',
+          payload: requestPayload
+        });
+        
+        const response = await fetch(apiUrl, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            location: locationToUse, // Use resolved location path from fileData.value
-            name: null // Set name to null as requested
-          })
+          body: JSON.stringify(requestPayload)
         });
 
         if (!response.ok) {
@@ -248,27 +270,50 @@ export const DocumentsListGrid: React.FC<DocumentsListGridProps> = ({ documents,
     
     try {
       const baseUrl = process.env.NEXT_PUBLIC_JAVA_BASE_URL;
+      const locationToUse = document.location || document.name;
+      
+      // Enhanced debugging for custom preview
+      console.log('[DocumentsList] Custom preview debug:', {
+        NEXT_PUBLIC_JAVA_BASE_URL: baseUrl,
+        document: {
+          id: document.id,
+          name: document.name,
+          location: document.location,
+          hasLocation: !!document.location
+        },
+        locationToUse: locationToUse,
+        apiCall: {
+          url: `${baseUrl}/api/process/data`,
+          method: 'PUT',
+          payload: {
+            location: locationToUse,
+            name: null
+          }
+        }
+      });
+      
       if (!baseUrl) {
         throw new Error('NEXT_PUBLIC_JAVA_BASE_URL environment variable is not set');
       }
       
-      const locationToUse = document.location || document.name;
-      
-      console.log('Making custom preview API call:', {
-        url: `${baseUrl}/api/process/data`,
+      const apiUrl = `${baseUrl}/api/process/data`;
+      const requestPayload = {
         location: locationToUse,
         name: null
+      };
+      
+      console.log('[DocumentsList] Making custom preview API call:', {
+        url: apiUrl,
+        method: 'PUT',
+        payload: requestPayload
       });
       
-      const response = await fetch(`${baseUrl}/api/process/data`, {
+      const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          location: locationToUse,
-          name: null
-        })
+        body: JSON.stringify(requestPayload)
       });
 
       if (!response.ok) {
