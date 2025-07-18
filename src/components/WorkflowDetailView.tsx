@@ -701,16 +701,11 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         const summaryData = (window as any).currentWorkflowSummary;
         const fileData = summaryData?.fileData || [];
         
-        // CRITICAL FIX: Extract the top-level value property from the summary data
-        // This contains the actual file path that should be used for all file operations
-        const topLevelValue = summaryData?.value || null;
-        
         console.log('[WorkflowDetailView] Files section - Debug info:', {
           selectedSubStage,
           processId: currentProcessId,
           fileDataLength: fileData.length,
           sampleFileData: fileData[0],
-          topLevelValue: topLevelValue,
           summaryDataKeys: summaryData ? Object.keys(summaryData) : [],
           fullSummaryData: summaryData
         });
@@ -759,22 +754,20 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           
           // Convert API files to document format
           documentsToShow = processFiles.map((file: any, index: number) => {
-            // CRITICAL FIX: Use the top-level value from summary data instead of individual file.value
-            // The individual file.value is null, but the top-level value contains the actual path
-            const locationValue = topLevelValue || file.value;
+            // CORRECTED: Use the individual file.value directly from the API response
+            // Based on your sample data, each file object has its own value property with the file path
+            const locationValue = file.value;
             
-            console.log('[WorkflowDetailView] Processing file for API call (FIXED):', {
+            console.log('[WorkflowDetailView] Processing file for API call (CORRECTED):', {
               fileName: file.name,
-              individualFileValue: file.value,
-              topLevelValue: topLevelValue,
-              finalLocationValue: locationValue,
+              fileValue: file.value,
               hasValidLocation: !!locationValue,
               fileObject: file,
               apiCallWillUse: {
                 location: locationValue,
                 name: null
               },
-              fixApplied: 'Using topLevelValue instead of file.value'
+              correctionApplied: 'Using file.value directly from API response'
             });
             
             return {
@@ -782,7 +775,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               name: file.name || 'Unknown File',
               type: (file.name || '').split('.').pop() || 'unknown',
               size: file.size || 'Unknown Size',
-              location: locationValue, // Now using the top-level value from summary data
+              location: locationValue, // Using the individual file.value from API response
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
@@ -826,22 +819,20 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           documentsToShow = stageFiles.map((file: any, index: number) => {
             // Find the process name for this file
             const process = stageProcesses.find(p => p.workflowProcessId === file.workflow_Process_Id);
-            // CRITICAL FIX: Use the top-level value from summary data instead of individual file.value
-            // The individual file.value is null, but the top-level value contains the actual path
-            const locationValue = topLevelValue || file.value;
+            // CORRECTED: Use the individual file.value directly from the API response
+            // Based on your sample data, each file object has its own value property with the file path
+            const locationValue = file.value;
             
-            console.log('[WorkflowDetailView] Processing stage file for API call (FIXED):', {
+            console.log('[WorkflowDetailView] Processing stage file for API call (CORRECTED):', {
               fileName: file.name,
-              individualFileValue: file.value,
-              topLevelValue: topLevelValue,
-              finalLocationValue: locationValue,
+              fileValue: file.value,
               hasValidLocation: !!locationValue,
               fileObject: file,
               apiCallWillUse: {
                 location: locationValue,
                 name: null
               },
-              fixApplied: 'Using topLevelValue instead of file.value'
+              correctionApplied: 'Using file.value directly from API response'
             });
             
             return {
@@ -849,7 +840,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               name: file.name,
               type: file.name.split('.').pop() || 'unknown',
               size: file.size || 'Unknown Size',
-              location: locationValue, // Now using the top-level value from summary data
+              location: locationValue, // Using the individual file.value from API response
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
@@ -885,12 +876,12 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           });
           
           return {
-            item: JSON.stringify({ value: doc.location }), // Use location from fileData.value (may be null)
+            item: JSON.stringify({ value: doc.location }), // Use location from fileData.value
             fileName: doc.name,
             fileType: doc.type,
             size: doc.size,
             lastModified: doc.updatedAt,
-            // Also include the raw location for direct access - this is the key fix
+            // Include the raw location for direct access
             value: doc.location
           };
         });
