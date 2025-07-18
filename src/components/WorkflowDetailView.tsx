@@ -1301,6 +1301,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         refreshInterval={refreshInterval}
         countdown={countdown}
         isRefreshing={isRefreshing}
+        onBreadcrumbNavigate={handleBreadcrumbNavigation}
       />
 
       {/* Modified to include completion percentage */}
