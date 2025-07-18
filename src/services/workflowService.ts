@@ -2774,26 +2774,13 @@ class WorkflowService {
         console.log('[Workflow Service] Using mock data for workflow applications');
         await this.simulateNetworkDelay();
         
-        // Mock data based on your API response
+        // Mock data with proper hierarchical structure that terminates correctly
         const mockApplications: WorkflowApplication[] = [
           {
             appId: 17,
             previousLevel: 0,
             currentLevel: 0,
             nextLevel: 1,
-            isUsedForWorkflowInstance: false,
-            percentageCompleted: 0,
-            isConfigured: true,
-            isWeekly: null,
-            configType: "APPLICATION",
-            configId: "17",
-            configName: "Basel"
-          },
-          {
-            appId: 17,
-            previousLevel: 0,
-            currentLevel: 0,
-            nextLevel: 2,
             isUsedForWorkflowInstance: false,
             percentageCompleted: 0,
             isConfigured: true,
@@ -2813,7 +2800,20 @@ class WorkflowService {
             isWeekly: null,
             configType: "APPLICATION",
             configId: "1",
-            configName: "Daily Named Pal"
+            configName: "Daily Named PnL"
+          },
+          {
+            appId: 2,
+            previousLevel: 0,
+            currentLevel: 0,
+            nextLevel: 1,
+            isUsedForWorkflowInstance: false,
+            percentageCompleted: 0,
+            isConfigured: true,
+            isWeekly: null,
+            configType: "APPLICATION",
+            configId: "2",
+            configName: "Daily Workspace PnL"
           }
         ];
         
@@ -2854,15 +2854,15 @@ class WorkflowService {
         console.log('[Workflow Service] Using mock data for workflow nodes');
         await this.simulateNetworkDelay();
         
-        // Mock data based on your API response
+        // Mock data with proper terminal nodes to prevent infinite loops
         const mockNodes: WorkflowNode[] = [
           {
             appId: 1,
-            previousLevel: 8,
+            previousLevel: 0,
             currentLevel: 1,
             nextLevel: 2,
-            isUsedForWorkflowInstance: false,
-            percentageCompleted: 0,
+            isUsedForWorkflowInstance: true, // This is a terminal node
+            percentageCompleted: 45,
             isConfigured: true,
             isWeekly: "N",
             configType: "Asset Class",
@@ -2871,11 +2871,11 @@ class WorkflowService {
           },
           {
             appId: 1,
-            previousLevel: 8,
+            previousLevel: 0,
             currentLevel: 1,
             nextLevel: 2,
-            isUsedForWorkflowInstance: false,
-            percentageCompleted: 0,
+            isUsedForWorkflowInstance: true, // This is a terminal node
+            percentageCompleted: 67,
             isConfigured: true,
             isWeekly: "N",
             configType: "Asset Class",
@@ -2887,8 +2887,8 @@ class WorkflowService {
             previousLevel: 0,
             currentLevel: 1,
             nextLevel: 2,
-            isUsedForWorkflowInstance: false,
-            percentageCompleted: 0,
+            isUsedForWorkflowInstance: true, // This is a terminal node
+            percentageCompleted: 23,
             isConfigured: true,
             isWeekly: "N",
             configType: "Asset Class",
