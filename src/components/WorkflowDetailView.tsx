@@ -1181,7 +1181,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             id: `file-${file.workflow_Process_Id}-${index}`,
             name: file.name,
             type: file.name.split('.').pop() || 'unknown',
-            size: file.value || 'Unknown Size',
+            size: 'Unknown Size', // Keep size as display field
+            location: file.value || '', // Add location field for API calls
             updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
             updatedBy: file.updatedBy || 'System',
             category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
@@ -1257,7 +1258,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
         // Convert documents to FileDataIntegration format
         const fileDataForIntegration = documentsToShow.map(doc => ({
-          item: JSON.stringify({ value: doc.name }), // Use document name as location
+          item: JSON.stringify({ value: doc.location || doc.name }), // Use location if available, fallback to name
           fileName: doc.name,
           fileType: doc.type,
           size: doc.size,

@@ -25,7 +25,11 @@ interface Document {
   updatedBy: string;
   category?: 'download' | 'upload';
   subStage?: string;
+  location?: string; // Location path for API calls (resolved from fileData.value)
+  excelData?: any; // For storing Excel data from Java API
+  isExcelFile?: boolean; // Flag to indicate if this is an Excel file
 }
+=======
 
 interface DocumentsListProps {
   documents: Document[];
@@ -70,20 +74,90 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents, onPreview }) =
     console.log(`Uploading document ${documentId}`);
   };
 
-  const handlePreview = (document: Document) => {
+  const handlePreview = async (document: Document) => {
     console.log(`Previewing document ${document.id}`);
     
-    // Only set the preview file if no external handler is provided
-    // This prevents double-preview when used in WorkflowDetailView
-    if (!onPreview) {
-      setPreviewFile(document);
-    }
+    // Check if this is an Excel/CSV file that should use the Java endpoint
+    const isExcelFile = /\.(xlsx?|csv)$/i.test(document.name) || 
+                       document.name.toLowerCase().includes('excel') ||
+                       document.name.toLowerCase().includes('spreadsheet');
     
-    // If an external preview handler is provided, call it
-    if (onPreview) {
-      onPreview(document);
+    if (isExcelFile) {
+      // For Excel files, use the Java endpoint with location from document.location (resolved value)
+      try {
+        const locationToUse = document.location || document.name; // Fallback to name if location not available
+        
+        console.log('Making Java API call for Excel file:', {
+          location: locationToUse,
+          name: null,
+          documentInfo: {
+            id: document.id,
+            name: document.name,
+            hasLocation: !!document.location
+          }
+        });
+        
+        // Call the Java API endpoint
+        const response = await fetch('http://api-java.com/api/process/data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            location: locationToUse, // Use resolved location path from fileData.value
+            name: null // Set name to null as requested
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const excelData = await response.json();
+        console.log('Excel data received from Java API:', excelData);
+        
+        // Create a custom document object for Excel preview
+        const excelDocument = {
+          ...document,
+          excelData: excelData,
+          isExcelFile: true
+        };
+        
+        // If an external preview handler is provided, call it with Excel data
+        if (onPreview) {
+          onPreview(excelDocument);
+        } else {
+          // Set the preview file with Excel data
+          setPreviewFile(excelDocument);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching Excel data from Java API:', error);
+        
+        // Fall back to regular preview on error
+        if (!onPreview) {
+          setPreviewFile(document);
+        }
+        
+        if (onPreview) {
+          onPreview(document);
+        }
+      }
+    } else {
+      // For non-Excel files, use regular preview
+      // Only set the preview file if no external handler is provided
+      // This prevents double-preview when used in WorkflowDetailView
+      if (!onPreview) {
+        setPreviewFile(document);
+      }
+      
+      // If an external preview handler is provided, call it
+      if (onPreview) {
+        onPreview(document);
+      }
     }
   };
+=======
   
   const handleClosePreview = () => {
     setPreviewFile(null);
