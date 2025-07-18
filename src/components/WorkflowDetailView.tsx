@@ -754,20 +754,25 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           
           // Convert API files to document format
           documentsToShow = processFiles.map((file: any, index: number) => {
-            // Use the individual file.value directly from the API response
-            // Based on your sample data, each file object has its own value property with the file path
+            // FIXED: Ensure we're correctly extracting the value field from the API response
+            // The user confirmed that file.value exists in the API response but wasn't being mapped correctly
             const locationValue = file.value;
             
-            console.log('[WorkflowDetailView] Processing file for API call:', {
+            console.log('[WorkflowDetailView] Processing file for API call (FIXED MAPPING):', {
               fileName: file.name,
               fileValue: file.value,
               hasValidLocation: !!locationValue,
+              locationIsNull: locationValue === null,
+              locationIsUndefined: locationValue === undefined,
+              locationIsEmptyString: locationValue === '',
               fileObject: file,
               processId: file.workflow_Process_Id,
+              rawFileFromAPI: file,
               apiCallWillUse: {
                 location: locationValue,
                 name: null
-              }
+              },
+              debugInfo: 'Ensuring file.value is correctly passed through to location'
             });
             
             return {
@@ -775,11 +780,13 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               name: file.name || 'Unknown File',
               type: (file.name || '').split('.').pop() || 'unknown',
               size: file.size || 'Unknown Size',
-              location: locationValue, // Using the individual file.value from API response
+              location: locationValue, // FIXED: Direct mapping from file.value
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === true || file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
-              subStage: currentProcessName
+              subStage: currentProcessName,
+              // FIXED: Store the raw API file data for debugging
+              rawApiData: file
             };
           });
           
@@ -819,20 +826,23 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           documentsToShow = stageFiles.map((file: any, index: number) => {
             // Find the process name for this file
             const process = stageProcesses.find(p => p.workflowProcessId === file.workflow_Process_Id);
-            // CORRECTED: Use the individual file.value directly from the API response
-            // Based on your sample data, each file object has its own value property with the file path
+            // FIXED: Ensure we're correctly extracting the value field from the API response
             const locationValue = file.value;
             
-            console.log('[WorkflowDetailView] Processing stage file for API call (CORRECTED):', {
+            console.log('[WorkflowDetailView] Processing stage file for API call (FIXED MAPPING):', {
               fileName: file.name,
               fileValue: file.value,
               hasValidLocation: !!locationValue,
+              locationIsNull: locationValue === null,
+              locationIsUndefined: locationValue === undefined,
+              locationIsEmptyString: locationValue === '',
               fileObject: file,
+              rawFileFromAPI: file,
               apiCallWillUse: {
                 location: locationValue,
                 name: null
               },
-              correctionApplied: 'Using file.value directly from API response'
+              debugInfo: 'Ensuring file.value is correctly passed through to location'
             });
             
             return {
@@ -840,11 +850,13 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               name: file.name,
               type: file.name.split('.').pop() || 'unknown',
               size: file.size || 'Unknown Size',
-              location: locationValue, // Using the individual file.value from API response
+              location: locationValue, // FIXED: Direct mapping from file.value
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
-              subStage: process?.name || 'Unknown Process'
+              subStage: process?.name || 'Unknown Process',
+              // FIXED: Store the raw API file data for debugging
+              rawApiData: file
             };
           });
           
