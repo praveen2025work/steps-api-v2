@@ -13,7 +13,7 @@ export interface ExcelDataResponse {
 }
 
 export interface UseExcelDataProps {
-  location: string;
+  location: string | null;
   name?: string | null;
   autoFetch?: boolean;
 }
@@ -121,6 +121,11 @@ export const useExcelData = ({
       console.error('[useExcelData] Invalid location parameter:', location);
       setError('Invalid location parameter');
       return;
+    }
+    
+    // Log a warning if location is null but still proceed with the API call
+    if (location === null) {
+      console.warn('[useExcelData] Location is null - API call may fail, but proceeding anyway');
     }
 
     setLoading(true);

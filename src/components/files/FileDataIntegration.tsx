@@ -39,28 +39,53 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
       item,
       hasItemProperty: !!item.item,
       hasValueProperty: !!(item as any).value,
-      itemType: typeof item.item
+      itemType: typeof item.item,
+      itemValue: item.item,
+      directValue: (item as any).value,
+      itemKeys: Object.keys(item),
+      fullItem: item
     });
 
     // First check if the item has a direct 'value' property (from WorkflowDetailView mapping)
     if (item && typeof item === 'object' && 'value' in item) {
       const directValue = (item as any).value;
-      console.log('[FileDataIntegration] Found direct value property:', directValue);
-      return directValue;
+      console.log('[FileDataIntegration] Found direct value property:', {
+        directValue,
+        isNull: directValue === null,
+        isUndefined: directValue === undefined,
+        isEmpty: directValue === '',
+        type: typeof directValue
+      });
+      
+      // Return the value even if it's null - let the API handle it
+      if (directValue !== undefined && directValue !== '') {
+        return directValue;
+      }
     }
 
     // Then try to parse the item string to extract the "value" property
     if (item.item) {
       try {
         const parsed = JSON.parse(item.item);
-        console.log('[FileDataIntegration] Parsed item string:', parsed);
-        return parsed.value || null;
+        console.log('[FileDataIntegration] Parsed item string:', {
+          parsed,
+          hasValue: 'value' in parsed,
+          value: parsed.value,
+          isNull: parsed.value === null,
+          isUndefined: parsed.value === undefined,
+          isEmpty: parsed.value === ''
+        });
+        
+        // Return the value even if it's null - let the API handle it
+        if (parsed.value !== undefined && parsed.value !== '') {
+          return parsed.value;
+        }
       } catch (parseError) {
         console.warn('[FileDataIntegration] Failed to parse item string:', parseError);
       }
     }
 
-    console.warn('[FileDataIntegration] No valid location found in item');
+    console.warn('[FileDataIntegration] No valid location found in item - this will disable the preview button');
     return null;
   };
 
@@ -167,11 +192,8 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                               locationResult: location
                             });
                             
-                            // Check if we have a valid location
-                            if (!location) {
-                              console.error('[FileDataIntegration] No valid location found for file preview');
-                              return;
-                            }
+                            // Log the location but proceed with API call even if null
+                            console.log('[FileDataIntegration] Proceeding with API call, location:', location);
                             
                             // Set loading state
                             setLoadingPreview(true);
@@ -185,7 +207,7 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                               setLoadingPreview(false);
                             }
                           }}
-                          disabled={loadingPreview || !getLocationFromItem(file)}
+                          disabled={loadingPreview}
                         >
                           {loadingPreview && selectedFileIndex === index ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -245,7 +267,7 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
       </Card>
 
       {/* Excel Data Viewer - Only shown when preview is requested */}
-      {showPreview && selectedLocation && (
+      {showPreview && (
         <div className="space-y-4">
           <Card>
             <CardHeader>
