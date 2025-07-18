@@ -706,7 +706,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           selectedSubStage,
           processId: currentProcessId,
           fileDataLength: fileData.length,
-          processName: currentProcessName
+          processName: currentProcessName,
+          fullFileData: fileData
         });
         
         let filesToShow: any[] = [];
@@ -744,6 +745,28 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           console.log('[WorkflowDetailView] Process-specific files prepared:', {
             numericProcessId,
             processStatus,
+            filesCount: filesToShow.length,
+            sampleFile: filesToShow[0]
+          });
+        } else {
+          // Show all files for the current stage when no specific process is selected
+          const stageFiles = fileData.filter((file: any) => file.name);
+          
+          // Convert API files to enhanced file format
+          filesToShow = stageFiles.map((file: any, index: number) => ({
+            id: `file-stage-${index}`,
+            name: file.name || 'Unknown File',
+            type: (file.name || '').split('.').pop() || 'unknown',
+            size: file.size || 'Unknown Size',
+            location: file.value || '', // Use file.value as location
+            param_Type: (file.file_Upload === true || file.file_Upload === 'Y') ? 'upload' as const : 'download' as const,
+            processStatus: 'COMPLETED' as any, // Default status for stage-level files
+            updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
+            updatedBy: file.updatedBy || 'System'
+          }));
+          
+          console.log('[WorkflowDetailView] Stage-level files prepared:', {
+            activeStage,
             filesCount: filesToShow.length,
             sampleFile: filesToShow[0]
           });
