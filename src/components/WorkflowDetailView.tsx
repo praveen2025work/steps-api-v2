@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import WorkflowProgressIndicator from './WorkflowProgressIndicator';
 import WorkflowStagesBar from './WorkflowStagesBar';
 import WorkflowTaskItem, { WorkflowTask } from './WorkflowTaskItem';
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { toast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
 import { useDate } from '@/contexts/DateContext';
 import { CreateSupportIssue } from './support/CreateSupportIssue';
@@ -60,7 +62,10 @@ import {
   PanelLeftClose,
   Eye,
   EyeOff,
-  GitBranch
+  GitBranch,
+  Pause,
+  Play,
+  Timer
 } from 'lucide-react';
 import { getFileIcon } from './DocumentsList';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -73,6 +78,7 @@ import WorkflowHierarchyBreadcrumb, { HierarchyNode } from './WorkflowHierarchyB
 import { Progress } from '@/components/ui/progress';
 import { SubStage, StageStatus, Dependency } from '@/types/workflow';
 import { getStageData, getStageTasksById, getStageDocumentsById, getStageMetricsById } from '@/data/stageSpecificData';
+import { workflowService } from '@/services/workflowService';
 
 interface WorkflowDetailViewProps {
   workflowTitle: string;
@@ -138,6 +144,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   applicationData,
   nodeData
 }) => {
+  const router = useRouter();
   const { selectedDate } = useDate();
   const [activeStage, setActiveStage] = useState<string>(stages[0]?.id || '');
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -168,6 +175,30 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   // Build hierarchy path from progressSteps
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([]);
 
+  // Auto-refresh state
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState<boolean>(true);
+  const [refreshInterval, setRefreshInterval] = useState<number>(10); // 10 seconds
+  const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  // Dependency mapping state
+  const [dependencyMap, setDependencyMap] = useState<Map<string, SubStage>>(new Map());
+
+  // UI state preservation during refresh
+  const [preservedState, setPreservedState] = useState<{
+    activeTab: string;
+    selectedSubStage: string | null;
+    rightPanelContent: string;
+    showFilePreview: boolean;
+    scrollPosition: number;
+  }>({
+    activeTab: 'overview',
+    selectedSubStage: null,
+    rightPanelContent: 'stage-overview',
+    showFilePreview: false,
+    scrollPosition: 0
+  });
+
   // Initialize hierarchy path from progressSteps
   useEffect(() => {
     if (progressSteps && progressSteps.length > 0) {
@@ -184,7 +215,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           id: index === 0 ? `app-${id}` : id,
           name: step.name,
           progress: step.progress,
-          level: level
+          level: level,
+          onClick: (node: HierarchyNode) => handleBreadcrumbNavigation(node, index)
         };
       });
       
@@ -192,13 +224,123 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     }
   }, [progressSteps]);
 
-  // Handle manual refresh
-  const handleRefresh = () => {
-    setLastRefreshed(new Date());
-    setCountdown(15);
-    // In a real application, this would fetch fresh data
-    showSuccessToast("Workflow data refreshed successfully");
-  };
+  // Enhanced breadcrumb navigation
+  const handleBreadcrumbNavigation = useCallback((node: HierarchyNode, index: number) => {
+    console.log(`[WorkflowDetailView] Navigating to ${node.level} level: ${node.name}`);
+    
+    if (node.level === 'app') {
+      // Navigate to application cards view
+      router.push('/');
+    } else if (index < hierarchyPath.length - 1) {
+      // Navigate to corresponding detail view
+      const appNode = hierarchyPath.find(n => n.level === 'app');
+      if (appNode) {
+        if (index === 1) {
+          // Level 1 navigation
+          router.push(`/hierarchy/${appNode.id}`);
+        } else {
+          // Level 2+ navigation
+          router.push(`/workflow/${node.id}`);
+        }
+      }
+    }
+  }, [hierarchyPath, router]);
+
+  // Preserve UI state before refresh
+  const preserveUIState = useCallback(() => {
+    setPreservedState({
+      activeTab,
+      selectedSubStage,
+      rightPanelContent,
+      showFilePreview,
+      scrollPosition: window.scrollY
+    });
+  }, [activeTab, selectedSubStage, rightPanelContent, showFilePreview]);
+
+  // Restore UI state after refresh
+  const restoreUIState = useCallback(() => {
+    if (preservedState.activeTab !== activeTab) {
+      setActiveTab(preservedState.activeTab);
+    }
+    if (preservedState.selectedSubStage !== selectedSubStage) {
+      setSelectedSubStage(preservedState.selectedSubStage);
+    }
+    if (preservedState.rightPanelContent !== rightPanelContent) {
+      setRightPanelContent(preservedState.rightPanelContent as any);
+    }
+    if (preservedState.showFilePreview !== showFilePreview) {
+      setShowFilePreview(preservedState.showFilePreview);
+    }
+    // Restore scroll position
+    setTimeout(() => {
+      window.scrollTo(0, preservedState.scrollPosition);
+    }, 100);
+  }, [preservedState, activeTab, selectedSubStage, rightPanelContent, showFilePreview]);
+
+  // Enhanced refresh with data fetching
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return; // Prevent multiple simultaneous refreshes
+    
+    setIsRefreshing(true);
+    preserveUIState();
+    
+    try {
+      // Get current workflow summary data
+      const summaryData = (window as any).currentWorkflowSummary;
+      if (summaryData && summaryData.applications && summaryData.applications.length > 0) {
+        const currentApp = summaryData.applications[0];
+        const dateString = selectedDate ? selectedDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }).replace(/,/g, '') : new Date().toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }).replace(/,/g, '');
+        
+        console.log('[WorkflowDetailView] Refreshing workflow data for:', {
+          appId: currentApp.appId,
+          date: dateString
+        });
+        
+        // Fetch fresh workflow summary
+        const response = await workflowService.getWorkflowSummary({
+          date: dateString,
+          configId: currentApp.appId.toString(),
+          appId: currentApp.appId
+        });
+        
+        if (response.success) {
+          // Update global workflow summary
+          (window as any).currentWorkflowSummary = response.data;
+          
+          // Update last refreshed time
+          setLastRefreshed(new Date());
+          setCountdown(refreshInterval);
+          
+          // Restore UI state after a brief delay to allow data to update
+          setTimeout(() => {
+            restoreUIState();
+          }, 200);
+          
+          showSuccessToast("Workflow data refreshed successfully");
+        } else {
+          showErrorToast(`Failed to refresh data: ${response.error}`);
+        }
+      } else {
+        // Fallback refresh without API call
+        setLastRefreshed(new Date());
+        setCountdown(refreshInterval);
+        showSuccessToast("Workflow data refreshed successfully");
+      }
+    } catch (error: any) {
+      console.error('[WorkflowDetailView] Error during refresh:', error);
+      showErrorToast(`Refresh failed: ${error.message}`);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing, preserveUIState, restoreUIState, selectedDate, refreshInterval]);
 
   // Toggle workflow lock state
   const toggleLock = () => {
@@ -216,6 +358,40 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     const seconds = Math.floor((new Date().getTime() - lastRefreshed.getTime()) / 1000);
     return seconds;
   };
+
+  // Auto-refresh setup
+  useEffect(() => {
+    if (autoRefreshEnabled) {
+      autoRefreshTimerRef.current = setInterval(() => {
+        handleRefresh();
+      }, refreshInterval * 1000);
+    } else {
+      if (autoRefreshTimerRef.current) {
+        clearInterval(autoRefreshTimerRef.current);
+        autoRefreshTimerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (autoRefreshTimerRef.current) {
+        clearInterval(autoRefreshTimerRef.current);
+      }
+    };
+  }, [autoRefreshEnabled, refreshInterval, handleRefresh]);
+
+  // Countdown timer for auto-refresh
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          return refreshInterval;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [refreshInterval]);
 
   const handleStageClick = (stageId: string) => {
     setActiveStage(stageId);
@@ -325,6 +501,39 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     ]
   };
 
+  // Build dependency mapping for navigation
+  const buildDependencyMap = useCallback((subStages: SubStage[]) => {
+    const map = new Map<string, SubStage>();
+    subStages.forEach(subStage => {
+      map.set(subStage.id, subStage);
+      map.set(subStage.processId, subStage);
+      map.set(subStage.name, subStage);
+    });
+    setDependencyMap(map);
+  }, []);
+
+  // Enhanced dependency click handler
+  const handleDependencyClick = useCallback((dependencyId: string) => {
+    const targetSubStage = dependencyMap.get(dependencyId);
+    if (targetSubStage) {
+      // Navigate to the sub-stage
+      setSelectedSubStage(targetSubStage.id);
+      setRightPanelContent('process-overview');
+      setRightPanelOpen(true);
+      setIsRightPanelExpanded(true);
+      
+      // Scroll to the sub-stage card if it's visible
+      const element = document.querySelector(`[data-process-id="${targetSubStage.processId}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      showInfoToast(`Navigated to dependency: ${targetSubStage.name}`);
+    } else {
+      showWarningToast(`Dependency "${dependencyId}" not found in current stage`);
+    }
+  }, [dependencyMap]);
+
   // Load stage-specific data when active stage changes
   useEffect(() => {
     if (activeStage && tasks[activeStage]) {
@@ -407,11 +616,12 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           messages.push('Alteryx workflow process');
         }
 
-        // Enhanced dependencies with better status mapping
+        // Enhanced dependencies with better status mapping and navigation
         const dependencies = task.dependencies?.map(dep => ({
           name: dep.name,
           status: dep.status === 'in_progress' ? 'in-progress' : dep.status,
-          id: dep.name.toLowerCase().replace(/\s+/g, '_')
+          id: dep.id || dep.name.toLowerCase().replace(/\s+/g, '_'),
+          onClick: () => handleDependencyClick(dep.id || dep.name)
         })) || [];
 
         // Clean up processId format - convert "task-1234" to "PROC-1234" for consistency
@@ -419,6 +629,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         if (task.processId && task.processId.startsWith('task-')) {
           cleanProcessId = task.processId.replace('task-', 'PROC-');
         }
+
+        // Use dep_Sub_Stage_Seq for global sequencing if available
+        const globalSequence = task.dep_Sub_Stage_Seq || task.subStageSeq || (index + 1);
         
         return {
           id: task.id,
@@ -427,7 +640,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           status: task.status === 'in_progress' ? 'in-progress' as const : task.status,
           progress,
           processId: cleanProcessId,
-          sequence: task.subStageSeq || index + 1,
+          sequence: globalSequence, // Use global sequence
           timing,
           stats: {
             success: '95%', // Could be enhanced with historical data
@@ -463,18 +676,24 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             approver: task.approver,
             entitlementMapping: task.entitlementMapping,
             userCommentary: task.userCommentary,
-            skipCommentary: task.skipCommentary
+            skipCommentary: task.skipCommentary,
+            dep_Sub_Stage_Seq: task.dep_Sub_Stage_Seq
           }
         };
       });
+
+      // Sort by global sequence to ensure proper ordering
+      stageTasks.sort((a, b) => a.sequence - b.sequence);
       
       console.log('[WorkflowDetailView] Converted stage tasks with enhanced API mapping:', {
         stageId: activeStage,
         taskCount: stageTasks.length,
-        sampleTask: stageTasks[0]
+        sampleTask: stageTasks[0],
+        sequenceRange: stageTasks.length > 0 ? `${stageTasks[0].sequence} - ${stageTasks[stageTasks.length - 1].sequence}` : 'N/A'
       });
       
       setStageSpecificSubStages(stageTasks);
+      buildDependencyMap(stageTasks);
       
       // Enhanced document extraction with better categorization
       const stageDocuments = tasks[activeStage].reduce((docs: any[], task) => {
@@ -502,8 +721,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       // If no stage-specific data found, clear the data
       setStageSpecificSubStages([]);
       setStageSpecificDocuments([]);
+      setDependencyMap(new Map());
     }
-  }, [activeStage, tasks]);
+  }, [activeStage, tasks, buildDependencyMap, handleDependencyClick]);
 
   // Set up auto-refresh effect
   React.useEffect(() => {
@@ -980,6 +1200,65 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
   return (
     <div className="space-y-2">
+      {/* Enhanced Auto-Refresh Controls */}
+      <Card className="mb-2">
+        <CardContent className="py-2 px-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={autoRefreshEnabled}
+                  onCheckedChange={setAutoRefreshEnabled}
+                  id="auto-refresh"
+                />
+                <label htmlFor="auto-refresh" className="text-sm font-medium">
+                  Auto-refresh
+                </label>
+                {autoRefreshEnabled ? (
+                  <Pause className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Play className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Timer className="h-4 w-4" />
+                <span>
+                  {autoRefreshEnabled 
+                    ? `Next refresh in ${countdown}s` 
+                    : 'Auto-refresh disabled'
+                  }
+                </span>
+              </div>
+              
+              {isRefreshing && (
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span>Refreshing...</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="h-7"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh Now
+              </Button>
+              
+              <div className="text-xs text-muted-foreground">
+                Last updated: {lastRefreshed.toLocaleTimeString()}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Unified Workflow Header Card */}
       <WorkflowUnifiedHeader
         workflowId={hierarchyPath[hierarchyPath.length-1]?.id || ''}
@@ -1185,7 +1464,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-1">
                           <span className="text-xs text-muted-foreground font-mono">
-                            {String(index + 1).padStart(2, '0')}
+                            {String(subStage.sequence).padStart(2, '0')}
                           </span>
                           <h3 className="font-medium text-sm">{subStage.name}</h3>
                           
@@ -1362,11 +1641,29 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                             </div>
                           )}
                           
-                          {/* Dependencies - Compact */}
+                          {/* Dependencies - Compact with clickable names */}
                           {subStage.dependencies && subStage.dependencies.length > 0 && (
                             <div className="flex items-center gap-1">
                               <Network className="h-3 w-3" />
-                              <span>Deps: {subStage.dependencies.map(d => d.name).join(', ')}</span>
+                              <span>Deps: </span>
+                              <div className="flex flex-wrap gap-1">
+                                {subStage.dependencies.map((dep, depIndex) => (
+                                  <Button
+                                    key={dep.id}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-auto p-0 text-xs underline hover:text-primary"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDependencyClick(dep.id);
+                                    }}
+                                    title={`Navigate to dependency: ${dep.name}`}
+                                  >
+                                    {dep.name}
+                                    {depIndex < subStage.dependencies.length - 1 && ','}
+                                  </Button>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
