@@ -32,6 +32,7 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
 }) => {
   const [showPreview, setShowPreview] = useState<boolean>(showPreviewByDefault);
   const [loadingPreview, setLoadingPreview] = useState<boolean>(false);
+  
   // Extract location from fileData item
   const getLocationFromItem = (item: FileDataItem): string => {
     try {
@@ -48,7 +49,6 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
       return null;
     }
   };
-=======
 
   // Check if file is Excel-compatible
   const isExcelFile = (item: FileDataItem): boolean => {
