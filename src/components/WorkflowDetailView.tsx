@@ -25,6 +25,7 @@ import { EnhancedFilePreview } from './files/EnhancedFilePreview';
 import AdvancedFilePreview from './files/AdvancedFilePreview';
 import FileDataIntegration from './files/FileDataIntegration';
 import FileLocationDebugger from './files/FileLocationDebugger';
+import EnhancedFileViewer from './files/EnhancedFileViewer';
 import { 
   FileText, 
   Lock, 
@@ -697,49 +698,21 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       case 'stages':
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
-        
         // Get the workflow summary data from global storage
         const summaryData = (window as any).currentWorkflowSummary;
         const fileData = summaryData?.fileData || [];
         
-        console.log('[WorkflowDetailView] Files section - Debug info:', {
+        console.log('[WorkflowDetailView] Files section - Enhanced file viewer:', {
           selectedSubStage,
           processId: currentProcessId,
           fileDataLength: fileData.length,
-          sampleFileData: fileData[0],
-          summaryDataKeys: summaryData ? Object.keys(summaryData) : [],
-          fullSummaryData: summaryData
+          processName: currentProcessName
         });
         
-        // Define a reliable document preview handler
-        const handleDocumentPreview = (document: any) => {
-          // Prevent event bubbling
-          event?.stopPropagation?.();
-          
-          // Set the document as the selected file and show the preview
-          setSelectedFile(document.name);
-          setShowFilePreview(true);
-          // Hide workflow detail view to give more space to file preview
-          setShowWorkflowDetail(false);
-          setShowSubStageCards(false);
-          
-          // Create a file item for the preview
-          const fileItem = {
-            id: document.id,
-            name: document.name,
-            type: document.type,
-            size: document.size,
-            category: 'preview'
-          };
-          
-          // Set the current files to include this document
-          setCurrentSubStageFiles([fileItem]);
-        };
-        
-        let documentsToShow: any[] = [];
+        let filesToShow: any[] = [];
         
         if (selectedSubStage) {
-          // Show files for the selected process
+          // Show files for the selected process only
           const numericProcessId = currentProcessId.replace('PROC-', '');
           
           // Get files from API data for this specific process
@@ -747,218 +720,58 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             file.workflow_Process_Id?.toString() === numericProcessId && file.name
           );
           
-          console.log('[WorkflowDetailView] Process files found:', {
+          // Find the selected process to get its status
+          const selectedProcess = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+            .find(s => s.id === selectedSubStage);
+          
+          const processStatus = selectedProcess?.status === 'in-progress' ? 'IN PROGRESS' : 
+                               selectedProcess?.status === 'completed' ? 'COMPLETED' :
+                               selectedProcess?.status === 'failed' ? 'FAILED' : 'NOT STARTED';
+          
+          // Convert API files to enhanced file format
+          filesToShow = processFiles.map((file: any, index: number) => ({
+            id: `file-${file.workflow_Process_Id}-${index}`,
+            name: file.name || 'Unknown File',
+            type: (file.name || '').split('.').pop() || 'unknown',
+            size: file.size || 'Unknown Size',
+            location: file.value || '', // Use file.value as location
+            param_Type: (file.file_Upload === true || file.file_Upload === 'Y') ? 'upload' as const : 'download' as const,
+            processStatus: processStatus as any,
+            updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
+            updatedBy: file.updatedBy || 'System'
+          }));
+          
+          console.log('[WorkflowDetailView] Process-specific files prepared:', {
             numericProcessId,
-            processFilesLength: processFiles.length,
-            processFiles: processFiles.slice(0, 3) // Show first 3 for debugging
+            processStatus,
+            filesCount: filesToShow.length,
+            sampleFile: filesToShow[0]
           });
-          
-          // Convert API files to document format
-          documentsToShow = processFiles.map((file: any, index: number) => {
-            // FIXED: Ensure we're correctly extracting the value field from the API response
-            // The user confirmed that file.value exists in the API response but wasn't being mapped correctly
-            const locationValue = file.value;
-            
-            console.log('[WorkflowDetailView] Processing file for API call (FIXED MAPPING):', {
-              fileName: file.name,
-              fileValue: file.value,
-              hasValidLocation: !!locationValue,
-              locationIsNull: locationValue === null,
-              locationIsUndefined: locationValue === undefined,
-              locationIsEmptyString: locationValue === '',
-              fileObject: file,
-              processId: file.workflow_Process_Id,
-              rawFileFromAPI: file,
-              apiCallWillUse: {
-                location: locationValue,
-                name: null
-              },
-              debugInfo: 'Ensuring file.value is correctly passed through to location'
-            });
-            
-            return {
-              id: `file-${file.workflow_Process_Id}-${index}`,
-              name: file.name || 'Unknown File',
-              type: (file.name || '').split('.').pop() || 'unknown',
-              size: file.size || 'Unknown Size',
-              location: locationValue, // FIXED: Direct mapping from file.value
-              updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
-              updatedBy: file.updatedBy || 'System',
-              category: file.file_Upload === true || file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
-              subStage: currentProcessName,
-              // FIXED: Store the raw API file data for debugging
-              rawApiData: file
-            };
-          });
-          
-          // If no API files found, fall back to sub-stage files from the converted data
-          if (documentsToShow.length === 0) {
-            const allProcessFiles = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
-              .find(s => s.id === selectedSubStage)?.files || [];
-              
-            documentsToShow = allProcessFiles.map((file, index) => ({
-              id: `file-${selectedSubStage}-${index}`,
-              name: file.name,
-              type: file.name.split('.').pop() || '',
-              size: file.size,
-              updatedAt: '2025-04-14 02:30',
-              updatedBy: 'System',
-              category: file.type as 'download' | 'upload',
-              subStage: currentProcessName
-            }));
-          }
-        } else {
-          // Show all files for the current stage
-          const stageProcesses = tasks[activeStage] || [];
-          const stageProcessIds = stageProcesses.map(task => task.workflowProcessId).filter(Boolean);
-          
-          // Get files from API data for all processes in this stage
-          const stageFiles = fileData.filter((file: any) => 
-            stageProcessIds.includes(file.workflow_Process_Id) && file.name
-          );
-          
-          console.log('[WorkflowDetailView] Stage files found:', {
-            activeStage,
-            stageProcessIds,
-            stageFilesLength: stageFiles.length
-          });
-          
-          // Convert API files to document format
-          documentsToShow = stageFiles.map((file: any, index: number) => {
-            // Find the process name for this file
-            const process = stageProcesses.find(p => p.workflowProcessId === file.workflow_Process_Id);
-            // FIXED: Ensure we're correctly extracting the value field from the API response
-            const locationValue = file.value;
-            
-            console.log('[WorkflowDetailView] Processing stage file for API call (FIXED MAPPING):', {
-              fileName: file.name,
-              fileValue: file.value,
-              hasValidLocation: !!locationValue,
-              locationIsNull: locationValue === null,
-              locationIsUndefined: locationValue === undefined,
-              locationIsEmptyString: locationValue === '',
-              fileObject: file,
-              rawFileFromAPI: file,
-              apiCallWillUse: {
-                location: locationValue,
-                name: null
-              },
-              debugInfo: 'Ensuring file.value is correctly passed through to location'
-            });
-            
-            return {
-              id: `file-${file.workflow_Process_Id}-${index}`,
-              name: file.name,
-              type: file.name.split('.').pop() || 'unknown',
-              size: file.size || 'Unknown Size',
-              location: locationValue, // FIXED: Direct mapping from file.value
-              updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
-              updatedBy: file.updatedBy || 'System',
-              category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
-              subStage: process?.name || 'Unknown Process',
-              // FIXED: Store the raw API file data for debugging
-              rawApiData: file
-            };
-          });
-          
-          // If no API files found, fall back to stage documents
-          if (documentsToShow.length === 0) {
-            documentsToShow = stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments;
-          }
         }
         
-        console.log('[WorkflowDetailView] Final documents to show:', {
-          documentsLength: documentsToShow.length,
-          sampleDocument: documentsToShow[0]
-        });
+        // Handle file upload
+        const handleFileUpload = (file: any) => {
+          console.log('[WorkflowDetailView] File upload requested:', file);
+          // TODO: Implement file upload functionality
+          // This would typically open a file picker and upload to the specified location
+        };
         
-        // Check if we have Excel files that can use the Excel viewer
-        const excelFiles = documentsToShow.filter(doc => 
-          /\.(xlsx?|csv)$/i.test(doc.name) || 
-          doc.name.toLowerCase().includes('excel') ||
-          doc.name.toLowerCase().includes('spreadsheet')
-        );
-
-        // Convert documents to FileDataIntegration format
-        const fileDataForIntegration = documentsToShow.map(doc => {
-          console.log('[WorkflowDetailView] Converting document to FileDataIntegration format (FIXED):', {
-            docName: doc.name,
-            docLocation: doc.location,
-            hasLocation: !!doc.location,
-            locationValue: doc.location,
-            directValueAccess: doc.location
-          });
-          
-          return {
-            item: JSON.stringify({ value: doc.location }), // Use location from fileData.value
-            fileName: doc.name,
-            fileType: doc.type,
-            size: doc.size,
-            lastModified: doc.updatedAt,
-            // FIXED: Include the raw location for direct access - this is the key fix
-            value: doc.location // This ensures the value field is available for getLocationFromItem
-          };
-        });
-
-        console.log('[WorkflowDetailView] FileDataIntegration format created:', {
-          fileDataForIntegrationLength: fileDataForIntegration.length,
-          sampleFileDataItem: fileDataForIntegration[0],
-          allLocationValues: fileDataForIntegration.map(f => ({ name: f.fileName, location: f.value }))
-        });
-
+        // Handle file download
+        const handleFileDownload = (file: any) => {
+          console.log('[WorkflowDetailView] File download requested:', file);
+          // TODO: Implement file download functionality
+          // This would typically trigger a download from the file location
+        };
+        
         return (
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-medium">
-                {selectedSubStage ? `Files - ${currentProcessName}` : 'Stage Files'}
-              </h3>
-            </div>
-
-            {/* Add File Location Debugger */}
-            <FileLocationDebugger className="mb-4" />
-
-            {/* Show Excel viewer if we have Excel files, otherwise show regular document list */}
-            {excelFiles.length > 0 ? (
-              <div className="space-y-4">
-                {/* Excel File Integration */}
-                <FileDataIntegration 
-                  fileData={fileDataForIntegration.filter(file => 
-                    /\.(xlsx?|csv)$/i.test(file.fileName || '') || 
-                    (file.fileName || '').toLowerCase().includes('excel') ||
-                    (file.fileName || '').toLowerCase().includes('spreadsheet')
-                  )}
-                />
-                
-                {/* Regular files (non-Excel) */}
-                {documentsToShow.filter(doc => 
-                  !/\.(xlsx?|csv)$/i.test(doc.name) && 
-                  !doc.name.toLowerCase().includes('excel') &&
-                  !doc.name.toLowerCase().includes('spreadsheet')
-                ).length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Other Files</h4>
-                    <DocumentsList 
-                      documents={documentsToShow.filter(doc => 
-                        !/\.(xlsx?|csv)$/i.test(doc.name) && 
-                        !doc.name.toLowerCase().includes('excel') &&
-                        !doc.name.toLowerCase().includes('spreadsheet')
-                      )} 
-                      onPreview={(document) => {
-                        handleDocumentPreview(document);
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <DocumentsList 
-                documents={documentsToShow} 
-                onPreview={(document) => {
-                  // Ensure we have a clean event handler that won't be affected by other state changes
-                  handleDocumentPreview(document);
-                }}
-              />
-            )}
+            <EnhancedFileViewer
+              files={filesToShow}
+              processName={currentProcessName}
+              processId={currentProcessId}
+              onFileUpload={handleFileUpload}
+              onFileDownload={handleFileDownload}
+            />
           </div>
         );
       case 'parameters':
