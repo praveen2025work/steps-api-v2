@@ -91,6 +91,8 @@ interface WorkflowDetailViewProps {
   summaryData?: any; // WorkflowSummary from API
   applicationData?: any; // WorkflowApplication from API
   nodeData?: any; // WorkflowNode from API
+  // Navigation props
+  onBack?: () => void; // Callback to navigate back to previous view
 }
 
 interface ActivityLogItem {
@@ -142,7 +144,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   onViewToggle,
   summaryData,
   applicationData,
-  nodeData
+  nodeData,
+  onBack
 }) => {
   const router = useRouter();
   const { selectedDate } = useDate();
@@ -1302,6 +1305,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         countdown={countdown}
         isRefreshing={isRefreshing}
         onBreadcrumbNavigate={handleBreadcrumbNavigation}
+        onBack={onBack}
       />
 
       {/* Modified to include completion percentage */}

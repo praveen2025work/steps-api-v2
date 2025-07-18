@@ -58,6 +58,8 @@ interface WorkflowUnifiedHeaderProps {
   // Breadcrumb props
   breadcrumbLevels?: BreadcrumbLevel[];
   onBreadcrumbNavigate?: (level: BreadcrumbLevel, index: number) => void;
+  // Navigation props
+  onBack?: () => void; // Callback to navigate back to previous view
 }
 
 const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
@@ -79,7 +81,8 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
   countdown = 10,
   isRefreshing = false,
   breadcrumbLevels,
-  onBreadcrumbNavigate
+  onBreadcrumbNavigate,
+  onBack
 }) => {
   const router = useRouter();
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
@@ -130,6 +133,20 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
       }
     };
   });
+
+  // Handle breadcrumb navigation with back button support
+  const handleBreadcrumbNavigation = (level: BreadcrumbLevel, index: number) => {
+    // If onBack is provided and this is a back navigation (index -1 or going to a previous level)
+    if (onBack && (index === -1 || index < dynamicBreadcrumbLevels.length - 1)) {
+      onBack();
+      return;
+    }
+    
+    // Otherwise, use the provided navigation handler or default behavior
+    if (onBreadcrumbNavigate) {
+      onBreadcrumbNavigate(level, index);
+    }
+  };
 
   // Handle action buttons
   const handleAddAdhocStage = () => {
@@ -295,7 +312,7 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
             <DynamicWorkflowBreadcrumb
               levels={dynamicBreadcrumbLevels}
               currentWorkflowTitle={workflowTitle}
-              onNavigate={onBreadcrumbNavigate}
+              onNavigate={handleBreadcrumbNavigation}
               showBackButton={true}
               showHomeButton={true}
               className="flex-1"

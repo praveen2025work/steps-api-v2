@@ -739,23 +739,6 @@ const ApplicationsGrid = () => {
 
     return (
       <div className="space-y-4">
-        {/* Back navigation */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedWorkflow(null)}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Navigation
-          </Button>
-          <Separator orientation="vertical" className="h-6" />
-          <div className="text-sm text-muted-foreground">
-            Showing workflow details for {selectedWorkflow.node.configName}
-          </div>
-        </div>
-
         {/* Workflow Detail View */}
         <WorkflowDetailView
           workflowTitle={workflowData.workflowTitle}
@@ -765,6 +748,7 @@ const ApplicationsGrid = () => {
           summaryData={selectedWorkflow.summary}
           applicationData={selectedWorkflow.application}
           nodeData={selectedWorkflow.node}
+          onBack={() => setSelectedWorkflow(null)}
         />
       </div>
     );
