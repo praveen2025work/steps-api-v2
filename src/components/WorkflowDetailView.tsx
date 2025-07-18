@@ -868,11 +868,12 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
         // Convert documents to FileDataIntegration format
         const fileDataForIntegration = documentsToShow.map(doc => {
-          console.log('[WorkflowDetailView] Converting document to FileDataIntegration format:', {
+          console.log('[WorkflowDetailView] Converting document to FileDataIntegration format (FIXED):', {
             docName: doc.name,
             docLocation: doc.location,
             hasLocation: !!doc.location,
-            locationValue: doc.location
+            locationValue: doc.location,
+            directValueAccess: doc.location
           });
           
           return {
@@ -881,8 +882,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             fileType: doc.type,
             size: doc.size,
             lastModified: doc.updatedAt,
-            // Include the raw location for direct access
-            value: doc.location
+            // FIXED: Include the raw location for direct access - this is the key fix
+            value: doc.location // This ensures the value field is available for getLocationFromItem
           };
         });
 
