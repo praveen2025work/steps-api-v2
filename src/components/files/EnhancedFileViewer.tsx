@@ -134,14 +134,14 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
         <div className="space-y-4">
           <Tabs defaultValue={defaultSheetName} className="w-full">
             {/* Horizontal sheet cards instead of vertical tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+            <TabsList className="flex gap-2 overflow-x-auto pb-2 mb-4 h-auto bg-transparent">
               {excelData.sheets.map((sheet) => {
                 const isEmpty = sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND";
                 return (
                   <TabsTrigger 
                     key={sheet.name} 
                     value={sheet.name}
-                    className="flex-shrink-0 px-4 py-2 rounded-lg border bg-card hover:bg-accent transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    className="flex-shrink-0 px-4 py-2 rounded-lg border bg-card hover:bg-accent transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-auto"
                   >
                     <div className="flex items-center gap-2">
                       <span className="whitespace-nowrap font-medium">{sheet.name}</span>
@@ -158,7 +158,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
                   </TabsTrigger>
                 );
               })}
-            </div>
+            </TabsList>
             
             {excelData.sheets.map((sheet) => (
               <TabsContent key={sheet.name} value={sheet.name} className="mt-0">
