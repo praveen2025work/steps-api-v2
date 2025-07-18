@@ -237,16 +237,12 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   // Enhanced breadcrumb navigation with proper error handling
   const handleBreadcrumbNavigation = useCallback((node: HierarchyNode, index: number) => {
     try {
-      console.log(`[WorkflowDetailView] Navigating to ${node.level} level: ${node.name}`);
-      
       if (!node || !node.level) {
-        console.warn('[WorkflowDetailView] Invalid node for navigation:', node);
         return;
       }
       
       if (node.level === 'app') {
         // Navigate to application cards view (App Level)
-        console.log('[WorkflowDetailView] Navigating to App Level view');
         router.push('/');
       } else if (index < hierarchyPath.length - 1) {
         // Navigate to corresponding detail view
@@ -254,22 +250,14 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         if (appNode) {
           if (index === 1) {
             // Level 1 navigation (Advisory)
-            console.log('[WorkflowDetailView] Navigating to Level 1 view');
             router.push(`/hierarchy/${appNode.id}`);
           } else {
             // Level 2+ navigation (Advisory EMA)
-            console.log('[WorkflowDetailView] Navigating to Level 2 view');
             router.push(`/workflow/${node.id}`);
           }
-        } else {
-          console.warn('[WorkflowDetailView] App node not found in hierarchy path');
         }
-      } else {
-        // Current level - stay on current view
-        console.log('[WorkflowDetailView] Already on current level');
       }
     } catch (error) {
-      console.error('[WorkflowDetailView] Error in breadcrumb navigation:', error);
       showErrorToast('Navigation failed. Please try again.');
     }
   }, [hierarchyPath, router]);
@@ -327,12 +315,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           year: 'numeric'
         }).replace(/,/g, '');
         
-        console.log('[WorkflowDetailView] Refreshing workflow data for:', {
-          appId: currentApp.appId,
-          date: dateString,
-          isManualRefresh
-        });
-        
         // Fetch fresh workflow summary
         const response = await workflowService.getWorkflowSummary({
           date: dateString,
@@ -371,7 +353,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         }
       }
     } catch (error: any) {
-      console.error('[WorkflowDetailView] Error during refresh:', error);
       showErrorToast(`Refresh failed: ${error.message}`);
     } finally {
       setIsRefreshing(false);
@@ -721,13 +702,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       // Sort by global sequence to ensure proper ordering
       stageTasks.sort((a, b) => a.sequence - b.sequence);
       
-      console.log('[WorkflowDetailView] Converted stage tasks with enhanced API mapping:', {
-        stageId: activeStage,
-        taskCount: stageTasks.length,
-        sampleTask: stageTasks[0],
-        sequenceRange: stageTasks.length > 0 ? `${stageTasks[0].sequence} - ${stageTasks[stageTasks.length - 1].sequence}` : 'N/A'
-      });
-      
       setStageSpecificSubStages(stageTasks);
       buildDependencyMap(stageTasks);
       
@@ -778,8 +752,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
   // Enhanced hierarchy node click handler to properly navigate between levels
   const handleHierarchyNodeClick = (node: HierarchyNode) => {
-    console.log(`Navigate to ${node.level} level: ${node.name}`);
-    
     // Find the index of the clicked node
     const nodeIndex = hierarchyPath.findIndex(item => item.id === node.id);
     
@@ -793,7 +765,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   
   // Handle home button click
   const handleHomeClick = () => {
-    console.log('Navigate to home dashboard');
     // Note: The actual navigation is now handled in the WorkflowHierarchyBreadcrumb component
   };
 
@@ -882,12 +853,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   
   // Enhanced file preview handlers
   const handleEnhancedFilePreview = (files: any[], processName: string, processId: string) => {
-    console.log('[WorkflowDetailView] Starting enhanced file preview:', {
-      filesCount: files.length,
-      processName,
-      processId
-    });
-    
     // Set the files for preview
     setCurrentSubStageFiles(files);
     
@@ -972,7 +937,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               workflowTitle={workflowTitle}
               {...generateSampleWorkflowDiagram()}
               onNodeClick={(nodeId) => {
-                console.log("Node clicked:", nodeId);
                 // If node is a stage or substage, we could navigate to it
                 if (nodeId.startsWith('stage-')) {
                   const stageId = nodeId.replace('stage-', '');
@@ -1008,14 +972,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         const summaryData = (window as any).currentWorkflowSummary;
         const fileData = summaryData?.fileData || [];
         
-        console.log('[WorkflowDetailView] Files section - Enhanced file viewer:', {
-          selectedSubStage,
-          processId: currentProcessId,
-          fileDataLength: fileData.length,
-          processName: currentProcessName,
-          fullFileData: fileData
-        });
-        
         let filesToShow: any[] = [];
         
         if (selectedSubStage) {
@@ -1027,17 +983,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           } else if (currentProcessId.startsWith('task-')) {
             numericProcessId = currentProcessId.replace('task-', '');
           }
-          
-          console.log('[WorkflowDetailView] File filtering debug:', {
-            currentProcessId,
-            numericProcessId,
-            selectedSubStage,
-            fileDataSample: fileData.slice(0, 3).map((f: any) => ({
-              workflow_Process_Id: f.workflow_Process_Id,
-              name: f.name,
-              value: f.value
-            }))
-          });
           
           // Get files from API data for this specific process
           // Try multiple matching strategies to handle different data formats
@@ -1061,11 +1006,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             return false;
           });
           
-          console.log('[WorkflowDetailView] Process files found:', {
-            processFilesCount: processFiles.length,
-            sampleProcessFile: processFiles[0]
-          });
-          
           // Find the selected process to get its status
           const selectedProcess = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
             .find(s => s.id === selectedSubStage);
@@ -1086,13 +1026,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
             updatedBy: file.updatedBy || 'System'
           }));
-          
-          console.log('[WorkflowDetailView] Process-specific files prepared:', {
-            numericProcessId,
-            processStatus,
-            filesCount: filesToShow.length,
-            sampleFile: filesToShow[0]
-          });
         } else {
           // Show all files for the current stage when no specific process is selected
           const stageFiles = fileData.filter((file: any) => file.name);
@@ -1109,24 +1042,16 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
             updatedBy: file.updatedBy || 'System'
           }));
-          
-          console.log('[WorkflowDetailView] Stage-level files prepared:', {
-            activeStage,
-            filesCount: filesToShow.length,
-            sampleFile: filesToShow[0]
-          });
         }
         
         // Handle file upload
         const handleFileUpload = (file: any) => {
-          console.log('[WorkflowDetailView] File upload requested:', file);
           // TODO: Implement file upload functionality
           // This would typically open a file picker and upload to the specified location
         };
         
         // Handle file download
         const handleFileDownload = (file: any) => {
-          console.log('[WorkflowDetailView] File download requested:', file);
           // TODO: Implement file download functionality
           // This would typically trigger a download from the file location
         };
@@ -1238,7 +1163,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       
       return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
     } catch (error) {
-      console.error('[WorkflowDetailView] Error calculating overall progress:', error);
       return 0;
     }
   }, [hierarchyPath, stageSpecificSubStages, tasks]);
@@ -1293,7 +1217,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       
       return { completed, failed, rejected, pending, processing };
     } catch (error) {
-      console.error('[WorkflowDetailView] Error calculating task counts:', error);
       return { completed: 0, failed: 0, rejected: 0, pending: 0, processing: 0 };
     }
   }, [stageSpecificSubStages, tasks]);
@@ -1468,19 +1391,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           {/* Process Overview removed from main content as it's now in the right panel */}
           <div className="space-y-4">
             {(() => {
-              console.log('[WorkflowDetailView] Rendering sub-stages:', {
-                stageSpecificSubStagesLength: stageSpecificSubStages.length,
-                mockSubStagesLength: mockSubStages.length,
-                activeStage,
-                tasksForActiveStage: tasks[activeStage]?.length || 0,
-                usingMockData: stageSpecificSubStages.length === 0
-              });
-              
               // Always prefer actual API data over mock data
               const subStagesToRender = stageSpecificSubStages.length > 0 ? stageSpecificSubStages : [];
               
               if (subStagesToRender.length === 0) {
-                console.warn('[WorkflowDetailView] No sub-stages to render for active stage:', activeStage);
                 return (
                   <div className="text-center py-8 text-muted-foreground">
                     <div className="text-sm">No sub-stages found for this stage</div>
@@ -1780,11 +1694,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                 }
                 processId={selectedSubStage || activeStage}
                 onFileUpload={(file) => {
-                  console.log('[WorkflowDetailView] Enhanced file upload:', file);
                   // TODO: Implement file upload
                 }}
                 onFileDownload={(file) => {
-                  console.log('[WorkflowDetailView] Enhanced file download:', file);
                   // TODO: Implement file download
                 }}
                 onClose={handleCloseFilePreview}

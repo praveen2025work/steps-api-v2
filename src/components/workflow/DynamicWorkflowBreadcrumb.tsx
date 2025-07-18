@@ -67,8 +67,6 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
   // Handle navigation to a specific level
   const handleLevelClick = (level: BreadcrumbLevel, index: number) => {
     try {
-      console.log(`[DynamicWorkflowBreadcrumb] Navigating to ${level.level}:`, level);
-
       if (onNavigate) {
         onNavigate(level, index);
         return;
@@ -107,11 +105,10 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
           break;
           
         default:
-          console.warn(`[DynamicWorkflowBreadcrumb] Unknown level type: ${level.level}`);
           break;
       }
     } catch (error) {
-      console.error('[DynamicWorkflowBreadcrumb] Navigation error:', error);
+      // Navigation error handled silently
     }
   };
 
@@ -131,7 +128,7 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
         router.push('/');
       }
     } catch (error) {
-      console.error('[DynamicWorkflowBreadcrumb] Back navigation error:', error);
+      // Back navigation error handled silently
     }
   };
 

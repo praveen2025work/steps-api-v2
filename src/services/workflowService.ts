@@ -957,8 +957,6 @@ class WorkflowService {
     // Request interceptor for authentication and logging
     instance.interceptors.request.use(
       (config) => {
-        console.log(`[.NET API Request] ${config.method?.toUpperCase()} ${config.url}`);
-        
         // Add any additional headers for Windows auth if needed
         if (this.isWindowsAuthEnvironment()) {
           config.headers['X-Requested-With'] = 'XMLHttpRequest';
@@ -967,7 +965,6 @@ class WorkflowService {
         return config;
       },
       (error) => {
-        console.error('[.NET API Request Error]', error);
         return Promise.reject(error);
       }
     );
@@ -975,27 +972,9 @@ class WorkflowService {
     // Response interceptor for error handling and logging
     instance.interceptors.response.use(
       (response: AxiosResponse) => {
-        console.log(`[.NET API Response] ${response.status} ${response.config.url}`);
         return response;
       },
       (error) => {
-        console.error('[.NET API Response Error]', {
-          url: error.config?.url,
-          method: error.config?.method,
-          status: error.response?.status,
-          message: error.message,
-          data: error.response?.data
-        });
-
-        // Handle specific error cases
-        if (error.response?.status === 401) {
-          console.error('Authentication failed - check Windows credentials');
-        } else if (error.response?.status === 403) {
-          console.error('Access forbidden - insufficient permissions');
-        } else if (error.response?.status >= 500) {
-          console.error('Server error - check API availability');
-        }
-
         return Promise.reject(error);
       }
     );
@@ -1020,11 +999,9 @@ class WorkflowService {
     // Request interceptor for logging (no Windows auth for Java service)
     instance.interceptors.request.use(
       (config) => {
-        console.log(`[Java API Request] ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
       (error) => {
-        console.error('[Java API Request Error]', error);
         return Promise.reject(error);
       }
     );
@@ -1032,27 +1009,9 @@ class WorkflowService {
     // Response interceptor for error handling and logging
     instance.interceptors.response.use(
       (response: AxiosResponse) => {
-        console.log(`[Java API Response] ${response.status} ${response.config.url}`);
         return response;
       },
       (error) => {
-        console.error('[Java API Response Error]', {
-          url: error.config?.url,
-          method: error.config?.method,
-          status: error.response?.status,
-          message: error.message,
-          data: error.response?.data
-        });
-
-        // Handle specific error cases for Java service
-        if (error.response?.status === 401) {
-          console.error('Authentication failed - Java service authentication issue');
-        } else if (error.response?.status === 403) {
-          console.error('Access forbidden - insufficient permissions');
-        } else if (error.response?.status >= 500) {
-          console.error('Server error - check Java API availability');
-        }
-
         return Promise.reject(error);
       }
     );
@@ -1122,18 +1081,14 @@ class WorkflowService {
   async getApplications(): Promise<ApiResponse<Application[]>> {
     try {
       if (this.isMockMode()) {
-        console.log('[Workflow Service] Using mock data for applications');
         await this.simulateNetworkDelay();
         return this.createApiResponse(MOCK_APPLICATIONS);
       }
 
-      console.log('[Workflow Service] Fetching applications from API');
       const response = await this.dotNetAxiosInstance.get<Application[]>('/GetWorkflowApplicationDetails/false');
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
-      console.error('[Workflow Service] Error fetching applications:', error);
-      
       return this.createApiResponse(
         [],
         false,
