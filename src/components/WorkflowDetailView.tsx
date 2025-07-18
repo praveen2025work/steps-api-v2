@@ -752,23 +752,28 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           
           // Convert API files to document format
           documentsToShow = processFiles.map((file: any, index: number) => {
-            // Ensure we have the correct location value from fileData
-            const locationValue = file.value || file.name || '';
+            // The location should be the complete path from the API's value field
+            // This is the resolved path that combines output folder and file name
+            const locationValue = file.value || '';
             
             console.log('[WorkflowDetailView] Processing file for API call:', {
               fileName: file.name,
               value: file.value,
               hasValue: !!file.value,
               locationValue: locationValue,
-              fileObject: file
+              fileObject: file,
+              apiCallWillUse: {
+                location: locationValue,
+                name: null
+              }
             });
             
             return {
               id: `file-${file.workflow_Process_Id}-${index}`,
               name: file.name || 'Unknown File',
               type: (file.name || '').split('.').pop() || 'unknown',
-              size: file.size || 'Unknown Size', // Use actual size from API if available
-              location: locationValue, // Use value as primary location, fallback to name
+              size: file.size || 'Unknown Size',
+              location: locationValue, // This should be the full path from fileData.value
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
@@ -812,15 +817,27 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           documentsToShow = stageFiles.map((file: any, index: number) => {
             // Find the process name for this file
             const process = stageProcesses.find(p => p.workflowProcessId === file.workflow_Process_Id);
-            // Ensure we have the correct location value from fileData
-            const locationValue = file.value || file.name || '';
+            // The location should be the complete path from the API's value field
+            const locationValue = file.value || '';
+            
+            console.log('[WorkflowDetailView] Processing stage file for API call:', {
+              fileName: file.name,
+              value: file.value,
+              hasValue: !!file.value,
+              locationValue: locationValue,
+              fileObject: file,
+              apiCallWillUse: {
+                location: locationValue,
+                name: null
+              }
+            });
             
             return {
               id: `file-${file.workflow_Process_Id}-${index}`,
               name: file.name,
               type: file.name.split('.').pop() || 'unknown',
-              size: file.size || 'Unknown Size', // Use actual size from API if available
-              location: locationValue, // Use value as primary location, fallback to name
+              size: file.size || 'Unknown Size',
+              location: locationValue, // This should be the full path from fileData.value
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
