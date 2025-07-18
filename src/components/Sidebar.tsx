@@ -333,14 +333,17 @@ const Sidebar = () => {
                         <Link 
                           href={item.href}
                           onClick={(e) => {
-                            // Ensure navigation happens immediately
-                            closeSidebar();
-                            
-                            // Force navigation for complex pages like workflow detail
-                            if (router.pathname.includes('/workflow/')) {
+                            // Always prevent default for complex pages to ensure proper navigation
+                            if (router.pathname.includes('/workflow/') || 
+                                router.pathname.includes('/hierarchy/') ||
+                                router.pathname.includes('/stages/')) {
                               e.preventDefault();
-                              router.push(item.href);
+                              // Use replace to ensure we don't keep the complex page in history
+                              router.replace(item.href);
                             }
+                            
+                            // Close sidebar immediately
+                            closeSidebar();
                           }}
                           className={cn(
                             "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
