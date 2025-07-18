@@ -105,7 +105,7 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents, onPreview }) =
         }
         
         const response = await fetch(`${baseUrl}/api/process/data`, {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -261,7 +261,7 @@ export const DocumentsListGrid: React.FC<DocumentsListGridProps> = ({ documents,
       });
       
       const response = await fetch(`${baseUrl}/api/process/data`, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },

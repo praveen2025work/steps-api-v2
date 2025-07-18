@@ -751,17 +751,26 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           });
           
           // Convert API files to document format
-          documentsToShow = processFiles.map((file: any, index: number) => ({
-            id: `file-${file.workflow_Process_Id}-${index}`,
-            name: file.name,
-            type: file.name.split('.').pop() || 'unknown',
-            size: 'Unknown Size', // Keep size as display field
-            location: file.value || '', // Add location field for API calls (this is the file path)
-            updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
-            updatedBy: file.updatedBy || 'System',
-            category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
-            subStage: currentProcessName
-          }));
+          documentsToShow = processFiles.map((file: any, index: number) => {
+            console.log('[WorkflowDetailView] Processing file for API call:', {
+              fileName: file.name,
+              value: file.value,
+              hasValue: !!file.value,
+              fileObject: file
+            });
+            
+            return {
+              id: `file-${file.workflow_Process_Id}-${index}`,
+              name: file.name || 'Unknown File',
+              type: (file.name || '').split('.').pop() || 'unknown',
+              size: 'Unknown Size', // Keep size as display field
+              location: file.value || file.name || '', // Use value as primary location, fallback to name
+              updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
+              updatedBy: file.updatedBy || 'System',
+              category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
+              subStage: currentProcessName
+            };
+          });
           
           // If no API files found, fall back to sub-stage files from the converted data
           if (documentsToShow.length === 0) {
