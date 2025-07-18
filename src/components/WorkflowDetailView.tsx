@@ -23,6 +23,7 @@ import WorkflowStepFunctionDiagram from './workflow/WorkflowStepFunctionDiagram'
 import { generateSampleWorkflowDiagram } from '@/lib/workflowDiagramUtils';
 import { EnhancedFilePreview } from './files/EnhancedFilePreview';
 import AdvancedFilePreview from './files/AdvancedFilePreview';
+import FileDataIntegration from './files/FileDataIntegration';
 import { 
   FileText, 
   Lock, 
@@ -1247,6 +1248,22 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           sampleDocument: documentsToShow[0]
         });
         
+        // Check if we have Excel files that can use the Excel viewer
+        const excelFiles = documentsToShow.filter(doc => 
+          /\.(xlsx?|csv)$/i.test(doc.name) || 
+          doc.name.toLowerCase().includes('excel') ||
+          doc.name.toLowerCase().includes('spreadsheet')
+        );
+
+        // Convert documents to FileDataIntegration format
+        const fileDataForIntegration = documentsToShow.map(doc => ({
+          item: JSON.stringify({ value: doc.name }), // Use document name as location
+          fileName: doc.name,
+          fileType: doc.type,
+          size: doc.size,
+          lastModified: doc.updatedAt
+        }));
+
         return (
           <div>
             <div className="flex justify-between items-center mb-4">
@@ -1273,13 +1290,49 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                 </Button>
               </div>
             </div>
-            <DocumentsList 
-              documents={documentsToShow} 
-              onPreview={(document) => {
-                // Ensure we have a clean event handler that won't be affected by other state changes
-                handleDocumentPreview(document);
-              }}
-            />
+
+            {/* Show Excel viewer if we have Excel files, otherwise show regular document list */}
+            {excelFiles.length > 0 ? (
+              <div className="space-y-4">
+                {/* Excel File Integration */}
+                <FileDataIntegration 
+                  fileData={fileDataForIntegration.filter(file => 
+                    /\.(xlsx?|csv)$/i.test(file.fileName || '') || 
+                    (file.fileName || '').toLowerCase().includes('excel') ||
+                    (file.fileName || '').toLowerCase().includes('spreadsheet')
+                  )}
+                />
+                
+                {/* Regular files (non-Excel) */}
+                {documentsToShow.filter(doc => 
+                  !/\.(xlsx?|csv)$/i.test(doc.name) && 
+                  !doc.name.toLowerCase().includes('excel') &&
+                  !doc.name.toLowerCase().includes('spreadsheet')
+                ).length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Other Files</h4>
+                    <DocumentsList 
+                      documents={documentsToShow.filter(doc => 
+                        !/\.(xlsx?|csv)$/i.test(doc.name) && 
+                        !doc.name.toLowerCase().includes('excel') &&
+                        !doc.name.toLowerCase().includes('spreadsheet')
+                      )} 
+                      onPreview={(document) => {
+                        handleDocumentPreview(document);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <DocumentsList 
+                documents={documentsToShow} 
+                onPreview={(document) => {
+                  // Ensure we have a clean event handler that won't be affected by other state changes
+                  handleDocumentPreview(document);
+                }}
+              />
+            )}
           </div>
         );
       case 'parameters':
