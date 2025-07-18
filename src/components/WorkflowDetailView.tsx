@@ -880,25 +880,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               <h3 className="text-base font-medium">
                 {selectedSubStage ? `Files - ${currentProcessName}` : 'Stage Files'}
               </h3>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-7 text-xs"
-                  onClick={(e) => {
-                    // Prevent event bubbling
-                    e.stopPropagation();
-                    
-                    // If there are documents, preview the first one
-                    if (documentsToShow.length > 0) {
-                      handleDocumentPreview(documentsToShow[0]);
-                    }
-                  }}
-                >
-                  <Eye className="h-3.5 w-3.5 mr-1" />
-                  Preview
-                </Button>
-              </div>
             </div>
 
             {/* Show Excel viewer if we have Excel files, otherwise show regular document list */}
@@ -1259,43 +1240,6 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                                 >
                                   <FileText className="h-3.5 w-3.5" />
                                   <span className="text-xs">Files</span>
-                                </Button>
-                              )}
-                              
-                              {/* Preview button - Only for processes with files */}
-                              {subStage.files && subStage.files.length > 0 && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
-                                  onClick={(e) => {
-                                    // Ensure event doesn't bubble up to parent elements
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    
-                                    // Select this sub-stage
-                                    setSelectedSubStage(subStage.id);
-                                    
-                                    // Set current sub-stage files
-                                    const filesList = subStage.files.map((file, index) => ({
-                                      id: `file-${subStage.id}-${index}`,
-                                      name: file.name,
-                                      type: file.name.split('.').pop() || '',
-                                      size: file.size,
-                                      category: file.type
-                                    }));
-                                    
-                                    setCurrentSubStageFiles(filesList);
-                                    
-                                    // Preview the first file
-                                    if (subStage.files.length > 0) {
-                                      handlePreviewFile(subStage.files[0].name);
-                                    }
-                                  }}
-                                  title="Preview Files"
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                  <span className="text-xs">Preview</span>
                                 </Button>
                               )}
                               

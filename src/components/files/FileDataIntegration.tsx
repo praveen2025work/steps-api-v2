@@ -37,10 +37,11 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
     try {
       // Parse the item string to extract the "value" property
       const parsed = JSON.parse(item.item);
-      return parsed.value || '';
+      // Return the value even if it's null - this is important for the API call
+      return parsed.value;
     } catch {
-      // If parsing fails, return empty string to indicate no valid location
-      return '';
+      // If parsing fails, return null to indicate no valid location
+      return null;
     }
   };
 
@@ -121,10 +122,32 @@ const FileDataIntegration: React.FC<FileDataIntegrationProps> = ({
                           size="sm" 
                           variant="ghost"
                           className="h-6 w-6 p-0 hover:bg-muted flex-shrink-0"
-                          onClick={() => {
-                            // Select this file and show preview
+                          onClick={async () => {
+                            // Select this file first
                             onFileSelect?.(index);
-                            setShowPreview(true);
+                            
+                            // Get the location for this specific file
+                            const location = getLocationFromItem(file);
+                            
+                            console.log('[FileDataIntegration] Preview button clicked:', {
+                              fileIndex: index,
+                              fileName: file.fileName,
+                              location: location,
+                              hasLocation: location !== null && location !== undefined,
+                              fileItem: file.item
+                            });
+                            
+                            // Set loading state
+                            setLoadingPreview(true);
+                            
+                            try {
+                              // Show preview which will trigger the API call in ExcelDataViewer
+                              setShowPreview(true);
+                            } catch (error) {
+                              console.error('Error initiating preview:', error);
+                            } finally {
+                              setLoadingPreview(false);
+                            }
                           }}
                           disabled={loadingPreview}
                         >
