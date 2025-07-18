@@ -34,28 +34,42 @@ const ProcessParameters: React.FC<ProcessParametersProps> = ({ processId, proces
   });
   
   // Extract the numeric process ID from the processId string (e.g., "PROC-1237" -> "1237")
-  const numericProcessId = processId.replace('PROC-', '');
+  let numericProcessId = processId;
+  if (processId.startsWith('PROC-')) {
+    numericProcessId = processId.replace('PROC-', '');
+  } else if (processId.startsWith('task-')) {
+    numericProcessId = processId.replace('task-', '');
+  }
   
   // Filter parameters for the current process - try multiple matching strategies
   const currentProcessParams = processParams.filter((param: any) => {
+    if (!param.workflow_Process_Id) return false;
+    
+    const paramProcessId = param.workflow_Process_Id?.toString();
+    
+    // Try exact matches with different formats
     const matches = [
-      // Direct workflow_Process_Id match
-      param.workflow_Process_Id?.toString() === numericProcessId,
-      // SubStage name match
-      param.substage_Name === processName,
-      // Parameter name contains process name
-      param.parameterName?.toLowerCase().includes(processName.toLowerCase()),
-      // Resolved parameter name contains process name
-      param.resolvedParameterName?.toLowerCase().includes(processName.toLowerCase())
+      // Direct workflow_Process_Id match (exact)
+      paramProcessId === numericProcessId,
+      // Match with original processId format
+      paramProcessId === processId,
+      // Match with PROC- prefix
+      paramProcessId === `PROC-${numericProcessId}`,
+      // Match with task- prefix
+      paramProcessId === `task-${numericProcessId}`,
+      // Try parsing as number and comparing
+      parseInt(paramProcessId) === parseInt(numericProcessId)
     ];
     
     return matches.some(match => match);
   });
 
   console.log('[ProcessParameters] Filtered parameters:', {
+    processId,
     numericProcessId,
     currentProcessParamsLength: currentProcessParams.length,
-    currentProcessParams: currentProcessParams.slice(0, 3) // Show first 3 for debugging
+    currentProcessParams: currentProcessParams.slice(0, 3), // Show first 3 for debugging
+    allProcessIds: processParams.map((p: any) => p.workflow_Process_Id).slice(0, 10) // Show first 10 process IDs
   });
 
   const [loading, setLoading] = React.useState(false);
@@ -64,15 +78,33 @@ const ProcessParameters: React.FC<ProcessParametersProps> = ({ processId, proces
   const [editValue, setEditValue] = React.useState('');
 
   // Transform API data to display format with better field mapping
-  const parameters = currentProcessParams.map((param: any, index: number) => ({
-    workflow_Process_Id: param.workflow_Process_Id,
-    name: param.parameterName || param.resolvedParameterName || param.parameter_Name || `Parameter ${index + 1}`,
-    value: param.parameterValue || param.resolvedParameterValue || param.parameter_Value || param.value || 'Not Set',
-    description: param.description || param.parameter_Description || `Parameter for ${param.substage_Name || processName}`,
-    isEditing: false,
-    // Additional fields for debugging
-    rawParam: param
-  }));
+  const parameters = currentProcessParams.map((param: any, index: number) => {
+    // Use parameterName as the primary name field
+    const paramName = param.parameterName || param.resolvedParameterName || param.parameter_Name || `Parameter ${index + 1}`;
+    
+    // Use parameterValue as the primary value field
+    const paramValue = param.parameterValue || param.resolvedParameterValue || param.parameter_Value || param.value || 'Not Set';
+    
+    // Create a meaningful description
+    let description = param.description || param.parameter_Description;
+    if (!description) {
+      if (param.substage_Name && param.substage_Name !== 'parameterName') {
+        description = `Parameter for ${param.substage_Name}`;
+      } else {
+        description = `Process parameter for ${processName}`;
+      }
+    }
+    
+    return {
+      workflow_Process_Id: param.workflow_Process_Id,
+      name: paramName,
+      value: paramValue,
+      description: description,
+      isEditing: false,
+      // Additional fields for debugging
+      rawParam: param
+    };
+  });
 
   const filteredParameters = parameters.filter((param: any) => 
     param.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
