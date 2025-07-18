@@ -26,6 +26,7 @@ import AdvancedFilePreview from './files/AdvancedFilePreview';
 import FileDataIntegration from './files/FileDataIntegration';
 import FileLocationDebugger from './files/FileLocationDebugger';
 import EnhancedFileViewer from './files/EnhancedFileViewer';
+import EnhancedWorkflowFilePreview from './files/EnhancedWorkflowFilePreview';
 import { 
   FileText, 
   Lock, 
@@ -157,6 +158,12 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const [currentSubStageFiles, setCurrentSubStageFiles] = useState<any[]>([]);
   const [showWorkflowDetail, setShowWorkflowDetail] = useState<boolean>(true);
   const [showSubStageCards, setShowSubStageCards] = useState<boolean>(true);
+  
+  // Enhanced file preview state
+  const [filePreviewMode, setFilePreviewMode] = useState<'none' | 'enhanced' | 'legacy'>('none');
+  const [filePreviewLeftPanel, setFilePreviewLeftPanel] = useState<boolean>(true);
+  const [filePreviewRightPanel, setFilePreviewRightPanel] = useState<boolean>(false);
+  const [filePreviewFullscreen, setFilePreviewFullscreen] = useState<boolean>(false);
 
   // Build hierarchy path from progressSteps
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([]);
@@ -617,10 +624,33 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     setSelectedFile(null);
   };
   
-  // Function to preview a file from a process
+  // Enhanced file preview handlers
+  const handleEnhancedFilePreview = (files: any[], processName: string, processId: string) => {
+    console.log('[WorkflowDetailView] Starting enhanced file preview:', {
+      filesCount: files.length,
+      processName,
+      processId
+    });
+    
+    // Set the files for preview
+    setCurrentSubStageFiles(files);
+    
+    // Switch to enhanced preview mode
+    setFilePreviewMode('enhanced');
+    setShowFilePreview(true);
+    
+    // Hide workflow detail to maximize preview space
+    setShowWorkflowDetail(false);
+    
+    // Show sub-stage cards by default
+    setShowSubStageCards(true);
+  };
+  
+  // Function to preview a file from a process (legacy)
   const handlePreviewFile = (fileName: string) => {
     // If we're already in preview mode, update the file
     setSelectedFile(fileName);
+    setFilePreviewMode('legacy');
     setShowFilePreview(true);
     
     // In preview mode, hide workflow detail to give more space
@@ -639,6 +669,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const handleCloseFilePreview = () => {
     setShowFilePreview(false);
     setSelectedFile(null);
+    setFilePreviewMode('none');
     // Don't automatically show workflow detail when closing file preview
     // Let the user toggle it with the icon if they want
   };
@@ -646,6 +677,19 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const toggleWorkflowDetail = () => {
     // Toggle the workflow detail view visibility
     setShowWorkflowDetail(!showWorkflowDetail);
+  };
+  
+  // Enhanced file preview panel controls
+  const toggleFilePreviewLeftPanel = () => {
+    setFilePreviewLeftPanel(!filePreviewLeftPanel);
+  };
+  
+  const toggleFilePreviewRightPanel = () => {
+    setFilePreviewRightPanel(!filePreviewRightPanel);
+  };
+  
+  const toggleFilePreviewFullscreen = () => {
+    setFilePreviewFullscreen(!filePreviewFullscreen);
   };
 
   const renderRightPanelContent = () => {
@@ -831,6 +875,37 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           // This would typically trigger a download from the file location
         };
         
+        // Check if we should use enhanced preview
+        if (filesToShow.length > 0 && selectedSubStage) {
+          return (
+            <div className="space-y-4">
+              {/* Enhanced file preview trigger */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium">Process Files</h4>
+                  <p className="text-sm text-muted-foreground">{filesToShow.length} files available</p>
+                </div>
+                <Button
+                  onClick={() => handleEnhancedFilePreview(filesToShow, currentProcessName, currentProcessId)}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  Enhanced Preview
+                </Button>
+              </div>
+              
+              {/* Fallback to standard file viewer */}
+              <EnhancedFileViewer
+                files={filesToShow}
+                processName={currentProcessName}
+                processId={currentProcessId}
+                onFileUpload={handleFileUpload}
+                onFileDownload={handleFileDownload}
+              />
+            </div>
+          );
+        }
+        
         return (
           <div>
             <EnhancedFileViewer
@@ -944,7 +1019,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
       />
 
       {/* Control buttons row - only shown during file preview */}
-      {showFilePreview && (
+      {showFilePreview && filePreviewMode !== 'enhanced' && (
         <div className="flex items-center gap-2 my-2">
           {/* Show Process Cards button - far left */}
           <Button
@@ -1058,7 +1133,11 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
       <div className="flex gap-4">
         {/* Main Content - Only visible when file preview is not shown or explicitly kept visible */}
-        <div className={`${showFilePreview ? (showSubStageCards ? 'flex-[0.3] relative' : 'hidden') : 'flex-[0.6]'}`}>
+        <div className={`${
+          showFilePreview ? 
+            (filePreviewMode === 'enhanced' ? 'hidden' : (showSubStageCards ? 'flex-[0.3] relative' : 'hidden')) : 
+            'flex-[0.6]'
+        }`}>
           {/* Process Overview removed from main content as it's now in the right panel */}
           <div className="space-y-4">
             {(() => {
@@ -1344,10 +1423,36 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           </div>
         </div>
 
-        {/* File Preview Panel - Only shown when a file is selected */}
+        {/* File Preview Panel - Enhanced or Legacy */}
         {showFilePreview && (
           <div className="flex-1 flex flex-col relative">
-            {currentSubStageFiles.length > 0 && (
+            {filePreviewMode === 'enhanced' && currentSubStageFiles.length > 0 && (
+              <EnhancedWorkflowFilePreview
+                files={currentSubStageFiles}
+                processName={selectedSubStage ? 
+                  (stageSpecificSubStages.find(s => s.id === selectedSubStage)?.name || 'Unknown Process') : 
+                  'Process Files'
+                }
+                processId={selectedSubStage || activeStage}
+                onFileUpload={(file) => {
+                  console.log('[WorkflowDetailView] Enhanced file upload:', file);
+                  // TODO: Implement file upload
+                }}
+                onFileDownload={(file) => {
+                  console.log('[WorkflowDetailView] Enhanced file download:', file);
+                  // TODO: Implement file download
+                }}
+                onClose={handleCloseFilePreview}
+                showLeftPanel={filePreviewLeftPanel}
+                showRightPanel={filePreviewRightPanel}
+                onToggleLeftPanel={toggleFilePreviewLeftPanel}
+                onToggleRightPanel={toggleFilePreviewRightPanel}
+                isFullscreen={filePreviewFullscreen}
+                onToggleFullscreen={toggleFilePreviewFullscreen}
+              />
+            )}
+            
+            {filePreviewMode === 'legacy' && currentSubStageFiles.length > 0 && (
               <AdvancedFilePreview 
                 fileId={currentSubStageFiles[0].id}
                 fileName={currentSubStageFiles[0].name}
@@ -1359,7 +1464,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         
         {/* Right Panel - 40% width or 30% when file preview is shown */}
         <div className={`bg-background border-l transition-all duration-200 ${
-          !showWorkflowDetail && showFilePreview ? 'hidden' : 
+          (!showWorkflowDetail && showFilePreview) || (filePreviewMode === 'enhanced') ? 'hidden' : 
           rightPanelContent ? (showFilePreview ? 'flex-[0.3]' : 'flex-[0.4]') : 'w-[200px]'
         }`}>
           {/* Sticky Header and Menu */}
