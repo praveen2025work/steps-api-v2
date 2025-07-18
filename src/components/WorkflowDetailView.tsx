@@ -754,7 +754,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           documentsToShow = processFiles.map((file: any, index: number) => {
             // The location should be the complete path from the API's value field
             // This is the resolved path that combines output folder and file name
-            const locationValue = file.value || '';
+            const locationValue = file.value;
             
             console.log('[WorkflowDetailView] Processing file for API call:', {
               fileName: file.name,
@@ -765,7 +765,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               apiCallWillUse: {
                 location: locationValue,
                 name: null
-              }
+              },
+              warning: !locationValue ? 'No location value available - API call may fail' : null
             });
             
             return {
@@ -773,7 +774,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               name: file.name || 'Unknown File',
               type: (file.name || '').split('.').pop() || 'unknown',
               size: file.size || 'Unknown Size',
-              location: locationValue, // This should be the full path from fileData.value
+              location: locationValue, // This should be the full path from fileData.value (may be null)
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
@@ -818,7 +819,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             // Find the process name for this file
             const process = stageProcesses.find(p => p.workflowProcessId === file.workflow_Process_Id);
             // The location should be the complete path from the API's value field
-            const locationValue = file.value || '';
+            const locationValue = file.value;
             
             console.log('[WorkflowDetailView] Processing stage file for API call:', {
               fileName: file.name,
@@ -829,7 +830,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               apiCallWillUse: {
                 location: locationValue,
                 name: null
-              }
+              },
+              warning: !locationValue ? 'No location value available - API call may fail' : null
             });
             
             return {
@@ -837,7 +839,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               name: file.name,
               type: file.name.split('.').pop() || 'unknown',
               size: file.size || 'Unknown Size',
-              location: locationValue, // This should be the full path from fileData.value
+              location: locationValue, // This should be the full path from fileData.value (may be null)
               updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
               updatedBy: file.updatedBy || 'System',
               category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
@@ -865,7 +867,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
 
         // Convert documents to FileDataIntegration format
         const fileDataForIntegration = documentsToShow.map(doc => ({
-          item: JSON.stringify({ value: doc.location || doc.name }), // Use location if available, fallback to name
+          item: JSON.stringify({ value: doc.location }), // Use location from fileData.value (may be null)
           fileName: doc.name,
           fileType: doc.type,
           size: doc.size,
