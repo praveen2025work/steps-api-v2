@@ -15,6 +15,7 @@ import {
   Unlock,
   Lock,
   ArrowRight,
+  ArrowLeft,
   Clock,
   Layers,
   Sparkles,
@@ -261,6 +262,33 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
       
       <CardContent className="py-1.5 px-3">
         <div className="flex flex-col space-y-1">
+          {/* Back to Navigation and Workflow Details - Consolidated */}
+          <div className="flex items-center gap-2 text-sm">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-6 px-2 flex items-center gap-1 hover:bg-secondary/50"
+              onClick={() => {
+                try {
+                  console.log('[WorkflowUnifiedHeader] Navigating back to navigation');
+                  router.push('/');
+                } catch (error) {
+                  console.error('[WorkflowUnifiedHeader] Error in back navigation:', error);
+                }
+              }}
+            >
+              <ArrowLeft className="h-3 w-3" />
+              <span>Back to Navigation</span>
+            </Button>
+            <div className="h-4 w-px bg-gray-200"></div>
+            <div className="text-muted-foreground">
+              Showing workflow details for <span className="font-medium text-foreground">{workflowTitle}</span>
+            </div>
+            <div className="ml-auto text-xs text-muted-foreground">
+              Last updated: {lastRefreshed.toLocaleTimeString()}
+            </div>
+          </div>
+          
           {/* Hierarchy Path with Progress - More compact */}
           <div className="flex items-center gap-1 text-xs">
             {hierarchyPath.map((node, index) => (
@@ -324,25 +352,7 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
             </div>
           
           <div className="flex flex-wrap gap-2 mt-1 items-center justify-between">
-            {/* Workflow Instance Summary */}
-            <div className="flex items-center gap-2">
-              <div className="text-sm font-medium">
-                App: {hierarchyPath.length > 0 ? hierarchyPath[0]?.name : workflowTitle}
-                {hierarchyPath.length > 1 && (
-                  <span className="text-muted-foreground"> - {hierarchyPath[hierarchyPath.length - 1]?.name}</span>
-                )}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Instance: Basel ({progress}%)
-              </div>
-              {/* Support tags */}
-              <div className="flex gap-1">
-                <Badge variant="outline" className="text-xs">Finance</Badge>
-                <Badge variant="outline" className="text-xs">Support</Badge>
-              </div>
-            </div>
-            
-            {/* Status Counts and Action Buttons moved to the right */}
+            {/* Status Counts */}
             <div className="flex items-center gap-3">
               {/* Enhanced Status Counts with accurate values */}
               <div className="flex gap-2 text-xs">
@@ -363,53 +373,37 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                   <span>Failed: {defaultTaskCounts.failed + defaultTaskCounts.rejected}</span>
                 </div>
               </div>
-              
-              {/* Separator */}
-              <div className="h-5 w-px bg-gray-200"></div>
-              
-              {/* Action Buttons */}
-              <div className="flex gap-1">
-                <Link 
-                  href={`/finance?workflowId=${workflowId}&workflowName=${workflowTitle}`}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-1">
+              <Link 
+                href={`/finance?workflowId=${workflowId}&workflowName=${workflowTitle}`}
+              >
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-7 text-xs"
                 >
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="h-7 text-xs"
-                  >
-                    <BarChart4 className="h-3.5 w-3.5 mr-1" />
-                    Finance
-                  </Button>
-                </Link>
-                
-                <Link 
-                  href="/support"
+                  <BarChart4 className="h-3.5 w-3.5 mr-1" />
+                  Finance
+                </Button>
+              </Link>
+              
+              <Link 
+                href="/support"
+              >
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-7 text-xs"
                 >
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="h-7 text-xs"
-                  >
-                    <AlertCircle className="h-3.5 w-3.5 mr-1" />
-                    Support
-                  </Button>
-                </Link>
-              </div>
+                  <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                  Support
+                </Button>
+              </Link>
             </div>
           </div>
-        </div>
-      </CardContent>
-      
-      {/* Workflow Details Section */}
-      <CardContent className="py-1 px-3 border-t bg-muted/20">
-        <div className="text-xs text-muted-foreground">
-          Showing workflow details for workflow: <span className="font-medium text-foreground">{workflowTitle}</span>
-          {hierarchyPath.length > 1 && (
-            <span> - {hierarchyPath[hierarchyPath.length - 1]?.name}</span>
-          )}
-          <span className="ml-2">
-            Last updated: {lastRefreshed.toLocaleTimeString()}
-          </span>
         </div>
       </CardContent>
     </Card>
