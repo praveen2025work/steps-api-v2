@@ -25,24 +25,53 @@ const ProcessParameters: React.FC<ProcessParametersProps> = ({ processId, proces
   // Extract process parameters from the summary data
   const processParams = summaryData?.processParams || [];
   
-  // Filter parameters for the current process
-  const currentProcessParams = processParams.filter((param: any) => 
-    param.workflow_Process_Id.toString() === processId.replace('PROC-', '') ||
-    param.substage_Name === processName
-  );
+  console.log('[ProcessParameters] Debug info:', {
+    processId,
+    processName,
+    processParamsLength: processParams.length,
+    sampleProcessParam: processParams[0],
+    allProcessIds: processParams.map((p: any) => p.workflow_Process_Id)
+  });
+  
+  // Extract the numeric process ID from the processId string (e.g., "PROC-1237" -> "1237")
+  const numericProcessId = processId.replace('PROC-', '');
+  
+  // Filter parameters for the current process - try multiple matching strategies
+  const currentProcessParams = processParams.filter((param: any) => {
+    const matches = [
+      // Direct workflow_Process_Id match
+      param.workflow_Process_Id?.toString() === numericProcessId,
+      // SubStage name match
+      param.substage_Name === processName,
+      // Parameter name contains process name
+      param.parameterName?.toLowerCase().includes(processName.toLowerCase()),
+      // Resolved parameter name contains process name
+      param.resolvedParameterName?.toLowerCase().includes(processName.toLowerCase())
+    ];
+    
+    return matches.some(match => match);
+  });
+
+  console.log('[ProcessParameters] Filtered parameters:', {
+    numericProcessId,
+    currentProcessParamsLength: currentProcessParams.length,
+    currentProcessParams: currentProcessParams.slice(0, 3) // Show first 3 for debugging
+  });
 
   const [loading, setLoading] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [editingParam, setEditingParam] = React.useState<string | null>(null);
   const [editValue, setEditValue] = React.useState('');
 
-  // Transform API data to display format
-  const parameters = currentProcessParams.map((param: any) => ({
+  // Transform API data to display format with better field mapping
+  const parameters = currentProcessParams.map((param: any, index: number) => ({
     workflow_Process_Id: param.workflow_Process_Id,
-    name: param.parameterName || param.resolvedParameterName || 'Unknown Parameter',
-    value: param.parameterValue || param.resolvedParameterValue || '',
-    description: `Parameter for ${param.substage_Name}`,
-    isEditing: false
+    name: param.parameterName || param.resolvedParameterName || param.parameter_Name || `Parameter ${index + 1}`,
+    value: param.parameterValue || param.resolvedParameterValue || param.parameter_Value || param.value || 'Not Set',
+    description: param.description || param.parameter_Description || `Parameter for ${param.substage_Name || processName}`,
+    isEditing: false,
+    // Additional fields for debugging
+    rawParam: param
   }));
 
   const filteredParameters = parameters.filter((param: any) => 

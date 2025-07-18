@@ -1122,6 +1122,17 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
         
+        // Get the workflow summary data from global storage
+        const summaryData = (window as any).currentWorkflowSummary;
+        const fileData = summaryData?.fileData || [];
+        
+        console.log('[WorkflowDetailView] Files section - Debug info:', {
+          selectedSubStage,
+          processId: currentProcessId,
+          fileDataLength: fileData.length,
+          sampleFileData: fileData[0]
+        });
+        
         // Define a reliable document preview handler
         const handleDocumentPreview = (document: any) => {
           // Prevent event bubbling
@@ -1147,33 +1158,100 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           setCurrentSubStageFiles([fileItem]);
         };
         
-        // When in preview mode, show all files from the selected process
-        const allProcessFiles = selectedSubStage 
-          ? (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
-              .find(s => s.id === selectedSubStage)?.files || []
-          : [];
-          
-        // Convert process files to document format
-        const processDocuments = allProcessFiles.map((file, index) => ({
-          id: `file-${selectedSubStage}-${index}`,
-          name: file.name,
-          type: file.name.split('.').pop() || '',
-          size: file.size,
-          updatedAt: '2025-04-14 02:30',
-          updatedBy: 'System',
-          category: file.type as 'download' | 'upload'
-        }));
+        let documentsToShow: any[] = [];
         
-        // Combine process-specific files with stage documents
-        const combinedDocuments = showFilePreview 
-          ? processDocuments 
-          : (stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments);
+        if (selectedSubStage) {
+          // Show files for the selected process
+          const numericProcessId = currentProcessId.replace('PROC-', '');
+          
+          // Get files from API data for this specific process
+          const processFiles = fileData.filter((file: any) => 
+            file.workflow_Process_Id?.toString() === numericProcessId && file.name
+          );
+          
+          console.log('[WorkflowDetailView] Process files found:', {
+            numericProcessId,
+            processFilesLength: processFiles.length,
+            processFiles: processFiles.slice(0, 3) // Show first 3 for debugging
+          });
+          
+          // Convert API files to document format
+          documentsToShow = processFiles.map((file: any, index: number) => ({
+            id: `file-${file.workflow_Process_Id}-${index}`,
+            name: file.name,
+            type: file.name.split('.').pop() || 'unknown',
+            size: file.value || 'Unknown Size',
+            updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
+            updatedBy: file.updatedBy || 'System',
+            category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
+            subStage: currentProcessName
+          }));
+          
+          // If no API files found, fall back to sub-stage files from the converted data
+          if (documentsToShow.length === 0) {
+            const allProcessFiles = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+              .find(s => s.id === selectedSubStage)?.files || [];
+              
+            documentsToShow = allProcessFiles.map((file, index) => ({
+              id: `file-${selectedSubStage}-${index}`,
+              name: file.name,
+              type: file.name.split('.').pop() || '',
+              size: file.size,
+              updatedAt: '2025-04-14 02:30',
+              updatedBy: 'System',
+              category: file.type as 'download' | 'upload',
+              subStage: currentProcessName
+            }));
+          }
+        } else {
+          // Show all files for the current stage
+          const stageProcesses = tasks[activeStage] || [];
+          const stageProcessIds = stageProcesses.map(task => task.workflowProcessId).filter(Boolean);
+          
+          // Get files from API data for all processes in this stage
+          const stageFiles = fileData.filter((file: any) => 
+            stageProcessIds.includes(file.workflow_Process_Id) && file.name
+          );
+          
+          console.log('[WorkflowDetailView] Stage files found:', {
+            activeStage,
+            stageProcessIds,
+            stageFilesLength: stageFiles.length
+          });
+          
+          // Convert API files to document format
+          documentsToShow = stageFiles.map((file: any, index: number) => {
+            // Find the process name for this file
+            const process = stageProcesses.find(p => p.workflowProcessId === file.workflow_Process_Id);
+            
+            return {
+              id: `file-${file.workflow_Process_Id}-${index}`,
+              name: file.name,
+              type: file.name.split('.').pop() || 'unknown',
+              size: file.value || 'Unknown Size',
+              updatedAt: file.updatedon || new Date().toISOString().split('T')[0],
+              updatedBy: file.updatedBy || 'System',
+              category: file.file_Upload === 'Y' ? 'upload' as const : 'download' as const,
+              subStage: process?.name || 'Unknown Process'
+            };
+          });
+          
+          // If no API files found, fall back to stage documents
+          if (documentsToShow.length === 0) {
+            documentsToShow = stageSpecificDocuments.length > 0 ? stageSpecificDocuments : mockDocuments;
+          }
+        }
+        
+        console.log('[WorkflowDetailView] Final documents to show:', {
+          documentsLength: documentsToShow.length,
+          sampleDocument: documentsToShow[0]
+        });
         
         return (
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-base font-medium">
-                {showFilePreview ? 'Process Files' : 'Files'}
+                {selectedSubStage ? `Files - ${currentProcessName}` : 'Stage Files'}
               </h3>
               <div className="flex gap-2">
                 <Button 
@@ -1185,9 +1263,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
                     e.stopPropagation();
                     
                     // If there are documents, preview the first one
-                    const docs = combinedDocuments;
-                    if (docs.length > 0) {
-                      handleDocumentPreview(docs[0]);
+                    if (documentsToShow.length > 0) {
+                      handleDocumentPreview(documentsToShow[0]);
                     }
                   }}
                 >
@@ -1197,7 +1274,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
               </div>
             </div>
             <DocumentsList 
-              documents={combinedDocuments} 
+              documents={documentsToShow} 
               onPreview={(document) => {
                 // Ensure we have a clean event handler that won't be affected by other state changes
                 handleDocumentPreview(document);

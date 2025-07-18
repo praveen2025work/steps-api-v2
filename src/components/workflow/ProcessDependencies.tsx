@@ -38,58 +38,152 @@ const ProcessDependencies: React.FC<ProcessDependenciesProps> = ({
   dependencies = [],
   onDependencyClick
 }) => {
-  // Mock data for parent and child dependencies
-  const mockParentDependencies: Dependency[] = [
-    { 
-      id: 'parent-1',
-      name: 'SOD Roll',
-      type: 'auto',
-      status: 'completed',
-      progress: 100,
-      processId: 'PROC-1235',
-      files: [
-        { id: "FILE-P001", name: "sod_roll.xlsx", type: "Excel", size: "1.5 MB", lastModified: "2025-05-21" },
-        { id: "FILE-P002", name: "sod_config.json", type: "JSON", size: "0.2 MB", lastModified: "2025-05-21" }
-      ]
-    },
-    { 
-      id: 'parent-2',
-      name: 'Books Open For Correction',
-      type: 'auto',
-      status: 'completed',
-      progress: 100,
-      processId: 'PROC-1236',
-      files: [
-        { id: "FILE-P003", name: "books_status.xlsx", type: "Excel", size: "0.8 MB", lastModified: "2025-05-21" }
-      ]
+  // Get the workflow summary data from global storage
+  const summaryData = (window as any).currentWorkflowSummary;
+  
+  // Extract dependency and process data from the summary
+  const dependencyData = summaryData?.dependencyData || [];
+  const processData = summaryData?.processData || [];
+  const fileData = summaryData?.fileData || [];
+  
+  console.log('[ProcessDependencies] Debug info:', {
+    processId,
+    processName,
+    dependencyDataLength: dependencyData.length,
+    processDataLength: processData.length,
+    fileDataLength: fileData.length,
+    sampleDependency: dependencyData[0],
+    sampleProcess: processData[0]
+  });
+  
+  // Extract the numeric process ID from the processId string (e.g., "PROC-1237" -> "1237")
+  const numericProcessId = processId.replace('PROC-', '');
+  
+  // Find the current process in processData
+  const currentProcess = processData.find((p: any) => 
+    p.workflow_Process_Id?.toString() === numericProcessId
+  );
+  
+  console.log('[ProcessDependencies] Current process:', currentProcess);
+  
+  // Get dependencies for the current process
+  const currentProcessDependencies = dependencyData.filter((dep: any) => 
+    dep.workflow_Process_Id?.toString() === numericProcessId
+  );
+  
+  // Get processes that depend on the current process (child dependencies)
+  const childDependencies = dependencyData.filter((dep: any) => 
+    dep.dependency_Substage_Id === currentProcess?.subStage_Id
+  );
+  
+  console.log('[ProcessDependencies] Dependencies found:', {
+    currentProcessDependencies: currentProcessDependencies.length,
+    childDependencies: childDependencies.length
+  });
+  
+  // Transform parent dependencies (processes this process depends on)
+  const mockParentDependencies: Dependency[] = currentProcessDependencies.map((dep: any) => {
+    // Find the dependency process details
+    const depProcess = processData.find((p: any) => 
+      p.subStage_Id === dep.dependency_Substage_Id
+    );
+    
+    // Get files for this dependency process
+    const depFiles = fileData.filter((file: any) => 
+      file.workflow_Process_Id === depProcess?.workflow_Process_Id
+    ).map((file: any) => ({
+      id: `file-${file.workflow_Process_Id}-${file.name}`,
+      name: file.name || 'Unknown File',
+      type: file.name?.split('.').pop()?.toUpperCase() || 'Unknown',
+      size: file.value || 'Unknown Size',
+      lastModified: file.updatedon || new Date().toISOString().split('T')[0]
+    }));
+    
+    // Map status
+    let status = 'not-started';
+    const depStatus = (dep.dep_Status || '').toUpperCase().trim();
+    switch (depStatus) {
+      case 'COMPLETED':
+      case 'COMPLETE':
+        status = 'completed';
+        break;
+      case 'IN PROGRESS':
+      case 'IN_PROGRESS':
+      case 'RUNNING':
+        status = 'in progress';
+        break;
+      case 'FAILED':
+      case 'ERROR':
+        status = 'failed';
+        break;
+      case 'SKIPPED':
+      case 'SKIP':
+        status = 'skipped';
+        break;
     }
-  ];
-
-  const mockChildDependencies: Dependency[] = [
-    { 
-      id: 'child-1',
-      name: 'Recurring Adjustments',
-      type: 'auto',
-      status: 'not-started',
-      progress: 0,
-      processId: 'PROC-1244',
-      files: [
-        { id: "FILE-C001", name: "adjustments.xlsx", type: "Excel", size: "0.7 MB", lastModified: "2025-05-21" }
-      ]
-    },
-    { 
-      id: 'child-2',
-      name: 'Review Daily PnL-Generate DoD Movement',
-      type: 'auto',
-      status: 'not-started',
-      progress: 0,
-      processId: 'PROC-1246',
-      files: [
-        { id: "FILE-C002", name: "pnl_movement.xlsx", type: "Excel", size: "1.2 MB", lastModified: "2025-05-21" },
-        { id: "FILE-C003", name: "dod_report.pdf", type: "PDF", size: "2.5 MB", lastModified: "2025-05-21" }
-      ]
+    
+    return {
+      id: `parent-${dep.dependency_Substage_Id}`,
+      name: depProcess?.subStage_Name || `Dependency ${dep.dependency_Substage_Id}`,
+      type: depProcess?.auto === 'Y' ? 'auto' : 'manual',
+      status: status,
+      progress: status === 'completed' ? 100 : (status === 'in progress' ? 50 : 0),
+      processId: `PROC-${depProcess?.workflow_Process_Id || dep.dependency_Substage_Id}`,
+      files: depFiles
+    };
+  });
+  
+  // Transform child dependencies (processes that depend on this process)
+  const mockChildDependencies: Dependency[] = childDependencies.map((dep: any) => {
+    // Find the process that has this dependency
+    const childProcess = processData.find((p: any) => 
+      p.workflow_Process_Id === dep.workflow_Process_Id
+    );
+    
+    // Get files for this child process
+    const childFiles = fileData.filter((file: any) => 
+      file.workflow_Process_Id === dep.workflow_Process_Id
+    ).map((file: any) => ({
+      id: `file-${file.workflow_Process_Id}-${file.name}`,
+      name: file.name || 'Unknown File',
+      type: file.name?.split('.').pop()?.toUpperCase() || 'Unknown',
+      size: file.value || 'Unknown Size',
+      lastModified: file.updatedon || new Date().toISOString().split('T')[0]
+    }));
+    
+    // Map status from the child process
+    let status = 'not-started';
+    const childStatus = (childProcess?.status || '').toUpperCase().trim();
+    switch (childStatus) {
+      case 'COMPLETED':
+      case 'COMPLETE':
+        status = 'completed';
+        break;
+      case 'IN PROGRESS':
+      case 'IN_PROGRESS':
+      case 'RUNNING':
+        status = 'in progress';
+        break;
+      case 'FAILED':
+      case 'ERROR':
+        status = 'failed';
+        break;
+      case 'SKIPPED':
+      case 'SKIP':
+        status = 'skipped';
+        break;
     }
-  ];
+    
+    return {
+      id: `child-${dep.workflow_Process_Id}`,
+      name: childProcess?.subStage_Name || `Process ${dep.workflow_Process_Id}`,
+      type: childProcess?.auto === 'Y' ? 'auto' : 'manual',
+      status: status,
+      progress: status === 'completed' ? 100 : (status === 'in progress' ? 50 : 0),
+      processId: `PROC-${dep.workflow_Process_Id}`,
+      files: childFiles
+    };
+  });
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
