@@ -118,7 +118,11 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
   // Handle back button click
   const handleBackClick = () => {
     try {
-      if (levels.length > 1) {
+      if (onNavigate && levels.length > 1) {
+        // Use the provided navigation handler for the previous level
+        const previousLevel = levels[levels.length - 2];
+        onNavigate(previousLevel, levels.length - 2);
+      } else if (levels.length > 1) {
         // Navigate to the previous level
         const previousLevel = levels[levels.length - 2];
         handleLevelClick(previousLevel, levels.length - 2);
