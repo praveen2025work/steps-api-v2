@@ -29,7 +29,6 @@ interface Document {
   excelData?: any; // For storing Excel data from Java API
   isExcelFile?: boolean; // Flag to indicate if this is an Excel file
 }
-=======
 
 interface DocumentsListProps {
   documents: Document[];
@@ -157,7 +156,6 @@ const DocumentsList: React.FC<DocumentsListProps> = ({ documents, onPreview }) =
       }
     }
   };
-=======
   
   const handleClosePreview = () => {
     setPreviewFile(null);
