@@ -232,9 +232,11 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Timer className="h-3 w-3" />
               <span>
-                {autoRefreshEnabled 
-                  ? `Next refresh in ${countdown}s` 
-                  : 'Auto-refresh disabled'
+                {!autoRefreshEnabled 
+                  ? 'Auto-refresh disabled'
+                  : autoRefreshEnabled && countdown > 0
+                  ? `Next refresh in ${countdown}s`
+                  : 'Auto-refresh paused (user inactive)'
                 }
               </span>
             </div>

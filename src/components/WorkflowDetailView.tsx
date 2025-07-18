@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { toast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
 import { useDate } from '@/contexts/DateContext';
+import { useUserActivity } from '@/hooks/useUserActivity';
 import { CreateSupportIssue } from './support/CreateSupportIssue';
 import ProcessQueries from './workflow/ProcessQueries';
 import ProcessParameters from './workflow/ProcessParameters';
@@ -184,6 +185,13 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
+  // User activity detection for auto-refresh pause/resume
+  const { isActive: isUserActive } = useUserActivity({
+    timeout: 2 * 60 * 1000, // 2 minutes
+    events: ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click', 'keydown']
+  });
+=======
+
   // Dependency mapping state
   const [dependencyMap, setDependencyMap] = useState<Map<string, SubStage>>(new Map());
 
@@ -299,7 +307,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   }, [preservedState, activeTab, selectedSubStage, rightPanelContent, showFilePreview]);
 
   // Enhanced refresh with data fetching
-  const handleRefresh = useCallback(async () => {
+  const handleRefresh = useCallback(async (isManualRefresh: boolean = false) => {
     if (isRefreshing) return; // Prevent multiple simultaneous refreshes
     
     setIsRefreshing(true);
@@ -322,7 +330,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         
         console.log('[WorkflowDetailView] Refreshing workflow data for:', {
           appId: currentApp.appId,
-          date: dateString
+          date: dateString,
+          isManualRefresh
         });
         
         // Fetch fresh workflow summary
@@ -345,7 +354,10 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
             restoreUIState();
           }, 200);
           
-          showSuccessToast("Workflow data refreshed successfully");
+          // Only show success message for manual refreshes
+          if (isManualRefresh) {
+            showSuccessToast("Workflow data refreshed successfully");
+          }
         } else {
           showErrorToast(`Failed to refresh data: ${response.error}`);
         }
@@ -353,7 +365,11 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         // Fallback refresh without API call
         setLastRefreshed(new Date());
         setCountdown(refreshInterval);
-        showSuccessToast("Workflow data refreshed successfully");
+        
+        // Only show success message for manual refreshes
+        if (isManualRefresh) {
+          showSuccessToast("Workflow data refreshed successfully");
+        }
       }
     } catch (error: any) {
       console.error('[WorkflowDetailView] Error during refresh:', error);
@@ -380,9 +396,9 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     return seconds;
   };
 
-  // Auto-refresh setup
+  // Auto-refresh setup with user activity detection
   useEffect(() => {
-    if (autoRefreshEnabled) {
+    if (autoRefreshEnabled && isUserActive) {
       autoRefreshTimerRef.current = setInterval(() => {
         handleRefresh();
       }, refreshInterval * 1000);
@@ -398,7 +414,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         clearInterval(autoRefreshTimerRef.current);
       }
     };
-  }, [autoRefreshEnabled, refreshInterval, handleRefresh]);
+  }, [autoRefreshEnabled, refreshInterval, handleRefresh, isUserActive]);
 
   // Countdown timer for auto-refresh
   useEffect(() => {
@@ -1294,12 +1310,12 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
         status="Active"
         isLocked={isLocked}
         onToggleLock={toggleLock}
-        onRefresh={handleRefresh}
+        onRefresh={() => handleRefresh(true)}
         taskCounts={calculateTaskCounts()}
         lastRefreshed={lastRefreshed}
         viewMode={viewMode}
         onViewToggle={onViewToggle}
-        autoRefreshEnabled={autoRefreshEnabled}
+        autoRefreshEnabled={autoRefreshEnabled && isUserActive}
         onAutoRefreshToggle={setAutoRefreshEnabled}
         refreshInterval={refreshInterval}
         countdown={countdown}

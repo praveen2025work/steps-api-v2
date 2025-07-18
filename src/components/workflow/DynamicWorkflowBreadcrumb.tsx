@@ -137,7 +137,17 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
 
   // Handle home button click
   const handleHomeClick = () => {
-    router.push('/');
+    if (onNavigate) {
+      // Create a dummy applications level for navigation
+      const applicationsLevel: BreadcrumbLevel = {
+        id: 'applications',
+        name: 'Applications',
+        level: 'applications'
+      };
+      onNavigate(applicationsLevel, -1);
+    } else {
+      router.push('/');
+    }
   };
 
   // Copy breadcrumb path to clipboard
