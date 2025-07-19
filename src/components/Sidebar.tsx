@@ -347,7 +347,11 @@ const Sidebar = () => {
                               <button
                                 onClick={() => {
                                   closeSidebar();
-                                  window.location.href = item.href;
+                                  // Add timestamp to force complete reload and bypass any caching
+                                  const url = item.href.includes('?') 
+                                    ? `${item.href}&_t=${Date.now()}`
+                                    : `${item.href}?_t=${Date.now()}`;
+                                  window.location.replace(url);
                                 }}
                                 className={cn(
                                   "w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors text-left",
