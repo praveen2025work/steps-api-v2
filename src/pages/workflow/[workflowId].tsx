@@ -304,36 +304,8 @@ const WorkflowDetailPage = () => {
   // Fetch workflow data based on workflowId
   useEffect(() => {
     if (workflowId) {
-      console.log(`Fetching workflow data for ID: ${workflowId}`);
-      
-      // Check if we're looking for a workflow by name (like "erates")
-      console.log(`Checking if "${workflowId}" matches any workflow names or IDs (case-insensitive)`);
-      
       // In a real application, you would fetch the workflow data from an API
       const data = getMockWorkflowData(workflowId as string);
-      console.log(`Workflow data found:`, data ? 'Yes' : 'No');
-      
-      // Add more detailed logging to help diagnose issues
-      if (!data) {
-        console.error(`Failed to find workflow with ID: ${workflowId}`);
-        console.log('Available workflow IDs and names in hierarchical data:');
-        mockHierarchicalWorkflows.forEach(app => {
-          console.log(`- App: ${app.id} (${app.name})`);
-          app.assetClasses.forEach(assetClass => {
-            console.log(`  - Asset Class: ${assetClass.id} (${assetClass.name})`);
-            assetClass.workflowLevels.forEach(level => {
-              console.log(`    - Workflow Level: ${level.id} (${level.name})`);
-              if (level.children && level.children.length > 0) {
-                level.children.forEach(child => {
-                  console.log(`      - Child Level: ${child.id} (${child.name})`);
-                });
-              }
-            });
-          });
-        });
-      } else {
-        console.log(`Successfully found workflow: ${data.title}`);
-      }
       
       setWorkflowData(data);
       setLoading(false);
