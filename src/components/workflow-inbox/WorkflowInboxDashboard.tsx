@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkflowInboxItem } from './WorkflowInboxItem';
-import { WorkflowDetailPanel } from './WorkflowDetailPanel';
+import { ModernWorkflowDetailPanel } from './ModernWorkflowDetailPanel';
 import { WorkflowInboxFilters } from './WorkflowInboxFilters';
 import { useWorkflowInbox } from '@/hooks/useWorkflowInbox';
 
@@ -33,7 +33,7 @@ export interface WorkflowInboxItemData {
   description: string;
   processName: string;
   businessDate: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'requires_attention' | 'blocked';
+  status: 'pending' | 'in_progress' | 'requires_attention' | 'blocked';
   priority: 'high' | 'medium' | 'low';
   assignedTo?: string;
   suggestedAction: string;
@@ -68,6 +68,16 @@ export interface WorkflowInboxItemData {
     stage: string;
     substage: string;
     hierarchyPath: string;
+    processControls: {
+      active: boolean;
+      auto: boolean;
+      attest: boolean;
+      lock: boolean;
+      canTrigger: boolean;
+      canSelect: boolean;
+      lastRun: string;
+      nextRun: string | null;
+    };
   };
 }
 
@@ -329,7 +339,7 @@ export const WorkflowInboxDashboard: React.FC = () => {
         {/* Detail Panel - Only show when item is selected */}
         {selectedItem && (
           <div className="col-span-7">
-            <WorkflowDetailPanel
+            <ModernWorkflowDetailPanel
               item={selectedItem}
               onClose={() => setSelectedItem(null)}
               onAssignToMe={() => handleAssignToMe(selectedItem.id)}

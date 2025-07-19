@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { WorkflowInboxItemData } from '@/components/workflow-inbox/WorkflowInboxDashboard';
 
-// Mock data for demonstration
+// Mock data for demonstration - filtered to exclude completed items
 const generateMockWorkflowItems = (): WorkflowInboxItemData[] => {
-  const statuses = ['pending', 'in_progress', 'completed', 'requires_attention', 'blocked'] as const;
+  const statuses = ['pending', 'in_progress', 'requires_attention', 'blocked'] as const; // Removed 'completed'
   const priorities = ['high', 'medium', 'low'] as const;
   const applications = ['Daily Named PNL', 'Daily Workspace PNL', 'Monthend PNL', 'Risk Reporting', 'Regulatory Reporting'];
   const stages = ['Pre WF', 'Substantiation', 'Review', 'Publish', 'Sign Off'];
@@ -48,7 +48,17 @@ const generateMockWorkflowItems = (): WorkflowInboxItemData[] => {
         application,
         stage,
         substage,
-        hierarchyPath: `Root > ${application} > ${stage} > ${substage}`
+        hierarchyPath: `Root > ${application} > ${stage} > ${substage}`,
+        processControls: {
+          active: Math.random() > 0.2,
+          auto: Math.random() > 0.3,
+          attest: Math.random() > 0.4,
+          lock: Math.random() > 0.6,
+          canTrigger: status !== 'blocked',
+          canSelect: true,
+          lastRun: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
+          nextRun: status === 'pending' ? new Date(Date.now() + Math.random() * 86400000 * 2).toISOString() : null
+        }
       }
     };
 
