@@ -337,9 +337,16 @@ const Sidebar = () => {
                             closeSidebar();
                             
                             // For complex pages like workflow detail, force a complete page reload
-                            if (router.pathname.includes('/workflow/') || 
-                                router.pathname.includes('/hierarchy/') ||
-                                router.pathname.includes('/stages/')) {
+                            // Check both pathname and asPath to catch dynamic routes
+                            const currentRoute = router.asPath;
+                            const isComplexPage = router.pathname.includes('/workflow/') || 
+                                                 router.pathname.includes('/hierarchy/') ||
+                                                 router.pathname.includes('/stages/') ||
+                                                 currentRoute.includes('/workflow/') ||
+                                                 currentRoute.includes('/hierarchy/') ||
+                                                 currentRoute.includes('/stages/');
+                            
+                            if (isComplexPage) {
                               e.preventDefault();
                               // Force complete page reload to bypass React state management issues
                               window.location.href = item.href;
