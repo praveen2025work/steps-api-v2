@@ -330,36 +330,51 @@ const Sidebar = () => {
                           {item.title}
                         </span>
                       ) : (
-                        <Link 
-                          href={item.href}
-                          onClick={(e) => {
-                            // Close sidebar immediately
-                            closeSidebar();
-                            
-                            // For complex pages like workflow detail, force a complete page reload
-                            // Check both pathname and asPath to catch dynamic routes
-                            const currentRoute = router.asPath;
-                            const isComplexPage = router.pathname.includes('/workflow/') || 
-                                                 router.pathname.includes('/hierarchy/') ||
-                                                 router.pathname.includes('/stages/') ||
-                                                 currentRoute.includes('/workflow/') ||
-                                                 currentRoute.includes('/hierarchy/') ||
-                                                 currentRoute.includes('/stages/');
-                            
-                            if (isComplexPage) {
-                              e.preventDefault();
-                              // Force complete page reload to bypass React state management issues
-                              window.location.href = item.href;
-                            }
-                          }}
-                          className={cn(
-                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
-                            isActive ? getActiveStyles() : "text-muted-foreground"
-                          )}
-                        >
-                          {item.icon}
-                          {item.title}
-                        </Link>
+                        (() => {
+                          // For complex pages like workflow detail, force a complete page reload
+                          // Check both pathname and asPath to catch dynamic routes
+                          const currentRoute = router.asPath;
+                          const isComplexPage = router.pathname.includes('/workflow/') || 
+                                               router.pathname.includes('/hierarchy/') ||
+                                               router.pathname.includes('/stages/') ||
+                                               currentRoute.includes('/workflow/') ||
+                                               currentRoute.includes('/hierarchy/') ||
+                                               currentRoute.includes('/stages/');
+                          
+                          if (isComplexPage) {
+                            // Use a button instead of Link for complex pages to force reload
+                            return (
+                              <button
+                                onClick={() => {
+                                  closeSidebar();
+                                  window.location.href = item.href;
+                                }}
+                                className={cn(
+                                  "w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors text-left",
+                                  isActive ? getActiveStyles() : "text-muted-foreground"
+                                )}
+                              >
+                                {item.icon}
+                                {item.title}
+                              </button>
+                            );
+                          } else {
+                            // Use normal Link for other pages
+                            return (
+                              <Link 
+                                href={item.href}
+                                onClick={() => closeSidebar()}
+                                className={cn(
+                                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                                  isActive ? getActiveStyles() : "text-muted-foreground"
+                                )}
+                              >
+                                {item.icon}
+                                {item.title}
+                              </Link>
+                            );
+                          }
+                        })()
                       )}
                     </li>
                   );
