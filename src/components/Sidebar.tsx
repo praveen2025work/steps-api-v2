@@ -55,6 +55,12 @@ const navSections: NavSection[] = [
         icon: <LayoutDashboard className="h-5 w-5" />
       },
       {
+        title: 'My Workflow Inbox',
+        href: '/workflow-inbox',
+        icon: <Workflow className="h-5 w-5" />,
+        pattern: /^\/workflow-inbox/
+      },
+      {
         title: 'Management Board',
         href: '/management',
         icon: <BarChart4 className="h-5 w-5" />
