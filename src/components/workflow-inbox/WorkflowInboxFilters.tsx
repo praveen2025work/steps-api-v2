@@ -65,181 +65,96 @@ export const WorkflowInboxFilters: React.FC<WorkflowInboxFiltersProps> = ({
 
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="space-y-4">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              <span className="font-medium">Filters</span>
-              {hasActiveFilters && (
-                <Badge variant="secondary" className="text-xs">
-                  {getActiveFilterCount()} active
-                </Badge>
-              )}
+      <CardContent className="p-3">
+        <div className="space-y-3">
+          {/* Search and Controls in one row */}
+          <div className="flex items-center gap-3">
+            {/* Search - takes more space */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search workflows..."
+                value={filters.search}
+                onChange={(e) => updateFilter('search', e.target.value)}
+                className="pl-9 h-8"
+              />
             </div>
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="text-xs h-7"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Clear
-              </Button>
-            )}
-          </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search workflows..."
-              value={filters.search}
-              onChange={(e) => updateFilter('search', e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          {/* Filter Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            {/* Status Filter */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Status</label>
+            {/* Filter Controls - compact */}
+            <div className="flex items-center gap-2">
+              {/* Status Filter */}
               <Select value={filters.status} onValueChange={(value) => updateFilter('status', value)}>
-                <SelectTrigger className="h-8">
-                  <SelectValue />
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-3 w-3 text-yellow-500" />
-                      Pending
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="in_progress">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-3 w-3 text-blue-500" />
-                      In Progress
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="requires_attention">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-3 w-3 text-red-500" />
-                      Requires Attention
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="blocked">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-3 w-3 text-orange-500" />
-                      Blocked
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="completed">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-3 w-3 text-green-500" />
-                      Completed
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="requires_attention">Attention</SelectItem>
+                  <SelectItem value="blocked">Blocked</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
 
-            {/* Priority Filter */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Priority</label>
+              {/* Priority Filter */}
               <Select value={filters.priority} onValueChange={(value) => updateFilter('priority', value)}>
-                <SelectTrigger className="h-8">
-                  <SelectValue />
+                <SelectTrigger className="h-8 w-28">
+                  <SelectValue placeholder="Priority" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Priority</SelectItem>
-                  <SelectItem value="high">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                      High
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="medium">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                      Medium
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="low">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      Low
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
 
-            {/* Assignee Filter */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Assignee</label>
+              {/* Assignee Filter */}
               <Select value={filters.assignee} onValueChange={(value) => updateFilter('assignee', value)}>
-                <SelectTrigger className="h-8">
-                  <SelectValue />
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue placeholder="Assignee" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Assignees</SelectItem>
-                  <SelectItem value="me">
-                    <div className="flex items-center gap-2">
-                      <User className="h-3 w-3" />
-                      Assigned to Me
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="unassigned">
-                    <div className="flex items-center gap-2">
-                      <User className="h-3 w-3 text-muted-foreground" />
-                      Unassigned
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="me">Assigned to Me</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
 
-            {/* Sort By */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Sort By</label>
+              {/* Sort By */}
               <Select value={sortBy} onValueChange={onSortChange}>
-                <SelectTrigger className="h-8">
-                  <SelectValue />
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="priority">
-                    <div className="flex items-center gap-2">
-                      <SortDesc className="h-3 w-3" />
-                      Priority
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="dueDate">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3 w-3" />
-                      Due Date
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="businessDate">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3 w-3" />
-                      Business Date
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="priority">Priority</SelectItem>
+                  <SelectItem value="dueDate">Due Date</SelectItem>
+                  <SelectItem value="businessDate">Business Date</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-8 px-3"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              )}
             </div>
           </div>
 
-          {/* Active Filters Display */}
+          {/* Active Filters Display - only if there are active filters */}
           {hasActiveFilters && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1">
               {filters.status !== 'all' && (
-                <Badge variant="secondary" className="text-xs">
-                  Status: {filters.status}
+                <Badge variant="secondary" className="text-xs h-5">
+                  Status: {filters.status.replace('_', ' ')}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -251,7 +166,7 @@ export const WorkflowInboxFilters: React.FC<WorkflowInboxFiltersProps> = ({
                 </Badge>
               )}
               {filters.priority !== 'all' && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs h-5">
                   Priority: {filters.priority}
                   <Button
                     variant="ghost"
@@ -264,7 +179,7 @@ export const WorkflowInboxFilters: React.FC<WorkflowInboxFiltersProps> = ({
                 </Badge>
               )}
               {filters.assignee !== 'all' && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs h-5">
                   Assignee: {filters.assignee}
                   <Button
                     variant="ghost"
@@ -277,7 +192,7 @@ export const WorkflowInboxFilters: React.FC<WorkflowInboxFiltersProps> = ({
                 </Badge>
               )}
               {filters.search !== '' && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs h-5">
                   Search: "{filters.search}"
                   <Button
                     variant="ghost"

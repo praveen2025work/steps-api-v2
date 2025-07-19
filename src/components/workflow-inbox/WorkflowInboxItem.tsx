@@ -37,41 +37,26 @@ export const WorkflowInboxItem: React.FC<WorkflowInboxItemProps> = ({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+        return <CheckCircle2 className="h-3 w-3 text-green-500" />;
       case 'in_progress':
-        return <PlayCircle className="h-4 w-4 text-blue-500" />;
+        return <PlayCircle className="h-3 w-3 text-blue-500" />;
       case 'requires_attention':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className="h-3 w-3 text-red-500" />;
       case 'blocked':
-        return <AlertCircle className="h-4 w-4 text-orange-500" />;
+        return <AlertCircle className="h-3 w-3 text-orange-500" />;
       default:
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'requires_attention':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'blocked':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      default:
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return <Clock className="h-3 w-3 text-yellow-500" />;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-500';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-500';
       default:
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-500';
     }
   };
 
@@ -84,164 +69,93 @@ export const WorkflowInboxItem: React.FC<WorkflowInboxItemProps> = ({
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Tomorrow';
     if (diffDays === -1) return 'Yesterday';
-    if (diffDays < 0) return `${Math.abs(diffDays)} days overdue`;
-    if (diffDays <= 7) return `${diffDays} days`;
+    if (diffDays < 0) return `${Math.abs(diffDays)}d overdue`;
+    if (diffDays <= 7) return `${diffDays}d`;
     
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const isOverdue = new Date(item.dueDate) < new Date();
-  const hasFiles = item.files.length > 0;
-  const hasComments = item.comments.length > 0;
 
   return (
     <Card 
       className={cn(
-        "cursor-pointer transition-all duration-200 hover:shadow-md",
-        isSelected && "ring-2 ring-primary shadow-md",
-        isOverdue && "border-red-200 bg-red-50/50"
+        "cursor-pointer transition-all duration-200 hover:shadow-sm border-l-4",
+        isSelected && "ring-1 ring-primary shadow-sm bg-primary/5",
+        isOverdue && "border-l-red-500",
+        !isOverdue && item.priority === 'high' && "border-l-red-500",
+        !isOverdue && item.priority === 'medium' && "border-l-yellow-500",
+        !isOverdue && item.priority === 'low' && "border-l-green-500"
       )}
       onClick={onClick}
     >
-      <CardContent className="p-4">
-        <div className="space-y-3">
+      <CardContent className="p-3">
+        <div className="space-y-2">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 {getStatusIcon(item.status)}
-                <h3 className="font-semibold text-sm truncate">{item.title}</h3>
+                <h3 className="font-medium text-sm truncate">{item.title}</h3>
               </div>
               <p className="text-xs text-muted-foreground truncate">{item.description}</p>
             </div>
-            <div className="flex flex-col items-end gap-1 ml-2">
-              <Badge variant="outline" className={cn("text-xs", getPriorityColor(item.priority))}>
-                {item.priority}
-              </Badge>
-              <Badge variant="outline" className={cn("text-xs", getStatusColor(item.status))}>
-                {item.status.replace('_', ' ')}
-              </Badge>
+            <div className="flex items-center gap-2 ml-2">
+              <div className={cn("w-2 h-2 rounded-full", getPriorityColor(item.priority))}></div>
+              {item.assignedTo && (
+                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                  {item.assignedTo === 'You' ? 'Me' : item.assignedTo.split(' ')[0]}
+                </Badge>
+              )}
             </div>
           </div>
 
-          {/* Process Info */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <FileText className="h-3 w-3" />
-              <span>{item.processName}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>{item.businessDate}</span>
-            </div>
-          </div>
-
-          {/* Metadata */}
+          {/* Stage Info */}
           <div className="text-xs text-muted-foreground">
-            <span className="font-medium">{item.metadata.application}</span>
-            <span className="mx-1">•</span>
             <span>{item.metadata.stage}</span>
             <span className="mx-1">•</span>
             <span>{item.metadata.substage}</span>
           </div>
 
-          {/* Suggested Action */}
-          {item.suggestedAction && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
-              <p className="text-xs text-blue-800 font-medium">
-                💡 {item.suggestedAction}
-              </p>
-            </div>
-          )}
-
-          {/* Due Date and Assignment */}
+          {/* Due Date and Actions */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 text-xs">
-              <div className={cn(
-                "flex items-center gap-1",
-                isOverdue && "text-red-600 font-medium"
-              )}>
-                <Clock className="h-3 w-3" />
-                <span>Due: {formatDate(item.dueDate)}</span>
-              </div>
-              {item.assignedTo && (
-                <div className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  <span>{item.assignedTo}</span>
-                </div>
-              )}
+            <div className={cn(
+              "flex items-center gap-1 text-xs",
+              isOverdue && "text-red-600 font-medium"
+            )}>
+              <Clock className="h-3 w-3" />
+              <span>{formatDate(item.dueDate)}</span>
             </div>
             
-            <div className="flex items-center gap-1">
-              {hasFiles && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Paperclip className="h-3 w-3" />
-                  <span>{item.files.length}</span>
-                </div>
+            <div className="flex gap-1">
+              {!item.assignedTo && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAssignToMe();
+                  }}
+                  className="text-xs h-6 px-2"
+                >
+                  <UserPlus className="h-3 w-3 mr-1" />
+                  Assign
+                </Button>
               )}
-              {hasComments && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <MessageSquare className="h-3 w-3" />
-                  <span>{item.comments.length}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Tags */}
-          {item.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {item.tags.slice(0, 3).map((tag, index) => (
-                <Badge key={index} variant="secondary" className="text-xs px-2 py-0">
-                  {tag}
-                </Badge>
-              ))}
-              {item.tags.length > 3 && (
-                <Badge variant="secondary" className="text-xs px-2 py-0">
-                  +{item.tags.length - 3}
-                </Badge>
-              )}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
-            {!item.assignedTo && (
+              
               <Button
                 size="sm"
-                variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onAssignToMe();
+                  onTriggerAction();
                 }}
-                className="flex-1 text-xs h-7"
+                className="text-xs h-6 px-2"
+                disabled={item.status === 'blocked'}
               >
-                <UserPlus className="h-3 w-3 mr-1" />
-                Assign to Me
+                <Zap className="h-3 w-3 mr-1" />
+                Action
               </Button>
-            )}
-            
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onTriggerAction();
-              }}
-              className="flex-1 text-xs h-7"
-              disabled={item.status === 'blocked'}
-            >
-              <Zap className="h-3 w-3 mr-1" />
-              Trigger Action
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onClick}
-              className="text-xs h-7 px-2"
-            >
-              <ArrowRight className="h-3 w-3" />
-            </Button>
+            </div>
           </div>
         </div>
       </CardContent>

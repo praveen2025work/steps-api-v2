@@ -17,7 +17,9 @@ import {
   ArrowRight,
   Filter,
   Search,
-  SortDesc
+  SortDesc,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkflowInboxItem } from './WorkflowInboxItem';
@@ -78,8 +80,17 @@ export const WorkflowInboxDashboard: React.FC = () => {
     search: ''
   });
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'businessDate'>('priority');
+  const [expandedApplications, setExpandedApplications] = useState<Set<string>>(new Set());
 
   const { items, loading, error, refreshData, assignToMe, triggerAction } = useWorkflowInbox();
+
+  // Initialize all applications as expanded
+  useEffect(() => {
+    if (items.length > 0) {
+      const applications = new Set(items.map(item => item.metadata.application));
+      setExpandedApplications(applications);
+    }
+  }, [items]);
 
   // Filter and sort items
   const filteredItems = React.useMemo(() => {
@@ -113,6 +124,19 @@ export const WorkflowInboxDashboard: React.FC = () => {
 
     return filtered;
   }, [items, filters, sortBy]);
+
+  // Group items by application
+  const groupedItems = React.useMemo(() => {
+    const groups: Record<string, WorkflowInboxItemData[]> = {};
+    filteredItems.forEach(item => {
+      const app = item.metadata.application;
+      if (!groups[app]) {
+        groups[app] = [];
+      }
+      groups[app].push(item);
+    });
+    return groups;
+  }, [filteredItems]);
 
   // Get summary stats
   const stats = React.useMemo(() => {
@@ -155,6 +179,16 @@ export const WorkflowInboxDashboard: React.FC = () => {
     }
   };
 
+  const toggleApplicationExpansion = (application: string) => {
+    const newExpanded = new Set(expandedApplications);
+    if (newExpanded.has(application)) {
+      newExpanded.delete(application);
+    } else {
+      newExpanded.add(application);
+    }
+    setExpandedApplications(newExpanded);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -181,123 +215,109 @@ export const WorkflowInboxDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">Total Items</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-yellow-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.pending}</p>
-                <p className="text-xs text-muted-foreground">Pending</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <PlayCircle className="h-4 w-4 text-blue-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.inProgress}</p>
-                <p className="text-xs text-muted-foreground">In Progress</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertCircle className="h-4 w-4 text-red-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.requiresAttention}</p>
-                <p className="text-xs text-muted-foreground">Needs Attention</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertCircle className="h-4 w-4 text-orange-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.highPriority}</p>
-                <p className="text-xs text-muted-foreground">High Priority</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <User className="h-4 w-4 text-green-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.assignedToMe}</p>
-                <p className="text-xs text-muted-foreground">Assigned to Me</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-4">
+      {/* Compact Header with Stats */}
+      <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{stats.total}</span>
+            <span className="text-muted-foreground">Total</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-yellow-500" />
+            <span className="font-medium">{stats.pending}</span>
+            <span className="text-muted-foreground">Pending</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <PlayCircle className="h-4 w-4 text-blue-500" />
+            <span className="font-medium">{stats.inProgress}</span>
+            <span className="text-muted-foreground">In Progress</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-red-500" />
+            <span className="font-medium">{stats.requiresAttention}</span>
+            <span className="text-muted-foreground">Attention</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-green-500" />
+            <span className="font-medium">{stats.assignedToMe}</span>
+            <span className="text-muted-foreground">Mine</span>
+          </div>
+        </div>
+        <Button onClick={refreshData} variant="outline" size="sm">
+          <ArrowRight className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel - Filters and List */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Filters */}
-          <WorkflowInboxFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-          />
+      {/* Filters - Full Width */}
+      <WorkflowInboxFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
 
-          {/* Items List */}
+      {/* Main Content */}
+      <div className={cn(
+        "transition-all duration-300",
+        selectedItem ? "grid grid-cols-10 gap-6" : "grid grid-cols-1"
+      )}>
+        {/* Items List */}
+        <div className={cn(
+          "space-y-4",
+          selectedItem ? "col-span-3" : "col-span-1"
+        )}>
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Workflow Items ({filteredItems.length})</span>
-                <Button onClick={refreshData} variant="outline" size="sm">
-                  <ArrowRight className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">
+                Workflow Items ({filteredItems.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[600px]">
-                <div className="space-y-2 p-4">
+              <ScrollArea className="h-[700px]">
+                <div className="space-y-3 p-4">
                   {filteredItems.length === 0 ? (
                     <div className="text-center py-8">
                       <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
                       <p className="text-muted-foreground">No workflow items match your filters</p>
                     </div>
                   ) : (
-                    filteredItems.map((item) => (
-                      <WorkflowInboxItem
-                        key={item.id}
-                        item={item}
-                        isSelected={selectedItem?.id === item.id}
-                        onClick={() => handleItemClick(item)}
-                        onAssignToMe={() => handleAssignToMe(item.id)}
-                        onTriggerAction={() => handleTriggerAction(item.id)}
-                      />
+                    Object.entries(groupedItems).map(([application, appItems]) => (
+                      <div key={application} className="space-y-2">
+                        {/* Application Header */}
+                        <div 
+                          className="flex items-center gap-2 p-2 bg-muted/50 rounded-md cursor-pointer hover:bg-muted/70 transition-colors"
+                          onClick={() => toggleApplicationExpansion(application)}
+                        >
+                          {expandedApplications.has(application) ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <span className="font-medium text-sm">{application}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {appItems.length}
+                          </Badge>
+                        </div>
+
+                        {/* Application Items */}
+                        {expandedApplications.has(application) && (
+                          <div className="space-y-2 ml-6">
+                            {appItems.map((item) => (
+                              <WorkflowInboxItem
+                                key={item.id}
+                                item={item}
+                                isSelected={selectedItem?.id === item.id}
+                                onClick={() => handleItemClick(item)}
+                                onAssignToMe={() => handleAssignToMe(item.id)}
+                                onTriggerAction={() => handleTriggerAction(item.id)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))
                   )}
                 </div>
@@ -306,26 +326,17 @@ export const WorkflowInboxDashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* Right Panel - Detail View */}
-        <div className="lg:col-span-1">
-          {selectedItem ? (
+        {/* Detail Panel - Only show when item is selected */}
+        {selectedItem && (
+          <div className="col-span-7">
             <WorkflowDetailPanel
               item={selectedItem}
               onClose={() => setSelectedItem(null)}
               onAssignToMe={() => handleAssignToMe(selectedItem.id)}
               onTriggerAction={() => handleTriggerAction(selectedItem.id)}
             />
-          ) : (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Eye className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Select a workflow item to view details
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
