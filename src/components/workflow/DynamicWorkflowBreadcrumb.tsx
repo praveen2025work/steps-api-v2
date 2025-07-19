@@ -72,30 +72,50 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
         return;
       }
 
+      // Check if we're on a complex page that needs forced reload
+      const currentRoute = router.asPath;
+      const isComplexPage = router.pathname.includes('/workflow/') || 
+                           router.pathname.includes('/hierarchy/') ||
+                           router.pathname.includes('/stages/') ||
+                           currentRoute.includes('/workflow/') ||
+                           currentRoute.includes('/hierarchy/') ||
+                           currentRoute.includes('/stages/');
+
       // Default navigation logic based on level type
       switch (level.level) {
         case 'applications':
           // Navigate to applications view (home)
-          router.push('/');
-          break;
-          
-        case 'application-nodes':
-          // Navigate to application detail view
-          if (level.metadata?.appId) {
-            router.push(`/application/${level.metadata.appId}`);
+          if (isComplexPage) {
+            window.location.href = `/?_t=${Date.now()}`;
           } else {
             router.push('/');
           }
           break;
           
+        case 'application-nodes':
+          // Navigate to application detail view
+          const appUrl = level.metadata?.appId ? `/application/${level.metadata.appId}` : '/';
+          if (isComplexPage) {
+            window.location.href = `${appUrl}?_t=${Date.now()}`;
+          } else {
+            router.push(appUrl);
+          }
+          break;
+          
         case 'node-group-details':
           // Navigate to hierarchy view for this node group
+          let hierarchyUrl = '/hierarchy';
           if (level.metadata?.appId && level.metadata?.configId) {
-            router.push(`/hierarchy/${level.metadata.appId}?configId=${level.metadata.configId}`);
+            hierarchyUrl = `/hierarchy/${level.metadata.appId}?configId=${level.metadata.configId}`;
           } else if (level.metadata?.appId) {
-            router.push(`/hierarchy/${level.metadata.appId}`);
+            hierarchyUrl = `/hierarchy/${level.metadata.appId}`;
+          }
+          
+          if (isComplexPage) {
+            const separator = hierarchyUrl.includes('?') ? '&' : '?';
+            window.location.href = `${hierarchyUrl}${separator}_t=${Date.now()}`;
           } else {
-            router.push('/hierarchy');
+            router.push(hierarchyUrl);
           }
           break;
           
@@ -125,7 +145,20 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
         handleLevelClick(previousLevel, levels.length - 2);
       } else {
         // Navigate to home if no previous level
-        router.push('/');
+        // Check if we're on a complex page that needs forced reload
+        const currentRoute = router.asPath;
+        const isComplexPage = router.pathname.includes('/workflow/') || 
+                             router.pathname.includes('/hierarchy/') ||
+                             router.pathname.includes('/stages/') ||
+                             currentRoute.includes('/workflow/') ||
+                             currentRoute.includes('/hierarchy/') ||
+                             currentRoute.includes('/stages/');
+        
+        if (isComplexPage) {
+          window.location.href = `/?_t=${Date.now()}`;
+        } else {
+          router.push('/');
+        }
       }
     } catch (error) {
       // Back navigation error handled silently
@@ -134,6 +167,22 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
 
   // Handle home button click
   const handleHomeClick = () => {
+    // Check if we're on a complex page that needs forced reload
+    const currentRoute = router.asPath;
+    const isComplexPage = router.pathname.includes('/workflow/') || 
+                         router.pathname.includes('/hierarchy/') ||
+                         router.pathname.includes('/stages/') ||
+                         currentRoute.includes('/workflow/') ||
+                         currentRoute.includes('/hierarchy/') ||
+                         currentRoute.includes('/stages/');
+    
+    if (isComplexPage) {
+      // Force a complete page reload to home with cache busting
+      const url = `/?_t=${Date.now()}`;
+      window.location.href = url;
+      return;
+    }
+    
     if (onNavigate) {
       // Create a dummy applications level for navigation
       const applicationsLevel: BreadcrumbLevel = {

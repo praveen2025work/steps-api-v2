@@ -345,13 +345,17 @@ const Sidebar = () => {
                             // Use a button instead of Link for complex pages to force reload
                             return (
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.preventDefault();
                                   closeSidebar();
+                                  
                                   // Add timestamp to force complete reload and bypass any caching
                                   const url = item.href.includes('?') 
                                     ? `${item.href}&_t=${Date.now()}`
                                     : `${item.href}?_t=${Date.now()}`;
-                                  window.location.replace(url);
+                                  
+                                  // Force a complete page reload with cache busting
+                                  window.location.href = url;
                                 }}
                                 className={cn(
                                   "w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors text-left",
