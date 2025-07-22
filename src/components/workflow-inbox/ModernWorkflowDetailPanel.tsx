@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -111,6 +112,7 @@ export const ModernWorkflowDetailPanel: React.FC<ModernWorkflowDetailPanelProps>
   onAssignToMe,
   onTriggerAction
 }) => {
+  const router = useRouter();
   const [newComment, setNewComment] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -243,6 +245,12 @@ export const ModernWorkflowDetailPanel: React.FC<ModernWorkflowDetailPanelProps>
     console.log(`Setting ${control} to ${value} for process ${item.id}`);
   };
 
+  const handleViewFullWorkflow = () => {
+    // Navigate to the workflow detail page using the item's ID or a related workflow ID
+    // For now, we'll use the item ID as the workflow ID
+    router.push(`/workflow/${item.id}`);
+  };
+
   return (
     <Card className="h-fit">
       <CardHeader className="pb-3">
@@ -332,6 +340,15 @@ export const ModernWorkflowDetailPanel: React.FC<ModernWorkflowDetailPanelProps>
               <div className="space-y-3">
                 <h4 className="font-medium text-sm">Quick Actions</h4>
                 <div className="flex flex-wrap gap-2">
+                  <Button 
+                    size="sm" 
+                    onClick={handleViewFullWorkflow}
+                    variant="default"
+                    className="text-xs"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    View Full Workflow
+                  </Button>
                   <Button 
                     size="sm" 
                     onClick={onTriggerAction}

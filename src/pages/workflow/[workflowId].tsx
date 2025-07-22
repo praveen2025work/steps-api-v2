@@ -338,7 +338,7 @@ const WorkflowDetailPage = () => {
           <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold mb-2">Workflow Not Found</h2>
           <p className="text-muted-foreground mb-4">The workflow you're looking for doesn't exist or you don't have access to it.</p>
-          <Button onClick={() => router.push('/')}>Return to Dashboard</Button>
+          <Button onClick={() => router.push('/workflow-inbox')}>Return to Task Center</Button>
         </div>
       </DashboardLayout>
     );

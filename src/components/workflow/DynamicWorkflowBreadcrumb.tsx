@@ -177,22 +177,22 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
                          currentRoute.includes('/stages/');
     
     if (isComplexPage) {
-      // Force a complete page reload to home with cache busting
-      const url = `/?_t=${Date.now()}`;
+      // Force a complete page reload to Task Center with cache busting
+      const url = `/workflow-inbox?_t=${Date.now()}`;
       window.location.href = url;
       return;
     }
     
     if (onNavigate) {
-      // Create a dummy applications level for navigation
+      // Create a dummy applications level for navigation to Task Center
       const applicationsLevel: BreadcrumbLevel = {
-        id: 'applications',
-        name: 'Applications',
+        id: 'task-center',
+        name: 'Task Center',
         level: 'applications'
       };
       onNavigate(applicationsLevel, -1);
     } else {
-      router.push('/');
+      router.push('/workflow-inbox');
     }
   };
 
@@ -248,7 +248,7 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Go to Applications</p>
+                <p>Go to Task Center</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

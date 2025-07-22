@@ -51,11 +51,12 @@ const navSections: NavSection[] = [
     items: [
       {
         title: 'Dashboard',
-        href: '/',
-        icon: <LayoutDashboard className="h-5 w-5" />
+        href: '/dashboard',
+        icon: <LayoutDashboard className="h-5 w-5" />,
+        pattern: /^\/dashboard$/
       },
       {
-        title: 'My Workflow Inbox',
+        title: 'Task Center',
         href: '/workflow-inbox',
         icon: <Workflow className="h-5 w-5" />,
         pattern: /^\/workflow-inbox/

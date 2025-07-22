@@ -4,7 +4,7 @@ import { WorkflowInboxDashboard } from '@/components/workflow-inbox/WorkflowInbo
 
 const WorkflowInboxPage = () => {
   return (
-    <DashboardLayout title="My Workflow Inbox">
+    <DashboardLayout title="Task Center">
       <WorkflowInboxDashboard />
     </DashboardLayout>
   );
