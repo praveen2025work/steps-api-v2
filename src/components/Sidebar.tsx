@@ -1,6 +1,6 @@
-import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
+import SafeRouter from './SafeRouter';
 import {
   LayoutDashboard,
   Layers,
@@ -236,8 +236,6 @@ const navSections: NavSection[] = [
 ];
 
 const Sidebar = () => {
-  const router = useRouter();
-  const currentPath = router.pathname;
   const { theme } = useTheme();
   const { sidebarOpen, toggleSidebar, closeSidebar } = useSidebar();
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -269,136 +267,129 @@ const Sidebar = () => {
         return "bg-primary text-primary-foreground";
     }
   };
-  
-  const getThemeAccentColor = () => {
-    switch (theme) {
-      case 'banking-blue':
-        return "bg-blue-500/20 text-blue-500";
-      case 'regulatory-green':
-        return "bg-green-500/20 text-green-500";
-      default:
-        return "bg-primary/20 text-primary";
-    }
-  };
 
   return (
-    <>
-      {/* Single toggle button that's visible when sidebar is collapsed */}
-      {!sidebarOpen && (
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={toggleSidebar}
-          className="fixed top-20 left-0 z-50 rounded-r-full rounded-l-none border-l-0 h-12 w-6"
-        >
-          <ChevronRight className="h-4 w-4" />
-          <span className="sr-only">Open sidebar</span>
-        </Button>
-      )}
-      
-      <div 
-        ref={sidebarRef}
-        className={cn(
-          "md:flex h-screen flex-col fixed inset-y-0 z-[100] border-r border-border bg-card transition-all duration-300 ease-in-out",
-          sidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full"
-        )}
-      >
-        <div className="p-4 border-b border-border flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold">STEPS</h2>
-            <p className="text-xs text-muted-foreground mt-1">Financial Workflow Management</p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="ml-auto">
-            <ChevronLeft className="h-5 w-5" />
-            <span className="sr-only">Close sidebar</span>
-          </Button>
-        </div>
-        <nav className="flex-1 overflow-auto py-4 px-2">
-          {navSections.map((section, index) => (
-            <div key={section.title} className={index > 0 ? "mt-6" : ""}>
-              <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                {section.title}
-              </h3>
-              <ul className="space-y-1">
-                {section.items.map((item) => {
-                  // Check if this item should be active based on path and query params
-                  const isActive = item.pattern 
-                    ? item.pattern.test(currentPath)
-                    : item.href.includes('?') 
-                      ? currentPath === item.href.split('?')[0] && router.asPath === item.href
-                      : currentPath === item.href;
-                  
-                  return (
-                    <li key={item.href}>
-                      {item.href === '/stages/[workflowId]' ? (
-                        <span className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground">
-                          {item.icon}
-                          {item.title}
-                        </span>
-                      ) : (
-                        (() => {
-                          // For complex pages like workflow detail, force a complete page reload
-                          // Check both pathname and asPath to catch dynamic routes
-                          const currentRoute = router.asPath;
-                          const isComplexPage = router.pathname.includes('/workflow/') || 
-                                               router.pathname.includes('/hierarchy/') ||
-                                               router.pathname.includes('/stages/') ||
-                                               currentRoute.includes('/workflow/') ||
-                                               currentRoute.includes('/hierarchy/') ||
-                                               currentRoute.includes('/stages/');
-                          
-                          if (isComplexPage) {
-                            // Use a button instead of Link for complex pages to force reload
-                            return (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  closeSidebar();
-                                  
-                                  // Add timestamp to force complete reload and bypass any caching
-                                  const url = item.href.includes('?') 
-                                    ? `${item.href}&_t=${Date.now()}`
-                                    : `${item.href}?_t=${Date.now()}`;
-                                  
-                                  // Force a complete page reload with cache busting
-                                  window.location.href = url;
-                                }}
-                                className={cn(
-                                  "w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors text-left",
-                                  isActive ? getActiveStyles() : "text-muted-foreground"
-                                )}
-                              >
-                                {item.icon}
-                                {item.title}
-                              </button>
-                            );
-                          } else {
-                            // Use normal Link for other pages
-                            return (
-                              <Link 
-                                href={item.href}
-                                onClick={() => closeSidebar()}
-                                className={cn(
-                                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
-                                  isActive ? getActiveStyles() : "text-muted-foreground"
-                                )}
-                              >
-                                {item.icon}
-                                {item.title}
-                              </Link>
-                            );
-                          }
-                        })()
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+    <SafeRouter>
+      {(router) => (
+        <>
+          {/* Single toggle button that's visible when sidebar is collapsed */}
+          {!sidebarOpen && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={toggleSidebar}
+              className="fixed top-20 left-0 z-50 rounded-r-full rounded-l-none border-l-0 h-12 w-6"
+            >
+              <ChevronRight className="h-4 w-4" />
+              <span className="sr-only">Open sidebar</span>
+            </Button>
+          )}
+          
+          <div 
+            ref={sidebarRef}
+            className={cn(
+              "md:flex h-screen flex-col fixed inset-y-0 z-[100] border-r border-border bg-card transition-all duration-300 ease-in-out",
+              sidebarOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full"
+            )}
+          >
+            <div className="p-4 border-b border-border flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">STEPS</h2>
+                <p className="text-xs text-muted-foreground mt-1">Financial Workflow Management</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="ml-auto">
+                <ChevronLeft className="h-5 w-5" />
+                <span className="sr-only">Close sidebar</span>
+              </Button>
             </div>
-          ))}
-        </nav>
-      </div>
-    </>
+            <nav className="flex-1 overflow-auto py-4 px-2">
+              {navSections.map((section, index) => (
+                <div key={section.title} className={index > 0 ? "mt-6" : ""}>
+                  <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    {section.title}
+                  </h3>
+                  <ul className="space-y-1">
+                    {section.items.map((item) => {
+                      // Check if this item should be active based on path and query params
+                      const isActive = router.isReady && (item.pattern 
+                        ? item.pattern.test(router.pathname)
+                        : item.href.includes('?') 
+                          ? router.pathname === item.href.split('?')[0] && router.asPath === item.href
+                          : router.pathname === item.href);
+                      
+                      return (
+                        <li key={item.href}>
+                          {item.href === '/stages/[workflowId]' ? (
+                            <span className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground">
+                              {item.icon}
+                              {item.title}
+                            </span>
+                          ) : (
+                            (() => {
+                              // For complex pages like workflow detail, force a complete page reload
+                              const isComplexPage = router.isReady && (
+                                router.pathname.includes('/workflow/') || 
+                                router.pathname.includes('/hierarchy/') ||
+                                router.pathname.includes('/stages/') ||
+                                router.asPath.includes('/workflow/') ||
+                                router.asPath.includes('/hierarchy/') ||
+                                router.asPath.includes('/stages/')
+                              );
+                              
+                              if (isComplexPage) {
+                                // Use a button instead of Link for complex pages to force reload
+                                return (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      closeSidebar();
+                                      
+                                      // Add timestamp to force complete reload and bypass any caching
+                                      const url = item.href.includes('?') 
+                                        ? `${item.href}&_t=${Date.now()}`
+                                        : `${item.href}?_t=${Date.now()}`;
+                                      
+                                      // Force a complete page reload with cache busting
+                                      window.location.href = url;
+                                    }}
+                                    className={cn(
+                                      "w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors text-left",
+                                      isActive ? getActiveStyles() : "text-muted-foreground"
+                                    )}
+                                  >
+                                    {item.icon}
+                                    {item.title}
+                                  </button>
+                                );
+                              } else {
+                                // Use normal Link for other pages
+                                return (
+                                  <Link 
+                                    href={item.href}
+                                    onClick={() => closeSidebar()}
+                                    className={cn(
+                                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                                      isActive ? getActiveStyles() : "text-muted-foreground"
+                                    )}
+                                  >
+                                    {item.icon}
+                                    {item.title}
+                                  </Link>
+                                );
+                              }
+                            })()
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </nav>
+          </div>
+        </>
+      )}
+    </SafeRouter>
   );
 };
 
