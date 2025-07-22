@@ -345,6 +345,11 @@ const Sidebar = () => {
                                       e.preventDefault();
                                       closeSidebar();
                                       
+                                      // Emit custom navigation event to clear any active workflow detail state
+                                      window.dispatchEvent(new CustomEvent('sidebar:navigate', {
+                                        detail: { href: item.href, title: item.title }
+                                      }));
+                                      
                                       // Add timestamp to force complete reload and bypass any caching
                                       const url = item.href.includes('?') 
                                         ? `${item.href}&_t=${Date.now()}`
@@ -367,7 +372,14 @@ const Sidebar = () => {
                                 return (
                                   <Link 
                                     href={item.href}
-                                    onClick={() => closeSidebar()}
+                                    onClick={() => {
+                                      closeSidebar();
+                                      
+                                      // Emit custom navigation event to clear any active workflow detail state
+                                      window.dispatchEvent(new CustomEvent('sidebar:navigate', {
+                                        detail: { href: item.href, title: item.title }
+                                      }));
+                                    }}
                                     className={cn(
                                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
                                       isActive ? getActiveStyles() : "text-muted-foreground"

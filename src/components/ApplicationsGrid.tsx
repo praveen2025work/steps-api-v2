@@ -728,6 +728,61 @@ const ApplicationsGrid = () => {
     };
   };
 
+  // Listen for navigation events to clear workflow detail state
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clear workflow detail state when navigating away
+      setSelectedWorkflow(null);
+      setNavigationPath([]);
+      setCurrentNodes([]);
+    };
+
+    const handlePopState = () => {
+      // Clear workflow detail state on browser back/forward
+      setSelectedWorkflow(null);
+      setNavigationPath([]);
+      setCurrentNodes([]);
+    };
+
+    // Listen for custom navigation events from sidebar
+    const handleSidebarNavigation = (event: CustomEvent) => {
+      // Clear workflow detail state when sidebar navigation occurs
+      console.log('[ApplicationsGrid] Sidebar navigation detected, clearing workflow detail state:', event.detail);
+      setSelectedWorkflow(null);
+      setNavigationPath([]);
+      setCurrentNodes([]);
+    };
+
+    // Listen for Next.js router events
+    const handleRouteChangeStart = () => {
+      // Clear workflow detail state when route change starts
+      console.log('[ApplicationsGrid] Route change detected, clearing workflow detail state');
+      setSelectedWorkflow(null);
+      setNavigationPath([]);
+      setCurrentNodes([]);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('sidebar:navigate', handleSidebarNavigation as EventListener);
+
+    // Listen for Next.js router events if available
+    if (typeof window !== 'undefined' && (window as any).next?.router) {
+      (window as any).next.router.events.on('routeChangeStart', handleRouteChangeStart);
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('sidebar:navigate', handleSidebarNavigation as EventListener);
+      
+      // Clean up Next.js router event listener
+      if (typeof window !== 'undefined' && (window as any).next?.router) {
+        (window as any).next.router.events.off('routeChangeStart', handleRouteChangeStart);
+      }
+    };
+  }, []);
+
   // Show workflow detail view if a workflow is selected
   if (selectedWorkflow) {
     const workflowData = convertSummaryToWorkflowData(
