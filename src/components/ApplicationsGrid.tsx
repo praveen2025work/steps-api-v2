@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import UnifiedDashboardCard from './UnifiedDashboardCard';
 import WorkflowDetailView from './WorkflowDetailView';
 import { Button } from '@/components/ui/button';
@@ -31,6 +30,7 @@ import {
   XCircle,
   Activity
 } from 'lucide-react';
+import { SafeRouter } from './SafeRouter';
 
 // Interface for application data
 interface Application {
@@ -62,7 +62,6 @@ interface BreadcrumbItem {
 }
 
 const ApplicationsGrid = () => {
-  const router = useRouter();
   const { applications: workflowApps, loading, error, refresh, selectedDate, dateString } = useWorkflowDashboard();
   
   // Legacy applications from JSON data
