@@ -1,29 +1,18 @@
-import React, { useEffect } from "react";
-import { useRouter } from "next/router";
-import Head from "next/head";
+import type { GetServerSideProps } from 'next';
 
-export default function Home() {
-  const router = useRouter();
+const IndexPage = () => {
+  // This component will not be rendered because of the redirect.
+  // It's just a placeholder to have a valid page component.
+  return null;
+};
 
-  useEffect(() => {
-    // Redirect to Task Center (workflow inbox) as the landing page
-    router.replace('/workflow-inbox');
-  }, [router]);
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  return {
+    redirect: {
+      destination: '/workflow-inbox',
+      permanent: false, // Using a temporary redirect (307)
+    },
+  };
+};
 
-  return (
-    <>
-      <Head>
-        <title>STEPS - Task Center</title>
-        <meta name="description" content="Financial Workflow Management System - Task Center" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Redirecting to Task Center...</p>
-        </div>
-      </div>
-    </>
-  );
-}
+export default IndexPage;
