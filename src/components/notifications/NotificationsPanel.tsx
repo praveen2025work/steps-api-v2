@@ -14,8 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Notification } from './NotificationsCenter';
-import { generateMockNotifications } from '@/data/notificationsData';
+import { useNotifications } from '@/contexts/NotificationsContext';
+import { Notification } from '@/types/workflow-types';
 
 interface NotificationsPanelProps {
   isOpen: boolean;
@@ -24,34 +24,23 @@ interface NotificationsPanelProps {
 
 const NotificationsPanel = ({ isOpen, onClose }: NotificationsPanelProps) => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  
-  useEffect(() => {
-    // Load notifications when panel opens
-    if (isOpen) {
-      const mockNotifications = generateMockNotifications();
-      setNotifications(mockNotifications);
-    }
-  }, [isOpen]);
+  const { 
+    notifications, 
+    markAsRead, 
+    markAllAsRead, 
+    refreshNotifications 
+  } = useNotifications();
 
   const hasUnreadNotifications = notifications.some(n => !n.isRead);
   
-  const markAsRead = (id: string, event: React.MouseEvent) => {
+  const handleMarkAsRead = (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, isRead: true } : n
-    ));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    markAsRead(id);
   };
 
   const handleNotificationClick = (notification: Notification) => {
     // Mark as read
-    setNotifications(notifications.map(n => 
-      n.id === notification.id ? { ...n, isRead: true } : n
-    ));
+    markAsRead(notification.id);
     
     // Navigate based on notification type
     if (notification.workflowId) {
@@ -66,10 +55,21 @@ const NotificationsPanel = ({ isOpen, onClose }: NotificationsPanelProps) => {
     }
   };
 
-  const refreshNotifications = () => {
-    const mockNotifications = generateMockNotifications();
-    setNotifications(mockNotifications);
-  };
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+                        <p className="text-sm font-medium flex items-center gap-2 truncate">
+                          {notification.title}
+                          {!notification.isRead && (
+                            <span className="w-2 h-2 bg-primary rounded-full inline-block flex-shrink-0"></span>
+                          )}
+                        </p>
+=======
+                        <p className="text-sm font-medium flex items-center gap-2 truncate">
+                          {notification.title}
+                          {!notification.isRead && (
+                            <span className="w-2 h-2 bg-primary rounded-full inline-block flex-shrink-0" aria-label="Unread"></span>
+                          )}
+                        </p>
 
   // Get notification icon based on type
   const getNotificationIcon = (type: string) => {
@@ -161,7 +161,7 @@ const NotificationsPanel = ({ isOpen, onClose }: NotificationsPanelProps) => {
                             variant="ghost" 
                             size="sm" 
                             className="h-7 text-xs"
-                            onClick={(e) => markAsRead(notification.id, e)}
+                            onClick={(e) => handleMarkAsRead(notification.id, e)}
                           >
                             <Check className="h-3 w-3 mr-1" />
                             Mark as Read
