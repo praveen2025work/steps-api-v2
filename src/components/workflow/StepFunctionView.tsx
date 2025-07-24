@@ -45,9 +45,60 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
-  // No visualization type needed as we only have one view now
   
+  // Enhanced workflow data processing
   const diagramData = convertWorkflowToDiagram(workflow);
+  
+  // Extract all tasks with enhanced API data support
+  const allTasks = Object.values(workflow.tasks || {}).flat();
+  
+  // Calculate progress using enhanced data if available
+  let progressPercentage = 0;
+  let totalTasks = 0;
+  let completedTasks = 0;
+  
+  if (workflow.summaryData && workflow.summaryData.processData) {
+    const processData = workflow.summaryData.processData;
+    totalTasks = processData.length;
+    completedTasks = processData.filter((p: any) => 
+      p.status === 'COMPLETED' || p.status === 'completed'
+    ).length;
+    progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  } else {
+    // Fallback to task-based calculation
+    completedTasks = allTasks.filter((task: any) => task.status === 'completed').length;
+    totalTasks = allTasks.length;
+    progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  }
+  
+  // Enhanced task counts from API data if available
+  let taskCounts = {
+    completed: completedTasks,
+    failed: 0,
+    rejected: 0,
+    pending: totalTasks - completedTasks,
+    processing: 0
+  };
+  
+  if (workflow.summaryData && workflow.summaryData.processData) {
+    const processData = workflow.summaryData.processData;
+    taskCounts = {
+      completed: 0,
+      failed: 0,
+      rejected: 0,
+      pending: 0,
+      processing: 0
+    };
+    
+    processData.forEach((process: any) => {
+      const status = process.status?.toLowerCase();
+      if (status === 'completed') taskCounts.completed++;
+      else if (status === 'failed') taskCounts.failed++;
+      else if (status === 'rejected') taskCounts.rejected++;
+      else if (status === 'in_progress' || status === 'in-progress' || status === 'running') taskCounts.processing++;
+      else taskCounts.pending++;
+    });
+  }
   
   // Handle node click with improved navigation
   const handleNodeClick = (nodeId: string) => {
@@ -146,9 +197,33 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
             <GitBranch className="h-5 w-5 mr-2 text-blue-600" />
             {workflow.title} - Step Function View
           </h1>
+          {/* Enhanced progress indicator */}
+          <div className="ml-4 text-sm text-muted-foreground">
+            Progress: {progressPercentage}% ({completedTasks}/{totalTasks} tasks)
+          </div>
         </div>
         
         <div className="flex items-center gap-4">
+          {/* Enhanced status indicators */}
+          <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span>{taskCounts.completed}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <span>{taskCounts.processing}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+              <span>{taskCounts.failed}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+              <span>{taskCounts.pending}</span>
+            </div>
+          </div>
+          
           {/* Panel toggles */}
           <div className="flex items-center gap-2">
             <Button 
@@ -217,11 +292,35 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
               </div>
             ) : (
               <div className={`${layoutClasses.container} h-full`}>
-                {/* Left Panel - Process List */}
+                {/* Left Panel - Enhanced Process List */}
                 {showLeftPanel && (
                   <div className={`${layoutClasses.leftPanel} border-r h-full overflow-auto`}>
                     <div className="p-4">
                       <h2 className="text-lg font-medium mb-4">Process List</h2>
+                      
+                      {/* Enhanced summary stats */}
+                      <div className="mb-4 p-3 bg-muted/30 rounded-md">
+                        <div className="text-sm font-medium mb-2">Summary</div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex justify-between">
+                            <span>Total:</span>
+                            <span className="font-medium">{totalTasks}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Completed:</span>
+                            <span className="font-medium text-green-600">{taskCounts.completed}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Processing:</span>
+                            <span className="font-medium text-blue-600">{taskCounts.processing}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Failed:</span>
+                            <span className="font-medium text-red-600">{taskCounts.failed}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
                       <div className="space-y-2">
                         {workflow.stages.flatMap((stage: any) => {
                           const stageTasks = workflow.tasks[stage.id] || [];
@@ -243,9 +342,16 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
                                 ) : (
                                   <Clock className="h-4 w-4 text-amber-500" />
                                 )}
-                                <div>
+                                <div className="flex-1">
                                   <div className="font-medium text-sm">{task.name}</div>
                                   <div className="text-xs text-muted-foreground">{stage.name}</div>
+                                  {/* Enhanced task info */}
+                                  {task.processId && (
+                                    <div className="text-xs text-muted-foreground font-mono">{task.processId}</div>
+                                  )}
+                                  {task.updatedBy && (
+                                    <div className="text-xs text-muted-foreground">By: {task.updatedBy}</div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -267,7 +373,7 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
                   />
                 </div>
                 
-                {/* Right Panel - Node Details */}
+                {/* Right Panel - Enhanced Node Details */}
                 {showRightPanel && (
                   <div className={`${layoutClasses.rightPanel} border-l h-full overflow-auto`}>
                     <div className="p-4">
@@ -285,6 +391,45 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
                               </Button>
                             </div>
                           </div>
+                          
+                          {/* Enhanced node info */}
+                          {selectedNode.data && (
+                            <div className="mb-4 p-3 bg-muted/30 rounded-md">
+                              <div className="text-sm space-y-1">
+                                {selectedNode.data.processId && (
+                                  <div className="flex justify-between">
+                                    <span>Process ID:</span>
+                                    <span className="font-mono text-xs">{selectedNode.data.processId}</span>
+                                  </div>
+                                )}
+                                {selectedNode.data.status && (
+                                  <div className="flex justify-between">
+                                    <span>Status:</span>
+                                    <span className={`font-medium ${
+                                      selectedNode.data.status === 'completed' ? 'text-green-600' :
+                                      selectedNode.data.status === 'in_progress' ? 'text-blue-600' :
+                                      selectedNode.data.status === 'failed' ? 'text-red-600' :
+                                      'text-amber-600'
+                                    }`}>
+                                      {selectedNode.data.status.replace('_', ' ').toUpperCase()}
+                                    </span>
+                                  </div>
+                                )}
+                                {selectedNode.data.updatedBy && (
+                                  <div className="flex justify-between">
+                                    <span>Updated By:</span>
+                                    <span className="font-medium">{selectedNode.data.updatedBy}</span>
+                                  </div>
+                                )}
+                                {selectedNode.data.updatedAt && (
+                                  <div className="flex justify-between">
+                                    <span>Updated At:</span>
+                                    <span className="font-medium">{selectedNode.data.updatedAt}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           
                           {/* Node Actions */}
                           <div className="flex flex-wrap gap-2 mb-4">
@@ -338,7 +483,7 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
                           {/* Node Files */}
                           {selectedNode.data && selectedNode.data.documents && selectedNode.data.documents.length > 0 && (
                             <div className="mb-4">
-                              <h3 className="text-sm font-medium mb-2">Files</h3>
+                              <h3 className="text-sm font-medium mb-2">Files ({selectedNode.data.documents.length})</h3>
                               <div className="flex flex-wrap gap-2">
                                 {selectedNode.data.documents.map((doc: any, index: number) => (
                                   <Button 
@@ -352,8 +497,25 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
                                     className="flex items-center"
                                   >
                                     <FileText className="h-4 w-4 mr-2" />
-                                    {doc.name}
+                                    <div className="text-left">
+                                      <div className="text-xs">{doc.name}</div>
+                                      {doc.size && <div className="text-xs text-muted-foreground">{doc.size}</div>}
+                                    </div>
                                   </Button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Enhanced messages display */}
+                          {selectedNode.data && selectedNode.data.messages && selectedNode.data.messages.length > 0 && (
+                            <div className="mb-4">
+                              <h3 className="text-sm font-medium mb-2">Messages</h3>
+                              <div className="space-y-2">
+                                {selectedNode.data.messages.map((message: string, index: number) => (
+                                  <div key={index} className="bg-muted/50 p-2 rounded-md text-sm">
+                                    {message}
+                                  </div>
                                 ))}
                               </div>
                             </div>
@@ -397,6 +559,37 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
                           <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50" />
                           <h3 className="text-lg font-medium mb-2">No Node Selected</h3>
                           <p className="text-sm">Click on a node in the diagram to view its details</p>
+                          
+                          {/* Enhanced summary when no node selected */}
+                          <div className="mt-6 p-4 bg-muted/30 rounded-md text-left">
+                            <h4 className="font-medium mb-2">Workflow Summary</h4>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex justify-between">
+                                <span>Total Tasks:</span>
+                                <span className="font-medium">{totalTasks}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Progress:</span>
+                                <span className="font-medium">{progressPercentage}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Completed:</span>
+                                <span className="font-medium text-green-600">{taskCounts.completed}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Processing:</span>
+                                <span className="font-medium text-blue-600">{taskCounts.processing}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Failed:</span>
+                                <span className="font-medium text-red-600">{taskCounts.failed}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Pending:</span>
+                                <span className="font-medium text-amber-600">{taskCounts.pending}</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

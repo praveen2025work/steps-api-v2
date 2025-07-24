@@ -799,6 +799,46 @@ const ApplicationsGrid = () => {
       selectedWorkflow.node
     );
 
+    // Enhanced workflow data object with all necessary data for Modern and Step Function views
+    const enhancedWorkflowData = {
+      id: selectedWorkflow.node.configId || 'workflow-1',
+      title: workflowData.workflowTitle,
+      progressSteps: workflowData.progressSteps,
+      stages: workflowData.stages,
+      tasks: workflowData.tasks,
+      // Pass the raw API data for Modern and Step Function views
+      summaryData: selectedWorkflow.summary,
+      applicationData: selectedWorkflow.application,
+      nodeData: selectedWorkflow.node,
+      // Additional computed data
+      progress: selectedWorkflow.node.percentageCompleted || 0,
+      status: 'Active',
+      // Enhanced task counts from actual API data
+      taskCounts: (() => {
+        const processData = selectedWorkflow.summary.processData || [];
+        let completed = 0, failed = 0, rejected = 0, pending = 0, processing = 0;
+        
+        processData.forEach((process: any) => {
+          const status = process.status?.toLowerCase();
+          if (status === 'completed') completed++;
+          else if (status === 'failed') failed++;
+          else if (status === 'rejected') rejected++;
+          else if (status === 'in_progress' || status === 'in-progress' || status === 'running') processing++;
+          else pending++;
+        });
+        
+        return { completed, failed, rejected, pending, processing };
+      })(),
+      // File data from API
+      allFiles: selectedWorkflow.summary.fileData || [],
+      // Dependency data from API
+      allDependencies: selectedWorkflow.summary.dependencyData || [],
+      // Parameters from API
+      dailyParams: selectedWorkflow.summary.dailyParams || [],
+      appParams: selectedWorkflow.summary.appParams || [],
+      processParams: selectedWorkflow.summary.processParams || []
+    };
+
     return (
       <div className="space-y-4">
         {/* Workflow Detail View */}
@@ -813,6 +853,8 @@ const ApplicationsGrid = () => {
           applicationData={selectedWorkflow.application}
           nodeData={selectedWorkflow.node}
           onBack={() => setSelectedWorkflow(null)}
+          // Pass enhanced workflow data for Modern and Step Function views
+          enhancedWorkflowData={enhancedWorkflowData}
         />
       </div>
     );

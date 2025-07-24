@@ -69,13 +69,28 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   const [selectAllTasks, setSelectAllTasks] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
   
-  // Extract tasks from workflow data
+  // Extract tasks from workflow data with enhanced API data support
   const allTasks = Object.values(workflow.tasks || {}).flat();
   
-  // Calculate overall progress
-  const completedTasks = allTasks.filter((task: any) => task.status === 'completed').length;
-  const totalTasks = allTasks.length;
-  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  // Calculate overall progress using enhanced data if available
+  let progressPercentage = 0;
+  let completedTasks = 0;
+  let totalTasks = 0;
+  
+  // First priority: Use summaryData from API if available
+  if (workflow.summaryData && workflow.summaryData.processData) {
+    const processData = workflow.summaryData.processData;
+    totalTasks = processData.length;
+    completedTasks = processData.filter((p: any) => 
+      p.status === 'COMPLETED' || p.status === 'completed'
+    ).length;
+    progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  } else {
+    // Fallback to task-based calculation
+    completedTasks = allTasks.filter((task: any) => task.status === 'completed').length;
+    totalTasks = allTasks.length;
+    progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  }
   
   // Handle file click
   const handleFileClick = (file: any) => {
@@ -145,173 +160,212 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
   
-  // Render the overview tab content
-  const renderOverviewContent = () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-      <div className="md:col-span-2 space-y-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Workflow Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Stages</h4>
-                  <p className="text-2xl font-bold">{workflow.stages.length}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Tasks</h4>
-                  <p className="text-2xl font-bold">{totalTasks}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Completed Tasks</h4>
-                  <p className="text-2xl font-bold">{completedTasks}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Pending Tasks</h4>
-                  <p className="text-2xl font-bold">{totalTasks - completedTasks}</p>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h4 className="text-sm font-medium mb-2">Stage Progress</h4>
-                <div className="space-y-3">
-                  {workflow.stages.map((stage: any) => {
-                    // Calculate stage progress
-                    const stageTasks = workflow.tasks[stage.id] || [];
-                    const stageCompletedTasks = stageTasks.filter((task: any) => task.status === 'completed').length;
-                    const stageProgress = stageTasks.length > 0 
-                      ? Math.round((stageCompletedTasks / stageTasks.length) * 100) 
-                      : 0;
-                    
-                    return (
-                      <div key={stage.id} className="space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">{stage.name}</span>
-                          <span className="text-sm font-medium">{stageProgress}%</span>
-                        </div>
-                        <Progress value={stageProgress} className="h-2" />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {allTasks.slice(0, 3).map((task: any) => (
-                <div key={task.id} className="flex items-start gap-3 p-3 rounded-md border">
-                  <div className={`p-2 rounded-full ${
-                    task.status === 'completed' ? 'bg-green-100 text-green-600' :
-                    task.status === 'in_progress' ? 'bg-blue-100 text-blue-600' :
-                    task.status === 'failed' ? 'bg-red-100 text-red-600' :
-                    'bg-amber-100 text-amber-600'
-                  }`}>
-                    {getStatusIcon(task.status)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <h4 className="font-medium">{task.name}</h4>
-                      <Badge variant={getStatusBadgeVariant(task.status)}>
-                        {formatStatus(task.status)}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {task.updatedBy} - {task.updatedAt}
-                    </p>
-                    {task.messages && task.messages.length > 0 && (
-                      <p className="text-sm mt-2 bg-muted/50 p-2 rounded-md">
-                        {task.messages[0]}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+  // Render the overview tab content with enhanced API data
+  const renderOverviewContent = () => {
+    // Enhanced task counts from API data if available
+    let taskCounts = {
+      completed: completedTasks,
+      failed: 0,
+      rejected: 0,
+      pending: totalTasks - completedTasks,
+      processing: 0
+    };
+    
+    if (workflow.summaryData && workflow.summaryData.processData) {
+      const processData = workflow.summaryData.processData;
+      taskCounts = {
+        completed: 0,
+        failed: 0,
+        rejected: 0,
+        pending: 0,
+        processing: 0
+      };
       
-      <div className="space-y-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh Workflow
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <User className="h-4 w-4 mr-2" />
-                Assign to Team
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Mark as Complete
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Flag as Priority
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="h-4 w-4 mr-2" />
-                Export Report
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Add Comment
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Open in Classic View
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Recent Files</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {allTasks.flatMap((task: any) => 
-                (task.documents || []).map((doc: any, index: number) => (
-                  <Button 
-                    key={`${task.id}-${index}`}
-                    variant="ghost" 
-                    className="w-full justify-start"
-                    onClick={() => handleFileClick({
-                      id: `file-${task.id}-${index}`,
-                      name: doc.name
+      processData.forEach((process: any) => {
+        const status = process.status?.toLowerCase();
+        if (status === 'completed') taskCounts.completed++;
+        else if (status === 'failed') taskCounts.failed++;
+        else if (status === 'rejected') taskCounts.rejected++;
+        else if (status === 'in_progress' || status === 'in-progress' || status === 'running') taskCounts.processing++;
+        else taskCounts.pending++;
+      });
+    }
+    
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+        <div className="md:col-span-2 space-y-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Workflow Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Stages</h4>
+                    <p className="text-2xl font-bold">{workflow.stages.length}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Tasks</h4>
+                    <p className="text-2xl font-bold">{totalTasks}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Completed</h4>
+                    <p className="text-2xl font-bold text-green-600">{taskCounts.completed}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Processing</h4>
+                    <p className="text-2xl font-bold text-blue-600">{taskCounts.processing}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Failed</h4>
+                    <p className="text-2xl font-bold text-red-600">{taskCounts.failed}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Pending</h4>
+                    <p className="text-2xl font-bold text-amber-600">{taskCounts.pending}</p>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Stage Progress</h4>
+                  <div className="space-y-3">
+                    {workflow.stages.map((stage: any) => {
+                      // Calculate stage progress
+                      const stageTasks = workflow.tasks[stage.id] || [];
+                      const stageCompletedTasks = stageTasks.filter((task: any) => task.status === 'completed').length;
+                      const stageProgress = stageTasks.length > 0 
+                        ? Math.round((stageCompletedTasks / stageTasks.length) * 100) 
+                        : 0;
+                      
+                      return (
+                        <div key={stage.id} className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">{stage.name}</span>
+                            <span className="text-sm font-medium">{stageProgress}%</span>
+                          </div>
+                          <Progress value={stageProgress} className="h-2" />
+                        </div>
+                      );
                     })}
-                  >
-                    <Paperclip className="h-4 w-4 mr-2" />
-                    <div className="flex justify-between items-center w-full">
-                      <span className="truncate">{doc.name}</span>
-                      <span className="text-xs text-muted-foreground">{doc.size}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {allTasks.slice(0, 3).map((task: any) => (
+                  <div key={task.id} className="flex items-start gap-3 p-3 rounded-md border">
+                    <div className={`p-2 rounded-full ${
+                      task.status === 'completed' ? 'bg-green-100 text-green-600' :
+                      task.status === 'in_progress' ? 'bg-blue-100 text-blue-600' :
+                      task.status === 'failed' ? 'bg-red-100 text-red-600' :
+                      'bg-amber-100 text-amber-600'
+                    }`}>
+                      {getStatusIcon(task.status)}
                     </div>
-                  </Button>
-                ))
-              ).slice(0, 5)}
-            </div>
-          </CardContent>
-        </Card>
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <h4 className="font-medium">{task.name}</h4>
+                        <Badge variant={getStatusBadgeVariant(task.status)}>
+                          {formatStatus(task.status)}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {task.updatedBy} - {task.updatedAt}
+                      </p>
+                      {task.messages && task.messages.length > 0 && (
+                        <p className="text-sm mt-2 bg-muted/50 p-2 rounded-md">
+                          {task.messages[0]}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full justify-start">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Workflow
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <User className="h-4 w-4 mr-2" />
+                  Assign to Team
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mark as Complete
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Flag as Priority
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Export Report
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Add Comment
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open in Classic View
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Recent Files</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {allTasks.flatMap((task: any) => 
+                  (task.documents || []).map((doc: any, index: number) => (
+                    <Button 
+                      key={`${task.id}-${index}`}
+                      variant="ghost" 
+                      className="w-full justify-start"
+                      onClick={() => handleFileClick({
+                        id: `file-${task.id}-${index}`,
+                        name: doc.name
+                      })}
+                    >
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      <div className="flex justify-between items-center w-full">
+                        <span className="truncate">{doc.name}</span>
+                        <span className="text-xs text-muted-foreground">{doc.size}</span>
+                      </div>
+                    </Button>
+                  ))
+                ).slice(0, 5)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
   
   // Handle task selection
   const handleTaskSelection = (taskId: string) => {

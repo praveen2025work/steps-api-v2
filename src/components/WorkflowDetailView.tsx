@@ -96,6 +96,8 @@ interface WorkflowDetailViewProps {
   nodeData?: any; // WorkflowNode from API
   // Navigation props
   onBack?: () => void; // Callback to navigate back to previous view
+  // Enhanced workflow data for Modern and Step Function views
+  enhancedWorkflowData?: any;
 }
 
 interface ActivityLogItem {
@@ -148,7 +150,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   summaryData,
   applicationData,
   nodeData,
-  onBack
+  onBack,
+  enhancedWorkflowData
 }) => {
   const router = useRouter();
   const { selectedDate } = useDate();
