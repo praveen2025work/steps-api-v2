@@ -88,11 +88,6 @@ export interface WorkflowInboxItemData {
 
 export const WorkflowInboxDashboard: React.FC = () => {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <h2 className="text-xl font-semibold">Task Center</h2>
-      </div>
-      <EnhancedWorkflowInboxDashboard />
-    </div>
+    <EnhancedWorkflowInboxDashboard />
   );
 };
