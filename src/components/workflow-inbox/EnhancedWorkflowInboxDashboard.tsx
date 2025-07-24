@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   Clock, 
   User, 
@@ -104,13 +105,9 @@ export interface WorkflowInboxItemData {
   };
 }
 
-interface HierarchicalLevel {
-  id: string;
-  name: string;
-  level: number;
-  parentId?: string;
+interface ApplicationGroup {
+  application: string;
   processes: WorkflowInboxItemData[];
-  children?: HierarchicalLevel[];
 }
 
 interface EnhancedWorkflowInboxDashboardProps {
@@ -130,9 +127,9 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
   });
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'businessDate'>('priority');
   const [expandedApplications, setExpandedApplications] = useState<Set<string>>(new Set());
-  const [expandedLevels, setExpandedLevels] = useState<Set<string>>(new Set());
   const [inlineMessages, setInlineMessages] = useState<Record<string, string>>({});
   const [detailPanelTab, setDetailPanelTab] = useState('overview');
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
 
   const { items, loading, error, refreshData, assignToMe, triggerAction } = useWorkflowInbox();
 
@@ -141,16 +138,6 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
     if (items.length > 0) {
       const applications = new Set(items.map(item => item.metadata.application));
       setExpandedApplications(applications);
-      
-      // Also expand first level by default
-      const firstLevels = new Set<string>();
-      items.forEach(item => {
-        const pathParts = item.metadata.hierarchyPath.split(' > ');
-        if (pathParts.length > 2) {
-          firstLevels.add(`${item.metadata.application}-level1`);
-        }
-      });
-      setExpandedLevels(firstLevels);
     }
   }, [items]);
 
@@ -186,53 +173,24 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
     return filtered;
   }, [items, filters, sortBy]);
 
-  // Create hierarchical structure
-  const hierarchicalData = React.useMemo(() => {
-    const appGroups: Record<string, HierarchicalLevel> = {};
+  // Group items by application (flat structure)
+  const applicationGroups = React.useMemo(() => {
+    const groups: Record<string, ApplicationGroup> = {};
     
     filteredItems.forEach(item => {
       const app = item.metadata.application;
       
-      if (!appGroups[app]) {
-        appGroups[app] = {
-          id: app,
-          name: app,
-          level: 0,
-          processes: [],
-          children: []
+      if (!groups[app]) {
+        groups[app] = {
+          application: app,
+          processes: []
         };
       }
       
-      // Parse hierarchy path to create levels
-      const pathParts = item.metadata.hierarchyPath.split(' > ').slice(1); // Remove 'Root'
-      let currentLevel = appGroups[app];
-      
-      // Create nested levels based on hierarchy path
-      for (let i = 1; i < pathParts.length - 1; i++) { // Skip app name and final process
-        const levelName = pathParts[i];
-        const levelId = `${app}-${levelName}-${i}`;
-        
-        let childLevel = currentLevel.children?.find(child => child.id === levelId);
-        if (!childLevel) {
-          childLevel = {
-            id: levelId,
-            name: levelName,
-            level: i,
-            parentId: currentLevel.id,
-            processes: [],
-            children: []
-          };
-          currentLevel.children = currentLevel.children || [];
-          currentLevel.children.push(childLevel);
-        }
-        currentLevel = childLevel;
-      }
-      
-      // Add process to the deepest level
-      currentLevel.processes.push(item);
+      groups[app].processes.push(item);
     });
     
-    return Object.values(appGroups);
+    return Object.values(groups);
   }, [filteredItems]);
 
   // Get summary stats
@@ -297,16 +255,6 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
     setExpandedApplications(newExpanded);
   };
 
-  const toggleLevelExpansion = (levelId: string) => {
-    const newExpanded = new Set(expandedLevels);
-    if (newExpanded.has(levelId)) {
-      newExpanded.delete(levelId);
-    } else {
-      newExpanded.add(levelId);
-    }
-    setExpandedLevels(newExpanded);
-  };
-
   const handleInlineMessageChange = (itemId: string, message: string) => {
     setInlineMessages(prev => ({
       ...prev,
@@ -361,7 +309,11 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
 
   const renderProcessItem = (item: WorkflowInboxItemData) => {
     const isApprovalType = item.metadata.processControls.attest || item.status === 'requires_attention';
-    const showInlineMessage = isApprovalType && inlineMessages[item.id] !== undefined;
+    
+    // Extract hierarchy levels from hierarchyPath for inline display
+    const hierarchyLevels = item.metadata.hierarchyPath
+      ? item.metadata.hierarchyPath.split(' > ').slice(1) // Remove 'Root'
+      : [];
     
     return (
       <Card 
@@ -403,6 +355,15 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                
+                {/* Inline hierarchy levels display */}
+                {hierarchyLevels.length > 0 && (
+                  <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                    <span className="text-xs bg-muted px-2 py-0.5 rounded">Levels:</span>
+                    <span>{hierarchyLevels.join(' → ')}</span>
+                  </div>
+                )}
+                
                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                   <span>{item.metadata.stage}</span>
                   <span>•</span>
@@ -517,55 +478,6 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
           </div>
         </CardContent>
       </Card>
-    );
-  };
-
-  const renderHierarchicalLevel = (level: HierarchicalLevel, depth: number = 0) => {
-    const isExpanded = expandedLevels.has(level.id);
-    const hasChildren = level.children && level.children.length > 0;
-    const hasProcesses = level.processes.length > 0;
-    const totalItems = level.processes.length + (level.children?.reduce((sum, child) => sum + child.processes.length, 0) || 0);
-
-    return (
-      <div key={level.id} className="space-y-2">
-        {/* Level Header */}
-        {depth > 0 && (
-          <div 
-            className={cn(
-              "flex items-center gap-2 p-2 bg-muted/30 rounded-md cursor-pointer hover:bg-muted/50 transition-colors",
-              `ml-${depth * 4}`
-            )}
-            onClick={() => toggleLevelExpansion(level.id)}
-          >
-            {hasChildren || hasProcesses ? (
-              isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              )
-            ) : (
-              <div className="w-4 h-4" />
-            )}
-            <span className="font-medium text-sm">Level {depth}: {level.name}</span>
-            <Badge variant="secondary" className="text-xs">
-              {totalItems}
-            </Badge>
-          </div>
-        )}
-
-        {/* Level Content */}
-        {(depth === 0 || isExpanded) && (
-          <div className={cn("space-y-2", depth > 0 && `ml-${(depth + 1) * 4}`)}>
-            {/* Render processes at this level */}
-            {hasProcesses && level.processes.map(process => renderProcessItem(process))}
-            
-            {/* Render child levels */}
-            {hasChildren && level.children!.map(childLevel => 
-              renderHierarchicalLevel(childLevel, depth + 1)
-            )}
-          </div>
-        )}
-      </div>
     );
   };
 
@@ -730,57 +642,73 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Combined Statistics Section */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Task Center Summary</CardTitle>
-            <Button onClick={refreshData} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-5 gap-4">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-2xl font-bold">{stats.total}</span>
+      {/* Compact Task Center Summary */}
+      <Collapsible open={!summaryCollapsed} onOpenChange={setSummaryCollapsed}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 cursor-pointer hover:bg-accent/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {summaryCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <CardTitle className="text-base">Task Center Summary</CardTitle>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{stats.total} total</span>
+                    <span>•</span>
+                    <span>{stats.pending} pending</span>
+                    <span>•</span>
+                    <span>{stats.inProgress} in progress</span>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); refreshData(); }} disabled={loading}>
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
               </div>
-              <p className="text-sm text-muted-foreground">Total</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Clock className="h-4 w-4 text-yellow-500" />
-                <span className="text-2xl font-bold">{stats.pending}</span>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-5 gap-4">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xl font-bold">{stats.total}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Clock className="h-4 w-4 text-yellow-500" />
+                    <span className="text-xl font-bold">{stats.pending}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <PlayCircle className="h-4 w-4 text-blue-500" />
+                    <span className="text-xl font-bold">{stats.inProgress}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">In Progress</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Shield className="h-4 w-4 text-purple-500" />
+                    <span className="text-xl font-bold">{stats.attestation}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Attestation</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span className="text-xl font-bold">{stats.approval}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Approval</p>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">Pending</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <PlayCircle className="h-4 w-4 text-blue-500" />
-                <span className="text-2xl font-bold">{stats.inProgress}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">In Progress</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Shield className="h-4 w-4 text-purple-500" />
-                <span className="text-2xl font-bold">{stats.attestation}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">Attestation</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span className="text-2xl font-bold">{stats.approval}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">Approval</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       {/* Filters - Full Width */}
       <WorkflowInboxFilters
@@ -815,37 +743,29 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                       <p className="text-muted-foreground">No workflow items match your filters</p>
                     </div>
                   ) : (
-                    hierarchicalData.map((appLevel) => (
-                      <div key={appLevel.id} className="space-y-2">
+                    applicationGroups.map((group) => (
+                      <div key={group.application} className="space-y-2">
                         {/* Application Header */}
                         <div 
                           className="flex items-center gap-2 p-3 bg-muted/50 rounded-md cursor-pointer hover:bg-muted/70 transition-colors"
-                          onClick={() => toggleApplicationExpansion(appLevel.id)}
+                          onClick={() => toggleApplicationExpansion(group.application)}
                         >
-                          {expandedApplications.has(appLevel.id) ? (
+                          {expandedApplications.has(group.application) ? (
                             <ChevronDown className="h-4 w-4 text-muted-foreground" />
                           ) : (
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           )}
                           <Database className="h-4 w-4 text-blue-500" />
-                          <span className="font-medium">{appLevel.name}</span>
+                          <span className="font-medium">{group.application}</span>
                           <Badge variant="secondary" className="text-xs">
-                            {appLevel.processes.length + (appLevel.children?.reduce((sum, child) => sum + child.processes.length, 0) || 0)}
+                            {group.processes.length} process{group.processes.length !== 1 ? 'es' : ''}
                           </Badge>
                         </div>
 
-                        {/* Application Content */}
-                        {expandedApplications.has(appLevel.id) && (
+                        {/* Application Content - Flat list of processes */}
+                        {expandedApplications.has(group.application) && (
                           <div className="ml-6 space-y-2">
-                            {/* Render hierarchical levels */}
-                            {appLevel.children && appLevel.children.length > 0 ? (
-                              appLevel.children.map(childLevel => 
-                                renderHierarchicalLevel(childLevel, 1)
-                              )
-                            ) : (
-                              // Render processes directly if no hierarchy
-                              appLevel.processes.map(process => renderProcessItem(process))
-                            )}
+                            {group.processes.map(process => renderProcessItem(process))}
                           </div>
                         )}
                       </div>
