@@ -30,6 +30,8 @@ import FileDataIntegration from './files/FileDataIntegration';
 import FileLocationDebugger from './files/FileLocationDebugger';
 import EnhancedFileViewer from './files/EnhancedFileViewer';
 import EnhancedWorkflowFilePreview from './files/EnhancedWorkflowFilePreview';
+import ModernWorkflowView from './workflow/ModernWorkflowView';
+import StepFunctionView from './workflow/StepFunctionView';
 import { 
   FileText, 
   Lock, 
@@ -86,8 +88,8 @@ interface WorkflowDetailViewProps {
   progressSteps: { name: string; progress: number }[];
   stages: { id: string; name: string }[];
   tasks: Record<string, WorkflowTask[]>; // Map of stageId to tasks
-  viewMode?: 'classic' | 'alternative';
-  onViewToggle?: (mode: 'classic' | 'alternative') => void;
+  viewMode?: 'classic' | 'modern' | 'step-function';
+  onViewToggle?: (mode: 'classic' | 'modern' | 'step-function') => void;
   // Enhanced props for right panel binding
   summaryData?: any; // WorkflowSummary from API
   applicationData?: any; // WorkflowApplication from API
@@ -1222,6 +1224,46 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     }
   }, [stageSpecificSubStages, tasks]);
 
+  // Prepare workflow data for Modern and Step Function views
+  const workflowData = {
+    id: hierarchyPath[hierarchyPath.length-1]?.id || 'workflow-1',
+    title: workflowTitle,
+    progressSteps,
+    stages,
+    tasks,
+    summaryData,
+    applicationData,
+    nodeData
+  };
+
+  // Handle view toggle
+  const handleViewToggle = (newViewMode: 'classic' | 'modern' | 'step-function') => {
+    if (onViewToggle) {
+      onViewToggle(newViewMode as any);
+    }
+  };
+
+  // Render different views based on viewMode
+  if (viewMode === 'modern') {
+    return (
+      <ModernWorkflowView
+        workflow={workflowData}
+        onBack={onBack}
+        onViewToggle={() => handleViewToggle('classic')}
+      />
+    );
+  }
+
+  if (viewMode === 'step-function') {
+    return (
+      <StepFunctionView
+        workflow={workflowData}
+        onBack={onBack || (() => handleViewToggle('classic'))}
+      />
+    );
+  }
+
+  // Default Classic view
   return (
     <div className="space-y-2">
       {/* Unified Workflow Header Card with Auto-Refresh Controls */}

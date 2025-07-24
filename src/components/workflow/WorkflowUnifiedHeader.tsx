@@ -47,8 +47,8 @@ interface WorkflowUnifiedHeaderProps {
     processing: number;
   };
   lastRefreshed?: Date;
-  viewMode?: 'classic' | 'alternative' | 'stepfunction';
-  onViewToggle?: (mode: 'classic' | 'alternative' | 'stepfunction') => void;
+  viewMode?: 'classic' | 'modern' | 'step-function';
+  onViewToggle?: (mode: 'classic' | 'modern' | 'step-function') => void;
   // Auto-refresh props
   autoRefreshEnabled?: boolean;
   onAutoRefreshToggle?: (enabled: boolean) => void;
@@ -188,9 +188,9 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                 Classic View
               </Button>
               <Button
-                variant={viewMode === 'alternative' ? "default" : "ghost"}
+                variant={viewMode === 'modern' ? "default" : "ghost"}
                 size="sm"
-                onClick={() => onViewToggle('alternative')}
+                onClick={() => onViewToggle('modern')}
                 title="Modern View"
                 className="h-6 px-2 text-xs"
               >
@@ -198,9 +198,9 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
                 Modern View
               </Button>
               <Button
-                variant={viewMode === 'stepfunction' ? "default" : "ghost"}
+                variant={viewMode === 'step-function' ? "default" : "ghost"}
                 size="sm"
-                onClick={() => onViewToggle('stepfunction')}
+                onClick={() => onViewToggle('step-function')}
                 title="Step Function View"
                 className="h-6 px-2 text-xs"
               >
