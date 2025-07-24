@@ -1227,8 +1227,8 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     }
   }, [stageSpecificSubStages, tasks]);
 
-  // Prepare workflow data for Modern and Step Function views
-  const workflowData = {
+  // Prepare enhanced workflow data for Modern and Step Function views
+  const workflowData = enhancedWorkflowData || {
     id: hierarchyPath[hierarchyPath.length-1]?.id || 'workflow-1',
     title: workflowTitle,
     progressSteps,
@@ -1236,7 +1236,17 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
     tasks,
     summaryData,
     applicationData,
-    nodeData
+    nodeData,
+    // Enhanced task counts from actual data
+    taskCounts: calculateTaskCounts(),
+    // Overall progress
+    progress: calculateOverallProgress(),
+    // Additional computed data for better binding
+    allFiles: summaryData?.fileData || [],
+    allDependencies: summaryData?.dependencyData || [],
+    dailyParams: summaryData?.dailyParams || [],
+    appParams: summaryData?.appParams || [],
+    processParams: summaryData?.processParams || []
   };
 
   // Handle view toggle
