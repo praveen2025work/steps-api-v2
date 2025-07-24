@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   Clock, 
   User, 
@@ -43,7 +44,9 @@ import {
   Network,
   Database,
   Shield,
-  X
+  X,
+  List,
+  Grid3X3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -121,6 +124,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
 }) => {
   const [selectedItem, setSelectedItem] = useState<WorkflowInboxItemData | null>(null);
   const [showDetailPanel, setShowDetailPanel] = useState(false);
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
@@ -483,6 +487,237 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
     );
   };
 
+  const renderTableView = () => {
+    return (
+      <div className="space-y-4">
+        {applicationGroups.map((group) => (
+          <Card key={group.application}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-blue-500" />
+                <CardTitle className="text-base">{group.application}</CardTitle>
+                <Badge variant="secondary" className="text-xs">
+                  {group.processes.length} process{group.processes.length !== 1 ? 'es' : ''}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[300px]">Sub-stage</TableHead>
+                    <TableHead className="w-[150px]">Stage</TableHead>
+                    <TableHead className="w-[100px]">Status</TableHead>
+                    <TableHead className="w-[100px]">Priority</TableHead>
+                    <TableHead className="w-[120px]">Assigned To</TableHead>
+                    <TableHead className="w-[100px]">Due Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {group.processes.map((item) => {
+                    const isApprovalType = item.metadata.processControls.attest || item.status === 'requires_attention';
+                    
+                    return (
+                      <TableRow 
+                        key={item.id}
+                        className={cn(
+                          "hover:bg-muted/50 cursor-pointer transition-colors",
+                          selectedItem?.id === item.id && "bg-primary/5"
+                        )}
+                        onClick={() => handleItemClick(item)}
+                      >
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(item.status)}
+                              <span className="font-medium text-sm">{item.metadata.substage}</span>
+                            </div>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {item.metadata.processControls.auto && (
+                                <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800">
+                                  Auto
+                                </Badge>
+                              )}
+                              {item.metadata.processControls.active && (
+                                <Badge variant="outline" className="text-xs bg-green-100 text-green-800">
+                                  Active
+                                </Badge>
+                              )}
+                              {item.metadata.processControls.attest && (
+                                <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800">
+                                  Attest
+                                </Badge>
+                              )}
+                              {item.metadata.processControls.lock && (
+                                <Badge variant="outline" className="text-xs bg-gray-100 text-gray-800">
+                                  <Lock className="h-3 w-3 mr-1" />
+                                  Locked
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">{item.metadata.stage}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              item.status === 'in_progress' ? 'default' :
+                              item.status === 'requires_attention' ? 'destructive' :
+                              item.status === 'blocked' ? 'secondary' : 'outline'
+                            }
+                            className="text-xs"
+                          >
+                            {item.status.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              item.priority === 'high' ? 'destructive' :
+                              item.priority === 'medium' ? 'secondary' : 'outline'
+                            }
+                            className="text-xs"
+                          >
+                            {item.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">
+                            {item.assignedTo || (
+                              <span className="text-muted-foreground">Unassigned</span>
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">
+                            {new Date(item.dueDate).toLocaleDateString()}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {!item.assignedTo && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAssignToMe(item.id);
+                                }}
+                                className="text-xs h-6 px-2"
+                              >
+                                <UserPlus className="h-3 w-3 mr-1" />
+                                Assign
+                              </Button>
+                            )}
+                            
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Handle reject action
+                              }}
+                              className="text-xs h-6 px-2"
+                            >
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Reject
+                            </Button>
+                            
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApprove(item.id);
+                              }}
+                              className="text-xs h-6 px-2"
+                            >
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Approve
+                            </Button>
+                            
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTriggerAction(item.id);
+                              }}
+                              className="text-xs h-6 px-2"
+                              disabled={item.status === 'blocked'}
+                            >
+                              <Zap className="h-3 w-3 mr-1" />
+                              Trigger
+                            </Button>
+                            
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleItemClick(item);
+                              }}
+                              className="text-xs h-6 px-2"
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              More Info
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  const renderCardView = () => {
+    return (
+      <div className="space-y-4 p-4">
+        {filteredItems.length === 0 ? (
+          <div className="text-center py-8">
+            <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No workflow items match your filters</p>
+          </div>
+        ) : (
+          applicationGroups.map((group) => (
+            <div key={group.application} className="space-y-2">
+              {/* Application Header */}
+              <div 
+                className="flex items-center gap-2 p-3 bg-muted/50 rounded-md cursor-pointer hover:bg-muted/70 transition-colors"
+                onClick={() => toggleApplicationExpansion(group.application)}
+              >
+                {expandedApplications.has(group.application) ? (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                )}
+                <Database className="h-4 w-4 text-blue-500" />
+                <span className="font-medium">{group.application}</span>
+                <Badge variant="secondary" className="text-xs">
+                  {group.processes.length} process{group.processes.length !== 1 ? 'es' : ''}
+                </Badge>
+              </div>
+
+              {/* Application Content - Flat list of processes */}
+              {expandedApplications.has(group.application) && (
+                <div className="ml-6 space-y-2">
+                  {group.processes.map(process => renderProcessItem(process))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    );
+  };
+
   const renderDetailPanel = () => {
     if (!selectedItem) return null;
 
@@ -754,6 +989,28 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                     </SelectContent>
                   </Select>
 
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center border rounded-md">
+                    <Button
+                      variant={viewMode === 'card' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('card')}
+                      className="h-8 px-3 rounded-r-none"
+                    >
+                      <List className="h-3 w-3 mr-1" />
+                      Cards
+                    </Button>
+                    <Button
+                      variant={viewMode === 'table' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('table')}
+                      className="h-8 px-3 rounded-l-none"
+                    >
+                      <Grid3X3 className="h-3 w-3 mr-1" />
+                      Table
+                    </Button>
+                  </div>
+
                   {/* Clear Filters */}
                   {(filters.status !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all' || filters.search !== '') && (
                     <Button
@@ -841,48 +1098,26 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
           "space-y-4",
           showDetailPanel ? "col-span-3" : "col-span-1"
         )}>
-          <Card>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[700px]">
-                <div className="space-y-4 p-4">
-                  {filteredItems.length === 0 ? (
-                    <div className="text-center py-8">
-                      <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No workflow items match your filters</p>
-                    </div>
-                  ) : (
-                    applicationGroups.map((group) => (
-                      <div key={group.application} className="space-y-2">
-                        {/* Application Header */}
-                        <div 
-                          className="flex items-center gap-2 p-3 bg-muted/50 rounded-md cursor-pointer hover:bg-muted/70 transition-colors"
-                          onClick={() => toggleApplicationExpansion(group.application)}
-                        >
-                          {expandedApplications.has(group.application) ? (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          )}
-                          <Database className="h-4 w-4 text-blue-500" />
-                          <span className="font-medium">{group.application}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {group.processes.length} process{group.processes.length !== 1 ? 'es' : ''}
-                          </Badge>
-                        </div>
-
-                        {/* Application Content - Flat list of processes */}
-                        {expandedApplications.has(group.application) && (
-                          <div className="ml-6 space-y-2">
-                            {group.processes.map(process => renderProcessItem(process))}
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
+          {viewMode === 'table' ? (
+            <ScrollArea className="h-[700px]">
+              {filteredItems.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No workflow items match your filters</p>
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+              ) : (
+                renderTableView()
+              )}
+            </ScrollArea>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[700px]">
+                  {renderCardView()}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Detail Panel */}
