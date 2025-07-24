@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { showInfoToast } from '@/lib/toast';
+import SafeRouter from '@/components/SafeRouter';
 
 export interface BreadcrumbLevel {
   id: string;
@@ -45,7 +45,6 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
   showHomeButton = true,
   className = ""
 }) => {
-  const router = useRouter();
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   // Get the appropriate icon for each level
@@ -65,7 +64,7 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
   };
 
   // Handle navigation to a specific level
-  const handleLevelClick = (level: BreadcrumbLevel, index: number) => {
+  const handleLevelClick = (router: any, level: BreadcrumbLevel, index: number) => {
     try {
       if (onNavigate) {
         onNavigate(level, index);
@@ -73,10 +72,11 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
       }
 
       // Check if we're on a complex page that needs forced reload
-      const currentRoute = router.asPath;
-      const isComplexPage = router.pathname.includes('/workflow/') || 
-                           router.pathname.includes('/hierarchy/') ||
-                           router.pathname.includes('/stages/') ||
+      const currentRoute = router.asPath || '';
+      const currentPathname = router.pathname || '';
+      const isComplexPage = currentPathname.includes('/workflow/') || 
+                           currentPathname.includes('/hierarchy/') ||
+                           currentPathname.includes('/stages/') ||
                            currentRoute.includes('/workflow/') ||
                            currentRoute.includes('/hierarchy/') ||
                            currentRoute.includes('/stages/');
@@ -133,7 +133,7 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
   };
 
   // Handle back button click
-  const handleBackClick = () => {
+  const handleBackClick = (router: any) => {
     try {
       if (onNavigate && levels.length > 1) {
         // Use the provided navigation handler for the previous level
@@ -142,14 +142,15 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
       } else if (levels.length > 1) {
         // Navigate to the previous level
         const previousLevel = levels[levels.length - 2];
-        handleLevelClick(previousLevel, levels.length - 2);
+        handleLevelClick(router, previousLevel, levels.length - 2);
       } else {
         // Navigate to home if no previous level
         // Check if we're on a complex page that needs forced reload
-        const currentRoute = router.asPath;
-        const isComplexPage = router.pathname.includes('/workflow/') || 
-                             router.pathname.includes('/hierarchy/') ||
-                             router.pathname.includes('/stages/') ||
+        const currentRoute = router.asPath || '';
+        const currentPathname = router.pathname || '';
+        const isComplexPage = currentPathname.includes('/workflow/') || 
+                             currentPathname.includes('/hierarchy/') ||
+                             currentPathname.includes('/stages/') ||
                              currentRoute.includes('/workflow/') ||
                              currentRoute.includes('/hierarchy/') ||
                              currentRoute.includes('/stages/');
@@ -166,12 +167,13 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
   };
 
   // Handle home button click
-  const handleHomeClick = () => {
+  const handleHomeClick = (router: any) => {
     // Check if we're on a complex page that needs forced reload
-    const currentRoute = router.asPath;
-    const isComplexPage = router.pathname.includes('/workflow/') || 
-                         router.pathname.includes('/hierarchy/') ||
-                         router.pathname.includes('/stages/') ||
+    const currentRoute = router.asPath || '';
+    const currentPathname = router.pathname || '';
+    const isComplexPage = currentPathname.includes('/workflow/') || 
+                         currentPathname.includes('/hierarchy/') ||
+                         currentPathname.includes('/stages/') ||
                          currentRoute.includes('/workflow/') ||
                          currentRoute.includes('/hierarchy/') ||
                          currentRoute.includes('/stages/');
@@ -215,116 +217,120 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
   }
 
   return (
-    <div className={`flex items-center gap-2 text-sm ${className}`}>
-      {/* Back Button - Removed text, only icon */}
-      {showBackButton && (
-        <>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-6 w-6 p-0 flex items-center justify-center hover:bg-secondary/50"
-            onClick={handleBackClick}
-            title="Go back"
-          >
-            <ArrowLeft className="h-3 w-3" />
-          </Button>
-          <Separator orientation="vertical" className="h-4" />
-        </>
-      )}
-
-      {/* Home Button */}
-      {showHomeButton && (
-        <>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 w-6 p-0"
-                  onClick={handleHomeClick}
-                >
-                  <Home className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Go to Task Center</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          {levels.length > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
-        </>
-      )}
-
-      {/* Breadcrumb Levels */}
-      {levels.map((level, index) => {
-        const Icon = getLevelIcon(level.level);
-        const isLast = index === levels.length - 1;
-        const isClickable = !isLast; // Last level (current) is not clickable
-
-        return (
-          <React.Fragment key={level.id}>
-            <div className="flex items-center gap-1">
-              {/* Level Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-6 px-2 flex items-center gap-1 hover:bg-secondary/50 ${
-                  isLast ? 'font-medium text-foreground cursor-default' : 'text-muted-foreground hover:text-foreground'
-                }`}
-                onClick={isClickable ? () => handleLevelClick(level, index) : undefined}
-                disabled={!isClickable}
+    <SafeRouter>
+      {(router) => (
+        <div className={`flex items-center gap-2 text-sm ${className}`}>
+          {/* Back Button - Removed text, only icon */}
+          {showBackButton && (
+            <>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 w-6 p-0 flex items-center justify-center hover:bg-secondary/50"
+                onClick={() => handleBackClick(router)}
+                title="Go back"
               >
-                <Icon className="h-3 w-3" />
-                <span>{level.name}</span>
-                {level.progress !== undefined && (
-                  <span className="text-xs text-muted-foreground ml-1">
-                    ({level.progress}%)
-                  </span>
-                )}
+                <ArrowLeft className="h-3 w-3" />
               </Button>
+              <Separator orientation="vertical" className="h-4" />
+            </>
+          )}
 
-              {/* Copy Button */}
+          {/* Home Button */}
+          {showHomeButton && (
+            <>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
                       className="h-6 w-6 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyPath(index);
-                      }}
+                      onClick={() => handleHomeClick(router)}
                     >
-                      {copiedIndex === index ? (
-                        <Check className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <Copy className="h-3 w-3" />
-                      )}
+                      <Home className="h-3 w-3" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{copiedIndex === index ? "Copied!" : "Copy path"}</p>
+                    <p>Go to Task Center</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            </div>
+              {levels.length > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+            </>
+          )}
 
-            {/* Separator */}
-            {!isLast && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
-          </React.Fragment>
-        );
-      })}
+          {/* Breadcrumb Levels */}
+          {levels.map((level, index) => {
+            const Icon = getLevelIcon(level.level);
+            const isLast = index === levels.length - 1;
+            const isClickable = !isLast; // Last level (current) is not clickable
 
-      {/* Current Workflow Title (if different from last breadcrumb level) */}
-      {currentWorkflowTitle && currentWorkflowTitle !== levels[levels.length - 1]?.name && (
-        <>
-          <ChevronRight className="h-3 w-3 text-muted-foreground" />
-          <span className="font-medium text-foreground">{currentWorkflowTitle}</span>
-        </>
+            return (
+              <React.Fragment key={level.id}>
+                <div className="flex items-center gap-1">
+                  {/* Level Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-6 px-2 flex items-center gap-1 hover:bg-secondary/50 ${
+                      isLast ? 'font-medium text-foreground cursor-default' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={isClickable ? () => handleLevelClick(router, level, index) : undefined}
+                    disabled={!isClickable}
+                  >
+                    <Icon className="h-3 w-3" />
+                    <span>{level.name}</span>
+                    {level.progress !== undefined && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        ({level.progress}%)
+                      </span>
+                    )}
+                  </Button>
+
+                  {/* Copy Button */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyPath(index);
+                          }}
+                        >
+                          {copiedIndex === index ? (
+                            <Check className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{copiedIndex === index ? "Copied!" : "Copy path"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                {/* Separator */}
+                {!isLast && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+              </React.Fragment>
+            );
+          })}
+
+          {/* Current Workflow Title (if different from last breadcrumb level) */}
+          {currentWorkflowTitle && currentWorkflowTitle !== levels[levels.length - 1]?.name && (
+            <>
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              <span className="font-medium text-foreground">{currentWorkflowTitle}</span>
+            </>
+          )}
+        </div>
       )}
-    </div>
+    </SafeRouter>
   );
 };
 
