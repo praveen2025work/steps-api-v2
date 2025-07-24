@@ -26,9 +26,24 @@ interface WorkflowLevel {
 
 const ApplicationDetailPage = () => {
   const router = useRouter();
-  const { applicationId } = router.query;
   const [application, setApplication] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Wait for router to be ready before accessing query parameters
+  if (!router.isReady) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading application details...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const { applicationId } = router.query;
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<{id: string, name: string, progress?: number}[]>([]);
   const [currentLevels, setCurrentLevels] = useState<WorkflowLevel[]>([]);

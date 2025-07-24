@@ -7,6 +7,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const WorkflowHierarchyDetailPage: NextPage = () => {
   const router = useRouter();
+  
+  // Wait for router to be ready before accessing query parameters
+  if (!router.isReady) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading workflow hierarchy...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const { workflowId } = router.query;
   
   return (

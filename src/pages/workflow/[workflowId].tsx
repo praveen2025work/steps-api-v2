@@ -200,7 +200,6 @@ const getMockWorkflowData = (workflowId: string) => {
 
 const WorkflowDetailPage = () => {
   const router = useRouter();
-  const { workflowId } = router.query;
   const [workflowData, setWorkflowData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentPath, setCurrentPath] = useState<string[]>([]);
@@ -210,6 +209,22 @@ const WorkflowDetailPage = () => {
   });
   // State to toggle between different views
   const [viewMode, setViewMode] = useState<'classic' | 'alternative' | 'stepfunction'>('classic');
+
+  // Wait for router to be ready before accessing query parameters
+  if (!router.isReady) {
+    return (
+      <DashboardLayout title="Loading...">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading workflow details...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const { workflowId } = router.query;
   
   // Generate hierarchy data for navigation based on the actual workflow structure
   const generateHierarchyData = React.useCallback(() => {
