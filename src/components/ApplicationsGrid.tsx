@@ -81,6 +81,9 @@ const ApplicationsGrid = () => {
   } | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  
+  // View mode state for workflow detail view
+  const [viewMode, setViewMode] = useState<'classic' | 'modern' | 'step-function'>('classic');
 
   // Initialize legacy applications
   useEffect(() => {
@@ -783,6 +786,11 @@ const ApplicationsGrid = () => {
     };
   }, []);
 
+  // Handle view mode toggle
+  const handleViewToggle = (mode: 'classic' | 'modern' | 'step-function') => {
+    setViewMode(mode);
+  };
+
   // Show workflow detail view if a workflow is selected
   if (selectedWorkflow) {
     const workflowData = convertSummaryToWorkflowData(
@@ -799,6 +807,8 @@ const ApplicationsGrid = () => {
           progressSteps={workflowData.progressSteps}
           stages={workflowData.stages}
           tasks={workflowData.tasks}
+          viewMode={viewMode}
+          onViewToggle={handleViewToggle}
           summaryData={selectedWorkflow.summary}
           applicationData={selectedWorkflow.application}
           nodeData={selectedWorkflow.node}
