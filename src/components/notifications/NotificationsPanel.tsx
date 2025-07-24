@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/contexts/NotificationsContext';
-import { Notification } from '@/types/workflow-types';
+import { Notification } from './NotificationsCenter';
 
 interface NotificationsPanelProps {
   isOpen: boolean;
@@ -57,143 +57,143 @@ const NotificationsPanel = ({ isOpen, onClose }: NotificationsPanelProps) => {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'approval':
-        return &lt;CheckCircle className="h-4 w-4 text-green-500" /&gt;;
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'rejection':
-        return &lt;AlertCircle className="h-4 w-4 text-red-500" /&gt;;
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
       case 'info':
-        return &lt;MessageSquare className="h-4 w-4 text-blue-500" /&gt;;
+        return <MessageSquare className="h-4 w-4 text-blue-500" />;
       case 'alert':
-        return &lt;AlertTriangle className="h-4 w-4 text-amber-500" /&gt;;
+        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
       default:
-        return &lt;Bell className="h-4 w-4" /&gt;;
+        return <Bell className="h-4 w-4" />;
     }
   };
 
   return (
-    &lt;div 
+    <div 
       className={`fixed inset-y-0 right-0 w-96 bg-background border-l shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
-    &gt;
-      &lt;div className="flex flex-col h-full"&gt;
-        &lt;div className="flex justify-between items-center p-4 border-b"&gt;
-          &lt;div className="flex items-center gap-2"&gt;
-            &lt;h3 className="font-medium text-lg"&gt;Notifications&lt;/h3&gt;
-            &lt;Badge variant="outline" className="ml-2"&gt;
+    >
+      <div className="flex flex-col h-full">
+        <div className="flex justify-between items-center p-4 border-b">
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-lg">Notifications</h3>
+            <Badge variant="outline" className="ml-2">
               {notifications.length}
-            &lt;/Badge&gt;
+            </Badge>
             {hasUnreadNotifications && (
-              &lt;Badge variant="secondary" className="bg-primary/20 text-primary"&gt;
+              <Badge variant="secondary" className="bg-primary/20 text-primary">
                 {notifications.filter(n => !n.isRead).length} unread
-              &lt;/Badge&gt;
+              </Badge>
             )}
-          &lt;/div&gt;
-          &lt;div className="flex items-center gap-1"&gt;
-            &lt;Button 
+          </div>
+          <div className="flex items-center gap-1">
+            <Button 
               variant="ghost" 
               size="icon" 
               className="h-8 w-8" 
               onClick={refreshNotifications}
               title="Refresh notifications"
-            &gt;
-              &lt;RefreshCw className="h-4 w-4" /&gt;
-            &lt;/Button&gt;
-            &lt;Button 
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button 
               variant="ghost" 
               size="icon" 
               className="h-8 w-8" 
               onClick={onClose}
               title="Close"
-            &gt;
-              &lt;X className="h-4 w-4" /&gt;
-            &lt;/Button&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
         
-        &lt;ScrollArea className="flex-1"&gt;
+        <ScrollArea className="flex-1">
           {notifications.length > 0 ? (
-            &lt;div&gt;
+            <div>
               {notifications.map((notification) => (
-                &lt;div 
+                <div 
                   key={notification.id}
                   className={`p-4 border-b hover:bg-accent/50 cursor-pointer ${!notification.isRead ? 'bg-accent/20' : ''}`}
                   onClick={() => handleNotificationClick(notification)}
-                &gt;
-                  &lt;div className="flex items-start gap-3"&gt;
-                    &lt;div className="mt-0.5 flex-shrink-0"&gt;
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0">
                       {getNotificationIcon(notification.type)}
-                    &lt;/div&gt;
-                    &lt;div className="flex-1 min-w-0"&gt;
-                      &lt;div className="flex justify-between items-start"&gt;
-                        &lt;p className="text-sm font-medium flex items-center gap-2 truncate"&gt;
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start">
+                        <p className="text-sm font-medium flex items-center gap-2 truncate">
                           {notification.title}
                           {!notification.isRead && (
-                            &lt;span className="w-2 h-2 bg-primary rounded-full inline-block flex-shrink-0" aria-label="Unread"&gt;&lt;/span&gt;
+                            <span className="w-2 h-2 bg-primary rounded-full inline-block flex-shrink-0" aria-label="Unread"></span>
                           )}
-                        &lt;/p&gt;
-                        &lt;span className="text-xs text-muted-foreground ml-2 flex-shrink-0"&gt;
+                        </p>
+                        <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                           {new Date(notification.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        &lt;/span&gt;
-                      &lt;/div&gt;
-                      &lt;p className="text-sm text-muted-foreground mt-1 line-clamp-2"&gt;{notification.message}&lt;/p&gt;
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{notification.message}</p>
                       
-                      &lt;div className="mt-2 flex justify-end"&gt;
+                      <div className="mt-2 flex justify-end">
                         {!notification.isRead && (
-                          &lt;Button 
+                          <Button 
                             variant="ghost" 
                             size="sm" 
                             className="h-7 text-xs"
                             onClick={(e) => handleMarkAsRead(notification.id, e)}
-                          &gt;
-                            &lt;Check className="h-3 w-3 mr-1" /&gt;
+                          >
+                            <Check className="h-3 w-3 mr-1" />
                             Mark as Read
-                          &lt;/Button&gt;
+                          </Button>
                         )}
-                      &lt;/div&gt;
-                    &lt;/div&gt;
-                  &lt;/div&gt;
-                &lt;/div&gt;
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
-            &lt;/div&gt;
+            </div>
           ) : (
-            &lt;div className="p-8 text-center"&gt;
-              &lt;Bell className="h-8 w-8 mx-auto text-muted-foreground mb-2" /&gt;
-              &lt;p className="text-muted-foreground"&gt;No notifications&lt;/p&gt;
-              &lt;Button 
+            <div className="p-8 text-center">
+              <Bell className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">No notifications</p>
+              <Button 
                 variant="outline" 
                 className="mt-4"
                 onClick={refreshNotifications}
-              &gt;
+              >
                 Refresh
-              &lt;/Button&gt;
-            &lt;/div&gt;
+              </Button>
+            </div>
           )}
-        &lt;/ScrollArea&gt;
+        </ScrollArea>
         
-        &lt;div className="p-4 border-t"&gt;
-          &lt;div className="flex gap-2"&gt;
-            &lt;Button 
+        <div className="p-4 border-t">
+          <div className="flex gap-2">
+            <Button 
               variant="outline" 
               className="w-full text-sm h-9"
               onClick={markAllAsRead}
               disabled={!hasUnreadNotifications}
-            &gt;
+            >
               Mark all as read
-            &lt;/Button&gt;
-            &lt;Button 
+            </Button>
+            <Button 
               variant="default" 
               className="w-full text-sm h-9"
               onClick={() => {
                 router.push("/notifications");
                 onClose();
               }}
-            &gt;
+            >
               View all notifications
-            &lt;/Button&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
-    &lt;/div&gt;
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

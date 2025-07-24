@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Notification } from '@/types/workflow-types';
+import { Notification } from '@/components/notifications/NotificationsCenter';
 import { generateMockNotifications } from '@/data/notificationsData';
 
 interface NotificationsContextType {
