@@ -842,11 +842,6 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
           showDetailPanel ? "col-span-3" : "col-span-1"
         )}>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">
-                Workflow Items ({filteredItems.length})
-              </CardTitle>
-            </CardHeader>
             <CardContent className="p-0">
               <ScrollArea className="h-[700px]">
                 <div className="space-y-4 p-4">

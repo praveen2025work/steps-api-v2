@@ -52,7 +52,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-0'}`}>
         {/* Header for mobile and desktop */}
         <header className="sticky top-0 z-40 border-b bg-background">
-          <div className="container flex h-16 items-center justify-between py-4 px-2 sm:px-4">
+          <div className="w-full flex h-16 items-center justify-between py-4 px-2 sm:px-4 lg:px-6">
             <div className="flex items-center gap-4">
               <MobileNav />
               <Logo />
@@ -124,7 +124,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         </header>
         
         {/* Page content */}
-        <main className="flex-1 container pt-0 pb-4 sm:pb-6 px-2 sm:px-4 md:px-6">
+        <main className="flex-1 w-full pt-0 pb-4 sm:pb-6 px-2 sm:px-4 lg:px-6">
           {children}
         </main>
       </div>
