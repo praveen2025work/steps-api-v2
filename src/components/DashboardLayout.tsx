@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { useNotifications } from '@/contexts/NotificationsContext';
+import NotificationsPanel from './notifications/NotificationsPanel';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,6 +19,12 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const { sidebarOpen, toggleSidebar } = useSidebar();
+  const { 
+    unreadCount, 
+    isPanelOpen, 
+    togglePanel, 
+    closePanel 
+  } = useNotifications();
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   
   useEffect(() => {
@@ -72,10 +80,20 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               <div className="h-6 w-px bg-border hidden md:block"></div>
               
               {/* Notification button */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </Button>
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={togglePanel}
+                  className={`relative ${isPanelOpen ? "bg-accent" : ""}`}
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
+                </Button>
+              </div>
               
               {/* Refresh button */}
               <Button 
@@ -110,6 +128,9 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           {children}
         </main>
       </div>
+      
+      {/* Slide-in notifications panel */}
+      <NotificationsPanel isOpen={isPanelOpen} onClose={closePanel} />
     </div>
   );
 };
