@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Clock, 
   User, 
@@ -19,12 +20,16 @@ import {
   Search,
   SortDesc,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Layers,
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkflowInboxItem } from './WorkflowInboxItem';
 import { ModernWorkflowDetailPanel } from './ModernWorkflowDetailPanel';
 import { WorkflowInboxFilters } from './WorkflowInboxFilters';
+import { EnhancedWorkflowInboxDashboard } from './EnhancedWorkflowInboxDashboard';
 import { useWorkflowInbox } from '@/hooks/useWorkflowInbox';
 
 export interface WorkflowInboxItemData {
@@ -83,6 +88,7 @@ export interface WorkflowInboxItemData {
 
 export const WorkflowInboxDashboard: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<WorkflowInboxItemData | null>(null);
+  const [viewMode, setViewMode] = useState<'classic' | 'modern'>('modern');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
@@ -224,8 +230,76 @@ export const WorkflowInboxDashboard: React.FC = () => {
     );
   }
 
+  // If Modern View is selected, use the enhanced dashboard
+  if (viewMode === 'modern') {
+    return (
+      <div className="space-y-4">
+        {/* View Toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">Task Center</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="bg-muted rounded-lg p-1 flex">
+              <Button
+                variant={viewMode === 'classic' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('classic')}
+                className="text-xs"
+              >
+                <Layers className="h-4 w-4 mr-1" />
+                Classic
+              </Button>
+              <Button
+                variant={viewMode === 'modern' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('modern')}
+                className="text-xs"
+              >
+                <Sparkles className="h-4 w-4 mr-1" />
+                Modern
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <EnhancedWorkflowInboxDashboard />
+      </div>
+    );
+  }
+
+  // Classic View (existing implementation)
   return (
     <div className="space-y-4">
+      {/* View Toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold">Task Center</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="bg-muted rounded-lg p-1 flex">
+            <Button
+              variant={viewMode === 'classic' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('classic')}
+              className="text-xs"
+            >
+              <Layers className="h-4 w-4 mr-1" />
+              Classic
+            </Button>
+            <Button
+              variant={viewMode === 'modern' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('modern')}
+              className="text-xs"
+            >
+              <Sparkles className="h-4 w-4 mr-1" />
+              Modern
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Compact Header with Stats */}
       <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
         <div className="flex items-center gap-6 text-sm">
@@ -256,7 +330,7 @@ export const WorkflowInboxDashboard: React.FC = () => {
           </div>
         </div>
         <Button onClick={refreshData} variant="outline" size="sm">
-          <ArrowRight className="h-4 w-4 mr-2" />
+          <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
       </div>
