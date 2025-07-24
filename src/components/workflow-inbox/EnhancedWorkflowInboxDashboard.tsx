@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Clock, 
   User, 
@@ -41,10 +42,11 @@ import {
   GitBranch,
   Network,
   Database,
-  Shield
+  Shield,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { WorkflowInboxFilters } from './WorkflowInboxFilters';
+
 import { useWorkflowInbox } from '@/hooks/useWorkflowInbox';
 import ProcessOverview from '@/components/workflow/ProcessOverview';
 import ProcessDependencies from '@/components/workflow/ProcessDependencies';
@@ -129,7 +131,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
   const [expandedApplications, setExpandedApplications] = useState<Set<string>>(new Set());
   const [inlineMessages, setInlineMessages] = useState<Record<string, string>>({});
   const [detailPanelTab, setDetailPanelTab] = useState('overview');
-  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
+
 
   const { items, loading, error, refreshData, assignToMe, triggerAction } = useWorkflowInbox();
 
@@ -642,81 +644,192 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Compact Task Center Summary */}
-      <Collapsible open={!summaryCollapsed} onOpenChange={setSummaryCollapsed}>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="pb-3 cursor-pointer hover:bg-accent/50 transition-colors">
-              <div className="flex items-center justify-between">
+      {/* Combined Task Center Summary and Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="space-y-4">
+            {/* Compact Summary Stats */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6 text-sm">
                 <div className="flex items-center gap-2">
-                  {summaryCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  <CardTitle className="text-base">Task Center Summary</CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{stats.total} total</span>
-                    <span>•</span>
-                    <span>{stats.pending} pending</span>
-                    <span>•</span>
-                    <span>{stats.inProgress} in progress</span>
-                  </div>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{stats.total}</span>
+                  <span className="text-muted-foreground">Total</span>
                 </div>
-                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); refreshData(); }} disabled={loading}>
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-5 gap-4">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xl font-bold">{stats.total}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Total</p>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-yellow-500" />
+                  <span className="font-medium">{stats.pending}</span>
+                  <span className="text-muted-foreground">Pending</span>
                 </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <Clock className="h-4 w-4 text-yellow-500" />
-                    <span className="text-xl font-bold">{stats.pending}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Pending</p>
+                <div className="flex items-center gap-2">
+                  <PlayCircle className="h-4 w-4 text-blue-500" />
+                  <span className="font-medium">{stats.inProgress}</span>
+                  <span className="text-muted-foreground">In Progress</span>
                 </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <PlayCircle className="h-4 w-4 text-blue-500" />
-                    <span className="text-xl font-bold">{stats.inProgress}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">In Progress</p>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-purple-500" />
+                  <span className="font-medium">{stats.attestation}</span>
+                  <span className="text-muted-foreground">Attestation</span>
                 </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <Shield className="h-4 w-4 text-purple-500" />
-                    <span className="text-xl font-bold">{stats.attestation}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Attestation</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span className="text-xl font-bold">{stats.approval}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Approval</p>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span className="font-medium">{stats.approval}</span>
+                  <span className="text-muted-foreground">Approval</span>
                 </div>
               </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+              <Button variant="outline" size="sm" onClick={refreshData} disabled={loading}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
 
-      {/* Filters - Full Width */}
-      <WorkflowInboxFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-      />
+            <Separator />
+
+            {/* Filters Section */}
+            <div className="space-y-3">
+              {/* Search and Controls in one row */}
+              <div className="flex items-center gap-3">
+                {/* Search - takes more space */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search workflows..."
+                    value={filters.search}
+                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                    className="pl-9 h-8"
+                  />
+                </div>
+
+                {/* Filter Controls - compact */}
+                <div className="flex items-center gap-2">
+                  {/* Status Filter */}
+                  <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+                    <SelectTrigger className="h-8 w-32">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="requires_attention">Attention</SelectItem>
+                      <SelectItem value="blocked">Blocked</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Priority Filter */}
+                  <Select value={filters.priority} onValueChange={(value) => setFilters(prev => ({ ...prev, priority: value }))}>
+                    <SelectTrigger className="h-8 w-28">
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Priority</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Assignee Filter */}
+                  <Select value={filters.assignee} onValueChange={(value) => setFilters(prev => ({ ...prev, assignee: value }))}>
+                    <SelectTrigger className="h-8 w-32">
+                      <SelectValue placeholder="Assignee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Assignees</SelectItem>
+                      <SelectItem value="me">Assigned to Me</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Sort By */}
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="h-8 w-32">
+                      <SelectValue placeholder="Sort" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="priority">Priority</SelectItem>
+                      <SelectItem value="dueDate">Due Date</SelectItem>
+                      <SelectItem value="businessDate">Business Date</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Clear Filters */}
+                  {(filters.status !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all' || filters.search !== '') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFilters({ status: 'all', priority: 'all', assignee: 'all', search: '' })}
+                      className="h-8 px-3"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Active Filters Display - only if there are active filters */}
+              {(filters.status !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all' || filters.search !== '') && (
+                <div className="flex flex-wrap gap-1">
+                  {filters.status !== 'all' && (
+                    <Badge variant="secondary" className="text-xs h-5">
+                      Status: {filters.status.replace('_', ' ')}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 ml-1"
+                        onClick={() => setFilters(prev => ({ ...prev, status: 'all' }))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  )}
+                  {filters.priority !== 'all' && (
+                    <Badge variant="secondary" className="text-xs h-5">
+                      Priority: {filters.priority}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 ml-1"
+                        onClick={() => setFilters(prev => ({ ...prev, priority: 'all' }))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  )}
+                  {filters.assignee !== 'all' && (
+                    <Badge variant="secondary" className="text-xs h-5">
+                      Assignee: {filters.assignee}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 ml-1"
+                        onClick={() => setFilters(prev => ({ ...prev, assignee: 'all' }))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  )}
+                  {filters.search !== '' && (
+                    <Badge variant="secondary" className="text-xs h-5">
+                      Search: "{filters.search}"
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 ml-1"
+                        onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Content */}
       <div className={cn(
