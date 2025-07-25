@@ -46,7 +46,9 @@ import {
   Shield,
   X,
   List,
-  Grid3X3
+  Grid3X3,
+  Bot,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -62,7 +64,7 @@ export interface WorkflowInboxItemData {
   description: string;
   processName: string;
   businessDate: string;
-  status: 'pending' | 'in_progress' | 'requires_attention' | 'blocked';
+  status: 'not_started' | 'ready' | 'in_progress' | 'post_manual' | 'completed' | 'rejected';
   priority: 'high' | 'medium' | 'low';
   assignedTo?: string;
   suggestedAction: string;
@@ -202,11 +204,11 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
   // Get summary stats
   const stats = React.useMemo(() => {
     const total = items.length;
-    const pending = items.filter(item => item.status === 'pending').length;
+    const pending = items.filter(item => item.status === 'not_started' || item.status === 'ready').length;
     const inProgress = items.filter(item => item.status === 'in_progress').length;
     const attestation = items.filter(item => item.metadata.processControls.attest).length;
     const approval = items.filter(item => item.metadata.processControls.attest || 
-      item.status === 'requires_attention').length;
+      item.status === 'post_manual').length;
 
     return {
       total,
@@ -293,12 +295,32 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
     switch (status) {
       case 'in_progress':
         return <PlayCircle className="h-4 w-4 text-blue-500" />;
-      case 'requires_attention':
+      case 'post_manual':
         return <AlertCircle className="h-4 w-4 text-red-500" />;
-      case 'blocked':
-        return <XCircle className="h-4 w-4 text-orange-500" />;
+      case 'rejected':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'completed':
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'ready':
+        return <Clock className="h-4 w-4 text-blue-500" />;
+      case 'not_started':
       default:
         return <Clock className="h-4 w-4 text-yellow-500" />;
+    }
+  };
+
+  const getProcessControlIcon = (control: string) => {
+    switch (control) {
+      case 'active':
+        return <Activity className="h-3 w-3" />;
+      case 'attest':
+        return <Shield className="h-3 w-3" />;
+      case 'auto':
+        return <Bot className="h-3 w-3" />;
+      case 'lock':
+        return <Lock className="h-3 w-3" />;
+      default:
+        return null;
     }
   };
 
@@ -314,7 +336,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
   };
 
   const renderProcessItem = (item: WorkflowInboxItemData) => {
-    const isApprovalType = item.metadata.processControls.attest || item.status === 'requires_attention';
+    const isApprovalType = item.metadata.processControls.attest || item.status === 'post_manual';
     
     // Extract hierarchy levels from hierarchyPath for inline display
     const hierarchyLevels = item.metadata.hierarchyPath
@@ -339,25 +361,24 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                   {getStatusIcon(item.status)}
                   <h4 className="font-medium text-sm truncate">{item.title}</h4>
                   {item.metadata.processControls.auto && (
-                    <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800">
-                      Auto
-                    </Badge>
+                    <div className="flex items-center">
+                      {getProcessControlIcon('auto')}
+                    </div>
                   )}
                   {item.metadata.processControls.active && (
-                    <Badge variant="outline" className="text-xs bg-green-100 text-green-800">
-                      Active
-                    </Badge>
+                    <div className="flex items-center text-green-600">
+                      {getProcessControlIcon('active')}
+                    </div>
                   )}
                   {item.metadata.processControls.attest && (
-                    <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800">
-                      Attest
-                    </Badge>
+                    <div className="flex items-center text-purple-600">
+                      {getProcessControlIcon('attest')}
+                    </div>
                   )}
                   {item.metadata.processControls.lock && (
-                    <Badge variant="outline" className="text-xs bg-gray-100 text-gray-800">
-                      <Lock className="h-3 w-3 mr-1" />
-                      Locked
-                    </Badge>
+                    <div className="flex items-center text-gray-600">
+                      {getProcessControlIcon('lock')}
+                    </div>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{item.description}</p>
@@ -371,9 +392,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                 )}
                 
                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                  <span>{item.metadata.stage}</span>
-                  <span>•</span>
-                  <span>{item.metadata.substage}</span>
+                  <span>{item.metadata.substage} ({item.metadata.stage})</span>
                   {item.assignedTo && (
                     <>
                       <span>•</span>
@@ -462,21 +481,21 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                 <Button
                   size="sm"
                   onClick={() => handleTriggerAction(item.id)}
-                  className="text-xs h-6 px-2"
-                  disabled={item.status === 'blocked'}
+                  className="text-xs h-6 px-1"
+                  disabled={item.status === 'completed'}
+                  title="Trigger"
                 >
-                  <Zap className="h-3 w-3 mr-1" />
-                  Trigger
+                  <Zap className="h-3 w-3" />
                 </Button>
                 
                 {!isApprovalType && (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-xs h-6 px-2"
+                    className="text-xs h-6 px-1"
+                    title="Approve"
                   >
-                    <CheckSquare className="h-3 w-3 mr-1" />
-                    Approve
+                    <CheckCircle2 className="h-3 w-3" />
                   </Button>
                 )}
               </div>
@@ -505,8 +524,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[300px]">Sub-stage</TableHead>
-                    <TableHead className="w-[150px]">Stage</TableHead>
+                    <TableHead className="w-[400px]">Sub-stage (Stage)</TableHead>
                     <TableHead className="w-[100px]">Status</TableHead>
                     <TableHead className="w-[100px]">Priority</TableHead>
                     <TableHead className="w-[120px]">Assigned To</TableHead>
@@ -516,7 +534,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                 </TableHeader>
                 <TableBody>
                   {group.processes.map((item) => {
-                    const isApprovalType = item.metadata.processControls.attest || item.status === 'requires_attention';
+                    const isApprovalType = item.metadata.processControls.attest || item.status === 'post_manual';
                     
                     return (
                       <TableRow 
@@ -531,42 +549,42 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               {getStatusIcon(item.status)}
-                              <span className="font-medium text-sm">{item.metadata.substage}</span>
+                              <span className="font-medium text-sm">
+                                {item.metadata.substage} ({item.metadata.stage})
+                              </span>
                             </div>
-                            <div className="flex items-center gap-1 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                               {item.metadata.processControls.auto && (
-                                <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800">
-                                  Auto
-                                </Badge>
+                                <div className="flex items-center text-blue-600" title="Auto">
+                                  {getProcessControlIcon('auto')}
+                                </div>
                               )}
                               {item.metadata.processControls.active && (
-                                <Badge variant="outline" className="text-xs bg-green-100 text-green-800">
-                                  Active
-                                </Badge>
+                                <div className="flex items-center text-green-600" title="Active">
+                                  {getProcessControlIcon('active')}
+                                </div>
                               )}
                               {item.metadata.processControls.attest && (
-                                <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800">
-                                  Attest
-                                </Badge>
+                                <div className="flex items-center text-purple-600" title="Attest">
+                                  {getProcessControlIcon('attest')}
+                                </div>
                               )}
                               {item.metadata.processControls.lock && (
-                                <Badge variant="outline" className="text-xs bg-gray-100 text-gray-800">
-                                  <Lock className="h-3 w-3 mr-1" />
-                                  Locked
-                                </Badge>
+                                <div className="flex items-center text-gray-600" title="Locked">
+                                  {getProcessControlIcon('lock')}
+                                </div>
                               )}
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm text-muted-foreground">{item.metadata.stage}</span>
-                        </TableCell>
-                        <TableCell>
                           <Badge 
                             variant={
                               item.status === 'in_progress' ? 'default' :
-                              item.status === 'requires_attention' ? 'destructive' :
-                              item.status === 'blocked' ? 'secondary' : 'outline'
+                              item.status === 'post_manual' ? 'destructive' :
+                              item.status === 'rejected' ? 'destructive' :
+                              item.status === 'completed' ? 'default' :
+                              item.status === 'ready' ? 'secondary' : 'outline'
                             }
                             className="text-xs"
                           >
@@ -620,10 +638,10 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                                 e.stopPropagation();
                                 // Handle reject action
                               }}
-                              className="text-xs h-6 px-2"
+                              className="text-xs h-6 px-1"
+                              title="Reject"
                             >
-                              <XCircle className="h-3 w-3 mr-1" />
-                              Reject
+                              <XCircle className="h-3 w-3" />
                             </Button>
                             
                             <Button
@@ -632,10 +650,10 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                                 e.stopPropagation();
                                 handleApprove(item.id);
                               }}
-                              className="text-xs h-6 px-2"
+                              className="text-xs h-6 px-1"
+                              title="Approve"
                             >
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Approve
+                              <CheckCircle2 className="h-3 w-3" />
                             </Button>
                             
                             <Button
@@ -644,11 +662,11 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                                 e.stopPropagation();
                                 handleTriggerAction(item.id);
                               }}
-                              className="text-xs h-6 px-2"
-                              disabled={item.status === 'blocked'}
+                              className="text-xs h-6 px-1"
+                              disabled={item.status === 'completed'}
+                              title="Trigger"
                             >
-                              <Zap className="h-3 w-3 mr-1" />
-                              Trigger
+                              <Zap className="h-3 w-3" />
                             </Button>
                             
                             <Button
@@ -944,11 +962,12 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="not_started">Not Started</SelectItem>
+                      <SelectItem value="ready">Ready</SelectItem>
                       <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="requires_attention">Attention</SelectItem>
-                      <SelectItem value="blocked">Blocked</SelectItem>
+                      <SelectItem value="post_manual">Post Manual</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
 
