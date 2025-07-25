@@ -48,7 +48,10 @@ import {
   List,
   Grid3X3,
   Bot,
-  Check
+  Check,
+  AlertTriangle,
+  Circle,
+  Minus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -64,7 +67,7 @@ export interface WorkflowInboxItemData {
   description: string;
   processName: string;
   businessDate: string;
-  status: 'not_started' | 'ready' | 'in_progress' | 'post_manual' | 'completed' | 'rejected';
+  status: 'NOTSTARTED' | 'READY' | 'INPROGRESS' | 'POSTMANUAL' | 'COMPLETED' | 'FAILED';
   priority: 'high' | 'medium' | 'low';
   assignedTo?: string;
   suggestedAction: string;
@@ -109,6 +112,7 @@ export interface WorkflowInboxItemData {
       lastRun: string;
       nextRun: string | null;
     };
+    isManual: boolean; // Flag to identify manual processes
   };
 }
 
@@ -147,9 +151,12 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
     return ['all', ...Array.from(appSet)];
   }, [items]);
 
-  // Filter and sort items
+  // Filter and sort items - only show manual processes
   const filteredItems = React.useMemo(() => {
     let filtered = items.filter(item => {
+      // Only show manual processes
+      if (!item.metadata.isManual) return false;
+      
       if (selectedApplication !== 'all' && item.metadata.application !== selectedApplication) return false;
       if (filters.status !== 'all' && item.status !== filters.status) return false;
       if (filters.priority !== 'all' && item.priority !== filters.priority) return false;
@@ -180,14 +187,15 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
     return filtered;
   }, [items, filters, sortBy, selectedApplication]);
 
-  // Get summary stats
+  // Get summary stats - only for manual processes
   const stats = React.useMemo(() => {
-    const total = items.length;
-    const pending = items.filter(item => item.status === 'not_started' || item.status === 'ready').length;
-    const inProgress = items.filter(item => item.status === 'in_progress').length;
-    const attestation = items.filter(item => item.metadata.processControls.attest).length;
-    const approval = items.filter(item => item.metadata.processControls.attest || 
-      item.status === 'post_manual').length;
+    const manualItems = items.filter(item => item.metadata.isManual);
+    const total = manualItems.length;
+    const pending = manualItems.filter(item => item.status === 'NOTSTARTED' || item.status === 'READY').length;
+    const inProgress = manualItems.filter(item => item.status === 'INPROGRESS').length;
+    const attestation = manualItems.filter(item => item.metadata.processControls.attest).length;
+    const approval = manualItems.filter(item => item.metadata.processControls.attest || 
+      item.status === 'POSTMANUAL').length;
 
     return {
       total,
@@ -262,19 +270,81 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'in_progress':
+      case 'INPROGRESS':
         return <PlayCircle className="h-4 w-4 text-blue-500" />;
-      case 'post_manual':
+      case 'POSTMANUAL':
         return <AlertCircle className="h-4 w-4 text-red-500" />;
-      case 'rejected':
+      case 'FAILED':
         return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'completed':
+      case 'COMPLETED':
         return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case 'ready':
+      case 'READY':
         return <Clock className="h-4 w-4 text-blue-500" />;
-      case 'not_started':
+      case 'NOTSTARTED':
       default:
         return <Clock className="h-4 w-4 text-yellow-500" />;
+    }
+  };
+
+  const getPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      case 'medium':
+        return <Circle className="h-4 w-4 text-yellow-500" />;
+      case 'low':
+        return <Minus className="h-4 w-4 text-green-500" />;
+      default:
+        return <Circle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusRibbon = (status: string) => {
+    const baseClasses = "inline-flex items-center px-2 py-1 text-xs font-medium rounded-full";
+    
+    switch (status) {
+      case 'NOTSTARTED':
+        return (
+          <span className={`${baseClasses} bg-gray-100 text-gray-800 border border-gray-300`}>
+            NOTSTARTED
+          </span>
+        );
+      case 'READY':
+        return (
+          <span className={`${baseClasses} bg-blue-100 text-blue-800 border border-blue-300`}>
+            READY
+          </span>
+        );
+      case 'INPROGRESS':
+        return (
+          <span className={`${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`}>
+            INPROGRESS
+          </span>
+        );
+      case 'POSTMANUAL':
+        return (
+          <span className={`${baseClasses} bg-orange-100 text-orange-800 border border-orange-300`}>
+            POSTMANUAL
+          </span>
+        );
+      case 'COMPLETED':
+        return (
+          <span className={`${baseClasses} bg-green-100 text-green-800 border border-green-300`}>
+            COMPLETED
+          </span>
+        );
+      case 'FAILED':
+        return (
+          <span className={`${baseClasses} bg-red-100 text-red-800 border border-red-300`}>
+            FAILED
+          </span>
+        );
+      default:
+        return (
+          <span className={`${baseClasses} bg-gray-100 text-gray-800 border border-gray-300`}>
+            {status}
+          </span>
+        );
     }
   };
 
@@ -305,7 +375,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
   };
 
   const renderProcessItem = (item: WorkflowInboxItemData) => {
-    const isApprovalType = item.metadata.processControls.attest || item.status === 'post_manual';
+    const isApprovalType = item.metadata.processControls.attest || item.status === 'POSTMANUAL';
     
     // Extract hierarchy levels from hierarchyPath for inline display
     const hierarchyLevels = item.metadata.hierarchyPath
@@ -451,7 +521,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                   size="sm"
                   onClick={() => handleTriggerAction(item.id)}
                   className="text-xs h-6 px-1"
-                  disabled={item.status === 'completed'}
+                  disabled={item.status === 'COMPLETED'}
                   title="Trigger"
                 >
                   <Zap className="h-3 w-3" />
@@ -493,7 +563,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
             </TableHeader>
             <TableBody>
               {filteredItems.map((item) => {
-                const isApprovalType = item.metadata.processControls.attest || item.status === 'post_manual';
+                const isApprovalType = item.metadata.processControls.attest || item.status === 'POSTMANUAL';
                 
                 return (
                   <TableRow 
@@ -538,29 +608,12 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={
-                          item.status === 'in_progress' ? 'default' :
-                          item.status === 'post_manual' ? 'destructive' :
-                          item.status === 'rejected' ? 'destructive' :
-                          item.status === 'completed' ? 'default' :
-                          item.status === 'ready' ? 'secondary' : 'outline'
-                        }
-                        className="text-xs"
-                      >
-                        {item.status.replace('_', ' ')}
-                      </Badge>
+                      {getStatusRibbon(item.status)}
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={
-                          item.priority === 'high' ? 'destructive' :
-                          item.priority === 'medium' ? 'secondary' : 'outline'
-                        }
-                        className="text-xs"
-                      >
-                        {item.priority}
-                      </Badge>
+                      <div className="flex items-center">
+                        {getPriorityIcon(item.priority)}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
@@ -623,7 +676,7 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                             handleTriggerAction(item.id);
                           }}
                           className="text-xs h-6 px-1"
-                          disabled={item.status === 'completed'}
+                          disabled={item.status === 'COMPLETED'}
                           title="Trigger"
                         >
                           <Zap className="h-3 w-3" />
@@ -907,12 +960,12 @@ export const EnhancedWorkflowInboxDashboard: React.FC<EnhancedWorkflowInboxDashb
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="not_started">Not Started</SelectItem>
-                      <SelectItem value="ready">Ready</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="post_manual">Post Manual</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="NOTSTARTED">Not Started</SelectItem>
+                      <SelectItem value="READY">Ready</SelectItem>
+                      <SelectItem value="INPROGRESS">In Progress</SelectItem>
+                      <SelectItem value="POSTMANUAL">Post Manual</SelectItem>
+                      <SelectItem value="COMPLETED">Completed</SelectItem>
+                      <SelectItem value="FAILED">Failed</SelectItem>
                     </SelectContent>
                   </Select>
 
