@@ -15,17 +15,21 @@ interface WorkflowDashboardProps {
 
 const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'applications' }) => {
   const router = useRouter();
-  const { tab } = router.query;
-  const [activeTab, setActiveTab] = useState(tab as string || defaultTab);
-  
-  // Update active tab when URL query parameter changes
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  // This effect safely handles the router query, preventing "NextRouter was not mounted"
   useEffect(() => {
-    if (tab) {
-      setActiveTab(tab as string);
-    } else if (defaultTab) {
-      setActiveTab(defaultTab);
+    if (router.isReady) {
+      const { tab } = router.query;
+      if (tab && typeof tab === 'string') {
+        setActiveTab(tab);
+      } else {
+        // If no tab, you might want to set it to default and update URL
+        // For now, just sync state with default
+        setActiveTab(defaultTab);
+      }
     }
-  }, [tab, defaultTab]);
+  }, [router.isReady, router.query, defaultTab]);
 
   // Navigate to separate pages for metadata, workflow config, and admin dashboard
   // or update the URL with query parameter for tabs that stay on the same page
