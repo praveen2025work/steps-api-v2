@@ -1,69 +1,165 @@
 import { useState, useEffect, useCallback } from 'react';
 import { WorkflowInboxItemData } from '@/components/workflow-inbox/WorkflowInboxDashboard';
 
-// Mock data for demonstration - filtered to exclude completed items
+// Mock data for demonstration - comprehensive static data for each application
 const generateMockWorkflowItems = (): WorkflowInboxItemData[] => {
-  const statuses = ['pending', 'in_progress', 'requires_attention', 'blocked'] as const; // Removed 'completed'
+  const statuses: ('NOTSTARTED' | 'READY' | 'INPROGRESS' | 'POSTMANUAL' | 'COMPLETED' | 'FAILED')[] = 
+    ['NOTSTARTED', 'READY', 'INPROGRESS', 'POSTMANUAL']; // Only show manual processes that need attention
   const priorities = ['high', 'medium', 'low'] as const;
-  const applications = ['Daily Named PNL', 'Daily Workspace PNL', 'Monthend PNL', 'Risk Reporting', 'Regulatory Reporting'];
-  const stages = ['Pre WF', 'Substantiation', 'Review', 'Publish', 'Sign Off'];
-  const substages = ['SOD Roll', 'Books Open For Correction', 'Trial Balance Review', 'Final Approval', 'Distribution'];
+  
+  // Comprehensive application data with realistic workflow processes
+  const applicationData = [
+    {
+      name: 'Daily Named PNL',
+      stages: ['Pre WF', 'Data Collection', 'Validation', 'Review', 'Publish'],
+      substages: ['SOD Roll', 'Data Extract', 'Reconciliation', 'Variance Analysis', 'Final Review', 'Distribution'],
+      processes: [
+        'Trade Data Validation',
+        'Position Reconciliation', 
+        'PnL Attribution Analysis',
+        'Risk Metrics Calculation',
+        'Management Reporting'
+      ]
+    },
+    {
+      name: 'Daily Workspace PNL',
+      stages: ['Initialization', 'Processing', 'Validation', 'Approval', 'Distribution'],
+      substages: ['System Check', 'Data Load', 'Calculation Engine', 'Quality Control', 'Sign Off', 'Report Generation'],
+      processes: [
+        'Workspace Setup',
+        'Market Data Integration',
+        'PnL Calculation',
+        'Exception Handling',
+        'Final Approval'
+      ]
+    },
+    {
+      name: 'Monthend PNL',
+      stages: ['Preparation', 'Calculation', 'Review', 'Adjustment', 'Finalization'],
+      substages: ['Cut-off Procedures', 'Accrual Processing', 'Variance Investigation', 'Management Review', 'Books Closure'],
+      processes: [
+        'Month-end Accruals',
+        'Fair Value Adjustments',
+        'Regulatory Reporting',
+        'Management Commentary',
+        'Audit Trail Generation'
+      ]
+    },
+    {
+      name: 'Risk Reporting',
+      stages: ['Data Gathering', 'Risk Calculation', 'Limit Monitoring', 'Escalation', 'Reporting'],
+      substages: ['Market Data Feed', 'VaR Calculation', 'Stress Testing', 'Limit Breach Check', 'Committee Reporting'],
+      processes: [
+        'Market Risk Assessment',
+        'Credit Risk Analysis',
+        'Operational Risk Review',
+        'Regulatory Capital Calculation',
+        'Risk Dashboard Update'
+      ]
+    },
+    {
+      name: 'Regulatory Reporting',
+      stages: ['Data Preparation', 'Validation', 'Submission Prep', 'Review', 'Filing'],
+      substages: ['Data Extraction', 'Format Validation', 'Regulatory Mapping', 'Quality Assurance', 'Submission'],
+      processes: [
+        'CCAR Submission',
+        'Basel III Reporting',
+        'Liquidity Coverage Ratio',
+        'Stress Test Results',
+        'Capital Adequacy Report'
+      ]
+    },
+    {
+      name: 'Trade Settlement',
+      stages: ['Trade Capture', 'Confirmation', 'Settlement', 'Reconciliation', 'Exception Handling'],
+      substages: ['Trade Booking', 'Counterparty Confirm', 'Cash Movement', 'Position Update', 'Break Resolution'],
+      processes: [
+        'FX Settlement',
+        'Securities Settlement',
+        'Derivative Confirmation',
+        'Cash Reconciliation',
+        'Failed Trade Resolution'
+      ]
+    },
+    {
+      name: 'Collateral Management',
+      stages: ['Exposure Calculation', 'Margin Call', 'Collateral Movement', 'Valuation', 'Reporting'],
+      substages: ['MTM Calculation', 'Threshold Monitoring', 'Call Generation', 'Asset Transfer', 'Dispute Resolution'],
+      processes: [
+        'Initial Margin Calculation',
+        'Variation Margin Processing',
+        'Collateral Optimization',
+        'Haircut Application',
+        'Regulatory Reporting'
+      ]
+    }
+  ];
+
   const users = ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Williams', 'current_user'];
-
   const items: WorkflowInboxItemData[] = [];
+  let itemId = 1;
 
-  for (let i = 1; i <= 25; i++) {
-    const businessDate = new Date();
-    businessDate.setDate(businessDate.getDate() - Math.floor(Math.random() * 7));
+  // Generate items for each application
+  applicationData.forEach(app => {
+    const itemsPerApp = Math.floor(Math.random() * 8) + 5; // 5-12 items per application
     
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + Math.floor(Math.random() * 5) - 2);
+    for (let i = 0; i < itemsPerApp; i++) {
+      const businessDate = new Date();
+      businessDate.setDate(businessDate.getDate() - Math.floor(Math.random() * 7));
+      
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + Math.floor(Math.random() * 5) - 2);
 
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const priority = priorities[Math.floor(Math.random() * priorities.length)];
-    const application = applications[Math.floor(Math.random() * applications.length)];
-    const stage = stages[Math.floor(Math.random() * stages.length)];
-    const substage = substages[Math.floor(Math.random() * substages.length)];
-    
-    const assignedTo = Math.random() > 0.3 ? users[Math.floor(Math.random() * users.length)] : undefined;
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      const priority = priorities[Math.floor(Math.random() * priorities.length)];
+      const stage = app.stages[Math.floor(Math.random() * app.stages.length)];
+      const substage = app.substages[Math.floor(Math.random() * app.substages.length)];
+      const process = app.processes[Math.floor(Math.random() * app.processes.length)];
+      
+      const assignedTo = Math.random() > 0.3 ? users[Math.floor(Math.random() * users.length)] : undefined;
+      const isManual = Math.random() > 0.2; // 80% are manual processes
 
-    const item: WorkflowInboxItemData = {
-      id: `wf-item-${i}`,
-      title: `${application} - ${substage}`,
-      description: `Process ${substage} for ${application} on ${businessDate.toISOString().split('T')[0]}`,
-      processName: `${application} Process`,
-      businessDate: businessDate.toISOString().split('T')[0],
-      status,
-      priority,
-      assignedTo: assignedTo === 'current_user' ? 'You' : assignedTo,
-      suggestedAction: getSuggestedAction(status, priority),
-      dueDate: dueDate.toISOString(),
-      estimatedDuration: Math.floor(Math.random() * 120) + 15, // 15-135 minutes
-      dependencies: Math.random() > 0.7 ? [`Dependency ${Math.floor(Math.random() * 3) + 1}`] : [],
-      tags: generateTags(application, stage),
-      files: generateFiles(i),
-      comments: generateComments(i),
-      history: generateHistory(i),
-      metadata: {
-        application,
-        stage,
-        substage,
-        hierarchyPath: `Root > ${application} > ${stage} > ${substage}`,
-        processControls: {
-          active: Math.random() > 0.2,
-          auto: Math.random() > 0.3,
-          attest: Math.random() > 0.4,
-          lock: Math.random() > 0.6,
-          canTrigger: status !== 'blocked',
-          canSelect: true,
-          lastRun: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
-          nextRun: status === 'pending' ? new Date(Date.now() + Math.random() * 86400000 * 2).toISOString() : null
+      const item: WorkflowInboxItemData = {
+        id: `wf-item-${itemId}`,
+        title: `${app.name} - ${process}`,
+        description: `${process} for ${app.name} - ${substage} stage on ${businessDate.toISOString().split('T')[0]}`,
+        processName: `${app.name} ${process}`,
+        businessDate: businessDate.toISOString().split('T')[0],
+        status,
+        priority,
+        assignedTo: assignedTo === 'current_user' ? 'You' : assignedTo,
+        suggestedAction: getSuggestedAction(status, priority),
+        dueDate: dueDate.toISOString(),
+        estimatedDuration: Math.floor(Math.random() * 120) + 15, // 15-135 minutes
+        dependencies: Math.random() > 0.7 ? [`${app.name} Data Feed`, `${stage} Completion`] : [],
+        tags: generateTags(app.name, stage),
+        files: generateFiles(itemId),
+        comments: generateComments(itemId),
+        history: generateHistory(itemId),
+        metadata: {
+          application: app.name,
+          stage,
+          substage,
+          hierarchyPath: `Root > ${app.name} > ${stage} > ${substage}`,
+          processControls: {
+            active: Math.random() > 0.2,
+            auto: Math.random() > 0.4, // Less auto processes to show more manual ones
+            attest: Math.random() > 0.5,
+            lock: Math.random() > 0.7,
+            canTrigger: status !== 'FAILED',
+            canSelect: true,
+            lastRun: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
+            nextRun: status === 'NOTSTARTED' || status === 'READY' ? 
+              new Date(Date.now() + Math.random() * 86400000 * 2).toISOString() : null
+          },
+          isManual // Add the missing isManual flag
         }
-      }
-    };
+      };
 
-    items.push(item);
-  }
+      items.push(item);
+      itemId++;
+    }
+  });
 
   return items.sort((a, b) => {
     // Sort by priority first, then by due date
@@ -76,19 +172,19 @@ const generateMockWorkflowItems = (): WorkflowInboxItemData[] => {
 };
 
 const getSuggestedAction = (status: string, priority: string): string => {
-  if (status === 'requires_attention') {
-    return 'Review and resolve blocking issues';
+  if (status === 'FAILED') {
+    return 'Review and resolve failure issues';
   }
-  if (status === 'blocked') {
-    return 'Contact dependencies to unblock';
+  if (status === 'POSTMANUAL') {
+    return 'Review manual intervention results';
   }
-  if (status === 'pending' && priority === 'high') {
+  if (status === 'NOTSTARTED' && priority === 'high') {
     return 'Assign to yourself and start immediately';
   }
-  if (status === 'pending') {
+  if (status === 'NOTSTARTED' || status === 'READY') {
     return 'Assign to team member or start processing';
   }
-  if (status === 'in_progress') {
+  if (status === 'INPROGRESS') {
     return 'Continue processing and update status';
   }
   return 'Review and approve completion';
@@ -252,7 +348,8 @@ export const useWorkflowInbox = () => {
           item.id === itemId 
             ? { 
                 ...item, 
-                status: item.status === 'pending' ? 'in_progress' : item.status,
+                status: item.status === 'NOTSTARTED' ? 'READY' : 
+                        item.status === 'READY' ? 'INPROGRESS' : item.status,
                 history: [
                   {
                     id: `history-${Date.now()}`,
