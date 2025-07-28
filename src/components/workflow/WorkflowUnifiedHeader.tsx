@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
+import SafeRouter from '../SafeRouter';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -62,7 +62,16 @@ interface WorkflowUnifiedHeaderProps {
   onBack?: () => void; // Callback to navigate back to previous view
 }
 
-const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
+const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = (props) => {
+  return (
+    <SafeRouter>
+      {(router) => <WorkflowUnifiedHeaderContent router={router} {...props} />}
+    </SafeRouter>
+  );
+};
+
+const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { router: any }> = ({
+  router,
   workflowId,
   workflowTitle,
   hierarchyPath,
@@ -84,7 +93,6 @@ const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = ({
   onBreadcrumbNavigate,
   onBack
 }) => {
-  const router = useRouter();
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
   
   // Calculate task counts if not provided

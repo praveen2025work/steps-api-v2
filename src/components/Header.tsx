@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import SafeRouter from './SafeRouter';
 import Logo from './Logo';
 import { Button } from '@/components/ui/button';
 import { Bell, User, RefreshCw } from 'lucide-react';
@@ -18,7 +18,14 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import NotificationsPanel from './notifications/NotificationsPanel';
 
 const Header = () => {
-  const router = useRouter();
+  return (
+    <SafeRouter>
+      {(router) => <HeaderContent router={router} />}
+    </SafeRouter>
+  );
+};
+
+const HeaderContent = ({ router }: { router: any }) => {
   const { 
     unreadCount, 
     isPanelOpen, 

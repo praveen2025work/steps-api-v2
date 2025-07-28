@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
+import SafeRouter from './SafeRouter';
 import { ChevronRight, Home, LucideIcon, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -70,7 +70,24 @@ const WorkflowHierarchyBreadcrumb: React.FC<WorkflowHierarchyBreadcrumbProps> = 
   nodes,
   config: customConfig,
 }) => {
-  const router = useRouter();
+  return (
+    <SafeRouter>
+      {(router) => {
+        return <WorkflowHierarchyBreadcrumbContent 
+          router={router}
+          nodes={nodes}
+          config={customConfig}
+        />;
+      }}
+    </SafeRouter>
+  );
+};
+
+const WorkflowHierarchyBreadcrumbContent: React.FC<WorkflowHierarchyBreadcrumbProps & { router: any }> = ({
+  router,
+  nodes,
+  config: customConfig,
+}) => {
   const [cachedNodes, setCachedNodes] = useState<HierarchyNode[]>([]);
   const [copiedNodeIndex, setCopiedNodeIndex] = useState<number | null>(null);
   const config = { ...defaultConfig, ...customConfig };

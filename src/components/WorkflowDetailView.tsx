@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
+import SafeRouter from './SafeRouter';
 import WorkflowProgressIndicator from './WorkflowProgressIndicator';
 import WorkflowStagesBar from './WorkflowStagesBar';
 import WorkflowTaskItem, { WorkflowTask } from './WorkflowTaskItem';
@@ -153,7 +153,42 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   onBack,
   enhancedWorkflowData
 }) => {
-  const router = useRouter();
+  return (
+    <SafeRouter>
+      {(router) => {
+        return <WorkflowDetailViewContent 
+          router={router}
+          workflowTitle={workflowTitle}
+          progressSteps={progressSteps}
+          stages={stages}
+          tasks={tasks}
+          viewMode={viewMode}
+          onViewToggle={onViewToggle}
+          summaryData={summaryData}
+          applicationData={applicationData}
+          nodeData={nodeData}
+          onBack={onBack}
+          enhancedWorkflowData={enhancedWorkflowData}
+        />;
+      }}
+    </SafeRouter>
+  );
+};
+
+const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: any }> = ({
+  router,
+  workflowTitle,
+  progressSteps,
+  stages,
+  tasks,
+  viewMode = 'classic',
+  onViewToggle,
+  summaryData,
+  applicationData,
+  nodeData,
+  onBack,
+  enhancedWorkflowData
+}) => {
   const { selectedDate } = useDate();
   const [activeStage, setActiveStage] = useState<string>(stages[0]?.id || '');
   const [activeTab, setActiveTab] = useState<string>('overview');
