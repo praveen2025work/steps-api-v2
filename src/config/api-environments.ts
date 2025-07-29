@@ -103,10 +103,10 @@ export const API_ENVIRONMENTS: Record<string, ApiEnvironment> = {
   prod: createEnvironment({
     name: 'prod',
     displayName: 'Production',
-    baseUrl: 'http://api.com',
-    coreApiUrl: 'http://api.com/api/WF',
-    javaBaseUrl: 'http://api-workflow.com',
-    javaApiUrl: 'http://api-workflow.com/api',
+    baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'https://your-production-api-server.com',
+    coreApiUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://your-production-api-server.com'}/api/WF`,
+    javaBaseUrl: process.env.NEXT_PUBLIC_JAVA_BASE_URL || 'https://your-production-java-api-server.com',
+    javaApiUrl: `${process.env.NEXT_PUBLIC_JAVA_BASE_URL || 'https://your-production-java-api-server.com'}/api`,
     timeout: 45000,
     retryAttempts: 5,
     description: 'Production environment - live data'
