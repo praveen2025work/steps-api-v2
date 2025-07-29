@@ -1,18 +1,23 @@
-import type { GetServerSideProps } from 'next';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 const IndexPage = () => {
-  // This component will not be rendered because of the redirect.
-  // It's just a placeholder to have a valid page component.
-  return null;
-};
+  const router = useRouter();
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return {
-    redirect: {
-      destination: '/workflow-inbox',
-      permanent: false, // Using a temporary redirect (307)
-    },
-  };
+  useEffect(() => {
+    // Client-side redirect to workflow-inbox
+    router.replace('/workflow-inbox');
+  }, [router]);
+
+  // Show loading state while redirecting
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Redirecting to Task Center...</p>
+      </div>
+    </div>
+  );
 };
 
 export default IndexPage;

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { GetServerSideProps } from 'next';
 import DashboardLayout from '@/components/DashboardLayout';
 import DynamicWorkflowDetailView from '@/components/DynamicWorkflowDetailView';
 import DynamicWorkflowBreadcrumb, { BreadcrumbLevel } from '@/components/workflow/DynamicWorkflowBreadcrumb';
@@ -21,26 +20,21 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-interface DynamicWorkflowPageProps {
-  workflowId: string;
-  applicationId?: number;
-  configId?: string;
-  currentLevel?: number;
-  nextLevel?: number;
-}
-
-const DynamicWorkflowPage: React.FC<DynamicWorkflowPageProps> = ({
-  workflowId,
-  applicationId,
-  configId,
-  currentLevel,
-  nextLevel
-}) => {
+const DynamicWorkflowPage: React.FC = () => {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<'classic' | 'alternative'>('classic');
+  
+  // Get parameters from router
+  const { workflowId, appId, configId, currentLevel, nextLevel } = router.query;
+  
+  // Convert query parameters to proper types
+  const applicationId = appId ? parseInt(appId as string) : undefined;
+  const parsedCurrentLevel = currentLevel ? parseInt(currentLevel as string) : undefined;
+  const parsedNextLevel = nextLevel ? parseInt(nextLevel as string) : undefined;
+  const workflowIdString = workflowId as string || '';
 
   // Generate workflow title from ID
-  const workflowTitle = workflowId
+  const workflowTitle = workflowIdString
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
@@ -69,28 +63,28 @@ const DynamicWorkflowPage: React.FC<DynamicWorkflowPageProps> = ({
   }
 
   // Add node group level if we have specific navigation parameters
-  if (applicationId && configId && currentLevel !== undefined) {
+  if (applicationId && configId && parsedCurrentLevel !== undefined) {
     breadcrumbLevels.push({
       id: `node-${configId}`,
-      name: `Level ${currentLevel}`,
+      name: `Level ${parsedCurrentLevel}`,
       level: 'node-group-details',
       metadata: {
         appId: applicationId.toString(),
-        configId: configId,
-        groupId: configId
+        configId: configId as string,
+        groupId: configId as string
       }
     });
   }
 
   // Add workflow instance level if we're at the deepest level
-  if (applicationId && configId && currentLevel !== undefined && nextLevel !== undefined) {
+  if (applicationId && configId && parsedCurrentLevel !== undefined && parsedNextLevel !== undefined) {
     breadcrumbLevels.push({
-      id: `workflow-${configId}-${currentLevel}`,
+      id: `workflow-${configId}-${parsedCurrentLevel}`,
       name: 'Workflow Instance',
       level: 'workflow-instance',
       metadata: {
         appId: applicationId.toString(),
-        configId: configId,
+        configId: configId as string,
         isUsedForWorkflowInstance: true
       }
     });
@@ -265,9 +259,9 @@ const DynamicWorkflowPage: React.FC<DynamicWorkflowPageProps> = ({
             <DynamicWorkflowDetailView
               workflowTitle={workflowTitle}
               applicationId={applicationId}
-              configId={configId}
-              currentLevel={currentLevel}
-              nextLevel={nextLevel}
+              configId={configId as string}
+              currentLevel={parsedCurrentLevel}
+              nextLevel={parsedNextLevel}
               viewMode={viewMode}
               onViewToggle={handleViewToggle}
               onBreadcrumbNavigate={handleBreadcrumbNavigate}
@@ -431,21 +425,6 @@ if (result.success) {
       </div>
     </DashboardLayout>
   );
-};
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { workflowId } = context.params!;
-  const { appId, configId, currentLevel, nextLevel } = context.query;
-
-  return {
-    props: {
-      workflowId: workflowId as string,
-      applicationId: appId ? parseInt(appId as string) : undefined,
-      configId: configId as string || undefined,
-      currentLevel: currentLevel ? parseInt(currentLevel as string) : undefined,
-      nextLevel: nextLevel ? parseInt(nextLevel as string) : undefined,
-    },
-  };
 };
 
 export default DynamicWorkflowPage;
