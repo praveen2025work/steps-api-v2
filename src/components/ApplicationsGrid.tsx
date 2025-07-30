@@ -746,8 +746,19 @@ const ApplicationsGrid = () => {
     (window as any).currentWorkflowApplication = application;
     (window as any).currentWorkflowNode = node;
 
+    // Construct a proper workflow title avoiding duplication
+    let workflowTitle = node.configName;
+    
+    // If the application name is different from the node name and doesn't already contain it, prepend it
+    if (application.configName && 
+        application.configName !== node.configName && 
+        !node.configName.includes(application.configName) &&
+        !application.configName.includes(node.configName)) {
+      workflowTitle = `${application.configName} - ${node.configName}`;
+    }
+    
     return {
-      workflowTitle: `${application.configName} - ${node.configName}`,
+      workflowTitle,
       progressSteps,
       stages,
       tasks,
