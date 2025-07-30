@@ -287,8 +287,10 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     scrollPosition: 0
   });
 
-  // Memoized calculations to prevent unnecessary re-renders
+  // Memoized calculations to prevent unnecessary re-renders - WITH COMPREHENSIVE LOGGING
   const memoizedTaskCounts = useMemo(() => {
+    console.log('📊 [TASK COUNTS DEBUG] Starting task counts calculation');
+    
     try {
       let completed = 0;
       let failed = 0;
@@ -296,117 +298,402 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       let pending = 0;
       let processing = 0;
       
+      console.log('📊 [TASK COUNTS DEBUG] Input data:', {
+        summaryDataExists: !!summaryData,
+        summaryDataType: typeof summaryData,
+        stageSpecificSubStagesLength: stageSpecificSubStages.length,
+        tasksKeys: Object.keys(tasks || {})
+      });
+      
       // First priority: Use processData from workflow summary if available
       const processData = safeGet(summaryData, 'processData', []);
+      console.log('📊 [TASK COUNTS DEBUG] ProcessData:', {
+        isArray: Array.isArray(processData),
+        length: processData?.length || 0,
+        type: typeof processData
+      });
+      
       if (Array.isArray(processData) && processData.length > 0) {
-        processData.forEach((process: any) => {
-          const status = safeToString(safeGet(process, 'status', ''), '').toLowerCase();
-          if (status === 'completed') completed++;
-          else if (status === 'failed') failed++;
-          else if (status === 'rejected') rejected++;
-          else if (status === 'in_progress' || status === 'in-progress' || status === 'running') processing++;
-          else pending++;
+        console.log('📊 [TASK COUNTS DEBUG] Processing processData array');
+        
+        processData.forEach((process: any, index: number) => {
+          try {
+            console.log(`📊 [TASK COUNTS DEBUG] Processing process ${index}:`, {
+              processExists: !!process,
+              processType: typeof process,
+              processKeys: process ? Object.keys(process) : []
+            });
+            
+            const rawStatus = safeGet(process, 'status', '');
+            console.log(`📊 [TASK COUNTS DEBUG] Process ${index} raw status:`, {
+              rawStatus,
+              rawStatusType: typeof rawStatus
+            });
+            
+            const status = safeToString(rawStatus, '').toLowerCase();
+            console.log(`📊 [TASK COUNTS DEBUG] Process ${index} converted status:`, status);
+            
+            if (status === 'completed') completed++;
+            else if (status === 'failed') failed++;
+            else if (status === 'rejected') rejected++;
+            else if (status === 'in_progress' || status === 'in-progress' || status === 'running') processing++;
+            else pending++;
+            
+          } catch (processError) {
+            console.error(`❌ [TASK COUNTS DEBUG] Error processing process ${index}:`, processError);
+          }
         });
         
-        return { completed, failed, rejected, pending, processing };
+        const result = { completed, failed, rejected, pending, processing };
+        console.log('✅ [TASK COUNTS DEBUG] ProcessData result:', result);
+        return result;
       }
       
       // Second priority: Use stage-specific sub-stages
       if (stageSpecificSubStages.length > 0) {
-        stageSpecificSubStages.forEach(subStage => {
-          const status = safeGet(subStage, 'status', '');
-          if (status === 'completed') completed++;
-          else if (status === 'failed') failed++;
-          else if (status === 'rejected') rejected++;
-          else if (status === 'in-progress') processing++;
-          else pending++;
-        });
+        console.log('📊 [TASK COUNTS DEBUG] Processing stageSpecificSubStages');
         
-        return { completed, failed, rejected, pending, processing };
-      }
-      
-      // Fallback: Use tasks
-      Object.values(tasks || {}).forEach(stageTasks => {
-        if (Array.isArray(stageTasks)) {
-          stageTasks.forEach(task => {
-            const status = safeGet(task, 'status', '');
+        stageSpecificSubStages.forEach((subStage, index) => {
+          try {
+            console.log(`📊 [TASK COUNTS DEBUG] Processing substage ${index}:`, {
+              subStageExists: !!subStage,
+              subStageType: typeof subStage,
+              subStageKeys: subStage ? Object.keys(subStage) : []
+            });
+            
+            const status = safeGet(subStage, 'status', '');
+            console.log(`📊 [TASK COUNTS DEBUG] Substage ${index} status:`, status);
+            
             if (status === 'completed') completed++;
             else if (status === 'failed') failed++;
             else if (status === 'rejected') rejected++;
-            else if (status === 'in_progress' || status === 'in-progress') processing++;
+            else if (status === 'in-progress') processing++;
             else pending++;
+            
+          } catch (subStageError) {
+            console.error(`❌ [TASK COUNTS DEBUG] Error processing substage ${index}:`, subStageError);
+          }
+        });
+        
+        const result = { completed, failed, rejected, pending, processing };
+        console.log('✅ [TASK COUNTS DEBUG] StageSpecificSubStages result:', result);
+        return result;
+      }
+      
+      // Fallback: Use tasks
+      console.log('📊 [TASK COUNTS DEBUG] Processing tasks fallback');
+      
+      Object.entries(tasks || {}).forEach(([stageId, stageTasks]) => {
+        try {
+          console.log(`📊 [TASK COUNTS DEBUG] Processing stage ${stageId}:`, {
+            stageTasksIsArray: Array.isArray(stageTasks),
+            stageTasksLength: stageTasks?.length || 0
           });
+          
+          if (Array.isArray(stageTasks)) {
+            stageTasks.forEach((task, taskIndex) => {
+              try {
+                console.log(`📊 [TASK COUNTS DEBUG] Processing task ${stageId}-${taskIndex}:`, {
+                  taskExists: !!task,
+                  taskType: typeof task,
+                  taskKeys: task ? Object.keys(task) : []
+                });
+                
+                const status = safeGet(task, 'status', '');
+                console.log(`📊 [TASK COUNTS DEBUG] Task ${stageId}-${taskIndex} status:`, status);
+                
+                if (status === 'completed') completed++;
+                else if (status === 'failed') failed++;
+                else if (status === 'rejected') rejected++;
+                else if (status === 'in_progress' || status === 'in-progress') processing++;
+                else pending++;
+                
+              } catch (taskError) {
+                console.error(`❌ [TASK COUNTS DEBUG] Error processing task ${stageId}-${taskIndex}:`, taskError);
+              }
+            });
+          }
+        } catch (stageError) {
+          console.error(`❌ [TASK COUNTS DEBUG] Error processing stage ${stageId}:`, stageError);
         }
       });
       
-      return { completed, failed, rejected, pending, processing };
+      const result = { completed, failed, rejected, pending, processing };
+      console.log('✅ [TASK COUNTS DEBUG] Tasks fallback result:', result);
+      return result;
+      
     } catch (error) {
-      console.warn('Error calculating task counts:', error);
+      console.error('❌ [TASK COUNTS DEBUG] Error calculating task counts:', {
+        error,
+        message: error?.message,
+        stack: error?.stack
+      });
+      
+      // Enhanced error logging for toString issues
+      if (error?.message?.includes('toString')) {
+        console.error('🔍 [TASK COUNTS DEBUG] toString error detected:', {
+          errorMessage: error.message,
+          summaryData,
+          stageSpecificSubStages,
+          tasks
+        });
+      }
+      
       return { completed: 0, failed: 0, rejected: 0, pending: 0, processing: 0 };
     }
   }, [summaryData, stageSpecificSubStages, tasks]);
 
   const memoizedOverallProgress = useMemo(() => {
+    console.log('📈 [PROGRESS DEBUG] Starting overall progress calculation');
+    
     try {
+      console.log('📈 [PROGRESS DEBUG] Input data:', {
+        hierarchyPathLength: hierarchyPath?.length || 0,
+        summaryDataExists: !!summaryData,
+        stageSpecificSubStagesLength: stageSpecificSubStages.length,
+        tasksKeys: Object.keys(tasks || {})
+      });
+      
       // First priority: Use hierarchy path progress if available
       if (Array.isArray(hierarchyPath) && hierarchyPath.length > 0) {
+        console.log('📈 [PROGRESS DEBUG] Processing hierarchy path');
+        
         const lastNode = hierarchyPath[hierarchyPath.length - 1];
+        console.log('📈 [PROGRESS DEBUG] Last node:', {
+          lastNodeExists: !!lastNode,
+          lastNodeType: typeof lastNode,
+          lastNodeKeys: lastNode ? Object.keys(lastNode) : []
+        });
+        
         const progress = safeGet(lastNode, 'progress', null);
+        console.log('📈 [PROGRESS DEBUG] Hierarchy progress:', {
+          progress,
+          progressType: typeof progress,
+          isNumber: typeof progress === 'number'
+        });
+        
         if (typeof progress === 'number') {
-          return Math.round(progress);
+          const result = Math.round(progress);
+          console.log('✅ [PROGRESS DEBUG] Hierarchy path result:', result);
+          return result;
         }
       }
       
       // Second priority: Calculate from processData if available
       const processData = safeGet(summaryData, 'processData', []);
+      console.log('📈 [PROGRESS DEBUG] ProcessData:', {
+        isArray: Array.isArray(processData),
+        length: processData?.length || 0
+      });
+      
       if (Array.isArray(processData) && processData.length > 0) {
-        const totalProcesses = processData.length;
-        const completedProcesses = processData.filter((p: any) => {
-          const status = safeToString(safeGet(p, 'status', ''), '').toLowerCase();
-          return status === 'completed';
-        }).length;
+        console.log('📈 [PROGRESS DEBUG] Processing processData for progress');
         
-        return totalProcesses > 0 ? Math.round((completedProcesses / totalProcesses) * 100) : 0;
+        const totalProcesses = processData.length;
+        let completedProcesses = 0;
+        
+        processData.forEach((p: any, index: number) => {
+          try {
+            console.log(`📈 [PROGRESS DEBUG] Processing process ${index} for completion:`, {
+              processExists: !!p,
+              processType: typeof p
+            });
+            
+            const rawStatus = safeGet(p, 'status', '');
+            console.log(`📈 [PROGRESS DEBUG] Process ${index} raw status:`, {
+              rawStatus,
+              rawStatusType: typeof rawStatus
+            });
+            
+            const status = safeToString(rawStatus, '').toLowerCase();
+            console.log(`📈 [PROGRESS DEBUG] Process ${index} converted status:`, status);
+            
+            if (status === 'completed') {
+              completedProcesses++;
+            }
+          } catch (processError) {
+            console.error(`❌ [PROGRESS DEBUG] Error processing process ${index}:`, processError);
+          }
+        });
+        
+        const result = totalProcesses > 0 ? Math.round((completedProcesses / totalProcesses) * 100) : 0;
+        console.log('✅ [PROGRESS DEBUG] ProcessData result:', {
+          totalProcesses,
+          completedProcesses,
+          result
+        });
+        return result;
       }
       
       // Third priority: Calculate from stage-specific sub-stages
       if (stageSpecificSubStages.length > 0) {
-        const totalSubStages = stageSpecificSubStages.length;
-        const completedSubStages = stageSpecificSubStages.filter(subStage => 
-          safeGet(subStage, 'status', '') === 'completed'
-        ).length;
+        console.log('📈 [PROGRESS DEBUG] Processing stageSpecificSubStages for progress');
         
-        return totalSubStages > 0 ? Math.round((completedSubStages / totalSubStages) * 100) : 0;
+        const totalSubStages = stageSpecificSubStages.length;
+        let completedSubStages = 0;
+        
+        stageSpecificSubStages.forEach((subStage, index) => {
+          try {
+            console.log(`📈 [PROGRESS DEBUG] Processing substage ${index} for completion:`, {
+              subStageExists: !!subStage,
+              subStageType: typeof subStage
+            });
+            
+            const status = safeGet(subStage, 'status', '');
+            console.log(`📈 [PROGRESS DEBUG] Substage ${index} status:`, status);
+            
+            if (status === 'completed') {
+              completedSubStages++;
+            }
+          } catch (subStageError) {
+            console.error(`❌ [PROGRESS DEBUG] Error processing substage ${index}:`, subStageError);
+          }
+        });
+        
+        const result = totalSubStages > 0 ? Math.round((completedSubStages / totalSubStages) * 100) : 0;
+        console.log('✅ [PROGRESS DEBUG] StageSpecificSubStages result:', {
+          totalSubStages,
+          completedSubStages,
+          result
+        });
+        return result;
       }
       
       // Fallback: Calculate from tasks
+      console.log('📈 [PROGRESS DEBUG] Processing tasks fallback for progress');
+      
       let totalTasks = 0;
       let completedTasks = 0;
       
-      Object.values(tasks || {}).forEach(stageTasks => {
-        if (Array.isArray(stageTasks)) {
-          totalTasks += stageTasks.length;
-          completedTasks += stageTasks.filter(task => safeGet(task, 'status', '') === 'completed').length;
+      Object.entries(tasks || {}).forEach(([stageId, stageTasks]) => {
+        try {
+          console.log(`📈 [PROGRESS DEBUG] Processing stage ${stageId} for progress:`, {
+            stageTasksIsArray: Array.isArray(stageTasks),
+            stageTasksLength: stageTasks?.length || 0
+          });
+          
+          if (Array.isArray(stageTasks)) {
+            totalTasks += stageTasks.length;
+            
+            stageTasks.forEach((task, taskIndex) => {
+              try {
+                console.log(`📈 [PROGRESS DEBUG] Processing task ${stageId}-${taskIndex} for completion:`, {
+                  taskExists: !!task,
+                  taskType: typeof task
+                });
+                
+                const status = safeGet(task, 'status', '');
+                console.log(`📈 [PROGRESS DEBUG] Task ${stageId}-${taskIndex} status:`, status);
+                
+                if (status === 'completed') {
+                  completedTasks++;
+                }
+              } catch (taskError) {
+                console.error(`❌ [PROGRESS DEBUG] Error processing task ${stageId}-${taskIndex}:`, taskError);
+              }
+            });
+          }
+        } catch (stageError) {
+          console.error(`❌ [PROGRESS DEBUG] Error processing stage ${stageId}:`, stageError);
         }
       });
       
-      return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      const result = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      console.log('✅ [PROGRESS DEBUG] Tasks fallback result:', {
+        totalTasks,
+        completedTasks,
+        result
+      });
+      return result;
+      
     } catch (error) {
-      console.warn('Error calculating overall progress:', error);
+      console.error('❌ [PROGRESS DEBUG] Error calculating overall progress:', {
+        error,
+        message: error?.message,
+        stack: error?.stack
+      });
+      
+      // Enhanced error logging for toString issues
+      if (error?.message?.includes('toString')) {
+        console.error('🔍 [PROGRESS DEBUG] toString error detected:', {
+          errorMessage: error.message,
+          hierarchyPath,
+          summaryData,
+          stageSpecificSubStages,
+          tasks
+        });
+      }
+      
       return 0;
     }
   }, [hierarchyPath, summaryData, stageSpecificSubStages, tasks]);
 
-  // Memoized workflow data for Modern and Step Function views
+  // Memoized workflow data for Modern and Step Function views - WITH COMPREHENSIVE LOGGING
   const memoizedWorkflowData = useMemo(() => {
+    console.log('🔧 [WORKFLOW DATA DEBUG] Starting workflow data creation');
+    
     try {
+      console.log('🔧 [WORKFLOW DATA DEBUG] Input parameters:', {
+        hierarchyPathLength: hierarchyPath?.length || 0,
+        workflowTitleType: typeof workflowTitle,
+        progressStepsIsArray: Array.isArray(progressSteps),
+        stagesIsArray: Array.isArray(stages),
+        tasksType: typeof tasks,
+        summaryDataExists: !!summaryData,
+        applicationDataExists: !!applicationData,
+        nodeDataExists: !!nodeData,
+        memoizedTaskCountsType: typeof memoizedTaskCounts,
+        memoizedOverallProgressType: typeof memoizedOverallProgress
+      });
+      
       const lastHierarchyNode = Array.isArray(hierarchyPath) && hierarchyPath.length > 0 
         ? hierarchyPath[hierarchyPath.length - 1] 
         : null;
       
-      return {
-        id: safeGet(lastHierarchyNode, 'id', 'workflow-1'),
-        title: safeToString(workflowTitle, 'Unknown Workflow'),
+      console.log('🔧 [WORKFLOW DATA DEBUG] Last hierarchy node:', {
+        lastHierarchyNodeExists: !!lastHierarchyNode,
+        lastHierarchyNodeType: typeof lastHierarchyNode,
+        lastHierarchyNodeKeys: lastHierarchyNode ? Object.keys(lastHierarchyNode) : []
+      });
+      
+      // Safe extraction of workflow ID
+      const workflowId = safeGet(lastHierarchyNode, 'id', 'workflow-1');
+      console.log('🔧 [WORKFLOW DATA DEBUG] Workflow ID:', {
+        workflowId,
+        workflowIdType: typeof workflowId
+      });
+      
+      // Safe conversion of workflow title
+      const workflowTitleSafe = safeToString(workflowTitle, 'Unknown Workflow');
+      console.log('🔧 [WORKFLOW DATA DEBUG] Workflow title:', {
+        originalTitle: workflowTitle,
+        safeTitle: workflowTitleSafe,
+        safeTitleType: typeof workflowTitleSafe
+      });
+      
+      // Safe extraction of summary data arrays
+      const allFiles = safeGet(summaryData, 'fileData', []);
+      const allDependencies = safeGet(summaryData, 'dependencyData', []);
+      const dailyParams = safeGet(summaryData, 'dailyParams', []);
+      const appParams = safeGet(summaryData, 'appParams', []);
+      const processParams = safeGet(summaryData, 'processParams', []);
+      
+      console.log('🔧 [WORKFLOW DATA DEBUG] Summary data arrays:', {
+        allFilesIsArray: Array.isArray(allFiles),
+        allFilesLength: allFiles?.length || 0,
+        allDependenciesIsArray: Array.isArray(allDependencies),
+        allDependenciesLength: allDependencies?.length || 0,
+        dailyParamsIsArray: Array.isArray(dailyParams),
+        dailyParamsLength: dailyParams?.length || 0,
+        appParamsIsArray: Array.isArray(appParams),
+        appParamsLength: appParams?.length || 0,
+        processParamsIsArray: Array.isArray(processParams),
+        processParamsLength: processParams?.length || 0
+      });
+      
+      const workflowData = {
+        id: workflowId,
+        title: workflowTitleSafe,
         progressSteps: Array.isArray(progressSteps) ? progressSteps : [],
         stages: Array.isArray(stages) ? stages : [],
         tasks: tasks || {},
@@ -415,15 +702,55 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         nodeData,
         taskCounts: memoizedTaskCounts,
         progress: memoizedOverallProgress,
-        allFiles: safeGet(summaryData, 'fileData', []),
-        allDependencies: safeGet(summaryData, 'dependencyData', []),
-        dailyParams: safeGet(summaryData, 'dailyParams', []),
-        appParams: safeGet(summaryData, 'appParams', []),
-        processParams: safeGet(summaryData, 'processParams', [])
+        allFiles,
+        allDependencies,
+        dailyParams,
+        appParams,
+        processParams
       };
+      
+      console.log('✅ [WORKFLOW DATA DEBUG] Workflow data created successfully:', {
+        id: workflowData.id,
+        title: workflowData.title,
+        progressStepsLength: workflowData.progressSteps.length,
+        stagesLength: workflowData.stages.length,
+        tasksKeys: Object.keys(workflowData.tasks),
+        taskCounts: workflowData.taskCounts,
+        progress: workflowData.progress,
+        allFilesLength: workflowData.allFiles.length,
+        allDependenciesLength: workflowData.allDependencies.length,
+        dailyParamsLength: workflowData.dailyParams.length,
+        appParamsLength: workflowData.appParams.length,
+        processParamsLength: workflowData.processParams.length
+      });
+      
+      return workflowData;
+      
     } catch (error) {
-      console.warn('Error creating workflow data:', error);
-      return {
+      console.error('❌ [WORKFLOW DATA DEBUG] Error creating workflow data:', {
+        error,
+        message: error?.message,
+        stack: error?.stack
+      });
+      
+      // Enhanced error logging for toString issues
+      if (error?.message?.includes('toString')) {
+        console.error('🔍 [WORKFLOW DATA DEBUG] toString error detected:', {
+          errorMessage: error.message,
+          hierarchyPath,
+          workflowTitle,
+          progressSteps,
+          stages,
+          tasks,
+          summaryData,
+          applicationData,
+          nodeData,
+          memoizedTaskCounts,
+          memoizedOverallProgress
+        });
+      }
+      
+      const fallbackData = {
         id: 'workflow-1',
         title: 'Unknown Workflow',
         progressSteps: [],
@@ -440,6 +767,9 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         appParams: [],
         processParams: []
       };
+      
+      console.log('⚠️ [WORKFLOW DATA DEBUG] Returning fallback data:', fallbackData);
+      return fallbackData;
     }
   }, [hierarchyPath, workflowTitle, progressSteps, stages, tasks, summaryData, applicationData, nodeData, memoizedTaskCounts, memoizedOverallProgress]);
 
@@ -547,32 +877,87 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     }
   }, [preservedState, activeTab, selectedSubStage, rightPanelContent, showFilePreview]);
 
-  // Enhanced refresh with data fetching and error handling
+  // Enhanced refresh with data fetching and error handling - WITH COMPREHENSIVE LOGGING
   const handleRefresh = useCallback(async (isManualRefresh: boolean = false) => {
-    if (isRefreshing) return; // Prevent multiple simultaneous refreshes
+    console.log('🔄 [REFRESH DEBUG] Starting refresh process', {
+      isManualRefresh,
+      isRefreshing,
+      timestamp: new Date().toISOString()
+    });
+
+    if (isRefreshing) {
+      console.log('⚠️ [REFRESH DEBUG] Refresh already in progress, skipping');
+      return; // Prevent multiple simultaneous refreshes
+    }
     
     setIsRefreshing(true);
     preserveUIState();
     
     try {
-      // Get current workflow summary data safely
+      console.log('📊 [REFRESH DEBUG] Getting current workflow summary data');
+      
+      // Get current workflow summary data safely with detailed logging
       const currentSummaryData = (window as any)?.currentWorkflowSummary;
+      console.log('📊 [REFRESH DEBUG] Current summary data type:', typeof currentSummaryData);
+      console.log('📊 [REFRESH DEBUG] Current summary data exists:', !!currentSummaryData);
+      
+      if (currentSummaryData) {
+        console.log('📊 [REFRESH DEBUG] Current summary data keys:', Object.keys(currentSummaryData));
+      }
+      
       const applications = safeGet(currentSummaryData, 'applications', []);
+      console.log('📊 [REFRESH DEBUG] Applications array:', {
+        isArray: Array.isArray(applications),
+        length: applications?.length || 0,
+        type: typeof applications
+      });
       
       if (Array.isArray(applications) && applications.length > 0) {
         const currentApp = applications[0];
+        console.log('📊 [REFRESH DEBUG] Current app data:', {
+          exists: !!currentApp,
+          type: typeof currentApp,
+          keys: currentApp ? Object.keys(currentApp) : []
+        });
+        
         const appId = safeGet(currentApp, 'appId', null);
+        console.log('📊 [REFRESH DEBUG] App ID:', {
+          appId,
+          type: typeof appId,
+          isValid: appId !== null && appId !== undefined
+        });
         
         if (appId) {
-          const dateString = selectedDate ? selectedDate.toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-          }).replace(/,/g, '') : new Date().toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-          }).replace(/,/g, '');
+          console.log('📅 [REFRESH DEBUG] Processing date for API call');
+          
+          let dateString;
+          try {
+            dateString = selectedDate ? selectedDate.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }).replace(/,/g, '') : new Date().toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }).replace(/,/g, '');
+            
+            console.log('📅 [REFRESH DEBUG] Date string created:', dateString);
+          } catch (dateError) {
+            console.error('❌ [REFRESH DEBUG] Error creating date string:', dateError);
+            dateString = new Date().toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }).replace(/,/g, '');
+            console.log('📅 [REFRESH DEBUG] Fallback date string:', dateString);
+          }
+          
+          console.log('🌐 [REFRESH DEBUG] Making API call with params:', {
+            date: dateString,
+            configId: safeToString(appId, ''),
+            appId: appId
+          });
           
           // Fetch fresh workflow summary
           const response = await workflowService.getWorkflowSummary({
@@ -581,42 +966,92 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
             appId: appId
           });
           
+          console.log('🌐 [REFRESH DEBUG] API response received:', {
+            success: safeGet(response, 'success', false),
+            hasData: !!safeGet(response, 'data', null),
+            error: safeGet(response, 'error', null),
+            timestamp: safeGet(response, 'timestamp', null)
+          });
+          
           if (safeGet(response, 'success', false)) {
+            const responseData = safeGet(response, 'data', null);
+            console.log('✅ [REFRESH DEBUG] Processing successful response:', {
+              dataExists: !!responseData,
+              dataType: typeof responseData,
+              dataKeys: responseData ? Object.keys(responseData) : []
+            });
+            
             // Update global workflow summary
-            (window as any).currentWorkflowSummary = safeGet(response, 'data', null);
+            (window as any).currentWorkflowSummary = responseData;
+            console.log('✅ [REFRESH DEBUG] Updated global workflow summary');
             
             // Update last refreshed time
             setLastRefreshed(new Date());
             setCountdown(refreshInterval);
+            console.log('✅ [REFRESH DEBUG] Updated refresh timestamps');
             
             // Restore UI state after a brief delay to allow data to update
             setTimeout(() => {
-              restoreUIState();
+              console.log('🔄 [REFRESH DEBUG] Restoring UI state');
+              try {
+                restoreUIState();
+                console.log('✅ [REFRESH DEBUG] UI state restored successfully');
+              } catch (uiError) {
+                console.error('❌ [REFRESH DEBUG] Error restoring UI state:', uiError);
+              }
             }, 200);
             
             // Only show success message for manual refreshes
             if (isManualRefresh) {
+              console.log('✅ [REFRESH DEBUG] Showing success toast for manual refresh');
               showSuccessToast("Workflow data refreshed successfully");
             }
           } else {
             const errorMessage = safeToString(safeGet(response, 'error', ''), 'Unknown error');
+            console.error('❌ [REFRESH DEBUG] API call failed:', errorMessage);
             showErrorToast(`Failed to refresh data: ${errorMessage}`);
           }
+        } else {
+          console.warn('⚠️ [REFRESH DEBUG] No valid appId found, cannot make API call');
         }
       } else {
+        console.log('📊 [REFRESH DEBUG] No applications found, using fallback refresh');
+        
         // Fallback refresh without API call
         setLastRefreshed(new Date());
         setCountdown(refreshInterval);
         
         // Only show success message for manual refreshes
         if (isManualRefresh) {
+          console.log('✅ [REFRESH DEBUG] Showing success toast for manual fallback refresh');
           showSuccessToast("Workflow data refreshed successfully");
         }
       }
     } catch (error: any) {
+      console.error('❌ [REFRESH DEBUG] Caught error in refresh process:', {
+        error,
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name,
+        type: typeof error
+      });
+      
+      // Enhanced error logging for toString issues
+      if (error?.message?.includes('toString')) {
+        console.error('🔍 [REFRESH DEBUG] toString error detected - investigating:', {
+          errorMessage: error.message,
+          errorObject: error,
+          currentSummaryData: (window as any)?.currentWorkflowSummary,
+          selectedDate,
+          refreshInterval
+        });
+      }
+      
       const errorMessage = safeToString(safeGet(error, 'message', ''), 'Unknown error occurred');
+      console.error('❌ [REFRESH DEBUG] Final error message:', errorMessage);
       showErrorToast(`Refresh failed: ${errorMessage}`);
     } finally {
+      console.log('🏁 [REFRESH DEBUG] Refresh process completed, setting isRefreshing to false');
       setIsRefreshing(false);
     }
   }, [isRefreshing, preserveUIState, restoreUIState, selectedDate, refreshInterval]);
@@ -823,11 +1258,63 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
               </div>
             ) : (
               activeStageTasks.map((task, index) => {
+                console.log(`🎨 [TASK RENDER DEBUG] Rendering task ${index}:`, {
+                  taskExists: !!task,
+                  taskType: typeof task,
+                  taskKeys: task ? Object.keys(task) : [],
+                  index
+                });
+                
                 try {
-                  const taskId = safeGet(task, 'id', `task-${index}`);
-                  const taskName = safeToString(safeGet(task, 'name', ''), 'Unknown Task');
+                  const rawTaskId = safeGet(task, 'id', `task-${index}`);
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} ID extraction:`, {
+                    rawTaskId,
+                    rawTaskIdType: typeof rawTaskId
+                  });
+                  
+                  const taskId = safeToString(rawTaskId, `task-${index}`);
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} safe ID:`, taskId);
+                  
+                  const rawTaskName = safeGet(task, 'name', '');
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} name extraction:`, {
+                    rawTaskName,
+                    rawTaskNameType: typeof rawTaskName
+                  });
+                  
+                  const taskName = safeToString(rawTaskName, 'Unknown Task');
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} safe name:`, taskName);
+                  
                   const taskStatus = safeGet(task, 'status', 'not-started');
-                  const processId = safeToString(safeGet(task, 'processId', ''), `PROC-${index}`);
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} status:`, taskStatus);
+                  
+                  const rawProcessId = safeGet(task, 'processId', '');
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} processId extraction:`, {
+                    rawProcessId,
+                    rawProcessIdType: typeof rawProcessId
+                  });
+                  
+                  const processId = safeToString(rawProcessId, `PROC-${index}`);
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} safe processId:`, processId);
+                  
+                  const rawDuration = safeGet(task, 'duration', '');
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} duration extraction:`, {
+                    rawDuration,
+                    rawDurationType: typeof rawDuration
+                  });
+                  
+                  const safeDuration = safeToString(rawDuration, '0');
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} safe duration:`, safeDuration);
+                  
+                  const rawUpdatedBy = safeGet(task, 'updatedBy', null);
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} updatedBy extraction:`, {
+                    rawUpdatedBy,
+                    rawUpdatedByType: typeof rawUpdatedBy
+                  });
+                  
+                  const safeUpdatedBy = rawUpdatedBy ? safeToString(rawUpdatedBy, 'Unknown') : null;
+                  console.log(`🎨 [TASK RENDER DEBUG] Task ${index} safe updatedBy:`, safeUpdatedBy);
+                  
+                  console.log(`✅ [TASK RENDER DEBUG] Task ${index} all values extracted safely`);
                   
                   return (
                     <div 
@@ -865,12 +1352,12 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                           <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              <span>Duration: {safeToString(safeGet(task, 'duration', ''), '0')}m</span>
+                              <span>Duration: {safeDuration}m</span>
                             </div>
-                            {safeGet(task, 'updatedBy', null) && (
+                            {safeUpdatedBy && (
                               <div className="flex items-center gap-1">
                                 <UserCircle className="h-3 w-3" />
-                                <span>By: {safeToString(safeGet(task, 'updatedBy', ''), 'Unknown')}</span>
+                                <span>By: {safeUpdatedBy}</span>
                               </div>
                             )}
                           </div>
@@ -879,10 +1366,26 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                     </div>
                   );
                 } catch (error) {
-                  console.warn('Error rendering task:', error);
+                  console.error(`❌ [TASK RENDER DEBUG] Error rendering task ${index}:`, {
+                    error,
+                    message: error?.message,
+                    stack: error?.stack,
+                    task
+                  });
+                  
+                  // Enhanced error logging for toString issues
+                  if (error?.message?.includes('toString')) {
+                    console.error(`🔍 [TASK RENDER DEBUG] toString error in task ${index}:`, {
+                      errorMessage: error.message,
+                      task,
+                      taskType: typeof task,
+                      taskKeys: task ? Object.keys(task) : []
+                    });
+                  }
+                  
                   return (
                     <div key={`error-${index}`} className="p-2 border border-red-200 rounded text-red-600 text-sm">
-                      Error rendering task {index + 1}
+                      Error rendering task {index + 1}: {error?.message || 'Unknown error'}
                     </div>
                   );
                 }
