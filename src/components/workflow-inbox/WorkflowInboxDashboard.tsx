@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { WorkflowInboxItem } from './WorkflowInboxItem';
 import { ModernWorkflowDetailPanel } from './ModernWorkflowDetailPanel';
 import { WorkflowInboxFilters } from './WorkflowInboxFilters';
-import { EnhancedWorkflowInboxDashboard } from './EnhancedWorkflowInboxDashboard';
+import { UnifiedWorkflowInboxDashboard } from './UnifiedWorkflowInboxDashboard';
 import { useWorkflowInbox } from '@/hooks/useWorkflowInbox';
 
 export interface WorkflowInboxItemData {
@@ -88,6 +88,6 @@ export interface WorkflowInboxItemData {
 
 export const WorkflowInboxDashboard: React.FC = () => {
   return (
-    <EnhancedWorkflowInboxDashboard />
+    <UnifiedWorkflowInboxDashboard />
   );
 };
