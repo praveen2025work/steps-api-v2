@@ -905,6 +905,11 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         console.log('📊 [REFRESH DEBUG] Current summary data keys:', Object.keys(currentSummaryData));
       }
       
+      // Try to extract configId and appId from current data or hierarchy path
+      let configId: string | null = null;
+      let appId: number | null = null;
+      
+      // First, try to get from applications array in current summary data
       const applications = safeGet(currentSummaryData, 'applications', []);
       console.log('📊 [REFRESH DEBUG] Applications array:', {
         isArray: Array.isArray(applications),
@@ -920,102 +925,168 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
           keys: currentApp ? Object.keys(currentApp) : []
         });
         
-        const appId = safeGet(currentApp, 'appId', null);
-        console.log('📊 [REFRESH DEBUG] App ID:', {
+        appId = safeGet(currentApp, 'appId', null);
+        configId = safeToString(appId, ''); // Use appId as configId for now
+        
+        console.log('📊 [REFRESH DEBUG] Extracted from applications:', {
           appId,
-          type: typeof appId,
-          isValid: appId !== null && appId !== undefined
+          configId,
+          appIdType: typeof appId,
+          configIdType: typeof configId
+        });
+      }
+      
+      // If not found in applications, try to extract from hierarchy path or URL
+      if (!appId || !configId) {
+        console.log('📊 [REFRESH DEBUG] Trying to extract from hierarchy path');
+        
+        // Try to get from hierarchy path
+        if (Array.isArray(hierarchyPath) && hierarchyPath.length > 0) {
+          const lastNode = hierarchyPath[hierarchyPath.length - 1];
+          console.log('📊 [REFRESH DEBUG] Last hierarchy node:', {
+            exists: !!lastNode,
+            type: typeof lastNode,
+            keys: lastNode ? Object.keys(lastNode) : []
+          });
+          
+          if (lastNode) {
+            const nodeId = safeGet(lastNode, 'id', '');
+            console.log('📊 [REFRESH DEBUG] Node ID from hierarchy:', nodeId);
+            
+            // Try to parse appId from node ID (assuming format like "app-17" or just "17")
+            const idMatch = nodeId.match(/(\d+)$/);
+            if (idMatch) {
+              appId = parseInt(idMatch[1], 10);
+              configId = safeToString(appId, '');
+              console.log('📊 [REFRESH DEBUG] Extracted from hierarchy path:', {
+                appId,
+                configId
+              });
+            }
+          }
+        }
+        
+        // If still not found, try to extract from URL
+        if (!appId || !configId) {
+          console.log('📊 [REFRESH DEBUG] Trying to extract from URL');
+          
+          if (typeof window !== 'undefined') {
+            const url = window.location.href;
+            console.log('📊 [REFRESH DEBUG] Current URL:', url);
+            
+            // Try to match patterns like /workflow/123 or appId=123
+            const urlMatch = url.match(/(?:workflow\/|appId=)(\d+)/);
+            if (urlMatch) {
+              appId = parseInt(urlMatch[1], 10);
+              configId = safeToString(appId, '');
+              console.log('📊 [REFRESH DEBUG] Extracted from URL:', {
+                appId,
+                configId
+              });
+            }
+          }
+        }
+      }
+      
+      console.log('📊 [REFRESH DEBUG] Final extracted values:', {
+        appId,
+        configId,
+        isValid: appId !== null && configId !== null
+      });
+      
+      if (appId && configId) {
+        console.log('📅 [REFRESH DEBUG] Processing date for API call');
+        
+        let dateString;
+        try {
+          dateString = selectedDate ? selectedDate.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          }).replace(/,/g, '') : new Date().toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          }).replace(/,/g, '');
+          
+          console.log('📅 [REFRESH DEBUG] Date string created:', dateString);
+        } catch (dateError) {
+          console.error('❌ [REFRESH DEBUG] Error creating date string:', dateError);
+          dateString = new Date().toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          }).replace(/,/g, '');
+          console.log('📅 [REFRESH DEBUG] Fallback date string:', dateString);
+        }
+        
+        console.log('🌐 [REFRESH DEBUG] Making API call with params:', {
+          date: dateString,
+          configId: configId,
+          appId: appId
         });
         
-        if (appId) {
-          console.log('📅 [REFRESH DEBUG] Processing date for API call');
-          
-          let dateString;
-          try {
-            dateString = selectedDate ? selectedDate.toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric'
-            }).replace(/,/g, '') : new Date().toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric'
-            }).replace(/,/g, '');
-            
-            console.log('📅 [REFRESH DEBUG] Date string created:', dateString);
-          } catch (dateError) {
-            console.error('❌ [REFRESH DEBUG] Error creating date string:', dateError);
-            dateString = new Date().toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric'
-            }).replace(/,/g, '');
-            console.log('📅 [REFRESH DEBUG] Fallback date string:', dateString);
-          }
-          
-          console.log('🌐 [REFRESH DEBUG] Making API call with params:', {
-            date: dateString,
-            configId: safeToString(appId, ''),
-            appId: appId
+        console.log('🌐 [REFRESH DEBUG] Expected API URL:', `http://api.com/api/WF/GetWorkflowSummary/${dateString}/${configId}/${appId}`);
+        
+        // Fetch fresh workflow summary
+        const response = await workflowService.getWorkflowSummary({
+          date: dateString,
+          configId: configId,
+          appId: appId
+        });
+        
+        console.log('🌐 [REFRESH DEBUG] API response received:', {
+          success: safeGet(response, 'success', false),
+          hasData: !!safeGet(response, 'data', null),
+          error: safeGet(response, 'error', null),
+          timestamp: safeGet(response, 'timestamp', null)
+        });
+        
+        if (safeGet(response, 'success', false)) {
+          const responseData = safeGet(response, 'data', null);
+          console.log('✅ [REFRESH DEBUG] Processing successful response:', {
+            dataExists: !!responseData,
+            dataType: typeof responseData,
+            dataKeys: responseData ? Object.keys(responseData) : []
           });
           
-          // Fetch fresh workflow summary
-          const response = await workflowService.getWorkflowSummary({
-            date: dateString,
-            configId: safeToString(appId, ''),
-            appId: appId
-          });
+          // Update global workflow summary
+          (window as any).currentWorkflowSummary = responseData;
+          console.log('✅ [REFRESH DEBUG] Updated global workflow summary');
           
-          console.log('🌐 [REFRESH DEBUG] API response received:', {
-            success: safeGet(response, 'success', false),
-            hasData: !!safeGet(response, 'data', null),
-            error: safeGet(response, 'error', null),
-            timestamp: safeGet(response, 'timestamp', null)
-          });
+          // Update last refreshed time
+          setLastRefreshed(new Date());
+          setCountdown(refreshInterval);
+          console.log('✅ [REFRESH DEBUG] Updated refresh timestamps');
           
-          if (safeGet(response, 'success', false)) {
-            const responseData = safeGet(response, 'data', null);
-            console.log('✅ [REFRESH DEBUG] Processing successful response:', {
-              dataExists: !!responseData,
-              dataType: typeof responseData,
-              dataKeys: responseData ? Object.keys(responseData) : []
-            });
-            
-            // Update global workflow summary
-            (window as any).currentWorkflowSummary = responseData;
-            console.log('✅ [REFRESH DEBUG] Updated global workflow summary');
-            
-            // Update last refreshed time
-            setLastRefreshed(new Date());
-            setCountdown(refreshInterval);
-            console.log('✅ [REFRESH DEBUG] Updated refresh timestamps');
-            
-            // Restore UI state after a brief delay to allow data to update
-            setTimeout(() => {
-              console.log('🔄 [REFRESH DEBUG] Restoring UI state');
-              try {
-                restoreUIState();
-                console.log('✅ [REFRESH DEBUG] UI state restored successfully');
-              } catch (uiError) {
-                console.error('❌ [REFRESH DEBUG] Error restoring UI state:', uiError);
-              }
-            }, 200);
-            
-            // Only show success message for manual refreshes
-            if (isManualRefresh) {
-              console.log('✅ [REFRESH DEBUG] Showing success toast for manual refresh');
-              showSuccessToast("Workflow data refreshed successfully");
+          // Restore UI state after a brief delay to allow data to update
+          setTimeout(() => {
+            console.log('🔄 [REFRESH DEBUG] Restoring UI state');
+            try {
+              restoreUIState();
+              console.log('✅ [REFRESH DEBUG] UI state restored successfully');
+            } catch (uiError) {
+              console.error('❌ [REFRESH DEBUG] Error restoring UI state:', uiError);
             }
-          } else {
-            const errorMessage = safeToString(safeGet(response, 'error', ''), 'Unknown error');
-            console.error('❌ [REFRESH DEBUG] API call failed:', errorMessage);
-            showErrorToast(`Failed to refresh data: ${errorMessage}`);
+          }, 200);
+          
+          // Only show success message for manual refreshes
+          if (isManualRefresh) {
+            console.log('✅ [REFRESH DEBUG] Showing success toast for manual refresh');
+            showSuccessToast("Workflow data refreshed successfully");
           }
         } else {
-          console.warn('⚠️ [REFRESH DEBUG] No valid appId found, cannot make API call');
+          const errorMessage = safeToString(safeGet(response, 'error', ''), 'Unknown error');
+          console.error('❌ [REFRESH DEBUG] API call failed:', errorMessage);
+          showErrorToast(`Failed to refresh data: ${errorMessage}`);
         }
       } else {
-        console.log('📊 [REFRESH DEBUG] No applications found, using fallback refresh');
+        console.warn('⚠️ [REFRESH DEBUG] No valid appId/configId found, cannot make API call');
+        console.warn('⚠️ [REFRESH DEBUG] Available data sources:', {
+          currentSummaryData: !!currentSummaryData,
+          hierarchyPath: hierarchyPath?.length || 0,
+          url: typeof window !== 'undefined' ? window.location.href : 'N/A'
+        });
         
         // Fallback refresh without API call
         setLastRefreshed(new Date());
@@ -1054,7 +1125,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       console.log('🏁 [REFRESH DEBUG] Refresh process completed, setting isRefreshing to false');
       setIsRefreshing(false);
     }
-  }, [isRefreshing, preserveUIState, restoreUIState, selectedDate, refreshInterval]);
+  }, [isRefreshing, preserveUIState, restoreUIState, selectedDate, refreshInterval, hierarchyPath]);
 
   // Toggle workflow lock state
   const toggleLock = useCallback(() => {
