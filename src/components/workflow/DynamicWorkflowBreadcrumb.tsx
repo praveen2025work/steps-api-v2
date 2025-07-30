@@ -321,13 +321,7 @@ const DynamicWorkflowBreadcrumb: React.FC<DynamicWorkflowBreadcrumbProps> = ({
             );
           })}
 
-          {/* Current Workflow Title (if different from last breadcrumb level) */}
-          {currentWorkflowTitle && currentWorkflowTitle !== levels[levels.length - 1]?.name && (
-            <>
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
-              <span className="font-medium text-foreground">{currentWorkflowTitle}</span>
-            </>
-          )}
+          {/* Current Workflow Title removed - should not appear in breadcrumb navigation */}
         </div>
       )}
     </SafeRouter>
