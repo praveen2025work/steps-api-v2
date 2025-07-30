@@ -7,6 +7,7 @@ import { SidebarProvider } from '@/contexts/SidebarContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { DateProvider } from '@/contexts/DateContext';
 import { ApiEnvironmentProvider } from '@/contexts/ApiEnvironmentContext';
+import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import { toast } from 'sonner';
 
 // Create a class component for error boundary
@@ -116,10 +117,12 @@ export default function App({ Component, pageProps }: AppProps) {
           <NotificationsProvider>
             <DateProvider>
               <ApiEnvironmentProvider>
-                <div className="min-h-screen">
-                  <Component {...pageProps} />
-                  <Toaster />
-                </div>
+                <BreadcrumbProvider>
+                  <div className="min-h-screen">
+                    <Component {...pageProps} />
+                    <Toaster />
+                  </div>
+                </BreadcrumbProvider>
               </ApiEnvironmentProvider>
             </DateProvider>
           </NotificationsProvider>

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import UnifiedDashboardCard from './UnifiedDashboardCard';
 import WorkflowDetailView from './WorkflowDetailView';
+import EnhancedWorkflowBreadcrumb from './EnhancedWorkflowBreadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useWorkflowDashboard } from '@/hooks/useWorkflowDashboard';
+import { useBreadcrumb, BreadcrumbNode } from '@/contexts/BreadcrumbContext';
 import { workflowService } from '@/services/workflowService';
 import { 
   WorkflowApplication, 
@@ -14,20 +14,14 @@ import {
   WorkflowSummary 
 } from '@/types/workflow-dashboard-types';
 import { WorkflowTask, WorkflowTaskDocument, WorkflowTaskDependency } from './WorkflowTaskItem';
-import applicationsData from '@/data/applications.json';
-import { mockHierarchicalWorkflows } from '@/data/hierarchicalWorkflowData';
 import { 
-  ArrowLeft, 
   RefreshCw, 
   Loader2, 
-  AlertCircle, 
-  ChevronRight,
+  AlertCircle,
   Database,
   Network,
   FileText,
   Clock,
-  CheckCircle,
-  XCircle,
   Activity
 } from 'lucide-react';
 import { SafeRouter } from './SafeRouter';
@@ -63,12 +57,9 @@ interface BreadcrumbItem {
 
 const ApplicationsGrid = () => {
   const { applications: workflowApps, loading, error, refresh, selectedDate, dateString } = useWorkflowDashboard();
-  
-  // Legacy applications from JSON data
-  const [legacyApplications, setLegacyApplications] = useState<Application[]>([]);
+  const { setNodes, addNode, setLoading, setError, reset } = useBreadcrumb();
   
   // Navigation state
-  const [navigationPath, setNavigationPath] = useState<BreadcrumbItem[]>([]);
   const [currentNodes, setCurrentNodes] = useState<WorkflowNode[]>([]);
   const [loadingNodes, setLoadingNodes] = useState(false);
   const [nodeError, setNodeError] = useState<string | null>(null);
@@ -85,41 +76,14 @@ const ApplicationsGrid = () => {
   // View mode state for workflow detail view
   const [viewMode, setViewMode] = useState<'classic' | 'modern' | 'step-function'>('classic');
 
-  // Initialize legacy applications
-  useEffect(() => {
-    const transformedApps = applicationsData.map((app: any) => {
-      const hierarchicalData = mockHierarchicalWorkflows.find(
-        h => h.name.toLowerCase().includes(app.NAME.toLowerCase())
-      );
-      
-      const randomTaskCounts = {
-        completed: Math.floor(Math.random() * 15) + 5,
-        failed: Math.floor(Math.random() * 3),
-        rejected: Math.floor(Math.random() * 2),
-        pending: Math.floor(Math.random() * 10) + 2,
-        processing: Math.floor(Math.random() * 5) + 1
-      };
-      
-      return {
-        id: `app-${app.APP_ID}`,
-        title: app.NAME,
-        description: app.DESCRIPTION,
-        progress: hierarchicalData?.progress || Math.floor(Math.random() * 80) + 10,
-        status: app.ISACTIVE ? "active" : "inactive",
-        taskCounts: randomTaskCounts,
-        eligibleRoles: ["PNL Manager", "Finance Analyst", "Compliance Officer"],
-        type: 'application' as const
-      };
-    });
-    
-    setLegacyApplications(transformedApps);
-  }, []);
+
 
   // Handle application click - load first level nodes
   const handleApplicationClick = async (app: WorkflowApplication) => {
     setLoadingNodes(true);
     setNodeError(null);
     setCurrentNodes([]);
+    setLoading(true);
     
     try {
       const response = await workflowService.getWorkflowNodes({
@@ -132,22 +96,37 @@ const ApplicationsGrid = () => {
       
       if (response.success) {
         setCurrentNodes(response.data);
-        setNavigationPath([{
-          id: app.configId,
+        
+        // Update breadcrumb context with normalized IDs
+        const breadcrumbNode: BreadcrumbNode = {
+          id: app.appId.toString(), // Clean numeric ID
           name: app.configName,
-          type: 'application',
+          level: 0,
+          childCount: response.data.length,
+          completionPercentage: app.percentageCompleted,
           appId: app.appId,
           configId: app.configId,
           currentLevel: app.currentLevel,
-          nextLevel: app.nextLevel
-        }]);
+          nextLevel: app.nextLevel,
+          isWorkflowInstance: false,
+          metadata: {
+            type: 'application',
+            isConfigured: app.isConfigured,
+            isWeekly: app.isWeekly
+          }
+        };
+        
+        setNodes([breadcrumbNode]);
       } else {
         setNodeError(response.error || 'Failed to load workflow nodes');
+        setError(response.error || 'Failed to load workflow nodes');
       }
     } catch (err: any) {
       setNodeError(err.message || 'An unexpected error occurred');
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoadingNodes(false);
+      setLoading(false);
     }
   };
 
@@ -201,6 +180,27 @@ const ApplicationsGrid = () => {
           // Find the original application
           const originalApp = workflowApps.find(app => app.appId === node.appId);
           if (originalApp) {
+            // Add terminal node to breadcrumb
+            const terminalNode: BreadcrumbNode = {
+              id: node.configId,
+              name: node.configName,
+              level: node.currentLevel || 1,
+              completionPercentage: node.percentageCompleted,
+              appId: node.appId,
+              configId: node.configId,
+              currentLevel: node.currentLevel,
+              nextLevel: node.nextLevel,
+              isWorkflowInstance: true,
+              metadata: {
+                type: 'workflow-instance',
+                configType: node.configType,
+                isConfigured: node.isConfigured,
+                isWeekly: node.isWeekly
+              }
+            };
+            
+            addNode(terminalNode);
+            
             setSelectedWorkflow({
               summary: response.data,
               application: originalApp,
@@ -222,6 +222,7 @@ const ApplicationsGrid = () => {
       // Non-terminal node - navigate deeper
       setLoadingNodes(true);
       setNodeError(null);
+      setLoading(true);
       
       try {
         const response = await workflowService.getWorkflowNodes({
@@ -234,63 +235,88 @@ const ApplicationsGrid = () => {
         
         if (response.success) {
           setCurrentNodes(response.data);
-          setNavigationPath(prev => [...prev, {
+          
+          // Add node to breadcrumb with normalized IDs
+          const breadcrumbNode: BreadcrumbNode = {
             id: node.configId,
             name: node.configName,
-            type: 'node',
+            level: node.currentLevel || 1,
+            childCount: response.data.length,
+            completionPercentage: node.percentageCompleted,
             appId: node.appId,
             configId: node.configId,
             currentLevel: node.currentLevel,
-            nextLevel: node.nextLevel
-          }]);
+            nextLevel: node.nextLevel,
+            isWorkflowInstance: false,
+            metadata: {
+              type: 'node',
+              configType: node.configType,
+              isConfigured: node.isConfigured,
+              isWeekly: node.isWeekly
+            }
+          };
+          
+          addNode(breadcrumbNode);
         } else {
           setNodeError(response.error || 'Failed to load workflow nodes');
+          setError(response.error || 'Failed to load workflow nodes');
         }
       } catch (err: any) {
         setNodeError(err.message || 'An unexpected error occurred');
+        setError(err.message || 'An unexpected error occurred');
       } finally {
         setLoadingNodes(false);
+        setLoading(false);
       }
     }
   };
 
-  // Handle breadcrumb navigation
-  const handleBreadcrumbClick = async (index: number) => {
-    if (index === -1) {
+  // Handle breadcrumb navigation using the new breadcrumb context
+  const handleBreadcrumbNavigation = async (level: number, node?: BreadcrumbNode) => {
+    if (level === -1) {
       // Navigate back to applications list
-      setNavigationPath([]);
+      reset();
       setCurrentNodes([]);
       setSelectedWorkflow(null);
       return;
     }
     
-    const targetItem = navigationPath[index];
-    if (!targetItem) return;
+    if (!node) return;
     
     setLoadingNodes(true);
     setNodeError(null);
+    setLoading(true);
     
     try {
       const response = await workflowService.getWorkflowNodes({
         date: dateString,
-        appId: targetItem.appId!,
-        configId: targetItem.configId!,
-        currentLevel: targetItem.currentLevel!,
-        nextLevel: targetItem.nextLevel!
+        appId: node.appId!,
+        configId: node.configId!,
+        currentLevel: node.currentLevel!,
+        nextLevel: node.nextLevel!
       });
       
       if (response.success) {
         setCurrentNodes(response.data);
-        setNavigationPath(prev => prev.slice(0, index + 1));
         setSelectedWorkflow(null);
       } else {
         setNodeError(response.error || 'Failed to load workflow nodes');
+        setError(response.error || 'Failed to load workflow nodes');
       }
     } catch (err: any) {
       setNodeError(err.message || 'An unexpected error occurred');
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoadingNodes(false);
+      setLoading(false);
     }
+  };
+
+  // Handle home navigation
+  const handleHomeNavigation = () => {
+    reset();
+    setCurrentNodes([]);
+    setSelectedWorkflow(null);
   };
 
   // Convert workflow summary to WorkflowDetailView format
@@ -310,10 +336,11 @@ const ApplicationsGrid = () => {
       processParamsCount: summary.processParams?.length || 0
     });
 
-    // Build progress steps from navigation path
-    const progressSteps = navigationPath.map((item, index) => ({
+    // Build progress steps from breadcrumb context
+    const { state } = useBreadcrumb();
+    const progressSteps = state.nodes.map((item, index) => ({
       name: item.name,
-      progress: index === navigationPath.length - 1 ? node.percentageCompleted : 75
+      progress: index === state.nodes.length - 1 ? node.percentageCompleted : 75
     }));
 
     // Ensure processData exists and is an array
@@ -736,14 +763,14 @@ const ApplicationsGrid = () => {
     const handleBeforeUnload = () => {
       // Clear workflow detail state when navigating away
       setSelectedWorkflow(null);
-      setNavigationPath([]);
+      reset();
       setCurrentNodes([]);
     };
 
     const handlePopState = () => {
       // Clear workflow detail state on browser back/forward
       setSelectedWorkflow(null);
-      setNavigationPath([]);
+      reset();
       setCurrentNodes([]);
     };
 
@@ -752,7 +779,7 @@ const ApplicationsGrid = () => {
       // Clear workflow detail state when sidebar navigation occurs
       console.log('[ApplicationsGrid] Sidebar navigation detected, clearing workflow detail state:', event.detail);
       setSelectedWorkflow(null);
-      setNavigationPath([]);
+      reset();
       setCurrentNodes([]);
     };
 
@@ -761,7 +788,7 @@ const ApplicationsGrid = () => {
       // Clear workflow detail state when route change starts
       console.log('[ApplicationsGrid] Route change detected, clearing workflow detail state');
       setSelectedWorkflow(null);
-      setNavigationPath([]);
+      reset();
       setCurrentNodes([]);
     };
 
@@ -784,7 +811,7 @@ const ApplicationsGrid = () => {
         (window as any).next.router.events.off('routeChangeStart', handleRouteChangeStart);
       }
     };
-  }, []);
+  }, [reset]);
 
   // Handle view mode toggle
   const handleViewToggle = (mode: 'classic' | 'modern' | 'step-function') => {
@@ -998,28 +1025,7 @@ const ApplicationsGrid = () => {
             </div>
           )}
 
-          {/* Legacy Applications */}
-          {legacyApplications.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold">Legacy Applications</h3>
-                <Badge variant="outline">{legacyApplications.length}</Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {legacyApplications.map((app) => (
-                  <UnifiedDashboardCard
-                    key={app.id}
-                    id={app.id}
-                    title={app.title}
-                    progress={app.progress}
-                    status={app.status}
-                    taskCounts={app.taskCounts}
-                    type={app.type}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+
 
           {/* Loading state */}
           {loading && workflowApps.length === 0 && (
@@ -1032,7 +1038,7 @@ const ApplicationsGrid = () => {
           )}
 
           {/* Empty state */}
-          {!loading && workflowApps.length === 0 && legacyApplications.length === 0 && (
+          {!loading && workflowApps.length === 0 && (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
