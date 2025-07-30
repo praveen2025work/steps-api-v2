@@ -77,6 +77,7 @@ import DocumentsList from './DocumentsList';
 import DependencyTreeMap from './DependencyTreeMap';
 import RoleAssignments from './RoleAssignments';
 import ActivityLog from './ActivityLog';
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import WorkflowHierarchyBreadcrumb, { HierarchyNode } from './WorkflowHierarchyBreadcrumb';
 import { Progress } from '@/components/ui/progress';
 import { SubStage, StageStatus, Dependency } from '@/types/workflow';
@@ -189,6 +190,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   onBack,
   enhancedWorkflowData
 }) => {
+  const { state: breadcrumbState, navigateToLevel } = useBreadcrumb();
   const { selectedDate } = useDate();
   const [activeStage, setActiveStage] = useState<string>(stages[0]?.id || '');
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -249,58 +251,38 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     scrollPosition: 0
   });
 
-  // Initialize hierarchy path from progressSteps
+  // Initialize hierarchy path from breadcrumb context
   useEffect(() => {
-    if (progressSteps && progressSteps.length > 0) {
-      const path = progressSteps.map((step, index) => {
-        // Determine the level based on the index
-        let level = 'hierarchy';
-        if (index === 0) level = 'app';
-        else if (index === 1) level = 'workflow';
-        
-        // Generate an ID based on the name (for navigation purposes)
-        const id = step.name.toLowerCase().replace(/\s+/g, '-');
-        
+    if (breadcrumbState.nodes && breadcrumbState.nodes.length > 0) {
+      const path = breadcrumbState.nodes.map((node, index) => {
         return {
-          id: index === 0 ? `app-${id}` : id,
-          name: step.name,
-          progress: step.progress,
-          level: level,
-          onClick: (node: HierarchyNode) => handleBreadcrumbNavigation(node, index)
+          id: node.id,
+          name: `${node.name} (${node.level === 0 ? node.appId : node.configId}) (${node.completionPercentage}%)`,
+          progress: node.completionPercentage,
+          level: index === 0 ? 'app' : 'workflow',
+          onClick: (n: HierarchyNode) => handleBreadcrumbNavigation(n, index)
         };
       });
-      
       setHierarchyPath(path);
     }
-  }, [progressSteps]);
+  }, [breadcrumbState.nodes]);
 
   // Enhanced breadcrumb navigation with proper error handling
   const handleBreadcrumbNavigation = useCallback((node: HierarchyNode, index: number) => {
     try {
-      if (!node || !node.level) {
-        return;
-      }
-      
-      if (node.level === 'app') {
-        // Navigate to application cards view (App Level)
-        router.push('/');
-      } else if (index < hierarchyPath.length - 1) {
-        // Navigate to corresponding detail view
-        const appNode = hierarchyPath.find(n => n.level === 'app');
-        if (appNode) {
-          if (index === 1) {
-            // Level 1 navigation (Advisory)
-            router.push(`/hierarchy/${appNode.id}`);
-          } else {
-            // Level 2+ navigation (Advisory EMA)
-            router.push(`/workflow/${node.id}`);
-          }
+      // Allow navigation to any level except the last one (current view)
+      if (index < breadcrumbState.nodes.length - 1) {
+        navigateToLevel(index);
+        if (onBack) {
+          onBack(); // This should take us back to ApplicationsGrid
+        } else {
+          router.push('/dashboard'); // Fallback
         }
       }
     } catch (error) {
       showErrorToast('Navigation failed. Please try again.');
     }
-  }, [hierarchyPath, router]);
+  }, [breadcrumbState.nodes, router, navigateToLevel, onBack]);
 
   // Preserve UI state before refresh
   const preserveUIState = useCallback(() => {

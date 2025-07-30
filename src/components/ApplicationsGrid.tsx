@@ -355,8 +355,8 @@ const ApplicationsGrid = () => {
 
     // Build progress steps from breadcrumb context
     const progressSteps = breadcrumbState.nodes.map((item, index) => ({
-      name: item.name,
-      progress: index === breadcrumbState.nodes.length - 1 ? node.percentageCompleted : 75
+      name: `${item.name} (${item.level === 0 ? item.appId : item.configId})`,
+      progress: item.completionPercentage
     }));
 
     // Ensure processData exists and is an array

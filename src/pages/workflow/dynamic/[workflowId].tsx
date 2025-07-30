@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/DashboardLayout';
 import DynamicWorkflowDetailView from '@/components/DynamicWorkflowDetailView';
-import DynamicWorkflowBreadcrumb, { BreadcrumbLevel } from '@/components/workflow/DynamicWorkflowBreadcrumb';
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,12 +16,13 @@ import {
   Settings,
   Info,
   ExternalLink,
-  RefreshCw
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 
 const DynamicWorkflowPage: React.FC = () => {
   const router = useRouter();
+  const { state: breadcrumbState, navigateToLevel, reset } = useBreadcrumb();
   const [viewMode, setViewMode] = useState<'classic' | 'alternative'>('classic');
   
   // Get parameters from router
@@ -34,98 +35,25 @@ const DynamicWorkflowPage: React.FC = () => {
   const workflowIdString = workflowId as string || '';
 
   // Generate workflow title from ID
-  const workflowTitle = workflowIdString
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-
-  // Create breadcrumb levels based on current navigation state
-  const breadcrumbLevels: BreadcrumbLevel[] = [
-    {
-      id: 'applications',
-      name: 'Applications',
-      level: 'applications',
-      metadata: {}
-    }
-  ];
-
-  // Add application level if we have applicationId
-  if (applicationId) {
-    breadcrumbLevels.push({
-      id: `app-${applicationId}`,
-      name: workflowTitle,
-      level: 'application-nodes',
-      metadata: {
-        appId: applicationId.toString(),
-        configId: configId
-      }
-    });
-  }
-
-  // Add node group level if we have specific navigation parameters
-  if (applicationId && configId && parsedCurrentLevel !== undefined) {
-    breadcrumbLevels.push({
-      id: `node-${configId}`,
-      name: `Level ${parsedCurrentLevel}`,
-      level: 'node-group-details',
-      metadata: {
-        appId: applicationId.toString(),
-        configId: configId as string,
-        groupId: configId as string
-      }
-    });
-  }
-
-  // Add workflow instance level if we're at the deepest level
-  if (applicationId && configId && parsedCurrentLevel !== undefined && parsedNextLevel !== undefined) {
-    breadcrumbLevels.push({
-      id: `workflow-${configId}-${parsedCurrentLevel}`,
-      name: 'Workflow Instance',
-      level: 'workflow-instance',
-      metadata: {
-        appId: applicationId.toString(),
-        configId: configId as string,
-        isUsedForWorkflowInstance: true
-      }
-    });
-  }
+  const workflowTitle = breadcrumbState.nodes.length > 0 
+    ? breadcrumbState.nodes[breadcrumbState.nodes.length - 1].name
+    : workflowIdString
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
 
   const handleViewToggle = (mode: 'classic' | 'alternative') => {
     setViewMode(mode);
   };
 
   // Handle breadcrumb navigation
-  const handleBreadcrumbNavigate = (level: BreadcrumbLevel, index: number) => {
-    console.log('[DynamicWorkflowPage] Breadcrumb navigation:', level, index);
-    
-    switch (level.level) {
-      case 'applications':
-        // Navigate to applications list
-        router.push('/workflow/dynamic');
-        break;
-        
-      case 'application-nodes':
-        // Navigate to application nodes view
-        if (level.metadata?.appId) {
-          router.push(`/workflow/dynamic/${workflowId}?appId=${level.metadata.appId}`);
-        }
-        break;
-        
-      case 'node-group-details':
-        // Navigate to node group details
-        if (level.metadata?.appId && level.metadata?.configId) {
-          router.push(`/workflow/dynamic/${workflowId}?appId=${level.metadata.appId}&configId=${level.metadata.configId}&currentLevel=0&nextLevel=1`);
-        }
-        break;
-        
-      case 'workflow-instance':
-        // Already at workflow instance level
-        console.log('Already at workflow instance level');
-        break;
-        
-      default:
-        console.warn('Unknown breadcrumb level:', level.level);
-        break;
+  const handleBreadcrumbNavigate = (level: number) => {
+    if (level === -1) { // Home / Applications
+      reset();
+      router.push('/dashboard');
+    } else {
+      navigateToLevel(level);
+      router.push('/dashboard');
     }
   };
 
@@ -242,16 +170,33 @@ const DynamicWorkflowPage: React.FC = () => {
 
           <TabsContent value="workflow" className="space-y-4">
             {/* Breadcrumb Navigation */}
-            {breadcrumbLevels.length > 1 && (
+            {breadcrumbState.nodes.length > 0 && (
               <Card>
-                <CardContent className="py-3">
-                  <DynamicWorkflowBreadcrumb
-                    levels={breadcrumbLevels}
-                    currentWorkflowTitle={workflowTitle}
-                    onNavigate={handleBreadcrumbNavigate}
-                    showBackButton={true}
-                    showHomeButton={true}
-                  />
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleBreadcrumbNavigate(-1)}
+                      className="h-auto p-1 text-blue-600 hover:text-blue-800"
+                    >
+                      Applications
+                    </Button>
+                    {breadcrumbState.nodes.map((node, index) => (
+                      <React.Fragment key={node.id}>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleBreadcrumbNavigate(index)}
+                          disabled={index === breadcrumbState.nodes.length - 1}
+                          className="h-auto p-1 text-blue-600 hover:text-blue-800 disabled:text-muted-foreground disabled:no-underline"
+                        >
+                          {node.name} ({node.level === 0 ? node.appId : node.configId}) ({node.completionPercentage}%)
+                        </Button>
+                      </React.Fragment>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -264,7 +209,7 @@ const DynamicWorkflowPage: React.FC = () => {
               nextLevel={parsedNextLevel}
               viewMode={viewMode}
               onViewToggle={handleViewToggle}
-              onBreadcrumbNavigate={handleBreadcrumbNavigate}
+              onBreadcrumbNavigate={() => {}}
             />
           </TabsContent>
 

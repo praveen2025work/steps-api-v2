@@ -27,7 +27,8 @@ import { useDate } from '@/contexts/DateContext';
 import { formatDate } from '@/lib/dateUtils';
 import DateSelector from '@/components/DateSelector';
 import { HierarchyNode } from '../WorkflowHierarchyBreadcrumb';
-import DynamicWorkflowBreadcrumb, { BreadcrumbLevel } from './DynamicWorkflowBreadcrumb';
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
+import { ChevronRight } from 'lucide-react';
 import { showSuccessToast, showInfoToast, showWarningToast } from '@/lib/toast';
 
 interface WorkflowUnifiedHeaderProps {
@@ -55,9 +56,6 @@ interface WorkflowUnifiedHeaderProps {
   refreshInterval?: number;
   countdown?: number;
   isRefreshing?: boolean;
-  // Breadcrumb props
-  breadcrumbLevels?: BreadcrumbLevel[];
-  onBreadcrumbNavigate?: (level: BreadcrumbLevel, index: number) => void;
   // Navigation props
   onBack?: () => void; // Callback to navigate back to previous view
 }
@@ -89,8 +87,6 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
   refreshInterval = 10,
   countdown = 10,
   isRefreshing = false,
-  breadcrumbLevels,
-  onBreadcrumbNavigate,
   onBack
 }) => {
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
@@ -114,45 +110,29 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
     return () => clearInterval(timer);
   }, [lastRefreshed]);
 
-  // Convert hierarchyPath to breadcrumbLevels if not provided
-  const dynamicBreadcrumbLevels: BreadcrumbLevel[] = breadcrumbLevels || hierarchyPath.map((node, index) => {
-    // Map hierarchy node levels to breadcrumb levels
-    let level: BreadcrumbLevel['level'] = 'applications';
-    
-    if (node.level === 'app') {
-      level = 'applications';
-    } else if (index === 1) {
-      level = 'application-nodes';
-    } else if (index === 2) {
-      level = 'node-group-details';
-    } else if (index >= 3) {
-      level = 'workflow-instance';
-    }
-    
-    return {
-      id: node.id,
-      name: node.name,
-      level,
-      progress: node.progress,
-      metadata: {
-        appId: node.level === 'app' ? node.id : hierarchyPath.find(n => n.level === 'app')?.id,
-        configId: index > 0 ? node.id : undefined,
-        isUsedForWorkflowInstance: index >= 3
-      }
-    };
-  });
+  const { state: breadcrumbState, navigateToLevel, reset } = useBreadcrumb();
 
   // Handle breadcrumb navigation with back button support
-  const handleBreadcrumbNavigation = (level: BreadcrumbLevel, index: number) => {
-    // If onBack is provided and this is a back navigation (index -1 or going to a previous level)
-    if (onBack && (index === -1 || index < dynamicBreadcrumbLevels.length - 1)) {
-      onBack();
+  const handleBreadcrumbNavigation = (index: number) => {
+    if (index === -1) { // Home / Applications
+      if (onBack) {
+        reset();
+        onBack();
+      } else {
+        reset();
+        router.push('/dashboard');
+      }
       return;
     }
     
-    // Otherwise, use the provided navigation handler or default behavior
-    if (onBreadcrumbNavigate) {
-      onBreadcrumbNavigate(level, index);
+    if (index < breadcrumbState.nodes.length - 1) {
+      if (onBack) {
+        navigateToLevel(index);
+        onBack();
+      } else {
+        navigateToLevel(index);
+        router.push('/dashboard');
+      }
     }
   };
 
@@ -319,14 +299,30 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
         <div className="flex flex-col space-y-2">
           {/* Dynamic Breadcrumb Navigation */}
           <div className="flex items-center justify-between">
-            <DynamicWorkflowBreadcrumb
-              levels={dynamicBreadcrumbLevels}
-              currentWorkflowTitle={workflowTitle}
-              onNavigate={handleBreadcrumbNavigation}
-              showBackButton={true}
-              showHomeButton={true}
-              className="flex-1"
-            />
+            <div className="flex items-center gap-2 text-sm flex-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleBreadcrumbNavigation(-1)}
+                className="h-auto p-1 text-blue-600 hover:text-blue-800"
+              >
+                Applications
+              </Button>
+              {breadcrumbState.nodes.map((node, index) => (
+                <React.Fragment key={node.id}>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleBreadcrumbNavigation(index)}
+                    disabled={index === breadcrumbState.nodes.length - 1}
+                    className="h-auto p-1 text-blue-600 hover:text-blue-800 disabled:text-muted-foreground disabled:no-underline disabled:cursor-default"
+                  >
+                    {node.name} ({node.level === 0 ? node.appId : node.configId}) ({node.completionPercentage}%)
+                  </Button>
+                </React.Fragment>
+              ))}
+            </div>
             <div className="text-xs text-muted-foreground">
               Last updated: {lastRefreshed.toLocaleTimeString()}
             </div>
