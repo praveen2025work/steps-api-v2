@@ -208,8 +208,9 @@ const ApplicationsGrid = () => {
               }
             };
             
-            // Build complete breadcrumb path including terminal node
-            const completePath = [...breadcrumbState.nodes, terminalNode];
+            // Rebuild breadcrumb path correctly based on the node's level
+            const parentPath = breadcrumbState.nodes.slice(0, terminalNode.level);
+            const completePath = [...parentPath, terminalNode];
             console.log('[ApplicationsGrid] Building breadcrumb path for terminal node:', completePath.map(n => n.name).join(' → '));
             buildPath(completePath);
             
@@ -268,8 +269,9 @@ const ApplicationsGrid = () => {
             }
           };
           
-          // Build complete breadcrumb path with the new node
-          const completePath = [...breadcrumbState.nodes, breadcrumbNode];
+          // Rebuild breadcrumb path correctly based on the node's level
+          const parentPath = breadcrumbState.nodes.slice(0, breadcrumbNode.level);
+          const completePath = [...parentPath, breadcrumbNode];
           console.log('[ApplicationsGrid] Building breadcrumb path for non-terminal node:', completePath.map(n => n.name).join(' → '));
           buildPath(completePath);
         } else {
