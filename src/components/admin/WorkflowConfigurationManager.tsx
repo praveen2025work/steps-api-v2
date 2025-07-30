@@ -1082,56 +1082,58 @@ const WorkflowConfigurationManager: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Attestations */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Attestations</CardTitle>
-                <CardDescription>
-                  Select required attestations for this substage
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!state.metadata?.WorkflowAttest || state.metadata.WorkflowAttest.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No attestations available for this application
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {state.metadata.WorkflowAttest
-                      .filter(attest => attest.type === 'DEFAULT')
-                      .map(attest => (
-                        <div key={attest.attestationId} className="flex items-start space-x-2">
-                          <Checkbox
-                            checked={config.workflowAttests?.some(a => 
-                              a.attestationId === attest.attestationId
-                            ) || false}
-                            onCheckedChange={(checked) => {
-                              const currentAttests = config.workflowAttests || [];
-                              let newAttests;
-                              
-                              if (checked) {
-                                newAttests = [...currentAttests, attest];
-                              } else {
-                                newAttests = currentAttests.filter(a => 
-                                  a.attestationId !== attest.attestationId
-                                );
-                              }
-                              
-                              handleSubstageUpdate('workflowAttests', newAttests);
-                            }}
-                          />
-                          <div className="space-y-1">
-                            <Label className="text-sm font-medium">{attest.name}</Label>
-                            {attest.description && (
-                              <p className="text-xs text-muted-foreground">{attest.description}</p>
-                            )}
+            {/* Attestations - Only show when attestation is selected */}
+            {config.attest === 'Y' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Attestations</CardTitle>
+                  <CardDescription>
+                    Select required attestations for this substage
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!state.metadata?.WorkflowAttest || state.metadata.WorkflowAttest.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No attestations available for this application
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {state.metadata.WorkflowAttest
+                        .filter(attest => attest.type === 'DEFAULT')
+                        .map(attest => (
+                          <div key={attest.attestationId} className="flex items-start space-x-2">
+                            <Checkbox
+                              checked={config.workflowAttests?.some(a => 
+                                a.attestationId === attest.attestationId
+                              ) || false}
+                              onCheckedChange={(checked) => {
+                                const currentAttests = config.workflowAttests || [];
+                                let newAttests;
+                                
+                                if (checked) {
+                                  newAttests = [...currentAttests, attest];
+                                } else {
+                                  newAttests = currentAttests.filter(a => 
+                                    a.attestationId !== attest.attestationId
+                                  );
+                                }
+                                
+                                handleSubstageUpdate('workflowAttests', newAttests);
+                              }}
+                            />
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">{attest.name}</Label>
+                              {attest.description && (
+                                <p className="text-xs text-muted-foreground">{attest.description}</p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                        ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* File Upload Configuration */}
             {config.upload === 'Y' && (

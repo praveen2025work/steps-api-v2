@@ -23,7 +23,7 @@ const isDevelopmentMode = (): boolean => {
          hostname.includes('127.0.0.1');
 };
 
-// Mock data for development
+// Mock data for development - Updated to match user's API response structure
 const MOCK_WORKFLOW_APPS: WorkflowApp[] = [
   {
     appId: 1,
@@ -36,7 +36,7 @@ const MOCK_WORKFLOW_APPS: WorkflowApp[] = [
     entitlementMapping: 12,
     islockingenabled: 1,
     lockingrole: 2,
-    cronexpression: "0 10 0 ? * MON-FRI *",
+    cronexpression: "0 10 0? * MON-FRI *",
     startdate: 1730123215572,
     expirydate: 253402214400000,
     useruncalendar: 0,
@@ -54,7 +54,7 @@ const MOCK_WORKFLOW_APPS: WorkflowApp[] = [
     entitlementMapping: 12,
     islockingenabled: 1,
     lockingrole: 2,
-    cronexpression: "0 10 0 ? * MON-FRI *",
+    cronexpression: "0 10 0? * MON-FRI *",
     startdate: 1747133330704,
     expirydate: 253402214400000,
     useruncalendar: 0,
@@ -72,7 +72,7 @@ const MOCK_WORKFLOW_APPS: WorkflowApp[] = [
     entitlementMapping: 12,
     islockingenabled: 1,
     lockingrole: 2,
-    cronexpression: "0 10 0 ? * MON-FRI *",
+    cronexpression: "0 10 0? * MON-FRI *",
     startdate: 1704067200000,
     expirydate: 253402214400000,
     useruncalendar: 0,
@@ -95,6 +95,7 @@ const MOCK_WORKFLOW_INSTANCES: WorkflowInstance[] = [
   { appId: 2, configId: "2002", configName: "Workspace Weekly Process" }
 ];
 
+// Updated mock metadata to match user's provided API response structure
 const MOCK_METADATA: WorkflowMetadata = {
   WorkflowApplication: MOCK_WORKFLOW_APPS,
   WorkflowEmail: [
@@ -126,6 +127,7 @@ const MOCK_METADATA: WorkflowMetadata = {
       name: "Receive data: Source Data from CREDS",
       defaultstage: 765,
       attestationMapping: "6413;6414;",
+      paramMapping: "162;",
       updatedby: "x01446259",
       updatedon: "2023-07-20 12:58:01",
       entitlementMapping: 21,
@@ -149,6 +151,13 @@ const MOCK_METADATA: WorkflowMetadata = {
       name: "Receive data: Source Data from CREDS",
       updatedby: "x01446259",
       updatedon: "2023-07-20 12:52:34"
+    },
+    {
+      stageId: 807,
+      workflowApplication: 17,
+      name: "Run Event: Metric Batch",
+      updatedby: "x01446259",
+      updatedon: "2023-07-20 13:06:10"
     },
     {
       stageId: 829,
@@ -210,16 +219,17 @@ const MOCK_CONFIG: WorkflowAppConfig[] = [
     upload: "N",
     workflowApplication: 17,
     workflowStage: {
-      stageId: 747,
-      name: "Receive Data: Transaction Data",
+      stageId: 765,
+      name: "Receive data: Source Data from CREDS",
       updatedby: "kumarp15",
       updatedon: "2023-07-05 04:32:43"
     },
     workflowSubstage: {
-      substageId: 5165,
-      name: "Start Parallel Activity",
-      defaultstage: 747,
-      attestationMapping: "6355;6356;",
+      substageId: 5204,
+      name: "Receive data: Source Data from CREDS",
+      defaultstage: 765,
+      attestationMapping: "6413;6414;",
+      paramMapping: "162;",
       entitlementMapping: 21,
       followUp: "N",
       updatedby: "kumarp15",
@@ -240,12 +250,12 @@ const MOCK_CONFIG: WorkflowAppConfig[] = [
     updatedon: "2025-07-30 00:31:50",
     upload: "N",
     workflowApplication: 17,
-    workflowStage: 747,
+    workflowStage: 807,
     workflowSubstage: {
-      substageId: 5166,
-      name: "Receive Data: TRX / Hedges [TMS]",
-      defaultstage: 747,
-      attestationMapping: "6357;6358;",
+      substageId: 5303,
+      name: "Run Event: Metric Batch",
+      defaultstage: 807,
+      attestationMapping: "6591;6592;",
       entitlementMapping: 21,
       followUp: "N",
       updatedby: "kumarp15",
@@ -321,7 +331,7 @@ class WorkflowConfigService {
       year: 'numeric'
     });
 
-    const url = `${this.environment.coreApiUrl}/GetAllWorkflowinstances/${dateStr}/${appId}`;
+    const url = `${this.environment.coreApiUrl}/WF/GetAllWorkflowinstances/${dateStr}/${appId}`;
     return this.makeRequest<WorkflowInstance[]>(url);
   }
 
@@ -337,6 +347,7 @@ class WorkflowConfigService {
   }
 
   // Get workflow configuration (Java API)
+  // Updated logic: First try /all endpoint, if null/empty then return empty array
   async getWorkflowConfig(configId: string, appId: number): Promise<WorkflowAppConfig[]> {
     if (isDevelopmentMode()) {
       await new Promise(resolve => setTimeout(resolve, 600));
@@ -346,7 +357,15 @@ class WorkflowConfigService {
     // First try to get existing configuration using the /all endpoint
     try {
       const url = `${this.environment.javaApiUrl}/workflowconfig/${configId}/${appId}/all`;
-      return this.makeRequest<WorkflowAppConfig[]>(url);
+      const result = await this.makeRequest<WorkflowAppConfig[]>(url);
+      
+      // If result is null or empty, return empty array
+      if (!result || result.length === 0) {
+        console.log('No existing configuration found, returning empty array');
+        return [];
+      }
+      
+      return result;
     } catch (error) {
       // If no configuration exists, return empty array
       console.log('No existing configuration found, returning empty array');

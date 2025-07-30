@@ -54,6 +54,7 @@ export interface WorkflowSubstage {
   name: string;
   defaultstage: number;
   attestationMapping?: string;
+  paramMapping?: string;
   updatedby: string;
   updatedon: string;
   entitlementMapping: number;
@@ -121,13 +122,13 @@ export interface WorkflowSubstageRef {
   name: string;
   defaultstage: number;
   attestationMapping?: string;
+  paramMapping?: string;
   entitlementMapping: number;
   followUp: string;
   updatedby: string;
   updatedon: string;
   expectedduration?: number;
   expectedtime?: string;
-  paramMapping?: string;
   servicelink?: string;
 }
 
