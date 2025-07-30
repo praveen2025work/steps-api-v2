@@ -22,7 +22,8 @@ import {
   Network,
   FileText,
   Clock,
-  Activity
+  Activity,
+  ChevronRight
 } from 'lucide-react';
 import { SafeRouter } from './SafeRouter';
 
@@ -57,7 +58,7 @@ interface BreadcrumbItem {
 
 const ApplicationsGrid = () => {
   const { applications: workflowApps, loading, error, refresh, selectedDate, dateString } = useWorkflowDashboard();
-  const { setNodes, addNode, setLoading, setError, reset } = useBreadcrumb();
+  const { state: breadcrumbState, setNodes, addNode, setLoading, setError, reset, navigateToLevel } = useBreadcrumb();
   
   // Navigation state
   const [currentNodes, setCurrentNodes] = useState<WorkflowNode[]>([]);
@@ -337,10 +338,9 @@ const ApplicationsGrid = () => {
     });
 
     // Build progress steps from breadcrumb context
-    const { state } = useBreadcrumb();
-    const progressSteps = state.nodes.map((item, index) => ({
+    const progressSteps = breadcrumbState.nodes.map((item, index) => ({
       name: item.name,
-      progress: index === state.nodes.length - 1 ? node.percentageCompleted : 75
+      progress: index === breadcrumbState.nodes.length - 1 ? node.percentageCompleted : 75
     }));
 
     // Ensure processData exists and is an array
@@ -910,28 +910,31 @@ const ApplicationsGrid = () => {
       </div>
 
       {/* Breadcrumb navigation */}
-      {navigationPath.length > 0 && (
+      {breadcrumbState.nodes.length > 0 && (
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-sm">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleBreadcrumbClick(-1)}
+                onClick={() => handleBreadcrumbNavigation(-1)}
                 className="h-auto p-1 text-blue-600 hover:text-blue-800"
               >
                 Applications
               </Button>
-              {navigationPath.map((item, index) => (
-                <React.Fragment key={item.id}>
+              {breadcrumbState.nodes.map((node, index) => (
+                <React.Fragment key={node.id}>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleBreadcrumbClick(index)}
+                    onClick={() => {
+                      navigateToLevel(index);
+                      handleBreadcrumbNavigation(index, node);
+                    }}
                     className="h-auto p-1 text-blue-600 hover:text-blue-800"
                   >
-                    {item.name}
+                    {node.name} ({node.completionPercentage}%)
                   </Button>
                 </React.Fragment>
               ))}
@@ -970,7 +973,7 @@ const ApplicationsGrid = () => {
       )}
 
       {/* Main content */}
-      {navigationPath.length === 0 ? (
+      {breadcrumbState.nodes.length === 0 ? (
         // Show applications list
         <div className="space-y-6">
           {/* Workflow Applications */}
