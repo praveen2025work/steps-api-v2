@@ -343,8 +343,15 @@ class WorkflowConfigService {
       return MOCK_CONFIG;
     }
 
-    const url = `${this.environment.javaApiUrl}/workflowconfig/${configId}/${appId}/setup`;
-    return this.makeRequest<WorkflowAppConfig[]>(url);
+    // First try to get existing configuration using the /all endpoint
+    try {
+      const url = `${this.environment.javaApiUrl}/workflowconfig/${configId}/${appId}/all`;
+      return this.makeRequest<WorkflowAppConfig[]>(url);
+    } catch (error) {
+      // If no configuration exists, return empty array
+      console.log('No existing configuration found, returning empty array');
+      return [];
+    }
   }
 
   // Save workflow configuration (Java API - POST)

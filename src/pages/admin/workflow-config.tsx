@@ -1,13 +1,11 @@
 import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import WorkflowInstanceConfig from '@/components/admin/WorkflowInstanceConfig';
+import WorkflowConfigurationManager from '@/components/admin/WorkflowConfigurationManager';
 
 const WorkflowConfigPage = () => {
   return (
-    <DashboardLayout title="Workflow Instance Configuration">
-      <div className="container mx-auto py-6">
-        <WorkflowInstanceConfig />
-      </div>
+    <DashboardLayout title="Workflow Configuration">
+      <WorkflowConfigurationManager />
     </DashboardLayout>
   );
 };
