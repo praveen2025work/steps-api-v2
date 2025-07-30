@@ -58,7 +58,7 @@ interface BreadcrumbItem {
 
 const ApplicationsGrid = () => {
   const { applications: workflowApps, loading, error, refresh, selectedDate, dateString } = useWorkflowDashboard();
-  const { state: breadcrumbState, setNodes, addNode, setLoading, setError, reset, navigateToLevel } = useBreadcrumb();
+  const { state: breadcrumbState, setNodes, addNode, buildPath, setLoading, setError, reset, navigateToLevel } = useBreadcrumb();
   
   // Navigation state
   const [currentNodes, setCurrentNodes] = useState<WorkflowNode[]>([]);
@@ -81,10 +81,16 @@ const ApplicationsGrid = () => {
 
   // Handle application click - load first level nodes
   const handleApplicationClick = async (app: WorkflowApplication) => {
+    console.log('[ApplicationsGrid] Application clicked:', app.configName, 'AppID:', app.appId);
+    
     setLoadingNodes(true);
     setNodeError(null);
     setCurrentNodes([]);
     setLoading(true);
+    
+    // Reset breadcrumb state completely before starting new navigation
+    console.log('[ApplicationsGrid] Resetting breadcrumb state for new application');
+    reset();
     
     try {
       const response = await workflowService.getWorkflowNodes({
@@ -98,7 +104,7 @@ const ApplicationsGrid = () => {
       if (response.success) {
         setCurrentNodes(response.data);
         
-        // Update breadcrumb context with normalized IDs
+        // Create fresh breadcrumb with only the application node
         const breadcrumbNode: BreadcrumbNode = {
           id: app.appId.toString(), // Clean numeric ID
           name: app.configName,
@@ -117,7 +123,9 @@ const ApplicationsGrid = () => {
           }
         };
         
-        setNodes([breadcrumbNode]);
+        // Build fresh breadcrumb path with only the application node
+        console.log('[ApplicationsGrid] Building fresh breadcrumb path for application:', app.configName);
+        buildPath([breadcrumbNode]);
       } else {
         setNodeError(response.error || 'Failed to load workflow nodes');
         setError(response.error || 'Failed to load workflow nodes');
@@ -181,7 +189,7 @@ const ApplicationsGrid = () => {
           // Find the original application
           const originalApp = workflowApps.find(app => app.appId === node.appId);
           if (originalApp) {
-            // Add terminal node to breadcrumb
+            // Build complete breadcrumb path including terminal node
             const terminalNode: BreadcrumbNode = {
               id: node.configId,
               name: node.configName,
@@ -200,7 +208,10 @@ const ApplicationsGrid = () => {
               }
             };
             
-            addNode(terminalNode);
+            // Build complete breadcrumb path including terminal node
+            const completePath = [...breadcrumbState.nodes, terminalNode];
+            console.log('[ApplicationsGrid] Building breadcrumb path for terminal node:', completePath.map(n => n.name).join(' → '));
+            buildPath(completePath);
             
             setSelectedWorkflow({
               summary: response.data,
@@ -237,7 +248,7 @@ const ApplicationsGrid = () => {
         if (response.success) {
           setCurrentNodes(response.data);
           
-          // Add node to breadcrumb with normalized IDs
+          // Build complete breadcrumb path with the new node
           const breadcrumbNode: BreadcrumbNode = {
             id: node.configId,
             name: node.configName,
@@ -257,7 +268,10 @@ const ApplicationsGrid = () => {
             }
           };
           
-          addNode(breadcrumbNode);
+          // Build complete breadcrumb path with the new node
+          const completePath = [...breadcrumbState.nodes, breadcrumbNode];
+          console.log('[ApplicationsGrid] Building breadcrumb path for non-terminal node:', completePath.map(n => n.name).join(' → '));
+          buildPath(completePath);
         } else {
           setNodeError(response.error || 'Failed to load workflow nodes');
           setError(response.error || 'Failed to load workflow nodes');

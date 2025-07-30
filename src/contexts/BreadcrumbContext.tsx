@@ -33,6 +33,7 @@ export interface BreadcrumbState {
 type BreadcrumbAction =
   | { type: 'SET_NODES'; payload: BreadcrumbNode[] }
   | { type: 'ADD_NODE'; payload: BreadcrumbNode }
+  | { type: 'BUILD_PATH'; payload: BreadcrumbNode[] }
   | { type: 'NAVIGATE_TO_LEVEL'; payload: number }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
@@ -50,34 +51,58 @@ const initialState: BreadcrumbState = {
 function breadcrumbReducer(state: BreadcrumbState, action: BreadcrumbAction): BreadcrumbState {
   switch (action.type) {
     case 'SET_NODES':
+      // Completely replace the nodes array with the new one
+      console.log('[BreadcrumbContext] SET_NODES:', action.payload.map(n => n.name).join(' → '));
       return {
         ...state,
-        nodes: action.payload,
+        nodes: [...action.payload], // Create a new array to ensure immutability
         currentLevel: action.payload.length - 1,
         error: null,
+        isLoading: false,
       };
     case 'ADD_NODE':
+      // Add a single node to the existing path
+      const newNodes = [...state.nodes, action.payload];
+      console.log('[BreadcrumbContext] ADD_NODE:', newNodes.map(n => n.name).join(' → '));
       return {
         ...state,
-        nodes: [...state.nodes, action.payload],
-        currentLevel: state.nodes.length,
+        nodes: newNodes,
+        currentLevel: newNodes.length - 1,
         error: null,
+        isLoading: false,
+      };
+    case 'BUILD_PATH':
+      // Build a complete path from scratch (used for proper navigation)
+      console.log('[BreadcrumbContext] BUILD_PATH:', action.payload.map(n => n.name).join(' → '));
+      return {
+        ...state,
+        nodes: [...action.payload],
+        currentLevel: action.payload.length - 1,
+        error: null,
+        isLoading: false,
       };
     case 'NAVIGATE_TO_LEVEL':
       const targetLevel = action.payload;
       if (targetLevel === -1) {
+        // Navigate to root (applications list)
+        console.log('[BreadcrumbContext] NAVIGATE_TO_LEVEL: Root (applications)');
         return {
           ...state,
           nodes: [],
           currentLevel: -1,
           error: null,
+          isLoading: false,
         };
       }
+      // Navigate to a specific level by truncating the nodes array
+      const truncatedNodes = state.nodes.slice(0, targetLevel + 1);
+      console.log('[BreadcrumbContext] NAVIGATE_TO_LEVEL:', truncatedNodes.map(n => n.name).join(' → '));
       return {
         ...state,
-        nodes: state.nodes.slice(0, targetLevel + 1),
+        nodes: truncatedNodes,
         currentLevel: targetLevel,
         error: null,
+        isLoading: false,
       };
     case 'SET_LOADING':
       return {
@@ -91,7 +116,15 @@ function breadcrumbReducer(state: BreadcrumbState, action: BreadcrumbAction): Br
         isLoading: false,
       };
     case 'RESET':
-      return initialState;
+      // Reset to initial state
+      console.log('[BreadcrumbContext] RESET: Clearing all breadcrumbs');
+      return {
+        ...initialState,
+        nodes: [],
+        currentLevel: -1,
+        isLoading: false,
+        error: null,
+      };
     default:
       return state;
   }
@@ -102,6 +135,7 @@ interface BreadcrumbContextType {
   state: BreadcrumbState;
   setNodes: (nodes: BreadcrumbNode[]) => void;
   addNode: (node: BreadcrumbNode) => void;
+  buildPath: (nodes: BreadcrumbNode[]) => void;
   navigateToLevel: (level: number) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -127,6 +161,10 @@ export const BreadcrumbProvider: React.FC<BreadcrumbProviderProps> = ({ children
     dispatch({ type: 'ADD_NODE', payload: node });
   };
 
+  const buildPath = (nodes: BreadcrumbNode[]) => {
+    dispatch({ type: 'BUILD_PATH', payload: nodes });
+  };
+
   const navigateToLevel = (level: number) => {
     dispatch({ type: 'NAVIGATE_TO_LEVEL', payload: level });
   };
@@ -147,6 +185,7 @@ export const BreadcrumbProvider: React.FC<BreadcrumbProviderProps> = ({ children
     state,
     setNodes,
     addNode,
+    buildPath,
     navigateToLevel,
     setLoading,
     setError,
