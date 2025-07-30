@@ -961,7 +961,7 @@ const ApplicationsGrid = () => {
                     }}
                     className="h-auto p-1 text-blue-600 hover:text-blue-800"
                   >
-                    {node.name} ({node.completionPercentage}%)
+                    {node.name} ({node.level === 0 ? node.appId : node.configId}) ({node.completionPercentage}%)
                   </Button>
                 </React.Fragment>
               ))}
