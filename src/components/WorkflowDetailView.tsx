@@ -327,6 +327,14 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       const summaryData = (window as any).currentWorkflowSummary;
       if (summaryData && summaryData.applications && summaryData.applications.length > 0) {
         const currentApp = summaryData.applications[0];
+        
+        // Defensive check to prevent crash if appId is missing
+        if (!currentApp || !currentApp.appId) {
+          showErrorToast("Refresh failed: Missing application ID. Cannot refresh workflow details.");
+          setIsRefreshing(false);
+          return;
+        }
+
         const dateString = selectedDate ? selectedDate.toLocaleDateString('en-GB', {
           day: '2-digit',
           month: 'short',
