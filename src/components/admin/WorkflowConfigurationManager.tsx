@@ -374,8 +374,32 @@ const WorkflowConfigurationManager: React.FC = () => {
       return;
     }
 
-    // Use first available substage
-    const substage = availableSubstages[0];
+    // Check for duplicate substages in the current stage
+    const existingSubstagesInStage = state.currentConfig.filter(config => {
+      const configStageId = typeof config.workflowStage === 'object' 
+        ? config.workflowStage.stageId 
+        : config.workflowStage;
+      return configStageId === stageId;
+    });
+
+    // Find available substages that are not already added to this stage
+    const unusedSubstages = availableSubstages.filter(substage => 
+      !existingSubstagesInStage.some(config => 
+        config.workflowSubstage.substageId === substage.substageId
+      )
+    );
+
+    if (unusedSubstages.length === 0) {
+      toast({
+        title: "Warning",
+        description: "All available substages for this stage have already been added. Cannot add duplicate substages.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Use first available unused substage
+    const substage = unusedSubstages[0];
     const stage = state.metadata.WorkflowStage.find(s => s.stageId === stageId);
 
     const newConfig: WorkflowAppConfig = {
@@ -431,8 +455,83 @@ const WorkflowConfigurationManager: React.FC = () => {
     });
   };
 
+  const addNewStage = () => {
+    if (!state.metadata) {
+      toast({
+        title: "Error",
+        description: "Metadata not loaded. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Get all available stages for this application
+    const availableStages = state.metadata.WorkflowStage.filter(stage => 
+      stage.workflowApplication === state.selectedAppId
+    );
+
+    if (availableStages.length === 0) {
+      toast({
+        title: "Warning",
+        description: "No available stages for this application.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check which stages are already used in the current configuration
+    const usedStageIds = new Set(state.currentConfig.map(config => {
+      return typeof config.workflowStage === 'object' 
+        ? config.workflowStage.stageId 
+        : config.workflowStage;
+    }));
+
+    // Find stages that are not yet used
+    const unusedStages = availableStages.filter(stage => 
+      !usedStageIds.has(stage.stageId)
+    );
+
+    if (unusedStages.length === 0) {
+      toast({
+        title: "Warning",
+        description: "All available stages for this application have already been added. Cannot add duplicate stages.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // For now, we'll just show a message that a stage is available to be added
+    // The actual substage addition will happen when user clicks the + button on a stage
+    toast({
+      title: "Info",
+      description: `${unusedStages.length} unused stage(s) available. Click the + button next to a stage to add substages.`
+    });
+  };
+
   const duplicateSubstage = (configIndex: number) => {
     const originalConfig = state.currentConfig[configIndex];
+    
+    // Check if this substage already exists in the same stage
+    const stageId = typeof originalConfig.workflowStage === 'object' 
+      ? originalConfig.workflowStage.stageId 
+      : originalConfig.workflowStage;
+    
+    const existingSubstagesInStage = state.currentConfig.filter(config => {
+      const configStageId = typeof config.workflowStage === 'object' 
+        ? config.workflowStage.stageId 
+        : config.workflowStage;
+      return configStageId === stageId && config.workflowSubstage.substageId === originalConfig.workflowSubstage.substageId;
+    });
+
+    if (existingSubstagesInStage.length > 1) {
+      toast({
+        title: "Warning",
+        description: "This substage already exists multiple times in this stage. Cannot create more duplicates.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const duplicatedConfig: WorkflowAppConfig = {
       ...originalConfig,
       workflowAppConfigId: 0, // New config will get new ID
@@ -720,6 +819,15 @@ const WorkflowConfigurationManager: React.FC = () => {
       <div className="flex justify-between items-center p-4 border-b">
         <h3 className="font-semibold">Workflow Tree</h3>
         <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={addNewStage}
+            disabled={!state.metadata || !state.selectedAppId}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Stage
+          </Button>
           <Button
             variant="ghost"
             size="sm"
