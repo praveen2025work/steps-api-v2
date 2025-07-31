@@ -286,14 +286,15 @@ class WorkflowConfigService {
     const defaultOptions: RequestInit = {
       method: 'GET',
       mode: 'cors',
+      cache: 'no-store', // Prevent browser from adding Cache-Control header
       // Use different credentials based on API type
       credentials: isJavaApi ? 'omit' : 'include', // Java service doesn't use Windows auth
-      headers: {
+      ...options, // Apply passed options first
+      headers: { // Then define headers, merging defaults with passed headers
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Cache-Control': 'no-cache',
+        ...(options.headers || {}),
       },
-      ...options,
     };
 
     try {
