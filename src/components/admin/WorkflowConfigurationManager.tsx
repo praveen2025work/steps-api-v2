@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
   AlertCircle, 
   RefreshCw, 
@@ -34,7 +35,9 @@ import {
   Database,
   Network,
   Target,
-  Link
+  Link,
+  Search,
+  X
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { workflowConfigService } from '@/services/workflowConfigService';
@@ -84,6 +87,22 @@ interface SubstageSelector {
   selectedSubstageId: number | null;
 }
 
+interface MultiSelectStageModal {
+  isOpen: boolean;
+  availableStages: WorkflowStage[];
+  selectedStageIds: Set<number>;
+  searchTerm: string;
+}
+
+interface MultiSelectSubstageModal {
+  isOpen: boolean;
+  stageId: number | null;
+  stageName: string;
+  availableSubstages: WorkflowSubstage[];
+  selectedSubstageIds: Set<number>;
+  searchTerm: string;
+}
+
 const WorkflowConfigurationManager: React.FC = () => {
   // Core state management
   const [state, setState] = useState<WorkflowConfigState>({
@@ -105,6 +124,23 @@ const WorkflowConfigurationManager: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [substageSelector, setSubstageSelector] = useState<SubstageSelector | null>(null);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+
+  // Multi-select modal states
+  const [multiSelectStageModal, setMultiSelectStageModal] = useState<MultiSelectStageModal>({
+    isOpen: false,
+    availableStages: [],
+    selectedStageIds: new Set(),
+    searchTerm: ''
+  });
+
+  const [multiSelectSubstageModal, setMultiSelectSubstageModal] = useState<MultiSelectSubstageModal>({
+    isOpen: false,
+    stageId: null,
+    stageName: '',
+    availableSubstages: [],
+    selectedSubstageIds: new Set(),
+    searchTerm: ''
+  });
 
   // Load workflow applications on component mount
   useEffect(() => {
@@ -810,6 +846,288 @@ const WorkflowConfigurationManager: React.FC = () => {
     });
   };
 
+  // Multi-select handlers
+  const showMultiSelectStageModal = () => {
+    if (!state.metadata) {
+      toast({
+        title: "Error",
+        description: "Metadata not loaded. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const availableStages = state.metadata.WorkflowStage.filter(stage => 
+      stage.workflowApplication === state.selectedAppId
+    );
+
+    setMultiSelectStageModal({
+      isOpen: true,
+      availableStages,
+      selectedStageIds: new Set(),
+      searchTerm: ''
+    });
+  };
+
+  const showMultiSelectSubstageModal = (stageId: number) => {
+    if (!state.metadata) {
+      toast({
+        title: "Error",
+        description: "Metadata not loaded. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const stage = state.metadata.WorkflowStage.find(s => s.stageId === stageId);
+    const availableSubstages = state.metadata.WorkflowSubstage.filter(substage => 
+      substage.defaultstage === stageId
+    );
+
+    if (availableSubstages.length === 0) {
+      toast({
+        title: "Warning",
+        description: "No available substages for this stage.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setMultiSelectSubstageModal({
+      isOpen: true,
+      stageId,
+      stageName: stage?.name || 'Unknown Stage',
+      availableSubstages,
+      selectedSubstageIds: new Set(),
+      searchTerm: ''
+    });
+  };
+
+  const addMultipleStages = () => {
+    if (multiSelectStageModal.selectedStageIds.size === 0) {
+      toast({
+        title: "Warning",
+        description: "Please select at least one stage.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const selectedStages = multiSelectStageModal.availableStages.filter(stage =>
+      multiSelectStageModal.selectedStageIds.has(stage.stageId)
+    );
+
+    let addedCount = 0;
+    selectedStages.forEach(stage => {
+      // Check if stage already exists in configuration
+      const existingStageConfigs = state.currentConfig.filter(config => {
+        const configStageId = typeof config.workflowStage === 'object' 
+          ? config.workflowStage.stageId 
+          : config.workflowStage;
+        return configStageId === stage.stageId;
+      });
+
+      if (existingStageConfigs.length === 0) {
+        // Add a default substage for this stage if available
+        const defaultSubstage = state.metadata?.WorkflowSubstage.find(substage => 
+          substage.defaultstage === stage.stageId
+        );
+
+        if (defaultSubstage) {
+          const newConfig: WorkflowAppConfig = {
+            workflowAppConfigId: 0,
+            adhoc: "N",
+            appGroupId: state.selectedConfigId!,
+            approval: "N",
+            attest: "N",
+            auto: "N",
+            isactive: "Y",
+            isalteryx: "N",
+            substageSeq: state.currentConfig.length + addedCount + 1,
+            updatedby: "system",
+            updatedon: new Date().toISOString(),
+            upload: "N",
+            workflowApplication: state.selectedAppId!,
+            workflowStage: stage,
+            workflowSubstage: {
+              substageId: defaultSubstage.substageId,
+              name: defaultSubstage.name,
+              defaultstage: defaultSubstage.defaultstage,
+              attestationMapping: defaultSubstage.attestationMapping,
+              paramMapping: defaultSubstage.paramMapping,
+              entitlementMapping: defaultSubstage.entitlementMapping,
+              followUp: defaultSubstage.followUp,
+              updatedby: "system",
+              updatedon: new Date().toISOString()
+            }
+          };
+
+          setState(prev => ({
+            ...prev,
+            currentConfig: [...prev.currentConfig, newConfig]
+          }));
+          addedCount++;
+        }
+      }
+    });
+
+    setMultiSelectStageModal({
+      isOpen: false,
+      availableStages: [],
+      selectedStageIds: new Set(),
+      searchTerm: ''
+    });
+
+    toast({
+      title: "Success",
+      description: `Added ${addedCount} new stages to workflow`
+    });
+  };
+
+  const addMultipleSubstages = () => {
+    if (multiSelectSubstageModal.selectedSubstageIds.size === 0) {
+      toast({
+        title: "Warning",
+        description: "Please select at least one substage.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const selectedSubstages = multiSelectSubstageModal.availableSubstages.filter(substage =>
+      multiSelectSubstageModal.selectedSubstageIds.has(substage.substageId)
+    );
+
+    const stage = state.metadata?.WorkflowStage.find(s => s.stageId === multiSelectSubstageModal.stageId);
+    if (!stage) {
+      toast({
+        title: "Error",
+        description: "Stage not found.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    let addedCount = 0;
+    const newConfigs: WorkflowAppConfig[] = [];
+
+    selectedSubstages.forEach(substage => {
+      // Check for duplicates in the same stage
+      const existingInStage = state.currentConfig.filter(config => {
+        const configStageId = typeof config.workflowStage === 'object' 
+          ? config.workflowStage.stageId 
+          : config.workflowStage;
+        return configStageId === multiSelectSubstageModal.stageId && 
+               config.workflowSubstage.substageId === substage.substageId;
+      });
+
+      if (existingInStage.length === 0) {
+        const newConfig: WorkflowAppConfig = {
+          workflowAppConfigId: 0,
+          adhoc: "N",
+          appGroupId: state.selectedConfigId!,
+          approval: "N",
+          attest: "N",
+          auto: "N",
+          isactive: "Y",
+          isalteryx: "N",
+          substageSeq: state.currentConfig.length + addedCount + 1,
+          updatedby: "system",
+          updatedon: new Date().toISOString(),
+          upload: "N",
+          workflowApplication: state.selectedAppId!,
+          workflowStage: stage,
+          workflowSubstage: {
+            substageId: substage.substageId,
+            name: substage.name,
+            defaultstage: substage.defaultstage,
+            attestationMapping: substage.attestationMapping,
+            paramMapping: substage.paramMapping,
+            entitlementMapping: substage.entitlementMapping,
+            followUp: substage.followUp,
+            updatedby: "system",
+            updatedon: new Date().toISOString()
+          }
+        };
+
+        newConfigs.push(newConfig);
+        addedCount++;
+      }
+    });
+
+    if (newConfigs.length > 0) {
+      setState(prev => ({
+        ...prev,
+        currentConfig: [...prev.currentConfig, ...newConfigs]
+      }));
+    }
+
+    setMultiSelectSubstageModal({
+      isOpen: false,
+      stageId: null,
+      stageName: '',
+      availableSubstages: [],
+      selectedSubstageIds: new Set(),
+      searchTerm: ''
+    });
+
+    toast({
+      title: "Success",
+      description: `Added ${addedCount} new substages to workflow`
+    });
+  };
+
+  const removeMultipleStages = (stageIds: number[]) => {
+    const configsToRemove = state.currentConfig.filter(config => {
+      const configStageId = typeof config.workflowStage === 'object' 
+        ? config.workflowStage.stageId 
+        : config.workflowStage;
+      return stageIds.includes(configStageId);
+    });
+
+    const remainingConfigs = state.currentConfig.filter(config => {
+      const configStageId = typeof config.workflowStage === 'object' 
+        ? config.workflowStage.stageId 
+        : config.workflowStage;
+      return !stageIds.includes(configStageId);
+    });
+
+    // Update sequence numbers
+    remainingConfigs.forEach((config, index) => {
+      config.substageSeq = index + 1;
+    });
+
+    setState(prev => ({
+      ...prev,
+      currentConfig: remainingConfigs
+    }));
+
+    // Clean up dependencies
+    setTimeout(() => {
+      const removedSubstageIds = configsToRemove.map(config => config.workflowSubstage.substageId);
+      setState(prev => ({
+        ...prev,
+        currentConfig: prev.currentConfig.map(config => ({
+          ...config,
+          workflowAppConfigDeps: config.workflowAppConfigDeps?.filter(dep => 
+            !removedSubstageIds.includes(dep.id.dependencySubstageId)
+          ) || []
+        }))
+      }));
+    }, 0);
+
+    if (selectedSubstage && configsToRemove.some(config => 
+      config.workflowSubstage.substageId === selectedSubstage.substageId
+    )) {
+      setSelectedSubstage(null);
+    }
+
+    toast({
+      title: "Success",
+      description: `Removed ${configsToRemove.length} stages and their substages from workflow`
+    });
+  };
+
   // Render Methods
   const renderTopSection = () => (
     <div className="border-b bg-background p-4">
@@ -949,6 +1267,15 @@ const WorkflowConfigurationManager: React.FC = () => {
         <h3 className="font-semibold">Workflow Tree</h3>
         <div className="flex space-x-2">
           <Button
+            variant="outline"
+            size="sm"
+            onClick={showMultiSelectStageModal}
+            disabled={!state.metadata}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Stages
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
             onClick={() => setBulkEditMode(!bulkEditMode)}
@@ -1030,16 +1357,42 @@ const WorkflowConfigurationManager: React.FC = () => {
                       {stage.children?.length || 0} substages
                     </Badge>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      showSubstageSelector(stage.stageId!);
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                  <div className="flex space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showSubstageSelector(stage.stageId!);
+                      }}
+                      title="Add single substage"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showMultiSelectSubstageModal(stage.stageId!);
+                      }}
+                      title="Add multiple substages"
+                    >
+                      <Plus className="h-3 w-3" />
+                      <Plus className="h-3 w-3 -ml-1" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeMultipleStages([stage.stageId!]);
+                      }}
+                      title="Remove stage"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {stage.expanded && stage.children && (
@@ -1211,6 +1564,293 @@ const WorkflowConfigurationManager: React.FC = () => {
                     disabled={!substageSelector.selectedSubstageId}
                   >
                     Add Substage
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Multi-Select Stage Modal */}
+      {multiSelectStageModal.isOpen && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <Card className="w-[600px] max-h-[80vh]">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <Settings className="h-5 w-5" />
+                <span>Add Multiple Stages</span>
+              </CardTitle>
+              <CardDescription>
+                Select multiple stages to add to your workflow configuration
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search stages..."
+                    value={multiSelectStageModal.searchTerm}
+                    onChange={(e) => setMultiSelectStageModal(prev => ({
+                      ...prev,
+                      searchTerm: e.target.value
+                    }))}
+                    className="pl-10"
+                  />
+                </div>
+
+                {/* Selection Summary */}
+                {multiSelectStageModal.selectedStageIds.size > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <span className="text-sm font-medium">
+                      {multiSelectStageModal.selectedStageIds.size} stages selected
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMultiSelectStageModal(prev => ({
+                        ...prev,
+                        selectedStageIds: new Set()
+                      }))}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Clear All
+                    </Button>
+                  </div>
+                )}
+
+                {/* Stage List */}
+                <ScrollArea className="h-[300px] border rounded-lg">
+                  <div className="p-4 space-y-2">
+                    {multiSelectStageModal.availableStages
+                      .filter(stage => 
+                        stage.name.toLowerCase().includes(multiSelectStageModal.searchTerm.toLowerCase())
+                      )
+                      .map(stage => {
+                        const isSelected = multiSelectStageModal.selectedStageIds.has(stage.stageId);
+                        const isAlreadyConfigured = state.currentConfig.some(config => {
+                          const configStageId = typeof config.workflowStage === 'object' 
+                            ? config.workflowStage.stageId 
+                            : config.workflowStage;
+                          return configStageId === stage.stageId;
+                        });
+
+                        return (
+                          <div
+                            key={stage.stageId}
+                            className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              isSelected 
+                                ? 'bg-primary/10 border-primary' 
+                                : isAlreadyConfigured
+                                  ? 'bg-muted/50 border-muted cursor-not-allowed'
+                                  : 'hover:bg-muted/50'
+                            }`}
+                            onClick={() => {
+                              if (isAlreadyConfigured) return;
+                              
+                              setMultiSelectStageModal(prev => {
+                                const newSelected = new Set(prev.selectedStageIds);
+                                if (isSelected) {
+                                  newSelected.delete(stage.stageId);
+                                } else {
+                                  newSelected.add(stage.stageId);
+                                }
+                                return {
+                                  ...prev,
+                                  selectedStageIds: newSelected
+                                };
+                              });
+                            }}
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              disabled={isAlreadyConfigured}
+                              onChange={() => {}} // Handled by parent click
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <Settings className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{stage.name}</span>
+                                {isAlreadyConfigured && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Already Added
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Stage ID: {stage.stageId}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </ScrollArea>
+
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setMultiSelectStageModal({
+                      isOpen: false,
+                      availableStages: [],
+                      selectedStageIds: new Set(),
+                      searchTerm: ''
+                    })}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={addMultipleStages}
+                    disabled={multiSelectStageModal.selectedStageIds.size === 0}
+                  >
+                    Add {multiSelectStageModal.selectedStageIds.size} Stages
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Multi-Select Substage Modal */}
+      {multiSelectSubstageModal.isOpen && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <Card className="w-[600px] max-h-[80vh]">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <CheckSquare className="h-5 w-5" />
+                <span>Add Multiple Substages</span>
+              </CardTitle>
+              <CardDescription>
+                Select multiple substages to add to {multiSelectSubstageModal.stageName}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search substages..."
+                    value={multiSelectSubstageModal.searchTerm}
+                    onChange={(e) => setMultiSelectSubstageModal(prev => ({
+                      ...prev,
+                      searchTerm: e.target.value
+                    }))}
+                    className="pl-10"
+                  />
+                </div>
+
+                {/* Selection Summary */}
+                {multiSelectSubstageModal.selectedSubstageIds.size > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <span className="text-sm font-medium">
+                      {multiSelectSubstageModal.selectedSubstageIds.size} substages selected
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMultiSelectSubstageModal(prev => ({
+                        ...prev,
+                        selectedSubstageIds: new Set()
+                      }))}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Clear All
+                    </Button>
+                  </div>
+                )}
+
+                {/* Substage List */}
+                <ScrollArea className="h-[300px] border rounded-lg">
+                  <div className="p-4 space-y-2">
+                    {multiSelectSubstageModal.availableSubstages
+                      .filter(substage => 
+                        substage.name.toLowerCase().includes(multiSelectSubstageModal.searchTerm.toLowerCase())
+                      )
+                      .map(substage => {
+                        const isSelected = multiSelectSubstageModal.selectedSubstageIds.has(substage.substageId);
+                        const isAlreadyConfigured = state.currentConfig.some(config => {
+                          const configStageId = typeof config.workflowStage === 'object' 
+                            ? config.workflowStage.stageId 
+                            : config.workflowStage;
+                          return configStageId === multiSelectSubstageModal.stageId && 
+                                 config.workflowSubstage.substageId === substage.substageId;
+                        });
+
+                        return (
+                          <div
+                            key={substage.substageId}
+                            className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              isSelected 
+                                ? 'bg-primary/10 border-primary' 
+                                : isAlreadyConfigured
+                                  ? 'bg-muted/50 border-muted cursor-not-allowed'
+                                  : 'hover:bg-muted/50'
+                            }`}
+                            onClick={() => {
+                              if (isAlreadyConfigured) return;
+                              
+                              setMultiSelectSubstageModal(prev => {
+                                const newSelected = new Set(prev.selectedSubstageIds);
+                                if (isSelected) {
+                                  newSelected.delete(substage.substageId);
+                                } else {
+                                  newSelected.add(substage.substageId);
+                                }
+                                return {
+                                  ...prev,
+                                  selectedSubstageIds: newSelected
+                                };
+                              });
+                            }}
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              disabled={isAlreadyConfigured}
+                              onChange={() => {}} // Handled by parent click
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{substage.name}</span>
+                                {isAlreadyConfigured && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Already Added
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Substage ID: {substage.substageId}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </ScrollArea>
+
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setMultiSelectSubstageModal({
+                      isOpen: false,
+                      stageId: null,
+                      stageName: '',
+                      availableSubstages: [],
+                      selectedSubstageIds: new Set(),
+                      searchTerm: ''
+                    })}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={addMultipleSubstages}
+                    disabled={multiSelectSubstageModal.selectedSubstageIds.size === 0}
+                  >
+                    Add {multiSelectSubstageModal.selectedSubstageIds.size} Substages
                   </Button>
                 </div>
               </div>
