@@ -55,36 +55,67 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
     let yPos = 50;
 
     if (!workflow || !workflow.stages || !workflow.tasks) {
+      console.log('[StepFunctionView] No workflow data available:', { workflow: !!workflow, stages: !!workflow?.stages, tasks: !!workflow?.tasks });
       return { nodes: [], edges: [] };
     }
 
-    workflow.stages.forEach((stage: any) => {
+    console.log('[StepFunctionView] Generating diagram data from workflow:', {
+      stagesCount: workflow.stages.length,
+      tasksKeys: Object.keys(workflow.tasks),
+      totalTasks: Object.values(workflow.tasks).flat().length
+    });
+
+    workflow.stages.forEach((stage: any, stageIndex: number) => {
       const stageNodeId = `stage-${stage.id}`;
       const stageTasks = workflow.tasks[stage.id] || [];
       const stageHeight = stageTasks.length > 0 ? stageTasks.length * 130 + 60 : 150;
 
+      // Create stage node with proper data structure for WorkflowStepFunctionDiagram
       nodes.push({
         id: stageNodeId,
-        type: 'group',
-        data: { label: stage.name },
-        position: { x: 25, y: yPos },
-        style: {
-          width: 650,
-          height: stageHeight,
-          backgroundColor: 'rgba(240, 240, 240, 0.25)',
-        },
+        type: 'parallel', // Use 'parallel' type for stage containers
+        label: stage.name,
+        status: stageTasks.length > 0 ? 
+          (stageTasks.every((t: any) => t.status === 'completed') ? 'completed' :
+           stageTasks.some((t: any) => t.status === 'in_progress' || t.status === 'in-progress') ? 'in-progress' :
+           stageTasks.some((t: any) => t.status === 'failed') ? 'failed' : 'pending') : 'pending',
+        x: 25,
+        y: yPos,
+        width: 650,
+        height: stageHeight,
+        data: {
+          label: stage.name,
+          stageId: stage.id,
+          totalSubtasks: stageTasks.length,
+          progress: stageTasks.length > 0 ? 
+            Math.round((stageTasks.filter((t: any) => t.status === 'completed').length / stageTasks.length) * 100) : 0,
+          order: stageIndex + 1
+        }
       });
 
-      let taskY = 80;
+      let taskY = yPos + 80;
       stageTasks.forEach((task: any, taskIndex: number) => {
         const taskNodeId = `substage-${task.id}`;
+        
+        // Create task node with proper data structure
         nodes.push({
           id: taskNodeId,
-          type: 'taskNode',
-          data: { ...task, label: task.name },
-          position: { x: 50, y: taskY },
-          parentNode: stageNodeId,
-          extent: 'parent',
+          type: 'task',
+          label: task.name,
+          status: task.status === 'in_progress' ? 'in-progress' : task.status,
+          x: 50,
+          y: taskY,
+          width: 580,
+          height: 100,
+          data: {
+            ...task,
+            label: task.name,
+            stageId: stage.id,
+            stageName: stage.name,
+            processId: task.processId,
+            progress: task.status === 'completed' ? 100 : 
+                     task.status === 'in_progress' || task.status === 'in-progress' ? 50 : 0
+          }
         });
 
         // Connect tasks within the same stage
@@ -94,9 +125,8 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
             id: `e-${prevTaskNodeId}-${taskNodeId}`,
             source: prevTaskNodeId,
             target: taskNodeId,
-            type: 'smoothstep',
-            animated: task.status === 'in_progress',
-            style: { strokeWidth: 2 },
+            type: 'default',
+            label: undefined
           });
         }
         taskY += 130;
@@ -119,11 +149,18 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
           id: `e-stage-${sourceStage.id}-${targetStage.id}`,
           source: sourceTaskNodeId,
           target: targetTaskNodeId,
-          type: 'smoothstep',
-          style: { stroke: '#adb5bd', strokeWidth: 2, strokeDasharray: '5 5' },
+          type: 'default',
+          label: `${sourceStage.name} → ${targetStage.name}`
         });
       }
     }
+
+    console.log('[StepFunctionView] Generated diagram data:', {
+      nodesCount: nodes.length,
+      edgesCount: edges.length,
+      nodeTypes: [...new Set(nodes.map(n => n.type))],
+      firstNode: nodes[0]
+    });
 
     return { nodes, edges };
   })();
