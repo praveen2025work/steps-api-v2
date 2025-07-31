@@ -362,7 +362,8 @@ class WorkflowConfigService {
       year: 'numeric'
     });
 
-    const url = `${this.environment.coreApiUrl}/WF/GetAllWorkflowinstances/${dateStr}/${appId}`;
+    // Fixed: coreApiUrl already includes /api/WF, so we only need to add the endpoint
+    const url = `${this.environment.coreApiUrl}/GetAllWorkflowinstances/${dateStr}/${appId}`;
     return this.makeRequest<WorkflowInstance[]>(url);
   }
 
