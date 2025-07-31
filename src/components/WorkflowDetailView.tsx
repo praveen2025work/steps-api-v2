@@ -155,6 +155,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
   applicationData,
   nodeData,
   onBack,
+  onRefresh,
   enhancedWorkflowData,
   applicationId,
   configId,
