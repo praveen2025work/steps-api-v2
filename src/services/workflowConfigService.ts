@@ -280,9 +280,14 @@ class WorkflowConfigService {
     url: string,
     options: RequestInit = {}
   ): Promise<T> {
+    // Determine if this is a Java API call or .NET API call based on URL
+    const isJavaApi = url.includes(this.environment.javaApiUrl) || url.includes(this.environment.javaBaseUrl);
+    
     const defaultOptions: RequestInit = {
       method: 'GET',
-      credentials: 'include',
+      mode: 'cors',
+      // Use different credentials based on API type
+      credentials: isJavaApi ? 'omit' : 'include', // Java service doesn't use Windows auth
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -292,6 +297,7 @@ class WorkflowConfigService {
     };
 
     try {
+      console.log('Making API request:', { url, options: defaultOptions });
       const response = await fetch(url, defaultOptions);
       
       if (!response.ok) {
@@ -299,9 +305,10 @@ class WorkflowConfigService {
       }
 
       const data = await response.json();
+      console.log('API response received:', { url, dataLength: Array.isArray(data) ? data.length : 'object' });
       return data;
     } catch (error: any) {
-      console.error('API request failed:', error);
+      console.error('API request failed:', { url, error: error.message });
       throw error;
     }
   }
@@ -314,7 +321,24 @@ class WorkflowConfigService {
     }
 
     const url = `${this.environment.javaApiUrl}/workflowapp`;
-    return this.makeRequest<WorkflowApp[]>(url);
+    console.log('Fetching workflow apps from:', url);
+    
+    try {
+      const result = await this.makeRequest<WorkflowApp[]>(url);
+      console.log('Successfully fetched workflow apps:', result?.length || 0, 'items');
+      return result;
+    } catch (error: any) {
+      console.error('Failed to fetch workflow apps:', error);
+      // If CORS fails, try the alternative endpoint structure
+      try {
+        const alternativeUrl = `${this.environment.javaBaseUrl}/api/workflowapp`;
+        console.log('Trying alternative URL:', alternativeUrl);
+        return await this.makeRequest<WorkflowApp[]>(alternativeUrl);
+      } catch (altError: any) {
+        console.error('Alternative URL also failed:', altError);
+        throw new Error(`Failed to fetch workflow applications: ${error.message}. CORS may not be configured properly on the server.`);
+      }
+    }
   }
 
   // Get workflow instances (.NET API)
