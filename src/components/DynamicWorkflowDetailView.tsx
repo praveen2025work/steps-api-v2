@@ -46,6 +46,7 @@ interface DynamicWorkflowDetailViewProps {
   viewMode?: 'classic' | 'alternative';
   onViewToggle?: (mode: 'classic' | 'alternative') => void;
   onBreadcrumbNavigate?: (level: any, index: number) => void;
+  applicationData?: any;
 }
 
 interface LoadingState {
@@ -70,7 +71,8 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
   nextLevel,
   viewMode = 'classic',
   onViewToggle,
-  onBreadcrumbNavigate
+  onBreadcrumbNavigate,
+  applicationData
 }) => {
   const { selectedDate } = useDate();
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -579,6 +581,12 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
         tasks={tasks}
         viewMode={viewMode}
         onViewToggle={onViewToggle}
+        applicationData={applicationData}
+        summaryData={{
+          applications: workflowData.applications,
+          terminalNodes: workflowData.terminalNodes,
+          workflowSummaries: workflowData.workflowSummaries,
+        }}
       />
     </div>
   );

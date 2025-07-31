@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/DashboardLayout';
 import DynamicWorkflowDetailView from '@/components/DynamicWorkflowDetailView';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
+import { useDate } from '@/contexts/DateContext';
+import { workflowService } from '@/services/workflowService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,10 +25,41 @@ import Link from 'next/link';
 const DynamicWorkflowPage: React.FC = () => {
   const router = useRouter();
   const { state: breadcrumbState, navigateToLevel, reset } = useBreadcrumb();
+  const { selectedDate } = useDate();
   const [viewMode, setViewMode] = useState<'classic' | 'alternative'>('classic');
-  
+  const [applicationData, setApplicationData] = useState<any | null>(null);
+  const [isLoadingApp, setIsLoadingApp] = useState(true);
+
   // Get parameters from router
   const { workflowId, appId, configId, currentLevel, nextLevel } = router.query;
+
+  useEffect(() => {
+    const fetchApplicationData = async () => {
+      if (!appId) {
+        setIsLoadingApp(false);
+        return;
+      }
+      setIsLoadingApp(true);
+      try {
+        const dateString = selectedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
+        const response = await workflowService.getAllWorkflowApplications(dateString);
+        if (response.success) {
+          const app = response.data.find((a: any) => a.appId.toString() === appId);
+          setApplicationData(app || null);
+        } else {
+          console.error("Failed to fetch application data:", response.error);
+          setApplicationData(null);
+        }
+      } catch (error) {
+        console.error("Error fetching application data:", error);
+        setApplicationData(null);
+      } finally {
+        setIsLoadingApp(false);
+      }
+    };
+
+    fetchApplicationData();
+  }, [appId, selectedDate]);
   
   // Convert query parameters to proper types
   const applicationId = appId ? parseInt(appId as string) : undefined;
@@ -201,16 +234,21 @@ const DynamicWorkflowPage: React.FC = () => {
               </Card>
             )}
             
-            <DynamicWorkflowDetailView
-              workflowTitle={workflowTitle}
-              applicationId={applicationId}
-              configId={configId as string}
-              currentLevel={parsedCurrentLevel}
-              nextLevel={parsedNextLevel}
-              viewMode={viewMode}
-              onViewToggle={handleViewToggle}
-              onBreadcrumbNavigate={() => {}}
-            />
+            {isLoadingApp ? (
+              <p>Loading application data...</p>
+            ) : (
+              <DynamicWorkflowDetailView
+                workflowTitle={workflowTitle}
+                applicationId={applicationId}
+                configId={configId as string}
+                currentLevel={parsedCurrentLevel}
+                nextLevel={parsedNextLevel}
+                viewMode={viewMode}
+                onViewToggle={handleViewToggle}
+                onBreadcrumbNavigate={() => {}}
+                applicationData={applicationData}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="integration" className="space-y-4">

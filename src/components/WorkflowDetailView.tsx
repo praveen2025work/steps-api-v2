@@ -323,71 +323,72 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     preserveUIState();
     
     try {
-      // Get current workflow summary data
-      const summaryData = (window as any).currentWorkflowSummary;
-      if (summaryData && summaryData.applications && summaryData.applications.length > 0) {
-        const currentApp = summaryData.applications[0];
-        
-        // Defensive check to prevent crash if appId is missing
-        if (!currentApp || !currentApp.appId) {
-          showErrorToast("Refresh failed: Missing application ID. Cannot refresh workflow details.");
-          setIsRefreshing(false);
-          return;
-        }
+      let appId: string | number | null = null;
+      let configId: string | number | null = null;
 
-        const dateString = selectedDate ? selectedDate.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
-        }).replace(/,/g, '') : new Date().toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
-        }).replace(/,/g, '');
-        
-        // Fetch fresh workflow summary
-        const response = await workflowService.getWorkflowSummary({
-          date: dateString,
-          configId: currentApp.appId.toString(),
-          appId: currentApp.appId
-        });
-        
-        if (response.success) {
-          // Update global workflow summary
-          (window as any).currentWorkflowSummary = response.data;
-          
-          // Update last refreshed time
-          setLastRefreshed(new Date());
-          setCountdown(refreshInterval);
-          
-          // Restore UI state after a brief delay to allow data to update
-          setTimeout(() => {
-            restoreUIState();
-          }, 200);
-          
-          // Only show success message for manual refreshes
-          if (isManualRefresh) {
-            showSuccessToast("Workflow data refreshed successfully");
-          }
-        } else {
-          showErrorToast(`Failed to refresh data: ${response.error}`);
-        }
-      } else {
-        // Fallback refresh without API call
+      // The most reliable source for configId is the URL itself.
+      if (router && router.query && router.query.workflowId) {
+        configId = router.query.workflowId as string;
+      }
+
+      // The most reliable source for appId is the breadcrumb context or applicationData prop.
+      if (breadcrumbState.nodes && breadcrumbState.nodes.length > 0) {
+        appId = breadcrumbState.nodes[0].appId;
+      } else if (applicationData && applicationData.appId) {
+        appId = applicationData.appId;
+      }
+
+      // If we still don't have IDs, log everything for debugging and show an error.
+      if (!appId || !configId) {
+        console.error("--- REFRESH DEBUG ---");
+        console.error("Refresh failed because required IDs could not be determined.");
+        console.log("Determined appId:", appId);
+        console.log("Determined configId:", configId);
+        console.log("Source: router.query.workflowId:", router?.query?.workflowId);
+        console.log("Source: breadcrumbState.nodes:", breadcrumbState.nodes);
+        console.log("Source: applicationData prop:", applicationData);
+        showErrorToast("Refresh failed: Missing application or configuration ID.");
+        setIsRefreshing(false);
+        return;
+      }
+
+      const dateString = selectedDate
+        ? selectedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '')
+        : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
+
+      const response = await workflowService.getWorkflowSummary({
+        date: dateString,
+        configId: configId.toString(),
+        appId: appId.toString(),
+      });
+
+      if (response.success) {
+        (window as any).currentWorkflowSummary = response.data;
         setLastRefreshed(new Date());
         setCountdown(refreshInterval);
-        
-        // Only show success message for manual refreshes
+        setTimeout(restoreUIState, 200);
         if (isManualRefresh) {
           showSuccessToast("Workflow data refreshed successfully");
         }
+      } else {
+        showErrorToast(`Failed to refresh data: ${response.error}`);
       }
     } catch (error: any) {
       showErrorToast(`Refresh failed: ${error.message}`);
+      console.error("--- REFRESH EXCEPTION ---", error);
     } finally {
       setIsRefreshing(false);
     }
-  }, [isRefreshing, preserveUIState, restoreUIState, selectedDate, refreshInterval]);
+  }, [
+    isRefreshing,
+    preserveUIState,
+    restoreUIState,
+    selectedDate,
+    refreshInterval,
+    applicationData,
+    breadcrumbState.nodes,
+    router,
+  ]);
 
   // Toggle workflow lock state
   const toggleLock = () => {
