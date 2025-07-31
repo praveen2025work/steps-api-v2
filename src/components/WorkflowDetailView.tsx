@@ -97,6 +97,7 @@ interface WorkflowDetailViewProps {
   nodeData?: any; // WorkflowNode from API
   // Navigation props
   onBack?: () => void; // Callback to navigate back to previous view
+  onRefresh?: () => void; // Callback to trigger a refresh
   // Enhanced workflow data for Modern and Step Function views
   enhancedWorkflowData?: any;
   applicationId?: number;
@@ -173,6 +174,7 @@ const WorkflowDetailView: React.FC<WorkflowDetailViewProps> = ({
           applicationData={applicationData}
           nodeData={nodeData}
           onBack={onBack}
+          onRefresh={onRefresh}
           enhancedWorkflowData={enhancedWorkflowData}
           applicationId={applicationId}
           configId={configId}
@@ -194,6 +196,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   applicationData,
   nodeData,
   onBack,
+  onRefresh,
   enhancedWorkflowData,
   applicationId,
   configId
@@ -326,107 +329,35 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   // Enhanced refresh with data fetching for main view and all breadcrumb nodes
   const handleRefresh = useCallback(async (isManualRefresh: boolean = false) => {
     if (isRefreshing) {
-      console.log("Refresh already in progress. Aborting.");
       return;
     }
     
-    console.log("--- TRIGGERING REFRESH ---", { isManualRefresh });
-    showInfoToast("Refresh triggered. See console for details.");
+    if (isManualRefresh) {
+      showInfoToast("Refreshing workflow data...");
+    }
 
     setIsRefreshing(true);
     preserveUIState();
     
-    try {
-      const dateString = selectedDate
-        ? selectedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '')
-        : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
-
-      console.log("--- Refresh Context ---");
-      console.log("Props: applicationId =", applicationId, ", configId =", configId);
-      console.log("Breadcrumb State:", JSON.stringify(breadcrumbState.nodes, null, 2));
-      console.log("Date:", dateString);
-
-      const refreshAppId = applicationId || (breadcrumbState.nodes.length > 0 ? breadcrumbState.nodes[0].appId : undefined);
-      const lastNode = breadcrumbState.nodes.length > 0 ? breadcrumbState.nodes[breadcrumbState.nodes.length - 1] : null;
-      const refreshConfigId = configId || lastNode?.configId || lastNode?.appGroupId || lastNode?.id;
-
-      console.log("Resolved IDs for refresh: refreshAppId =", refreshAppId, ", refreshConfigId =", refreshConfigId);
-
-      if (!refreshAppId || !refreshConfigId) {
-        showErrorToast("Refresh failed: Missing Application ID or Config ID.");
-        console.error("Refresh Aborted: Missing critical IDs.", { refreshAppId, refreshConfigId });
-        setIsRefreshing(false);
-        return;
-      }
-
-      console.log(`Calling getWorkflowSummary with: appId=${refreshAppId}, configId=${refreshConfigId}`);
-      const response = await workflowService.getWorkflowSummary({
-        date: dateString,
-        configId: refreshConfigId.toString(),
-        appId: refreshAppId.toString(),
-      });
-      console.log("getWorkflowSummary response:", response);
-
-      if (response.success) {
-        (window as any).currentWorkflowSummary = response.data;
+    if (onRefresh) {
+      try {
+        await onRefresh();
         if (isManualRefresh) {
-          showSuccessToast("Workflow data refreshed successfully");
+          showSuccessToast("Workflow data refreshed successfully.");
         }
-      } else {
-        showErrorToast(`Refresh failed: ${response.error || 'Unknown error'}`);
+      } catch (error: any) {
+        showErrorToast(`Refresh failed: ${error.message}`);
+      } finally {
+        setIsRefreshing(false);
+        setLastRefreshed(new Date());
+        setCountdown(refreshInterval);
+        setTimeout(restoreUIState, 200);
       }
-
-      if (breadcrumbState.nodes && breadcrumbState.nodes.length > 0 && setNodes) {
-        console.log("Refreshing breadcrumb node percentages...");
-        const updatedNodesPromises = breadcrumbState.nodes.map(async (node) => {
-          const nodeConfigId = node.configId || node.appGroupId || (node.level > 0 ? node.id : null);
-          if (!nodeConfigId) return node;
-          
-          try {
-            const nodeResponse = await workflowService.getWorkflowSummary({
-              date: dateString,
-              configId: nodeConfigId.toString(),
-              appId: refreshAppId.toString(),
-            });
-            if (nodeResponse.success && nodeResponse.data?.processData) {
-              const { processData } = nodeResponse.data;
-              const total = processData.length;
-              const completed = processData.filter((p: any) => p.status === 'COMPLETED' || p.status === 'completed').length;
-              const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-              return { ...node, completionPercentage };
-            }
-          } catch (e) {
-            console.error(`Failed to refresh breadcrumb node ${node.name}:`, e);
-          }
-          return node;
-        });
-        const updatedNodes = await Promise.all(updatedNodesPromises);
-        setNodes(updatedNodes);
-        console.log("Breadcrumb nodes updated.");
-      }
-
-      setLastRefreshed(new Date());
-      setCountdown(refreshInterval);
-      setTimeout(restoreUIState, 200);
-
-    } catch (error: any) {
-      showErrorToast(`Refresh failed: ${error.message}`);
-      console.error("--- REFRESH EXCEPTION ---", error);
-    } finally {
-      console.log("--- Finishing Refresh ---");
+    } else {
+      showWarningToast("Refresh functionality is not configured for this view.");
       setIsRefreshing(false);
     }
-  }, [
-    isRefreshing,
-    preserveUIState,
-    restoreUIState,
-    selectedDate,
-    refreshInterval,
-    breadcrumbState.nodes,
-    setNodes,
-    applicationId,
-    configId,
-  ]);
+  }, [isRefreshing, preserveUIState, restoreUIState, onRefresh, refreshInterval]);
 
   // Toggle workflow lock state
   const toggleLock = () => {

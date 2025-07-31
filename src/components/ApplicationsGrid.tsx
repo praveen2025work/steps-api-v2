@@ -290,41 +290,54 @@ const ApplicationsGrid = () => {
 
   // Handle breadcrumb navigation using the new breadcrumb context
   const handleBreadcrumbNavigation = async (level: number, node?: BreadcrumbNode) => {
-    // If navigating to the root, use the dedicated home navigation function
     if (level === -1) {
       handleHomeNavigation();
       return;
     }
-    
+
     if (!node) return;
-    
+
     setLoadingNodes(true);
     setNodeError(null);
     setLoading(true);
-    
+
     try {
-      // For any other level, fetch the corresponding nodes
-      const response = await workflowService.getWorkflowNodes({
-        date: dateString,
-        appId: node.appId!,
-        configId: node.configId!,
-        currentLevel: node.currentLevel!,
-        nextLevel: node.nextLevel!
-      });
-      
+      let response;
+      // Level 0 is the application level, which doesn't have nodes in the same way
+      // The initial click on an application already loads the first level of nodes.
+      // A click on the breadcrumb for level 0 should re-fetch those nodes.
+      if (level === 0) {
+        response = await workflowService.getWorkflowNodes({
+          date: dateString,
+          appId: node.appId!,
+          configId: node.configId!,
+          currentLevel: node.currentLevel!,
+          nextLevel: node.nextLevel!,
+        });
+      } else {
+        // For deeper levels, we fetch the nodes for that specific part of the hierarchy.
+        response = await workflowService.getWorkflowNodes({
+          date: dateString,
+          appId: node.appId!,
+          configId: node.configId!,
+          currentLevel: node.currentLevel!,
+          nextLevel: node.nextLevel!,
+        });
+      }
+
       if (response.success) {
         setCurrentNodes(response.data);
-        setSelectedWorkflow(null); // Ensure we are not showing a detailed view
-        
-        // Trim the breadcrumb path to the selected level
+        setSelectedWorkflow(null);
         navigateToLevel(level);
       } else {
-        setNodeError(response.error || 'Failed to load workflow nodes');
-        setError(response.error || 'Failed to load workflow nodes');
+        const errorMsg = response.error || 'Failed to load workflow nodes';
+        setNodeError(errorMsg);
+        setError(errorMsg);
       }
     } catch (err: any) {
-      setNodeError(err.message || 'An unexpected error occurred');
-      setError(err.message || 'An unexpected error occurred');
+      const errorMsg = err.message || 'An unexpected error occurred';
+      setNodeError(errorMsg);
+      setError(errorMsg);
     } finally {
       setLoadingNodes(false);
       setLoading(false);
@@ -848,6 +861,71 @@ const ApplicationsGrid = () => {
     setViewMode(mode);
   };
 
+  // Handle workflow detail refresh
+  const handleWorkflowRefresh = async () => {
+    if (!selectedWorkflow) {
+      console.error("Attempted to refresh without a selected workflow.");
+      return;
+    }
+
+    setLoadingSummary(true);
+    setSummaryError(null);
+
+    try {
+      const { node, application } = selectedWorkflow;
+      const response = await workflowService.getWorkflowSummary({
+        date: dateString,
+        configId: node.configId,
+        appId: node.appId,
+      });
+
+      if (response.success && response.data) {
+        // Update the summary data for the selected workflow
+        setSelectedWorkflow(prevState => prevState ? { ...prevState, summary: response.data } : null);
+        
+        // Refresh breadcrumb node percentages
+        if (breadcrumbState.nodes.length > 0) {
+          const updatedNodesPromises = breadcrumbState.nodes.map(async (bNode) => {
+            const nodeConfigId = bNode.configId || (bNode.level > 0 ? bNode.id : null);
+            if (!nodeConfigId || !bNode.appId) return bNode;
+
+            try {
+              // This logic assumes that each node can be refreshed with getWorkflowSummary.
+              // This might need adjustment based on API capabilities for different node levels.
+              const nodeSummaryResponse = await workflowService.getWorkflowSummary({
+                date: dateString,
+                configId: nodeConfigId.toString(),
+                appId: bNode.appId.toString(),
+              });
+
+              if (nodeSummaryResponse.success && nodeSummaryResponse.data?.processData) {
+                const { processData } = nodeSummaryResponse.data;
+                const total = processData.length;
+                const completed = processData.filter((p: any) => 
+                  (p.status || '').toUpperCase() === 'COMPLETED'
+                ).length;
+                const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+                return { ...bNode, completionPercentage };
+              }
+            } catch (e) {
+              console.error(`Failed to refresh breadcrumb node ${bNode.name}:`, e);
+            }
+            return bNode;
+          });
+          const updatedNodes = await Promise.all(updatedNodesPromises);
+          buildPath(updatedNodes); // Use buildPath to ensure the state is fully replaced
+        }
+        
+      } else {
+        setSummaryError(response.error || 'Failed to refresh workflow summary');
+      }
+    } catch (err: any) {
+      setSummaryError(err.message || 'An unexpected error occurred');
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
   const renderWorkflowDetail = () => {
     if (!selectedWorkflow) return null;
 
@@ -912,6 +990,7 @@ const ApplicationsGrid = () => {
           nodeData={selectedWorkflow.node}
           // onBack is removed as requested, navigation is via breadcrumb
           enhancedWorkflowData={enhancedWorkflowData}
+          onRefresh={handleWorkflowRefresh}
         />
       </div>
     );
