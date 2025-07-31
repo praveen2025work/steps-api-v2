@@ -257,7 +257,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       const path = breadcrumbState.nodes.map((node, index) => {
         return {
           id: node.id,
-          name: `${node.name} (${node.level === 0 ? node.appId : node.configId}) (${node.completionPercentage}%)`,
+          name: `${node.name} (${node.level === 0 ? node.appId : (node.configId || node.appGroupId)}) (${node.completionPercentage}%)`,
           progress: node.completionPercentage,
           level: index === 0 ? 'app' : 'workflow',
           onClick: (n: HierarchyNode) => handleBreadcrumbNavigation(n, index)
@@ -326,16 +326,29 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       let appId: string | number | null = null;
       let configId: string | number | null = null;
 
-      // The most reliable source for configId is the URL itself.
-      if (router && router.query && router.query.workflowId) {
-        configId = router.query.workflowId as string;
-      }
-
       // The most reliable source for appId is the breadcrumb context or applicationData prop.
       if (breadcrumbState.nodes && breadcrumbState.nodes.length > 0) {
         appId = breadcrumbState.nodes[0].appId;
+        
+        // The most reliable source for configId is the last node in the breadcrumb.
+        const lastNode = breadcrumbState.nodes[breadcrumbState.nodes.length - 1];
+        if (lastNode) {
+          // Prioritize configId, then appGroupId as per user feedback, then fallback to id.
+          if (lastNode.configId) {
+            configId = lastNode.configId;
+          } else if (lastNode.appGroupId) {
+            configId = lastNode.appGroupId;
+          } else if (lastNode.id && lastNode.level > 0) {
+            configId = lastNode.id;
+          }
+        }
       } else if (applicationData && applicationData.appId) {
         appId = applicationData.appId;
+      }
+
+      // Fallback to router query if breadcrumb didn't provide configId
+      if (!configId && router && router.query && router.query.workflowId) {
+        configId = router.query.workflowId as string;
       }
 
       // If we still don't have IDs, log everything for debugging and show an error.
