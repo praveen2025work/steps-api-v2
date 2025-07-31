@@ -2,7 +2,6 @@ import React from "react";
 import Head from "next/head";
 import DashboardLayout from "@/components/DashboardLayout";
 import ApplicationsGrid from "@/components/ApplicationsGrid";
-import ManagementBoard from "@/components/ManagementBoard";
 
 export default function Dashboard() {
   return (
@@ -17,9 +16,6 @@ export default function Dashboard() {
         <div className="space-y-8 px-1">
           {/* Applications Grid */}
           <ApplicationsGrid />
-          
-          {/* Management Board with Performance Overview, Compliance Chart, and Pending Approvals */}
-          <ManagementBoard />
         </div>
       </DashboardLayout>
     </>

@@ -265,10 +265,6 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
     <div className="flex flex-col h-screen w-full">
       <div className="flex items-center justify-between p-3 border-b bg-muted/30">
         <div className="flex items-center">
-          <Button variant="ghost" size="sm" onClick={onBack} className="mr-2">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
           <h1 className="text-lg font-semibold flex items-center">
             <GitBranch className="h-5 w-5 mr-2 text-blue-600" />
             {workflow.title} - Step Function View

@@ -749,16 +749,6 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
         <CardHeader className="pb-2 pt-3">
           <div className="flex flex-wrap justify-between items-center gap-2">
             <div className="flex items-center gap-2">
-              {onBack && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={onBack}
-                  className="h-8 w-8 p-0"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              )}
               <div>
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-lg">{workflow.title}</CardTitle>

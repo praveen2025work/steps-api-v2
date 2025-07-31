@@ -848,8 +848,9 @@ const ApplicationsGrid = () => {
     setViewMode(mode);
   };
 
-  // Show workflow detail view if a workflow is selected
-  if (selectedWorkflow) {
+  const renderWorkflowDetail = () => {
+    if (!selectedWorkflow) return null;
+
     const workflowData = convertSummaryToWorkflowData(
       selectedWorkflow.summary,
       selectedWorkflow.application,
@@ -909,16 +910,15 @@ const ApplicationsGrid = () => {
           summaryData={selectedWorkflow.summary}
           applicationData={selectedWorkflow.application}
           nodeData={selectedWorkflow.node}
-          onBack={() => setSelectedWorkflow(null)}
-          // Pass enhanced workflow data for Modern and Step Function views
+          // onBack is removed as requested, navigation is via breadcrumb
           enhancedWorkflowData={enhancedWorkflowData}
         />
       </div>
     );
-  }
+  };
 
-  return (
-    <div className="space-y-6 pl-0">
+  const renderGridView = () => (
+    <>
       {/* Header with date and refresh */}
       <div className="flex items-center justify-between">
         <div>
@@ -938,40 +938,6 @@ const ApplicationsGrid = () => {
           Refresh
         </Button>
       </div>
-
-      {/* Breadcrumb navigation */}
-      {breadcrumbState.nodes.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleHomeNavigation}
-                className="h-auto p-1 text-blue-600 hover:text-blue-800"
-              >
-                Applications
-              </Button>
-              {breadcrumbState.nodes.map((node, index) => (
-                <React.Fragment key={node.id}>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      navigateToLevel(index);
-                      handleBreadcrumbNavigation(index, node);
-                    }}
-                    className="h-auto p-1 text-blue-600 hover:text-blue-800"
-                  >
-                    {node.name} ({node.level === 0 ? node.appId : node.configId}) ({node.completionPercentage}%)
-                  </Button>
-                </React.Fragment>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Error display */}
       {error && (
@@ -1178,6 +1144,49 @@ const ApplicationsGrid = () => {
           )}
         </div>
       )}
+    </>
+  );
+
+  return (
+    <div className="space-y-6 pl-0">
+      {/* Breadcrumb navigation - now always visible */}
+      {breadcrumbState.nodes.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleHomeNavigation}
+                className="h-auto p-1 text-blue-600 hover:text-blue-800"
+              >
+                Applications
+              </Button>
+              {breadcrumbState.nodes.map((node, index) => (
+                <React.Fragment key={node.id}>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      // Only allow navigation to previous nodes
+                      if (index < breadcrumbState.nodes.length - 1) {
+                        handleBreadcrumbNavigation(index, node);
+                      }
+                    }}
+                    className={`h-auto p-1 ${index < breadcrumbState.nodes.length - 1 ? 'text-blue-600 hover:text-blue-800' : 'text-foreground cursor-default'}`}
+                    disabled={index === breadcrumbState.nodes.length - 1}
+                  >
+                    {node.name} ({node.level === 0 ? node.appId : node.configId}) ({node.completionPercentage}%)
+                  </Button>
+                </React.Fragment>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedWorkflow ? renderWorkflowDetail() : renderGridView()}
     </div>
   );
 };
