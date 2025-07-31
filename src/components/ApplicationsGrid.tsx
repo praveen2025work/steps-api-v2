@@ -291,7 +291,7 @@ const ApplicationsGrid = () => {
   // Handle breadcrumb navigation using the new breadcrumb context
   const handleBreadcrumbNavigation = async (level: number, node?: BreadcrumbNode) => {
     // If navigating to the root, use the dedicated home navigation function
-    if (level === -1 || (node && node.level === 0)) {
+    if (level === -1) {
       handleHomeNavigation();
       return;
     }
