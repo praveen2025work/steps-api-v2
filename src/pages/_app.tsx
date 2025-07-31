@@ -7,7 +7,9 @@ import { SidebarProvider } from '@/contexts/SidebarContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { DateProvider } from '@/contexts/DateContext';
 import { ApiEnvironmentProvider } from '@/contexts/ApiEnvironmentContext';
-import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
+import { BreadcrumbProvider, useBreadcrumb } from '@/contexts/BreadcrumbContext';
+import { useDate } from '@/contexts/DateContext';
+import { workflowService } from '@/services/workflowService';
 import { toast } from 'sonner';
 
 // Create a class component for error boundary
@@ -63,31 +65,133 @@ const errorHandler = (error: Error, info: { componentStack: string }) => {
   console.error('Component Stack:', info.componentStack);
 };
 
+// This component will contain the refresh logic
+const GlobalRefreshLogic = () => {
+  const { state: breadcrumbState, setNodes: setBreadcrumbNodes } = useBreadcrumb();
+  const { selectedDate } = useDate();
+
+  useEffect(() => {
+    const formatDateForApi = (date: Date): string => {
+      const day = date.getDate();
+      const month = date.toLocaleString('en-US', { month: 'short' });
+      const year = date.getFullYear();
+      return `${day} ${month} ${year}`;
+    };
+
+    const refreshPercentages = async () => {
+      if (breadcrumbState.nodes.length === 0) {
+        return;
+      }
+
+      console.log('--- Starting Breadcrumb Refresh ---');
+      
+      const dateString = formatDateForApi(selectedDate);
+      const updatedNodes = [...breadcrumbState.nodes];
+      let changed = false;
+
+      const appResponse = await workflowService.getAllWorkflowApplications({ date: dateString });
+      const allApplications = appResponse.success ? appResponse.data : [];
+
+      for (let i = 0; i < updatedNodes.length; i++) {
+        const node = updatedNodes[i];
+        
+        if (node.isWorkflowInstance) {
+          continue;
+        }
+
+        try {
+          let newPercentage: number | undefined = undefined;
+
+          if (node.level === 0) {
+            const appData = allApplications.find(app => app.appId === node.appId);
+            if (appData) {
+              newPercentage = appData.percentageCompleted;
+              console.log(`[Refresh] App '${node.name}': ${newPercentage}%`);
+            }
+          } else {
+            const parentNode = updatedNodes[i - 1];
+            if (parentNode && !parentNode.isWorkflowInstance) {
+              console.log(`[Refresh] Fetching children for parent '${parentNode.name}'`);
+              const nodesResponse = await workflowService.getWorkflowNodes({
+                date: dateString,
+                appId: parentNode.appId!,
+                configId: parentNode.configId!,
+                currentLevel: parentNode.currentLevel!,
+                nextLevel: parentNode.nextLevel!
+              });
+
+              if (nodesResponse.success) {
+                const nodeData = nodesResponse.data.find(n => n.configId === node.configId);
+                if (nodeData) {
+                  newPercentage = nodeData.percentageCompleted;
+                  console.log(`[Refresh] Node '${node.name}': ${newPercentage}%`);
+                }
+              } else {
+                console.error(`[Refresh] Failed to fetch nodes for parent ${parentNode.name}:`, nodesResponse.error);
+              }
+            }
+          }
+
+          if (newPercentage !== undefined && node.completionPercentage !== newPercentage) {
+            updatedNodes[i] = { ...node, completionPercentage: newPercentage };
+            changed = true;
+          }
+        } catch (error) {
+          console.error(`[Refresh] Failed to refresh percentage for node ${node.name}:`, error);
+        }
+      }
+
+      if (changed) {
+        console.log('[Refresh] Breadcrumb nodes updated with new percentages.');
+        setBreadcrumbNodes(updatedNodes);
+      }
+      console.log('--- Finished Breadcrumb Refresh ---');
+    };
+
+    const intervalId = setInterval(refreshPercentages, 60000);
+
+    const handleManualRefresh = () => {
+      toast.info('Refreshing workflow data...');
+      refreshPercentages().then(() => {
+        toast.success('Workflow data refreshed successfully.');
+      }).catch((error) => {
+        toast.error('Refresh failed', {
+          description: error.message || 'Could not refresh workflow data.',
+        });
+      });
+    };
+    
+    window.addEventListener('app:refresh', handleManualRefresh);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('app:refresh', handleManualRefresh);
+    };
+  }, [breadcrumbState.nodes, selectedDate, setBreadcrumbNodes]);
+
+  return null; // This component does not render anything
+};
+
 export default function App({ Component, pageProps }: AppProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     
-    // Add global error handler with proper cleanup
     const handleGlobalError = (event: ErrorEvent) => {
       console.error('Global error caught:', event.error);
-      // Show a toast notification for the error
       toast.error('An error occurred', {
         description: 'The application encountered an error. Some features may not work correctly.',
       });
     };
     
-    // Add unhandled promise rejection handler with proper cleanup
     const handlePromiseRejection = (event: PromiseRejectionEvent) => {
       console.error('Unhandled Promise Rejection:', event.reason);
-      // Show a toast notification for the rejection
       toast.error('An async operation failed', {
         description: 'A background process failed to complete. Please try again.',
       });
     };
     
-    // Add React error handler
     const handleReactError = (event: Event) => {
       if (event.type === 'error' && (event as any).error?.message?.includes('React')) {
         console.error('React error caught:', (event as any).error);
@@ -118,6 +222,7 @@ export default function App({ Component, pageProps }: AppProps) {
             <DateProvider>
               <ApiEnvironmentProvider>
                 <BreadcrumbProvider>
+                  <GlobalRefreshLogic />
                   <div className="min-h-screen">
                     <Component {...pageProps} />
                     <Toaster />
