@@ -22,7 +22,6 @@ import {
   PanelRightClose
 } from 'lucide-react';
 import WorkflowStepFunctionDiagram from './WorkflowStepFunctionDiagram';
-import { convertWorkflowToDiagram } from '@/lib/workflowDiagramUtils';
 import StageOverview from './StageOverview';
 import AppParameters from './AppParameters';
 import GlobalParameters from './GlobalParameters';
@@ -46,8 +45,85 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
   
-  // Enhanced workflow data processing
-  const diagramData = convertWorkflowToDiagram(workflow);
+  // Generate diagram data directly from workflow prop to ensure it's dynamic
+  const diagramData = (() => {
+    const nodes: any[] = [];
+    const edges: any[] = [];
+    let yPos = 50;
+
+    if (!workflow || !workflow.stages || !workflow.tasks) {
+      return { nodes: [], edges: [] };
+    }
+
+    workflow.stages.forEach((stage: any) => {
+      const stageNodeId = `stage-${stage.id}`;
+      const stageTasks = workflow.tasks[stage.id] || [];
+      const stageHeight = stageTasks.length > 0 ? stageTasks.length * 130 + 60 : 150;
+
+      nodes.push({
+        id: stageNodeId,
+        type: 'group',
+        data: { label: stage.name },
+        position: { x: 25, y: yPos },
+        style: {
+          width: 650,
+          height: stageHeight,
+          backgroundColor: 'rgba(240, 240, 240, 0.25)',
+        },
+      });
+
+      let taskY = 80;
+      stageTasks.forEach((task: any, taskIndex: number) => {
+        const taskNodeId = `substage-${task.id}`;
+        nodes.push({
+          id: taskNodeId,
+          type: 'taskNode',
+          data: { ...task, label: task.name },
+          position: { x: 50, y: taskY },
+          parentNode: stageNodeId,
+          extent: 'parent',
+        });
+
+        // Connect tasks within the same stage
+        if (taskIndex > 0) {
+          const prevTaskNodeId = `substage-${stageTasks[taskIndex - 1].id}`;
+          edges.push({
+            id: `e-${prevTaskNodeId}-${taskNodeId}`,
+            source: prevTaskNodeId,
+            target: taskNodeId,
+            type: 'smoothstep',
+            animated: task.status === 'in_progress',
+            style: { strokeWidth: 2 },
+          });
+        }
+        taskY += 130;
+      });
+
+      yPos += stageHeight + 50;
+    });
+
+    // Connect stages
+    for (let i = 0; i < workflow.stages.length - 1; i++) {
+      const sourceStage = workflow.stages[i];
+      const targetStage = workflow.stages[i + 1];
+      const sourceTasks = workflow.tasks[sourceStage.id] || [];
+      const targetTasks = workflow.tasks[targetStage.id] || [];
+
+      if (sourceTasks.length > 0 && targetTasks.length > 0) {
+        const sourceTaskNodeId = `substage-${sourceTasks[sourceTasks.length - 1].id}`;
+        const targetTaskNodeId = `substage-${targetTasks[0].id}`;
+        edges.push({
+          id: `e-stage-${sourceStage.id}-${targetStage.id}`,
+          source: sourceTaskNodeId,
+          target: targetTaskNodeId,
+          type: 'smoothstep',
+          style: { stroke: '#adb5bd', strokeWidth: 2, strokeDasharray: '5 5' },
+        });
+      }
+    }
+
+    return { nodes, edges };
+  })();
   
   // Extract all tasks with enhanced API data support
   const allTasks = Object.values(workflow.tasks || {}).flat();
