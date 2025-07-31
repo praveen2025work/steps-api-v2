@@ -282,19 +282,25 @@ class WorkflowConfigService {
   ): Promise<T> {
     // Determine if this is a Java API call or .NET API call based on URL
     const isJavaApi = url.includes(this.environment.javaApiUrl) || url.includes(this.environment.javaBaseUrl);
+    const method = options.method || 'GET';
+
+    const headers: HeadersInit = {
+      ...(options.headers || {}),
+    };
+
+    // Only add Content-Type for methods that send a body
+    if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+      headers['Content-Type'] = 'application/json';
+      headers['Accept'] = 'application/json';
+    }
     
     const defaultOptions: RequestInit = {
-      method: 'GET',
+      method,
       mode: 'cors',
       cache: 'no-store', // Prevent browser from adding Cache-Control header
-      // Use different credentials based on API type
-      credentials: isJavaApi ? 'omit' : 'include', // Java service doesn't use Windows auth
-      ...options, // Apply passed options first
-      headers: { // Then define headers, merging defaults with passed headers
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(options.headers || {}),
-      },
+      credentials: isJavaApi ? 'omit' : 'include',
+      ...options,
+      headers,
     };
 
     try {
