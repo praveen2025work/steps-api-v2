@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { workflowConfigService } from '@/services/workflowConfigService';
+import { useMetadataManagement } from '@/hooks/useMetadataManagement';
 import type {
   WorkflowApp,
   WorkflowInstance,
@@ -104,6 +105,14 @@ interface MultiSelectSubstageModal {
 }
 
 const WorkflowConfigurationManager: React.FC = () => {
+  // Metadata hook for fetching applications
+  const { 
+    applications: workflowAppsFromHook, 
+    isLoading: isAppsLoading, 
+    error: appsError, 
+    refreshAllMetadata 
+  } = useMetadataManagement();
+
   // Core state management
   const [state, setState] = useState<WorkflowConfigState>({
     selectedAppId: null,
@@ -142,10 +151,25 @@ const WorkflowConfigurationManager: React.FC = () => {
     searchTerm: ''
   });
 
-  // Load workflow applications on component mount
+  // Sync applications from hook to state
   useEffect(() => {
-    loadWorkflowApps();
-  }, []);
+    if (workflowAppsFromHook) {
+      setState(prev => ({ ...prev, workflowApps: workflowAppsFromHook }));
+    }
+  }, [workflowAppsFromHook]);
+
+  // Handle errors from metadata hook
+  useEffect(() => {
+    if (appsError) {
+      const message = appsError.message || 'Failed to load workflow applications';
+      setState(prev => ({ ...prev, error: message, isLoading: false }));
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive"
+      });
+    }
+  }, [appsError]);
 
   // Load workflow instances when app is selected
   useEffect(() => {
@@ -174,31 +198,6 @@ const WorkflowConfigurationManager: React.FC = () => {
   }, [state.metadata, state.currentConfig]);
 
   // API Methods
-  const loadWorkflowApps = async () => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
-    try {
-      const apps = await workflowConfigService.getWorkflowApps();
-      setState(prev => ({
-        ...prev,
-        workflowApps: apps,
-        isLoading: false
-      }));
-    } catch (error: any) {
-      setState(prev => ({
-        ...prev,
-        error: error.message || 'Failed to load workflow applications',
-        isLoading: false
-      }));
-      
-      toast({
-        title: "Error",
-        description: "Failed to load workflow applications",
-        variant: "destructive"
-      });
-    }
-  };
-
   const loadWorkflowInstances = async (appId: number) => {
     setState(prev => ({ ...prev, isLoading: true }));
     
@@ -785,7 +784,9 @@ const WorkflowConfigurationManager: React.FC = () => {
     setIsRefreshing(true);
     
     try {
-      await loadWorkflowApps();
+      if (refreshAllMetadata) {
+        await refreshAllMetadata();
+      }
       
       if (state.selectedAppId) {
         await loadWorkflowInstances(state.selectedAppId);
@@ -2283,7 +2284,7 @@ const WorkflowConfigurationManager: React.FC = () => {
       )}
 
       {/* Loading State */}
-      {state.isLoading && (
+      {(state.isLoading || isAppsLoading) && (
         <div className="flex items-center justify-center py-8">
           <div className="flex items-center space-x-2">
             <Loader2 className="h-4 w-4 animate-spin" />
