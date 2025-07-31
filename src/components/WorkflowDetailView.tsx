@@ -1312,8 +1312,8 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     return (
       <ModernWorkflowView
         workflow={workflowData}
-        onBack={onBack}
-        onViewToggle={() => handleViewToggle('classic')}
+        onViewToggle={handleViewToggle}
+        viewMode={viewMode}
       />
     );
   }
@@ -1322,7 +1322,8 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     return (
       <StepFunctionView
         workflow={workflowData}
-        onBack={() => onViewToggle?.('classic')}
+        onViewToggle={handleViewToggle}
+        viewMode={viewMode}
       />
     );
   }

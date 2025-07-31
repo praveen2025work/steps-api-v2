@@ -19,7 +19,9 @@ import {
   PanelLeft,
   PanelRight,
   PanelLeftClose,
-  PanelRightClose
+  PanelRightClose,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import WorkflowStepFunctionDiagram from './WorkflowStepFunctionDiagram';
 import StageOverview from './StageOverview';
@@ -33,10 +35,11 @@ import AdvancedFilePreview from '../files/AdvancedFilePreview';
 
 interface StepFunctionViewProps {
   workflow: any;
-  onBack: () => void;
+  onViewToggle?: (mode: 'classic' | 'modern' | 'step-function') => void;
+  viewMode?: 'classic' | 'modern' | 'step-function';
 }
 
-const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack }) => {
+const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewToggle, viewMode }) => {
   const [activeTab, setActiveTab] = useState<string>("diagram");
   const [detailsTab, setDetailsTab] = useState<string>("stageOverview");
   const [selectedNode, setSelectedNode] = useState<any>(null);
@@ -276,6 +279,36 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onBack })
         </div>
         
         <div className="flex items-center gap-4">
+          {/* View toggle icons */}
+          <div className="bg-muted rounded-lg p-1 flex mr-2">
+            <Button
+              variant={viewMode === 'classic' ? 'default' : 'ghost'}
+              size="icon"
+              onClick={() => onViewToggle?.('classic')}
+              title="Classic View"
+              className="h-8 w-8"
+            >
+              <Layers className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'modern' ? 'default' : 'ghost'}
+              size="icon"
+              onClick={() => onViewToggle?.('modern')}
+              title="Modern View"
+              className="h-8 w-8"
+            >
+              <Sparkles className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'step-function' ? 'default' : 'ghost'}
+              size="icon"
+              onClick={() => onViewToggle?.('step-function')}
+              title="Step Function View"
+              className="h-8 w-8"
+            >
+              <GitBranch className="h-4 w-4" />
+            </Button>
+          </div>
           {/* Enhanced status indicators */}
           <div className="flex items-center gap-2 text-sm">
             <div className="flex items-center gap-1">

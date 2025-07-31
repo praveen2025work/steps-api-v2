@@ -51,14 +51,14 @@ import {
 
 interface ModernWorkflowViewProps {
   workflow: any;
-  onBack?: () => void;
-  onViewToggle?: () => void;
+  onViewToggle?: (mode: 'classic' | 'modern' | 'step-function') => void;
+  viewMode?: 'classic' | 'modern' | 'step-function';
 }
 
 const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   workflow,
-  onBack,
-  onViewToggle
+  onViewToggle,
+  viewMode
 }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -762,21 +762,31 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
               {/* View toggle icons */}
               <div className="bg-muted rounded-lg p-1 flex mr-2">
                 <Button
-                  variant="ghost"
+                  variant={viewMode === 'classic' ? 'default' : 'ghost'}
                   size="icon"
-                  onClick={onViewToggle}
+                  onClick={() => onViewToggle?.('classic')}
                   title="Classic View"
                   className="h-8 w-8"
                 >
                   <Layers className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="default"
+                  variant={viewMode === 'modern' ? 'default' : 'ghost'}
                   size="icon"
+                  onClick={() => onViewToggle?.('modern')}
                   title="Modern View"
                   className="h-8 w-8"
                 >
                   <Sparkles className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'step-function' ? 'default' : 'ghost'}
+                  size="icon"
+                  onClick={() => onViewToggle?.('step-function')}
+                  title="Step Function View"
+                  className="h-8 w-8"
+                >
+                  <GitBranch className="h-4 w-4" />
                 </Button>
               </div>
               <Button variant="outline" size="sm" className="gap-1">
