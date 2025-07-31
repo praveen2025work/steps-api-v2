@@ -1228,8 +1228,8 @@ const ApplicationsGrid = () => {
 
   return (
     <div className="space-y-6 pl-0">
-      {/* Breadcrumb navigation - now always visible */}
-      {breadcrumbState.nodes.length > 0 && (
+      {/* Breadcrumb navigation - only shown when not in detail view */}
+      {breadcrumbState.nodes.length > 0 && !selectedWorkflow && (
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-sm">
