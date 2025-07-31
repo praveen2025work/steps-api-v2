@@ -190,7 +190,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   onBack,
   enhancedWorkflowData
 }) => {
-  const { state: breadcrumbState, navigateToLevel } = useBreadcrumb();
+  const { state: breadcrumbState, navigateToLevel, replaceNodes } = useBreadcrumb();
   const { selectedDate } = useDate();
   const [activeStage, setActiveStage] = useState<string>(stages[0]?.id || '');
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -315,7 +315,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     }, 100);
   }, [preservedState, activeTab, selectedSubStage, rightPanelContent, showFilePreview]);
 
-  // Enhanced refresh with data fetching
+  // Enhanced refresh with data fetching for main view and all breadcrumb nodes
   const handleRefresh = useCallback(async (isManualRefresh: boolean = false) => {
     if (isRefreshing) return; // Prevent multiple simultaneous refreshes
     
@@ -323,69 +323,79 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     preserveUIState();
     
     try {
-      let appId: string | number | null = null;
-      let configId: string | number | null = null;
-
-      // The most reliable source for appId is the breadcrumb context or applicationData prop.
-      if (breadcrumbState.nodes && breadcrumbState.nodes.length > 0) {
-        appId = breadcrumbState.nodes[0].appId;
-        
-        // The most reliable source for configId is the last node in the breadcrumb.
-        const lastNode = breadcrumbState.nodes[breadcrumbState.nodes.length - 1];
-        if (lastNode) {
-          // Prioritize configId, then appGroupId as per user feedback, then fallback to id.
-          if (lastNode.configId) {
-            configId = lastNode.configId;
-          } else if (lastNode.appGroupId) {
-            configId = lastNode.appGroupId;
-          } else if (lastNode.id && lastNode.level > 0) {
-            configId = lastNode.id;
-          }
-        }
-      } else if (applicationData && applicationData.appId) {
-        appId = applicationData.appId;
-      }
-
-      // Fallback to router query if breadcrumb didn't provide configId
-      if (!configId && router && router.query && router.query.workflowId) {
-        configId = router.query.workflowId as string;
-      }
-
-      // If we still don't have IDs, log everything for debugging and show an error.
-      if (!appId || !configId) {
-        console.error("--- REFRESH DEBUG ---");
-        console.error("Refresh failed because required IDs could not be determined.");
-        console.log("Determined appId:", appId);
-        console.log("Determined configId:", configId);
-        console.log("Source: router.query.workflowId:", router?.query?.workflowId);
-        console.log("Source: breadcrumbState.nodes:", breadcrumbState.nodes);
-        console.log("Source: applicationData prop:", applicationData);
-        showErrorToast("Refresh failed: Missing application or configuration ID.");
-        setIsRefreshing(false);
-        return;
-      }
-
       const dateString = selectedDate
         ? selectedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '')
         : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
 
-      const response = await workflowService.getWorkflowSummary({
-        date: dateString,
-        configId: configId.toString(),
-        appId: appId.toString(),
-      });
+      // Refresh breadcrumb nodes and get data for the current view
+      if (breadcrumbState.nodes && breadcrumbState.nodes.length > 0 && replaceNodes) {
+        const appId = breadcrumbState.nodes[0].appId;
 
-      if (response.success) {
-        (window as any).currentWorkflowSummary = response.data;
-        setLastRefreshed(new Date());
-        setCountdown(refreshInterval);
-        setTimeout(restoreUIState, 200);
-        if (isManualRefresh) {
-          showSuccessToast("Workflow data refreshed successfully");
+        if (appId) {
+          let lastNodeSummaryResponse: any = null;
+
+          const updatedNodesPromises = breadcrumbState.nodes.map(async (node, index) => {
+            const configId = node.configId || node.appGroupId || (node.level > 0 ? node.id : null);
+            
+            if (!configId) {
+                console.warn(`Cannot refresh breadcrumb node "${node.name}" without a configId.`);
+                return node;
+            }
+
+            try {
+              const response = await workflowService.getWorkflowSummary({
+                date: dateString,
+                configId: configId.toString(),
+                appId: appId.toString(),
+              });
+
+              if (index === breadcrumbState.nodes.length - 1) {
+                lastNodeSummaryResponse = response; // This is for the main view
+              }
+
+              if (response.success && response.data) {
+                const processData = response.data.processData;
+                let completionPercentage = node.completionPercentage;
+                if (processData && processData.length > 0) {
+                  const totalProcesses = processData.length;
+                  const completedProcesses = processData.filter((p: any) => p.status === 'COMPLETED' || p.status === 'completed').length;
+                  completionPercentage = totalProcesses > 0 ? Math.round((completedProcesses / totalProcesses) * 100) : 0;
+                }
+                return { ...node, completionPercentage };
+              }
+            } catch (e) {
+              console.error(`Failed to refresh breadcrumb node ${node.name}`, e);
+            }
+            return node; // Return original node on failure
+          });
+
+          const updatedNodes = await Promise.all(updatedNodesPromises);
+          replaceNodes(updatedNodes);
+
+          // Update main view with the data from the last node
+          if (lastNodeSummaryResponse) {
+            if (lastNodeSummaryResponse.success) {
+              (window as any).currentWorkflowSummary = lastNodeSummaryResponse.data;
+              if (isManualRefresh) {
+                showSuccessToast("Workflow data refreshed successfully");
+              }
+            } else {
+              showErrorToast(`Failed to refresh data: ${lastNodeSummaryResponse.error}`);
+            }
+          }
+        } else {
+            showErrorToast("Refresh failed: Missing application ID in breadcrumb.");
         }
       } else {
-        showErrorToast(`Failed to refresh data: ${response.error}`);
+        // Fallback or if no breadcrumb
+        showErrorToast("Refresh failed: Breadcrumb context not available.");
       }
+
+      // This part is now common
+      setLastRefreshed(new Date());
+      setCountdown(refreshInterval);
+      setTimeout(restoreUIState, 200);
+
     } catch (error: any) {
       showErrorToast(`Refresh failed: ${error.message}`);
       console.error("--- REFRESH EXCEPTION ---", error);
@@ -398,9 +408,8 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     restoreUIState,
     selectedDate,
     refreshInterval,
-    applicationData,
     breadcrumbState.nodes,
-    router,
+    replaceNodes,
   ]);
 
   // Toggle workflow lock state
@@ -780,20 +789,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     }
   }, [activeStage, tasks, buildDependencyMap, handleDependencyClick]);
 
-  // Set up auto-refresh effect
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          handleRefresh();
-          return 15;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, []);
+
 
   // Enhanced hierarchy node click handler to properly navigate between levels
   const handleHierarchyNodeClick = (node: HierarchyNode) => {
