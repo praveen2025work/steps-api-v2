@@ -44,6 +44,10 @@ const DynamicWorkflowPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+
     const initializeWorkflowView = async () => {
       if (!appId || !configId || !workflowId) {
         setIsLoading(false);
@@ -105,7 +109,7 @@ const DynamicWorkflowPage: React.FC = () => {
     };
 
     initializeWorkflowView();
-  }, [appId, configId, workflowId, selectedDate, buildPath, formatDateForApi]);
+  }, [router.isReady, appId, configId, workflowId, selectedDate, buildPath, formatDateForApi]);
   
   // Convert query parameters to proper types
   const applicationId = appId ? parseInt(appId as string) : undefined;
