@@ -290,11 +290,9 @@ const ApplicationsGrid = () => {
 
   // Handle breadcrumb navigation using the new breadcrumb context
   const handleBreadcrumbNavigation = async (level: number, node?: BreadcrumbNode) => {
-    if (level === -1) {
-      // Navigate back to applications list
-      reset();
-      setCurrentNodes([]);
-      setSelectedWorkflow(null);
+    // If navigating to the root, use the dedicated home navigation function
+    if (level === -1 || (node && node.level === 0)) {
+      handleHomeNavigation();
       return;
     }
     
@@ -305,6 +303,7 @@ const ApplicationsGrid = () => {
     setLoading(true);
     
     try {
+      // For any other level, fetch the corresponding nodes
       const response = await workflowService.getWorkflowNodes({
         date: dateString,
         appId: node.appId!,
@@ -315,7 +314,10 @@ const ApplicationsGrid = () => {
       
       if (response.success) {
         setCurrentNodes(response.data);
-        setSelectedWorkflow(null);
+        setSelectedWorkflow(null); // Ensure we are not showing a detailed view
+        
+        // Trim the breadcrumb path to the selected level
+        navigateToLevel(level);
       } else {
         setNodeError(response.error || 'Failed to load workflow nodes');
         setError(response.error || 'Failed to load workflow nodes');
