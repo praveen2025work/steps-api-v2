@@ -334,6 +334,7 @@ const ApplicationsGrid = () => {
     reset();
     setCurrentNodes([]);
     setSelectedWorkflow(null);
+    refresh(); // Re-fetch the list of applications
   };
 
   // Convert workflow summary to WorkflowDetailView format
@@ -944,7 +945,7 @@ const ApplicationsGrid = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleBreadcrumbNavigation(-1)}
+                onClick={handleHomeNavigation}
                 className="h-auto p-1 text-blue-600 hover:text-blue-800"
               >
                 Applications
