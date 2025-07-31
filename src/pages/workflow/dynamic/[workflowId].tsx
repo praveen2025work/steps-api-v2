@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/DashboardLayout';
 import DynamicWorkflowDetailView from '@/components/DynamicWorkflowDetailView';
-import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
+import { useBreadcrumb, BreadcrumbNode } from '@/contexts/BreadcrumbContext';
 import { useDate } from '@/contexts/DateContext';
 import { workflowService } from '@/services/workflowService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,62 +18,99 @@ import {
   Settings,
   Info,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
+import { showErrorToast } from '@/lib/toast';
 
 const DynamicWorkflowPage: React.FC = () => {
   const router = useRouter();
-  const { state: breadcrumbState, navigateToLevel, reset } = useBreadcrumb();
+  const { state: breadcrumbState, navigateToLevel, reset, buildPath } = useBreadcrumb();
   const { selectedDate } = useDate();
   const [viewMode, setViewMode] = useState<'classic' | 'alternative'>('classic');
   const [applicationData, setApplicationData] = useState<any | null>(null);
-  const [isLoadingApp, setIsLoadingApp] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [workflowTitle, setWorkflowTitle] = useState('');
 
   // Get parameters from router
   const { workflowId, appId, configId, currentLevel, nextLevel } = router.query;
 
+  const formatDateForApi = useCallback((date: Date): string => {
+    const day = date.getDate();
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  }, []);
+
   useEffect(() => {
-    const fetchApplicationData = async () => {
-      if (!appId) {
-        setIsLoadingApp(false);
+    const initializeWorkflowView = async () => {
+      if (!appId || !configId || !workflowId) {
+        setIsLoading(false);
         return;
       }
-      setIsLoadingApp(true);
+      setIsLoading(true);
       try {
-        const dateString = selectedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
-        const response = await workflowService.getAllWorkflowApplications(dateString);
-        if (response.success) {
-          const app = response.data.find((a: any) => a.appId.toString() === appId);
-          setApplicationData(app || null);
-        } else {
-          console.error("Failed to fetch application data:", response.error);
-          setApplicationData(null);
+        const dateString = formatDateForApi(selectedDate);
+        const appIdNum = parseInt(appId as string);
+
+        // Step 1: Fetch all applications to find the root application name
+        const appResponse = await workflowService.getAllWorkflowApplications(dateString);
+        let appName = 'Application';
+        if (appResponse.success) {
+          const app = appResponse.data.find((a: any) => a.appId === appIdNum);
+          if (app) {
+            appName = app.appName;
+            setApplicationData(app);
+          }
         }
+
+        // Step 2: Fetch nodes to build the breadcrumb path
+        // This is a simplified version. A real implementation might need to recursively fetch
+        // nodes if the full path isn't available from a single API call.
+        // For now, we assume we can construct a basic path.
+        
+        const workflowName = (workflowId as string)
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        setWorkflowTitle(workflowName);
+
+        // Step 3: Build and set the breadcrumb
+        const nodes: BreadcrumbNode[] = [
+          {
+            id: `app-${appId}`,
+            name: appName,
+            level: 0,
+            appId: appIdNum,
+            configId: appId as string,
+          },
+          {
+            id: configId as string,
+            name: workflowName,
+            level: 1,
+            appId: appIdNum,
+            configId: configId as string,
+            isWorkflowInstance: true,
+          }
+        ];
+        buildPath(nodes);
+
       } catch (error) {
-        console.error("Error fetching application data:", error);
-        setApplicationData(null);
+        console.error("Error initializing workflow view:", error);
+        showErrorToast("Failed to load workflow context.");
       } finally {
-        setIsLoadingApp(false);
+        setIsLoading(false);
       }
     };
 
-    fetchApplicationData();
-  }, [appId, selectedDate]);
+    initializeWorkflowView();
+  }, [appId, configId, workflowId, selectedDate, buildPath, formatDateForApi]);
   
   // Convert query parameters to proper types
   const applicationId = appId ? parseInt(appId as string) : undefined;
   const parsedCurrentLevel = currentLevel ? parseInt(currentLevel as string) : undefined;
   const parsedNextLevel = nextLevel ? parseInt(nextLevel as string) : undefined;
-  const workflowIdString = workflowId as string || '';
-
-  // Generate workflow title from ID
-  const workflowTitle = breadcrumbState.nodes.length > 0 
-    ? breadcrumbState.nodes[breadcrumbState.nodes.length - 1].name
-    : workflowIdString
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
 
   const handleViewToggle = (mode: 'classic' | 'alternative') => {
     setViewMode(mode);
@@ -234,8 +271,11 @@ const DynamicWorkflowPage: React.FC = () => {
               </Card>
             )}
             
-            {isLoadingApp ? (
-              <p>Loading application data...</p>
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <p className="ml-4">Loading workflow context...</p>
+              </div>
             ) : (
               <DynamicWorkflowDetailView
                 workflowTitle={workflowTitle}

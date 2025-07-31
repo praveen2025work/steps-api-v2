@@ -587,6 +587,8 @@ const DynamicWorkflowDetailView: React.FC<DynamicWorkflowDetailViewProps> = ({
           terminalNodes: workflowData.terminalNodes,
           workflowSummaries: workflowData.workflowSummaries,
         }}
+        applicationId={applicationId}
+        configId={configId}
       />
     </div>
   );
