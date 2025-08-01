@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   AlertCircle, 
   RefreshCw, 
@@ -2040,6 +2041,7 @@ const WorkflowConfigurationManager: React.FC = () => {
 
     return (
       <div className="h-full flex flex-col">
+        {/* Header */}
         <div className="p-4 border-b">
           <div className="flex items-center justify-between">
             <div>
@@ -2058,367 +2060,536 @@ const WorkflowConfigurationManager: React.FC = () => {
           </div>
         </div>
 
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-6">
-            {/* Basic Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Basic Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={config.isactive === 'Y'}
-                      onCheckedChange={(checked) => 
-                        handleSubstageUpdate('isactive', checked ? 'Y' : 'N')
-                      }
-                    />
-                    <Label>Active</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={config.auto === 'Y'}
-                      onCheckedChange={(checked) => 
-                        handleSubstageUpdate('auto', checked ? 'Y' : 'N')
-                      }
-                    />
-                    <Label>Auto</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={config.adhoc === 'Y'}
-                      onCheckedChange={(checked) => 
-                        handleSubstageUpdate('adhoc', checked ? 'Y' : 'N')
-                      }
-                    />
-                    <Label>Adhoc</Label>
-                  </div>
-                  
-                  {/* Only show approval, attestation, and upload if not auto type */}
-                  {!isAutoType && (
-                    <>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={config.approval === 'Y'}
-                          onCheckedChange={(checked) => 
-                            handleSubstageUpdate('approval', checked ? 'Y' : 'N')
-                          }
-                        />
-                        <Label>Approval</Label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={config.attest === 'Y'}
-                          onCheckedChange={(checked) => 
-                            handleSubstageUpdate('attest', checked ? 'Y' : 'N')
-                          }
-                        />
-                        <Label>Attestation</Label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={config.upload === 'Y'}
-                          onCheckedChange={(checked) => 
-                            handleSubstageUpdate('upload', checked ? 'Y' : 'N')
-                          }
-                        />
-                        <Label>Upload</Label>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={config.isalteryx === 'Y'}
-                      onCheckedChange={(checked) => 
-                        handleSubstageUpdate('isalteryx', checked ? 'Y' : 'N')
-                      }
-                    />
-                    <Label>Alteryx</Label>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Sequence</Label>
-                  <Input
-                    type="number"
-                    value={config.substageSeq}
-                    onChange={(e) => handleSubstageUpdate('substageSeq', parseInt(e.target.value) || 1)}
-                    min={1}
-                    max={state.currentConfig.filter(c => {
-                      const cStageId = typeof c.workflowStage === 'object' 
-                        ? c.workflowStage.stageId 
-                        : c.workflowStage;
-                      const configStageId = typeof config.workflowStage === 'object' 
-                        ? config.workflowStage.stageId 
-                        : config.workflowStage;
-                      return cStageId === configStageId;
-                    }).length}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Dependencies */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center space-x-2">
+        {/* Tabbed Content */}
+        <div className="flex-1 overflow-hidden">
+          <Tabs defaultValue="settings" className="h-full flex flex-col">
+            <div className="px-4 pt-4">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="settings" className="flex items-center space-x-1">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline">Settings</span>
+                </TabsTrigger>
+                <TabsTrigger value="parameters" className="flex items-center space-x-1" disabled={availableParameters.length === 0}>
+                  <Database className="h-4 w-4" />
+                  <span className="hidden sm:inline">Parameters</span>
+                </TabsTrigger>
+                <TabsTrigger value="attestations" className="flex items-center space-x-1" disabled={config.attest !== 'Y' || availableAttestations.length === 0}>
+                  <CheckSquare className="h-4 w-4" />
+                  <span className="hidden sm:inline">Attestations</span>
+                </TabsTrigger>
+                <TabsTrigger value="files" className="flex items-center space-x-1" disabled={config.upload !== 'Y'}>
+                  <Upload className="h-4 w-4" />
+                  <span className="hidden sm:inline">Files</span>
+                </TabsTrigger>
+                <TabsTrigger value="dependencies" className="flex items-center space-x-1">
                   <Link className="h-4 w-4" />
-                  <span>Dependencies</span>
-                </CardTitle>
-                <CardDescription>
-                  Select substages that must complete before this one can start
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {availableDependencies.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No available dependencies (no prior substages)
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {availableDependencies.map((dep, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={selectedDependencies.includes(dep.workflowSubstage.substageId)}
-                          onCheckedChange={(checked) => {
-                            const currentDeps = config.workflowAppConfigDeps || [];
-                            let newDeps;
-                            
-                            if (checked) {
-                              newDeps = [...currentDeps, {
-                                id: {
-                                  workflowAppConfigId: config.workflowAppConfigId,
-                                  dependencySubstageId: dep.workflowSubstage.substageId
-                                }
-                              }];
-                            } else {
-                              newDeps = currentDeps.filter(d => 
-                                d.id.dependencySubstageId !== dep.workflowSubstage.substageId
-                              );
-                            }
-                            
-                            handleSubstageUpdate('workflowAppConfigDeps', newDeps);
-                          }}
-                        />
-                        <Label className="text-sm">
-                          {dep.substageSeq}. {dep.workflowSubstage.name}
-                        </Label>
-                        <Badge variant="outline" className="text-xs">
-                          {typeof dep.workflowStage === 'object' ? dep.workflowStage.name : 'Stage'}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  <span className="hidden sm:inline">Dependencies</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            {/* Parameters - Only show if paramMapping exists */}
-            {availableParameters.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center space-x-2">
-                    <Settings className="h-4 w-4" />
-                    <span>Parameters</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Configure parameters for this substage
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {availableParameters.map(param => {
-                      const currentParam = config.workflowAppConfigParams?.find(p => 
-                        p.name === param.name
-                      );
-                      
-                      return (
-                        <div key={param.paramId} className="space-y-2">
-                          <Label className="text-sm font-medium">{param.name}</Label>
-                          {param.description && (
-                            <p className="text-xs text-muted-foreground">{param.description}</p>
-                          )}
-                          <Input
-                            value={currentParam?.value || ''}
-                            onChange={(e) => {
-                              const currentParams = config.workflowAppConfigParams || [];
-                              const paramIndex = currentParams.findIndex(p => p.name === param.name);
-                              
-                              let newParams;
-                              if (paramIndex >= 0) {
-                                newParams = [...currentParams];
-                                newParams[paramIndex].value = e.target.value;
-                              } else {
-                                newParams = [...currentParams, {
-                                  id: {
-                                    workflowAppConfigId: config.workflowAppConfigId,
-                                    name: param.name
-                                  },
-                                  name: param.name,
-                                  value: e.target.value
-                                }];
+            {/* Settings Tab */}
+            <TabsContent value="settings" className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full px-4 pb-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center space-x-2">
+                      <Settings className="h-4 w-4" />
+                      <span>Substage Settings</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Configure basic settings and behavior for this substage
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Toggle Settings */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-medium text-muted-foreground">Behavior Settings</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={config.isactive === 'Y'}
+                            onCheckedChange={(checked) => 
+                              handleSubstageUpdate('isactive', checked ? 'Y' : 'N')
+                            }
+                          />
+                          <div>
+                            <Label>Active</Label>
+                            <p className="text-xs text-muted-foreground">Enable this substage</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={config.auto === 'Y'}
+                            onCheckedChange={(checked) => 
+                              handleSubstageUpdate('auto', checked ? 'Y' : 'N')
+                            }
+                          />
+                          <div>
+                            <Label>Auto</Label>
+                            <p className="text-xs text-muted-foreground">Run automatically</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={config.adhoc === 'Y'}
+                            onCheckedChange={(checked) => 
+                              handleSubstageUpdate('adhoc', checked ? 'Y' : 'N')
+                            }
+                          />
+                          <div>
+                            <Label>Adhoc</Label>
+                            <p className="text-xs text-muted-foreground">Allow manual execution</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={config.isalteryx === 'Y'}
+                            onCheckedChange={(checked) => 
+                              handleSubstageUpdate('isalteryx', checked ? 'Y' : 'N')
+                            }
+                          />
+                          <div>
+                            <Label>Alteryx</Label>
+                            <p className="text-xs text-muted-foreground">Uses Alteryx workflow</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Conditional Settings - Only show if not auto type */}
+                    {!isAutoType && (
+                      <div className="space-y-4">
+                        <Separator />
+                        <h4 className="text-sm font-medium text-muted-foreground">Process Controls</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={config.approval === 'Y'}
+                              onCheckedChange={(checked) => 
+                                handleSubstageUpdate('approval', checked ? 'Y' : 'N')
                               }
+                            />
+                            <div>
+                              <Label>Approval</Label>
+                              <p className="text-xs text-muted-foreground">Requires approval to proceed</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={config.attest === 'Y'}
+                              onCheckedChange={(checked) => 
+                                handleSubstageUpdate('attest', checked ? 'Y' : 'N')
+                              }
+                            />
+                            <div>
+                              <Label>Attestation</Label>
+                              <p className="text-xs text-muted-foreground">Requires attestation</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={config.upload === 'Y'}
+                              onCheckedChange={(checked) => 
+                                handleSubstageUpdate('upload', checked ? 'Y' : 'N')
+                              }
+                            />
+                            <div>
+                              <Label>Upload</Label>
+                              <p className="text-xs text-muted-foreground">Allows file uploads</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sequence Setting */}
+                    <div className="space-y-4">
+                      <Separator />
+                      <h4 className="text-sm font-medium text-muted-foreground">Execution Order</h4>
+                      <div className="space-y-2">
+                        <Label>Sequence Number</Label>
+                        <Input
+                          type="number"
+                          value={config.substageSeq}
+                          onChange={(e) => handleSubstageUpdate('substageSeq', parseInt(e.target.value) || 1)}
+                          min={1}
+                          max={state.currentConfig.filter(c => {
+                            const cStageId = typeof c.workflowStage === 'object' 
+                              ? c.workflowStage.stageId 
+                              : c.workflowStage;
+                            const configStageId = typeof config.workflowStage === 'object' 
+                              ? config.workflowStage.stageId 
+                              : config.workflowStage;
+                            return cStageId === configStageId;
+                          }).length}
+                          className="w-32"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Order of execution within the stage (1-{state.currentConfig.filter(c => {
+                            const cStageId = typeof c.workflowStage === 'object' 
+                              ? c.workflowStage.stageId 
+                              : c.workflowStage;
+                            const configStageId = typeof config.workflowStage === 'object' 
+                              ? config.workflowStage.stageId 
+                              : config.workflowStage;
+                            return cStageId === configStageId;
+                          }).length})
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </ScrollArea>
+            </TabsContent>
+
+            {/* Parameters Tab */}
+            <TabsContent value="parameters" className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full px-4 pb-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center space-x-2">
+                      <Database className="h-4 w-4" />
+                      <span>Parameters</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Configure parameters for this substage based on available mappings
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {availableParameters.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Database className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-2 text-lg font-semibold">No Parameters Available</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          No parameters are mapped to this substage.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {availableParameters.map(param => {
+                          const currentParam = config.workflowAppConfigParams?.find(p => 
+                            p.name === param.name
+                          );
+                          
+                          return (
+                            <div key={param.paramId} className="space-y-2 p-4 border rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-sm font-medium">{param.name}</Label>
+                                <Badge variant="outline" className="text-xs">
+                                  {param.paramType}
+                                </Badge>
+                              </div>
+                              {param.description && (
+                                <p className="text-xs text-muted-foreground">{param.description}</p>
+                              )}
+                              <Input
+                                value={currentParam?.value || ''}
+                                onChange={(e) => {
+                                  const currentParams = config.workflowAppConfigParams || [];
+                                  const paramIndex = currentParams.findIndex(p => p.name === param.name);
+                                  
+                                  let newParams;
+                                  if (paramIndex >= 0) {
+                                    newParams = [...currentParams];
+                                    newParams[paramIndex].value = e.target.value;
+                                  } else {
+                                    newParams = [...currentParams, {
+                                      id: {
+                                        workflowAppConfigId: config.workflowAppConfigId,
+                                        name: param.name
+                                      },
+                                      name: param.name,
+                                      value: e.target.value
+                                    }];
+                                  }
+                                  
+                                  handleSubstageUpdate('workflowAppConfigParams', newParams);
+                                }}
+                                placeholder={`Enter ${param.name}`}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </ScrollArea>
+            </TabsContent>
+
+            {/* Attestations Tab */}
+            <TabsContent value="attestations" className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full px-4 pb-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center space-x-2">
+                      <CheckSquare className="h-4 w-4" />
+                      <span>Attestations</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Select required attestations for this substage
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {config.attest !== 'Y' ? (
+                      <div className="text-center py-8">
+                        <CheckSquare className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-2 text-lg font-semibold">Attestation Not Enabled</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Enable attestation in Settings tab to configure attestations.
+                        </p>
+                      </div>
+                    ) : availableAttestations.length === 0 ? (
+                      <div className="text-center py-8">
+                        <CheckSquare className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-2 text-lg font-semibold">No Attestations Available</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          No attestations are mapped to this substage.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {availableAttestations.map(attest => (
+                          <div key={attest.attestationId} className="flex items-start space-x-3 p-4 border rounded-lg">
+                            <Checkbox
+                              checked={config.workflowAttests?.some(a => 
+                                a.attestationId === attest.attestationId
+                              ) || false}
+                              onCheckedChange={(checked) => {
+                                const currentAttests = config.workflowAttests || [];
+                                let newAttests;
+                                
+                                if (checked) {
+                                  newAttests = [...currentAttests, attest];
+                                } else {
+                                  newAttests = currentAttests.filter(a => 
+                                    a.attestationId !== attest.attestationId
+                                  );
+                                }
+                                
+                                handleSubstageUpdate('workflowAttests', newAttests);
+                              }}
+                            />
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-sm font-medium">{attest.name}</Label>
+                                <Badge variant="outline" className="text-xs">
+                                  {attest.type}
+                                </Badge>
+                              </div>
+                              {attest.description && (
+                                <p className="text-xs text-muted-foreground">{attest.description}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </ScrollArea>
+            </TabsContent>
+
+            {/* File Upload Tab */}
+            <TabsContent value="files" className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full px-4 pb-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center space-x-2">
+                      <Upload className="h-4 w-4" />
+                      <span>File Upload Configuration</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Configure file upload settings and requirements
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {config.upload !== 'Y' ? (
+                      <div className="text-center py-8">
+                        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-2 text-lg font-semibold">File Upload Not Enabled</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Enable file upload in Settings tab to configure file settings.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <Label>File Pattern</Label>
+                          <Input
+                            placeholder="e.g., *.xlsx, *.csv, *.pdf"
+                            value={config.workflowAppConfigFiles?.[0]?.value || ''}
+                            onChange={(e) => {
+                              const currentFiles = config.workflowAppConfigFiles || [];
+                              const newFiles = currentFiles.length > 0 
+                                ? currentFiles.map(file => ({ ...file, value: e.target.value }))
+                                : [{
+                                    id: {
+                                      workflowAppConfigId: config.workflowAppConfigId,
+                                      name: 'filePattern',
+                                      paramType: 'FILE'
+                                    },
+                                    name: 'filePattern',
+                                    paramType: 'FILE',
+                                    value: e.target.value,
+                                    description: 'File pattern for uploads',
+                                    required: 'Y',
+                                    emailFile: 'N',
+                                    fileUpload: 'Y'
+                                  }];
                               
-                              handleSubstageUpdate('workflowAppConfigParams', newParams);
+                              handleSubstageUpdate('workflowAppConfigFiles', newFiles);
                             }}
-                            placeholder={`Enter ${param.name}`}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Specify allowed file types using patterns (e.g., *.xlsx for Excel files)
+                          </p>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-medium text-muted-foreground">File Options</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={config.workflowAppConfigFiles?.[0]?.required === 'Y'}
+                                onCheckedChange={(checked) => {
+                                  const currentFiles = config.workflowAppConfigFiles || [];
+                                  const newFiles = currentFiles.map(file => ({
+                                    ...file,
+                                    required: checked ? 'Y' : 'N'
+                                  }));
+                                  handleSubstageUpdate('workflowAppConfigFiles', newFiles);
+                                }}
+                              />
+                              <div>
+                                <Label>Required</Label>
+                                <p className="text-xs text-muted-foreground">File upload is mandatory</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={config.workflowAppConfigFiles?.[0]?.emailFile === 'Y'}
+                                onCheckedChange={(checked) => {
+                                  const currentFiles = config.workflowAppConfigFiles || [];
+                                  const newFiles = currentFiles.map(file => ({
+                                    ...file,
+                                    emailFile: checked ? 'Y' : 'N'
+                                  }));
+                                  handleSubstageUpdate('workflowAppConfigFiles', newFiles);
+                                }}
+                              />
+                              <div>
+                                <Label>Email File</Label>
+                                <p className="text-xs text-muted-foreground">Send file via email</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Description</Label>
+                          <Textarea
+                            placeholder="Describe the file upload requirements, formats, or any special instructions..."
+                            value={config.workflowAppConfigFiles?.[0]?.description || ''}
+                            onChange={(e) => {
+                              const currentFiles = config.workflowAppConfigFiles || [];
+                              const newFiles = currentFiles.map(file => ({
+                                ...file,
+                                description: e.target.value
+                              }));
+                              handleSubstageUpdate('workflowAppConfigFiles', newFiles);
+                            }}
+                            rows={4}
                           />
                         </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Attestations - Only show when attestation is selected and attestationMapping exists */}
-            {config.attest === 'Y' && availableAttestations.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center space-x-2">
-                    <CheckSquare className="h-4 w-4" />
-                    <span>Attestations</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Select required attestations for this substage
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {availableAttestations.map(attest => (
-                      <div key={attest.attestationId} className="flex items-start space-x-2">
-                        <Checkbox
-                          checked={config.workflowAttests?.some(a => 
-                            a.attestationId === attest.attestationId
-                          ) || false}
-                          onCheckedChange={(checked) => {
-                            const currentAttests = config.workflowAttests || [];
-                            let newAttests;
-                            
-                            if (checked) {
-                              newAttests = [...currentAttests, attest];
-                            } else {
-                              newAttests = currentAttests.filter(a => 
-                                a.attestationId !== attest.attestationId
-                              );
-                            }
-                            
-                            handleSubstageUpdate('workflowAttests', newAttests);
-                          }}
-                        />
-                        <div className="space-y-1">
-                          <Label className="text-sm font-medium">{attest.name}</Label>
-                          {attest.description && (
-                            <p className="text-xs text-muted-foreground">{attest.description}</p>
-                          )}
-                        </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    )}
+                  </CardContent>
+                </Card>
+              </ScrollArea>
+            </TabsContent>
 
-            {/* File Upload Configuration - Only show when upload is selected */}
-            {config.upload === 'Y' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center space-x-2">
-                    <Upload className="h-4 w-4" />
-                    <span>File Upload Configuration</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Configure file upload settings for this substage
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>File Pattern</Label>
-                    <Input
-                      placeholder="e.g., *.xlsx, *.csv"
-                      value={config.workflowAppConfigFiles?.[0]?.value || ''}
-                      onChange={(e) => {
-                        const currentFiles = config.workflowAppConfigFiles || [];
-                        const newFiles = currentFiles.length > 0 
-                          ? currentFiles.map(file => ({ ...file, value: e.target.value }))
-                          : [{
-                              id: {
-                                workflowAppConfigId: config.workflowAppConfigId,
-                                name: 'filePattern',
-                                paramType: 'FILE'
-                              },
-                              name: 'filePattern',
-                              paramType: 'FILE',
-                              value: e.target.value,
-                              description: 'File pattern for uploads',
-                              required: 'Y',
-                              emailFile: 'N',
-                              fileUpload: 'Y'
-                            }];
-                        
-                        handleSubstageUpdate('workflowAppConfigFiles', newFiles);
-                      }}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={config.workflowAppConfigFiles?.[0]?.required === 'Y'}
-                        onCheckedChange={(checked) => {
-                          const currentFiles = config.workflowAppConfigFiles || [];
-                          const newFiles = currentFiles.map(file => ({
-                            ...file,
-                            required: checked ? 'Y' : 'N'
-                          }));
-                          handleSubstageUpdate('workflowAppConfigFiles', newFiles);
-                        }}
-                      />
-                      <Label>Required</Label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={config.workflowAppConfigFiles?.[0]?.emailFile === 'Y'}
-                        onCheckedChange={(checked) => {
-                          const currentFiles = config.workflowAppConfigFiles || [];
-                          const newFiles = currentFiles.map(file => ({
-                            ...file,
-                            emailFile: checked ? 'Y' : 'N'
-                          }));
-                          handleSubstageUpdate('workflowAppConfigFiles', newFiles);
-                        }}
-                      />
-                      <Label>Email File</Label>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      placeholder="Describe the file upload requirements"
-                      value={config.workflowAppConfigFiles?.[0]?.description || ''}
-                      onChange={(e) => {
-                        const currentFiles = config.workflowAppConfigFiles || [];
-                        const newFiles = currentFiles.map(file => ({
-                          ...file,
-                          description: e.target.value
-                        }));
-                        handleSubstageUpdate('workflowAppConfigFiles', newFiles);
-                      }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </ScrollArea>
+            {/* Dependencies Tab */}
+            <TabsContent value="dependencies" className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full px-4 pb-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center space-x-2">
+                      <Link className="h-4 w-4" />
+                      <span>Dependencies</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Select substages that must complete before this one can start
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {availableDependencies.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Link className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-2 text-lg font-semibold">No Dependencies Available</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          No prior substages available to set as dependencies.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {availableDependencies.map((dep, index) => (
+                          <div key={index} className="flex items-center space-x-3 p-4 border rounded-lg">
+                            <Checkbox
+                              checked={selectedDependencies.includes(dep.workflowSubstage.substageId)}
+                              onCheckedChange={(checked) => {
+                                const currentDeps = config.workflowAppConfigDeps || [];
+                                let newDeps;
+                                
+                                if (checked) {
+                                  newDeps = [...currentDeps, {
+                                    id: {
+                                      workflowAppConfigId: config.workflowAppConfigId,
+                                      dependencySubstageId: dep.workflowSubstage.substageId
+                                    }
+                                  }];
+                                } else {
+                                  newDeps = currentDeps.filter(d => 
+                                    d.id.dependencySubstageId !== dep.workflowSubstage.substageId
+                                  );
+                                }
+                                
+                                handleSubstageUpdate('workflowAppConfigDeps', newDeps);
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                                  {dep.substageSeq}
+                                </span>
+                                <Label className="text-sm font-medium">
+                                  {dep.workflowSubstage.name}
+                                </Label>
+                                <Badge variant="outline" className="text-xs">
+                                  {typeof dep.workflowStage === 'object' ? dep.workflowStage.name : 'Stage'}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                This substage will wait for "{dep.workflowSubstage.name}" to complete
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     );
   };
