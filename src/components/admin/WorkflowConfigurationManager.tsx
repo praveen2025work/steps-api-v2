@@ -139,6 +139,8 @@ const WorkflowConfigurationManager: React.FC = () => {
   const [substageSelector, setSubstageSelector] = useState<SubstageSelector | null>(null);
   const [viewMode, setViewMode] = useState<'config' | 'reorder'>('config');
   const [reorderLayout, setReorderLayout] = useState<'grid' | 'list'>('grid');
+  const [configLayout, setConfigLayout] = useState<'list' | 'grid'>('list');
+  const [structureChangeCounter, setStructureChangeCounter] = useState(0);
 
   // Search state for workflow instances
   const [instanceSearchTerm, setInstanceSearchTerm] = useState('');
@@ -205,7 +207,7 @@ const WorkflowConfigurationManager: React.FC = () => {
     }
   }, [state.selectedAppId, state.selectedConfigId]);
 
-  // Build workflow tree when config or metadata changes
+  // Build workflow tree when structure changes or metadata loads
   useEffect(() => {
     if (state.metadata) {
       if (state.currentConfig.length > 0) {
@@ -214,7 +216,15 @@ const WorkflowConfigurationManager: React.FC = () => {
         buildEmptyWorkflowTree();
       }
     }
-  }, [state.metadata, state.currentConfig]);
+  }, [state.metadata, structureChangeCounter]);
+
+  // Drag and Drop Handlers
+  const toggleAllStages = (expand: boolean) => {
+    setWorkflowTree(prevTree => prevTree.map(stage => ({
+        ...stage,
+        expanded: expand
+    })));
+  };
 
   // Drag and Drop Handlers
   const handleOrderChange = (reorderedStages: StageWithFullSubstages[]) => {
@@ -244,6 +254,7 @@ const WorkflowConfigurationManager: React.FC = () => {
     }));
   
     setState(prev => ({ ...prev, currentConfig: finalConfig }));
+    setStructureChangeCounter(c => c + 1);
     toast({
       title: "Order Updated",
       description: "Workflow order has been updated. Save to persist changes.",
@@ -305,6 +316,7 @@ const WorkflowConfigurationManager: React.FC = () => {
         currentConfig: config,
         isLoading: false
       }));
+      setStructureChangeCounter(c => c + 1);
       
       if (config.length === 0) {
         toast({
@@ -319,6 +331,7 @@ const WorkflowConfigurationManager: React.FC = () => {
         currentConfig: [],
         isLoading: false
       }));
+      setStructureChangeCounter(c => c + 1);
       
       toast({
         title: "Info",
@@ -340,16 +353,24 @@ const WorkflowConfigurationManager: React.FC = () => {
         : config.workflowStage;
     }));
 
+    const expandedStateMap = new Map<string, boolean>();
+    workflowTree.forEach(node => {
+      if (node.type === 'stage') {
+        expandedStateMap.set(node.id, node.expanded || false);
+      }
+    });
+
     configuredStageIds.forEach(stageId => {
       const stage = state.metadata!.WorkflowStage.find(s => s.stageId === stageId);
       if (stage) {
+        const stageNodeId = `stage-${stageId}`;
         stageMap.set(stageId, {
-          id: `stage-${stageId}`,
+          id: stageNodeId,
           type: 'stage',
           name: stage.name,
           stageId: stage.stageId,
           children: [],
-          expanded: true
+          expanded: expandedStateMap.has(stageNodeId) ? expandedStateMap.get(stageNodeId)! : true
         });
       }
     });
@@ -422,6 +443,7 @@ const WorkflowConfigurationManager: React.FC = () => {
       metadata: null,
       currentConfig: []
     }));
+    setStructureChangeCounter(c => c + 1);
     setWorkflowTree([]);
     setSelectedSubstage(null);
     setSubstageSelector(null);
@@ -434,6 +456,7 @@ const WorkflowConfigurationManager: React.FC = () => {
       selectedConfigId: configId,
       currentConfig: []
     }));
+    setStructureChangeCounter(c => c + 1);
     setSelectedSubstage(null);
     setSubstageSelector(null);
   };
@@ -620,6 +643,7 @@ const WorkflowConfigurationManager: React.FC = () => {
       ...prev,
       currentConfig: [...prev.currentConfig, newConfig]
     }));
+    setStructureChangeCounter(c => c + 1);
 
     setSubstageSelector(null);
 
@@ -637,6 +661,7 @@ const WorkflowConfigurationManager: React.FC = () => {
       ...prev,
       currentConfig: prev.currentConfig.filter((_, index) => index !== configIndex)
     }));
+    setStructureChangeCounter(c => c + 1);
 
     // Clean up dependencies that reference this substage
     setTimeout(() => {
@@ -677,6 +702,7 @@ const WorkflowConfigurationManager: React.FC = () => {
       ...prev,
       currentConfig: [...prev.currentConfig, duplicatedConfig]
     }));
+    setStructureChangeCounter(c => c + 1);
 
     toast({
       title: "Success",
@@ -799,6 +825,7 @@ const WorkflowConfigurationManager: React.FC = () => {
         currentConfig: result,
         isLoading: false
       }));
+      setStructureChangeCounter(c => c + 1);
 
       toast({
         title: "Success",
@@ -826,6 +853,7 @@ const WorkflowConfigurationManager: React.FC = () => {
       currentConfig: [],
       selectedConfigId: 'new'
     }));
+    setStructureChangeCounter(c => c + 1);
     setSelectedSubstage(null);
     setWorkflowTree([]);
     setSubstageSelector(null);
@@ -1019,14 +1047,19 @@ const WorkflowConfigurationManager: React.FC = () => {
             }
           };
 
+          const newConfigs = [...prev.currentConfig, newConfig];
           setState(prev => ({
             ...prev,
-            currentConfig: [...prev.currentConfig, newConfig]
+            currentConfig: newConfigs
           }));
           addedCount++;
         }
       }
     });
+
+    if (addedCount > 0) {
+      setStructureChangeCounter(c => c + 1);
+    }
 
     setMultiSelectStageModal({
       isOpen: false,
@@ -1117,6 +1150,7 @@ const WorkflowConfigurationManager: React.FC = () => {
         ...prev,
         currentConfig: [...prev.currentConfig, ...newConfigs]
       }));
+      setStructureChangeCounter(c => c + 1);
     }
 
     setMultiSelectSubstageModal({
@@ -1158,6 +1192,7 @@ const WorkflowConfigurationManager: React.FC = () => {
       ...prev,
       currentConfig: remainingConfigs
     }));
+    setStructureChangeCounter(c => c + 1);
 
     // Clean up dependencies
     setTimeout(() => {
@@ -1365,6 +1400,20 @@ const WorkflowConfigurationManager: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center p-4 border-b">
         <h3 className="font-semibold">Workflow Tree</h3>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={() => toggleAllStages(true)}>Expand All</Button>
+          <Button variant="outline" size="sm" onClick={() => toggleAllStages(false)}>Collapse All</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setConfigLayout(prev => prev === 'list' ? 'grid' : 'list')}
+          >
+            {configLayout === 'list' ? <LayoutGrid className="h-4 w-4 mr-1" /> : <List className="h-4 w-4 mr-1" />}
+            {configLayout === 'list' ? 'Grid View' : 'List View'}
+          </Button>
+        </div>
+      </div>
+      <div className="flex justify-between items-center p-4 border-b">
         <div className="flex space-x-2">
           <Button
             variant="outline"
@@ -1447,11 +1496,11 @@ const WorkflowConfigurationManager: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className={configLayout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-2'}>
             {workflowTree.map(stage => (
-              <div key={stage.id} className="border rounded-lg">
+              <div key={stage.id} className="border rounded-lg bg-card">
                 <div 
-                  className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50"
+                  className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 rounded-t-lg"
                   onClick={() => handleTreeNodeClick(stage)}
                 >
                   <div className="flex items-center space-x-2">
