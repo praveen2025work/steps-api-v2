@@ -1300,8 +1300,8 @@ const WorkflowConfigurationManager: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        <div className="md:col-span-4 space-y-2">
           <Label htmlFor="application">Application</Label>
           <Select 
             value={state.selectedAppId?.toString() || ''} 
@@ -1324,55 +1324,78 @@ const WorkflowConfigurationManager: React.FC = () => {
           </Select>
         </div>
         
-        <div className="space-y-2">
+        <div className="md:col-span-4 space-y-2">
           <Label htmlFor="workflowInstance">Workflow Instance</Label>
-          <div className="space-y-2">
-            {/* Search bar for workflow instances */}
-            {state.workflowInstances.length > 0 && (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search workflow instances..."
-                  value={instanceSearchTerm}
-                  onChange={(e) => setInstanceSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            )}
-            
-            <Select 
-              value={state.selectedConfigId || ''} 
-              onValueChange={handleInstanceChange}
-              disabled={!state.selectedAppId || state.workflowInstances.length === 0}
-            >
-              <SelectTrigger id="workflowInstance">
-                <SelectValue placeholder={
-                  !state.selectedAppId 
-                    ? "Select an application first" 
-                    : state.workflowInstances.length === 0 
-                      ? "No workflow instances available" 
-                      : "Select a workflow instance"
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredWorkflowInstances.map(instance => (
-                  <SelectItem key={instance.configId} value={instance.configId}>
-                    <div className="flex items-center space-x-2">
-                      <Network className="h-4 w-4" />
-                      <span>{instance.configName}</span>
-                      <Badge variant="secondary" className="text-xs">ID: {instance.configId}</Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-                {instanceSearchTerm && filteredWorkflowInstances.length === 0 && state.workflowInstances.length > 0 && (
-                  <div className="p-2 text-sm text-muted-foreground text-center">
-                    No instances match "{instanceSearchTerm}"
+          <Select 
+            value={state.selectedConfigId || ''} 
+            onValueChange={handleInstanceChange}
+            disabled={!state.selectedAppId || state.workflowInstances.length === 0}
+          >
+            <SelectTrigger id="workflowInstance">
+              <SelectValue placeholder={
+                !state.selectedAppId 
+                  ? "Select an application first" 
+                  : state.workflowInstances.length === 0 
+                    ? "No workflow instances available" 
+                    : "Select a workflow instance"
+              } />
+            </SelectTrigger>
+            <SelectContent>
+              {filteredWorkflowInstances.map(instance => (
+                <SelectItem key={instance.configId} value={instance.configId}>
+                  <div className="flex items-center space-x-2">
+                    <Network className="h-4 w-4" />
+                    <span>{instance.configName}</span>
+                    <Badge variant="secondary" className="text-xs">ID: {instance.configId}</Badge>
                   </div>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+                </SelectItem>
+              ))}
+              {instanceSearchTerm && filteredWorkflowInstances.length === 0 && state.workflowInstances.length > 0 && (
+                <div className="p-2 text-sm text-muted-foreground text-center">
+                  No instances match "{instanceSearchTerm}"
+                </div>
+              )}
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Inline search box with collapsible design */}
+        {state.selectedAppId && state.workflowInstances.length > 0 && (
+          <div className="md:col-span-4 space-y-2">
+            <Label htmlFor="instance-search" className="flex items-center gap-2">
+              Search
+              {instanceSearchTerm && (
+                <Badge variant="secondary" className="text-xs">
+                  Filtered
+                </Badge>
+              )}
+            </Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="instance-search"
+                placeholder={instanceSearchTerm ? `"${instanceSearchTerm}"` : "Search instances..."}
+                value={instanceSearchTerm}
+                onChange={(e) => setInstanceSearchTerm(e.target.value)}
+                className={`pl-10 transition-all duration-200 ${
+                  instanceSearchTerm 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-muted-foreground/20'
+                }`}
+              />
+              {instanceSearchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-destructive/10"
+                  onClick={() => setInstanceSearchTerm('')}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Configuration Summary */}
