@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Card } from '@components/ui/card';
+import { Card } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
 import { WorkflowAppConfig } from '@src/types/workflow-config-types';
 
