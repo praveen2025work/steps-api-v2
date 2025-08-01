@@ -48,7 +48,7 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
   
-  // Generate diagram data directly from workflow prop to ensure it's dynamic
+  // Generate diagram data with improved tree-like layout and dependency management
   const diagramData = (() => {
     const nodes: any[] = [];
     const edges: any[] = [];
@@ -65,23 +65,39 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
       totalTasks: Object.values(workflow.tasks).flat().length
     });
 
+    // Create a dependency map for better layout
+    const taskDependencyMap = new Map<string, string[]>();
+    const allTasks = Object.values(workflow.tasks).flat();
+    
+    // Build dependency relationships
+    allTasks.forEach((task: any) => {
+      if (task.dependencies && task.dependencies.length > 0) {
+        taskDependencyMap.set(task.id, task.dependencies.map((dep: any) => dep.id || dep.processId || dep.name));
+      }
+    });
+
     workflow.stages.forEach((stage: any, stageIndex: number) => {
       const stageNodeId = `stage-${stage.id}`;
       const stageTasks = workflow.tasks[stage.id] || [];
-      const stageHeight = stageTasks.length > 0 ? stageTasks.length * 130 + 60 : 150;
+      
+      // Calculate stage dimensions based on task layout
+      const maxTasksPerRow = 2; // Show tasks in a more tree-like structure
+      const taskRows = Math.ceil(stageTasks.length / maxTasksPerRow);
+      const stageHeight = Math.max(taskRows * 140 + 100, 200);
+      const stageWidth = 700;
 
-      // Create stage node with proper data structure for WorkflowStepFunctionDiagram
+      // Create stage node with proper data structure
       nodes.push({
         id: stageNodeId,
-        type: 'parallel', // Use 'parallel' type for stage containers
+        type: 'parallel',
         label: stage.name,
         status: stageTasks.length > 0 ? 
           (stageTasks.every((t: any) => t.status === 'completed') ? 'completed' :
            stageTasks.some((t: any) => t.status === 'in_progress' || t.status === 'in-progress') ? 'in-progress' :
            stageTasks.some((t: any) => t.status === 'failed') ? 'failed' : 'pending') : 'pending',
-        x: 25,
+        x: 50,
         y: yPos,
-        width: 650,
+        width: stageWidth,
         height: stageHeight,
         data: {
           label: stage.name,
@@ -93,19 +109,39 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
         }
       });
 
-      let taskY = yPos + 80;
-      stageTasks.forEach((task: any, taskIndex: number) => {
+      // Layout tasks in a more organized tree structure
+      const tasksWithoutDeps = stageTasks.filter((task: any) => 
+        !taskDependencyMap.has(task.id) || taskDependencyMap.get(task.id)?.length === 0
+      );
+      const tasksWithDeps = stageTasks.filter((task: any) => 
+        taskDependencyMap.has(task.id) && taskDependencyMap.get(task.id)?.length > 0
+      );
+
+      let taskX = 80;
+      let taskY = yPos + 60;
+      let currentRow = 0;
+      let tasksInCurrentRow = 0;
+
+      // First, place tasks without dependencies (root tasks)
+      tasksWithoutDeps.forEach((task: any, taskIndex: number) => {
         const taskNodeId = `substage-${task.id}`;
         
-        // Create task node with proper data structure
+        // Calculate position in grid layout
+        if (tasksInCurrentRow >= maxTasksPerRow) {
+          currentRow++;
+          tasksInCurrentRow = 0;
+          taskY += 140;
+          taskX = 80;
+        }
+
         nodes.push({
           id: taskNodeId,
           type: 'task',
           label: task.name,
           status: task.status === 'in_progress' ? 'in-progress' : task.status,
-          x: 50,
+          x: taskX,
           y: taskY,
-          width: 580,
+          width: 280,
           height: 100,
           data: {
             ...task,
@@ -114,28 +150,107 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
             stageName: stage.name,
             processId: task.processId,
             progress: task.status === 'completed' ? 100 : 
-                     task.status === 'in_progress' || task.status === 'in-progress' ? 50 : 0
+                     task.status === 'in_progress' || task.status === 'in-progress' ? 50 : 0,
+            level: 0 // Root level
           }
         });
 
-        // Connect tasks within the same stage
-        if (taskIndex > 0) {
-          const prevTaskNodeId = `substage-${stageTasks[taskIndex - 1].id}`;
-          edges.push({
-            id: `e-${prevTaskNodeId}-${taskNodeId}`,
-            source: prevTaskNodeId,
-            target: taskNodeId,
-            type: 'default',
-            label: undefined
-          });
-        }
-        taskY += 130;
+        taskX += 300;
+        tasksInCurrentRow++;
       });
 
-      yPos += stageHeight + 50;
+      // Then place dependent tasks in subsequent levels
+      let level = 1;
+      let remainingTasks = [...tasksWithDeps];
+      
+      while (remainingTasks.length > 0 && level < 5) { // Prevent infinite loops
+        const tasksForThisLevel = remainingTasks.filter((task: any) => {
+          const deps = taskDependencyMap.get(task.id) || [];
+          // Check if all dependencies are already placed
+          return deps.every(depId => nodes.some(n => n.id === `substage-${depId}`));
+        });
+
+        if (tasksForThisLevel.length === 0) {
+          // If no tasks can be placed, place remaining tasks anyway
+          tasksForThisLevel.push(...remainingTasks);
+        }
+
+        // Start new row for this level
+        if (tasksForThisLevel.length > 0) {
+          currentRow++;
+          taskY += 140;
+          taskX = 80;
+          tasksInCurrentRow = 0;
+        }
+
+        tasksForThisLevel.forEach((task: any) => {
+          const taskNodeId = `substage-${task.id}`;
+          
+          if (tasksInCurrentRow >= maxTasksPerRow) {
+            currentRow++;
+            tasksInCurrentRow = 0;
+            taskY += 140;
+            taskX = 80;
+          }
+
+          nodes.push({
+            id: taskNodeId,
+            type: 'task',
+            label: task.name,
+            status: task.status === 'in_progress' ? 'in-progress' : task.status,
+            x: taskX,
+            y: taskY,
+            width: 280,
+            height: 100,
+            data: {
+              ...task,
+              label: task.name,
+              stageId: stage.id,
+              stageName: stage.name,
+              processId: task.processId,
+              progress: task.status === 'completed' ? 100 : 
+                       task.status === 'in_progress' || task.status === 'in-progress' ? 50 : 0,
+              level: level
+            }
+          });
+
+          taskX += 300;
+          tasksInCurrentRow++;
+        });
+
+        // Remove placed tasks from remaining
+        remainingTasks = remainingTasks.filter(task => 
+          !tasksForThisLevel.some(placed => placed.id === task.id)
+        );
+        level++;
+      }
+
+      yPos += stageHeight + 80;
     });
 
-    // Connect stages
+    // Create edges for task dependencies within stages
+    allTasks.forEach((task: any) => {
+      if (task.dependencies && task.dependencies.length > 0) {
+        task.dependencies.forEach((dep: any) => {
+          const depId = dep.id || dep.processId || dep.name;
+          const sourceNodeId = `substage-${depId}`;
+          const targetNodeId = `substage-${task.id}`;
+          
+          // Only create edge if both nodes exist
+          if (nodes.some(n => n.id === sourceNodeId) && nodes.some(n => n.id === targetNodeId)) {
+            edges.push({
+              id: `edge-dep-${depId}-${task.id}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              type: 'condition',
+              label: 'depends on'
+            });
+          }
+        });
+      }
+    });
+
+    // Connect stages (last task of previous stage to first task of next stage)
     for (let i = 0; i < workflow.stages.length - 1; i++) {
       const sourceStage = workflow.stages[i];
       const targetStage = workflow.stages[i + 1];
@@ -143,12 +258,14 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
       const targetTasks = workflow.tasks[targetStage.id] || [];
 
       if (sourceTasks.length > 0 && targetTasks.length > 0) {
-        const sourceTaskNodeId = `substage-${sourceTasks[sourceTasks.length - 1].id}`;
-        const targetTaskNodeId = `substage-${targetTasks[0].id}`;
+        // Connect from the last completed task of the source stage
+        const lastSourceTask = sourceTasks[sourceTasks.length - 1];
+        const firstTargetTask = targetTasks[0];
+        
         edges.push({
           id: `e-stage-${sourceStage.id}-${targetStage.id}`,
-          source: sourceTaskNodeId,
-          target: targetTaskNodeId,
+          source: `substage-${lastSourceTask.id}`,
+          target: `substage-${firstTargetTask.id}`,
           type: 'default',
           label: `${sourceStage.name} → ${targetStage.name}`
         });
@@ -159,7 +276,8 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
       nodesCount: nodes.length,
       edgesCount: edges.length,
       nodeTypes: [...new Set(nodes.map(n => n.type))],
-      firstNode: nodes[0]
+      dependencyEdges: edges.filter(e => e.id.startsWith('edge-dep-')).length,
+      stageEdges: edges.filter(e => e.id.startsWith('e-stage-')).length
     });
 
     return { nodes, edges };

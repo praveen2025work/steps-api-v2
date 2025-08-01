@@ -468,12 +468,12 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
             <rect 
               width={node.width} 
               height={node.height} 
-              fill={isSelected ? `${nodeColor}15` : 'white'} 
+              fill={isSelected ? `${nodeColor}15` : 'rgba(248, 250, 252, 0.95)'} 
               stroke={nodeColor} 
               strokeWidth={isSelected || isHighlighted ? 3 : 2}
-              rx="6" 
-              ry="6"
-              strokeDasharray="5,2"
+              rx="8" 
+              ry="8"
+              strokeDasharray="8,4"
             />
           ) : (
             <rect 
@@ -482,47 +482,195 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
               fill={isSelected ? `${nodeColor}15` : 'white'} 
               stroke={nodeColor} 
               strokeWidth={isSelected || isHighlighted ? 3 : 2}
-              rx="6" 
-              ry="6"
+              rx="8" 
+              ry="8"
               className={isHighlighted ? 'animate-pulse' : ''}
+              filter="url(#drop-shadow)"
             />
           )}
           
-          {/* Node icon with improved positioning */}
-          <foreignObject x="8" y="8" width="24" height="24">
-            <div className="flex items-center justify-center">
-              {getNodeIcon(node.type, node.status)}
-            </div>
-          </foreignObject>
-          
-          {/* Node label with improved typography, layout and contrast */}
-          <foreignObject x="8" y="32" width={node.width - 16} height={node.height - 40}>
-            <div className="flex flex-col items-center justify-center h-full">
-              {/* Process name with improved visibility */}
-              <div className="text-xs font-semibold text-center line-clamp-2 px-1 py-0.5 bg-white/90 rounded border border-gray-200 shadow-sm">
+          {/* Node content with better layout */}
+          {node.type === 'parallel' || node.type === 'map' ? (
+            // Stage container node
+            <>
+              {/* Stage header */}
+              <rect 
+                x="0" 
+                y="0" 
+                width={node.width} 
+                height="40" 
+                fill={nodeColor} 
+                rx="8" 
+                ry="8"
+                opacity="0.1"
+              />
+              
+              {/* Stage icon */}
+              <foreignObject x="12" y="8" width="24" height="24">
+                <div className="flex items-center justify-center">
+                  {getNodeIcon(node.type, node.status)}
+                </div>
+              </foreignObject>
+              
+              {/* Stage title */}
+              <text 
+                x="45" 
+                y="20" 
+                fontSize="14" 
+                fontWeight="600" 
+                fill={nodeColor}
+                textAnchor="start"
+                dominantBaseline="middle"
+              >
                 {node.label}
-              </div>
+              </text>
               
-              {/* Status badge with improved contrast */}
-              {node.status && (
-                <div className={`text-xs mt-1 px-2 py-0.5 rounded-full font-medium shadow-sm ${
-                  node.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-200' :
-                  node.status === 'in-progress' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                  node.status === 'failed' ? 'bg-red-100 text-red-800 border border-red-200' :
-                  'bg-amber-100 text-amber-800 border border-amber-200'
-                }`}>
-                  {node.status}
-                </div>
+              {/* Stage progress */}
+              {node.data?.progress !== undefined && (
+                <text 
+                  x={node.width - 12} 
+                  y="20" 
+                  fontSize="12" 
+                  fontWeight="500" 
+                  fill={nodeColor}
+                  textAnchor="end"
+                  dominantBaseline="middle"
+                >
+                  {node.data.progress}%
+                </text>
               )}
               
-              {/* Process ID with improved visibility */}
+              {/* Stage info */}
+              {node.data?.totalSubtasks && (
+                <text 
+                  x="12" 
+                  y="32" 
+                  fontSize="10" 
+                  fill="#6b7280"
+                  textAnchor="start"
+                  dominantBaseline="middle"
+                >
+                  {node.data.totalSubtasks} tasks
+                </text>
+              )}
+            </>
+          ) : (
+            // Task/substage node
+            <>
+              {/* Task icon */}
+              <foreignObject x="12" y="12" width="20" height="20">
+                <div className="flex items-center justify-center">
+                  {getNodeIcon(node.type, node.status)}
+                </div>
+              </foreignObject>
+              
+              {/* Task name - improved text rendering */}
+              <text 
+                x="40" 
+                y="22" 
+                fontSize="13" 
+                fontWeight="600" 
+                fill="#1f2937"
+                textAnchor="start"
+                dominantBaseline="middle"
+              >
+                {node.label.length > 35 ? `${node.label.substring(0, 35)}...` : node.label}
+              </text>
+              
+              {/* Status badge */}
+              <rect 
+                x="40" 
+                y="32" 
+                width="80" 
+                height="16" 
+                rx="8" 
+                ry="8"
+                fill={
+                  node.status === 'completed' ? '#dcfce7' :
+                  node.status === 'in-progress' ? '#dbeafe' :
+                  node.status === 'failed' ? '#fee2e2' :
+                  '#fef3c7'
+                }
+                stroke={
+                  node.status === 'completed' ? '#16a34a' :
+                  node.status === 'in-progress' ? '#2563eb' :
+                  node.status === 'failed' ? '#dc2626' :
+                  '#d97706'
+                }
+                strokeWidth="1"
+              />
+              
+              <text 
+                x="80" 
+                y="40" 
+                fontSize="10" 
+                fontWeight="500" 
+                fill={
+                  node.status === 'completed' ? '#16a34a' :
+                  node.status === 'in-progress' ? '#2563eb' :
+                  node.status === 'failed' ? '#dc2626' :
+                  '#d97706'
+                }
+                textAnchor="middle"
+                dominantBaseline="middle"
+              >
+                {node.status?.toUpperCase()}
+              </text>
+              
+              {/* Process ID */}
               {node.data?.processId && (
-                <div className="text-[10px] font-medium bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded mt-1 border border-gray-200">
+                <text 
+                  x="40" 
+                  y="58" 
+                  fontSize="9" 
+                  fontFamily="monospace"
+                  fill="#6b7280"
+                  textAnchor="start"
+                  dominantBaseline="middle"
+                >
                   ID: {node.data.processId}
-                </div>
+                </text>
               )}
-            </div>
-          </foreignObject>
+              
+              {/* Updated by info */}
+              {node.data?.updatedBy && (
+                <text 
+                  x="40" 
+                  y="72" 
+                  fontSize="9" 
+                  fill="#9ca3af"
+                  textAnchor="start"
+                  dominantBaseline="middle"
+                >
+                  By: {node.data.updatedBy}
+                </text>
+              )}
+              
+              {/* Progress bar for in-progress tasks */}
+              {node.status === 'in-progress' && node.data?.progress !== undefined && (
+                <>
+                  <rect 
+                    x="40" 
+                    y="82" 
+                    width="100" 
+                    height="4" 
+                    rx="2" 
+                    ry="2"
+                    fill="#e5e7eb"
+                  />
+                  <rect 
+                    x="40" 
+                    y="82" 
+                    width={node.data.progress} 
+                    height="4" 
+                    rx="2" 
+                    ry="2"
+                    fill="#2563eb"
+                  />
+                </>
+              )}
+            </>
+          )}
         </g>
       );
     });
