@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -134,6 +134,9 @@ const WorkflowConfigurationManager: React.FC = () => {
   const [substageSelector, setSubstageSelector] = useState<SubstageSelector | null>(null);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
+  // Search state for workflow instances
+  const [instanceSearchTerm, setInstanceSearchTerm] = useState('');
+
   // Multi-select modal states
   const [multiSelectStageModal, setMultiSelectStageModal] = useState<MultiSelectStageModal>({
     isOpen: false,
@@ -150,6 +153,16 @@ const WorkflowConfigurationManager: React.FC = () => {
     selectedSubstageIds: new Set(),
     searchTerm: ''
   });
+
+  // Filtered workflow instances based on search
+  const filteredWorkflowInstances = useMemo(() => {
+    if (!instanceSearchTerm) return state.workflowInstances;
+    
+    return state.workflowInstances.filter(instance =>
+      instance.configName.toLowerCase().includes(instanceSearchTerm.toLowerCase()) ||
+      instance.configId.toLowerCase().includes(instanceSearchTerm.toLowerCase())
+    );
+  }, [state.workflowInstances, instanceSearchTerm]);
 
   // Sync applications from hook to state
   useEffect(() => {
@@ -210,6 +223,7 @@ const WorkflowConfigurationManager: React.FC = () => {
         currentConfig: [],
         isLoading: false
       }));
+      setInstanceSearchTerm(''); // Reset search when loading new instances
     } catch (error: any) {
       setState(prev => ({
         ...prev,
@@ -371,6 +385,7 @@ const WorkflowConfigurationManager: React.FC = () => {
     setWorkflowTree([]);
     setSelectedSubstage(null);
     setSubstageSelector(null);
+    setInstanceSearchTerm('');
   };
 
   const handleInstanceChange = (configId: string) => {
@@ -409,8 +424,82 @@ const WorkflowConfigurationManager: React.FC = () => {
     }
   };
 
+  // Enhanced sequence editing with proper reordering logic
+  const handleSequenceUpdate = useCallback((newSequence: number) => {
+    if (!selectedSubstage) return;
+
+    const config = selectedSubstage.config;
+    const currentSequence = config.substageSeq;
+    
+    if (newSequence === currentSequence) return;
+
+    // Get all configs in the same stage
+    const stageId = typeof config.workflowStage === 'object' 
+      ? config.workflowStage.stageId 
+      : config.workflowStage;
+    
+    const stageConfigs = state.currentConfig.filter(c => {
+      const cStageId = typeof c.workflowStage === 'object' 
+        ? c.workflowStage.stageId 
+        : c.workflowStage;
+      return cStageId === stageId;
+    });
+
+    // Validate new sequence is within bounds
+    const maxSequence = stageConfigs.length;
+    const validSequence = Math.max(1, Math.min(newSequence, maxSequence));
+
+    setState(prev => ({
+      ...prev,
+      currentConfig: prev.currentConfig.map(c => {
+        const cStageId = typeof c.workflowStage === 'object' 
+          ? c.workflowStage.stageId 
+          : c.workflowStage;
+        
+        // Only update configs in the same stage
+        if (cStageId !== stageId) return c;
+
+        if (c === config) {
+          // Update the selected config's sequence
+          return { ...c, substageSeq: validSequence };
+        } else {
+          // Adjust other sequences in the same stage
+          if (currentSequence < validSequence) {
+            // Moving down: shift items up
+            if (c.substageSeq > currentSequence && c.substageSeq <= validSequence) {
+              return { ...c, substageSeq: c.substageSeq - 1 };
+            }
+          } else {
+            // Moving up: shift items down
+            if (c.substageSeq >= validSequence && c.substageSeq < currentSequence) {
+              return { ...c, substageSeq: c.substageSeq + 1 };
+            }
+          }
+          return c;
+        }
+      })
+    }));
+
+    // Update selected substage
+    setSelectedSubstage(prev => prev ? {
+      ...prev,
+      config: { ...prev.config, substageSeq: validSequence }
+    } : null);
+
+    toast({
+      title: "Success",
+      description: `Sequence updated to ${validSequence}`
+    });
+  }, [selectedSubstage, state.currentConfig]);
+
   const handleSubstageUpdate = useCallback((field: keyof WorkflowAppConfig, value: any) => {
     if (!selectedSubstage) return;
+
+    // Handle sequence updates with special logic
+    if (field === 'substageSeq') {
+      handleSequenceUpdate(value);
+      return;
+    }
 
     setState(prev => ({
       ...prev,
@@ -426,7 +515,46 @@ const WorkflowConfigurationManager: React.FC = () => {
       ...prev,
       config: { ...prev.config, [field]: value }
     } : null);
-  }, [selectedSubstage]);
+  }, [selectedSubstage, handleSequenceUpdate]);
+
+  // Get available parameters based on paramMapping
+  const getAvailableParameters = useCallback((substage: WorkflowSubstage) => {
+    if (!state.metadata?.WorkflowParams || !substage.paramMapping) {
+      return [];
+    }
+
+    const paramIds = substage.paramMapping
+      .split(';')
+      .filter(id => id.trim())
+      .map(id => parseInt(id.trim()));
+
+    return state.metadata.WorkflowParams.filter(param => 
+      paramIds.includes(param.paramId)
+    );
+  }, [state.metadata]);
+
+  // Get available attestations based on attestationMapping
+  const getAvailableAttestations = useCallback((substage: WorkflowSubstage) => {
+    if (!state.metadata?.WorkflowAttest || !substage.attestationMapping) {
+      return [];
+    }
+
+    const attestIds = substage.attestationMapping
+      .split(';')
+      .filter(id => id.trim())
+      .map(id => parseInt(id.trim()));
+
+    return state.metadata.WorkflowAttest.filter(attest => 
+      attestIds.includes(attest.attestationId)
+    );
+  }, [state.metadata]);
+
+  // Fix dependency binding
+  const getSelectedDependencies = useCallback((config: WorkflowAppConfig) => {
+    if (!config.workflowAppConfigDeps) return [];
+    
+    return config.workflowAppConfigDeps.map(dep => dep.id.dependencySubstageId);
+  }, []);
 
   const showSubstageSelector = (stageId: number) => {
     if (!state.metadata) {
@@ -1198,32 +1326,52 @@ const WorkflowConfigurationManager: React.FC = () => {
         
         <div className="space-y-2">
           <Label htmlFor="workflowInstance">Workflow Instance</Label>
-          <Select 
-            value={state.selectedConfigId || ''} 
-            onValueChange={handleInstanceChange}
-            disabled={!state.selectedAppId || state.workflowInstances.length === 0}
-          >
-            <SelectTrigger id="workflowInstance">
-              <SelectValue placeholder={
-                !state.selectedAppId 
-                  ? "Select an application first" 
-                  : state.workflowInstances.length === 0 
-                    ? "No workflow instances available" 
-                    : "Select a workflow instance"
-              } />
-            </SelectTrigger>
-            <SelectContent>
-              {state.workflowInstances.map(instance => (
-                <SelectItem key={instance.configId} value={instance.configId}>
-                  <div className="flex items-center space-x-2">
-                    <Network className="h-4 w-4" />
-                    <span>{instance.configName}</span>
-                    <Badge variant="secondary" className="text-xs">ID: {instance.configId}</Badge>
+          <div className="space-y-2">
+            {/* Search bar for workflow instances */}
+            {state.workflowInstances.length > 0 && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search workflow instances..."
+                  value={instanceSearchTerm}
+                  onChange={(e) => setInstanceSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            )}
+            
+            <Select 
+              value={state.selectedConfigId || ''} 
+              onValueChange={handleInstanceChange}
+              disabled={!state.selectedAppId || state.workflowInstances.length === 0}
+            >
+              <SelectTrigger id="workflowInstance">
+                <SelectValue placeholder={
+                  !state.selectedAppId 
+                    ? "Select an application first" 
+                    : state.workflowInstances.length === 0 
+                      ? "No workflow instances available" 
+                      : "Select a workflow instance"
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredWorkflowInstances.map(instance => (
+                  <SelectItem key={instance.configId} value={instance.configId}>
+                    <div className="flex items-center space-x-2">
+                      <Network className="h-4 w-4" />
+                      <span>{instance.configName}</span>
+                      <Badge variant="secondary" className="text-xs">ID: {instance.configId}</Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+                {instanceSearchTerm && filteredWorkflowInstances.length === 0 && state.workflowInstances.length > 0 && (
+                  <div className="p-2 text-sm text-muted-foreground text-center">
+                    No instances match "{instanceSearchTerm}"
                   </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -1882,6 +2030,14 @@ const WorkflowConfigurationManager: React.FC = () => {
       c.substageSeq < config.substageSeq
     );
 
+    // Get available parameters and attestations based on mappings
+    const availableParameters = getAvailableParameters(config.workflowSubstage);
+    const availableAttestations = getAvailableAttestations(config.workflowSubstage);
+    const selectedDependencies = getSelectedDependencies(config);
+
+    // Check if substage is auto type
+    const isAutoType = config.auto === 'Y';
+
     return (
       <div className="h-full flex flex-col">
         <div className="p-4 border-b">
@@ -1941,35 +2097,40 @@ const WorkflowConfigurationManager: React.FC = () => {
                     <Label>Adhoc</Label>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={config.approval === 'Y'}
-                      onCheckedChange={(checked) => 
-                        handleSubstageUpdate('approval', checked ? 'Y' : 'N')
-                      }
-                    />
-                    <Label>Approval</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={config.attest === 'Y'}
-                      onCheckedChange={(checked) => 
-                        handleSubstageUpdate('attest', checked ? 'Y' : 'N')
-                      }
-                    />
-                    <Label>Attestation</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={config.upload === 'Y'}
-                      onCheckedChange={(checked) => 
-                        handleSubstageUpdate('upload', checked ? 'Y' : 'N')
-                      }
-                    />
-                    <Label>Upload</Label>
-                  </div>
+                  {/* Only show approval, attestation, and upload if not auto type */}
+                  {!isAutoType && (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={config.approval === 'Y'}
+                          onCheckedChange={(checked) => 
+                            handleSubstageUpdate('approval', checked ? 'Y' : 'N')
+                          }
+                        />
+                        <Label>Approval</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={config.attest === 'Y'}
+                          onCheckedChange={(checked) => 
+                            handleSubstageUpdate('attest', checked ? 'Y' : 'N')
+                          }
+                        />
+                        <Label>Attestation</Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={config.upload === 'Y'}
+                          onCheckedChange={(checked) => 
+                            handleSubstageUpdate('upload', checked ? 'Y' : 'N')
+                          }
+                        />
+                        <Label>Upload</Label>
+                      </div>
+                    </>
+                  )}
 
                   <div className="flex items-center space-x-2">
                     <Switch
@@ -1989,7 +2150,15 @@ const WorkflowConfigurationManager: React.FC = () => {
                     value={config.substageSeq}
                     onChange={(e) => handleSubstageUpdate('substageSeq', parseInt(e.target.value) || 1)}
                     min={1}
-                    max={state.currentConfig.length}
+                    max={state.currentConfig.filter(c => {
+                      const cStageId = typeof c.workflowStage === 'object' 
+                        ? c.workflowStage.stageId 
+                        : c.workflowStage;
+                      const configStageId = typeof config.workflowStage === 'object' 
+                        ? config.workflowStage.stageId 
+                        : config.workflowStage;
+                      return cStageId === configStageId;
+                    }).length}
                   />
                 </div>
               </CardContent>
@@ -2016,9 +2185,7 @@ const WorkflowConfigurationManager: React.FC = () => {
                     {availableDependencies.map((dep, index) => (
                       <div key={index} className="flex items-center space-x-2">
                         <Checkbox
-                          checked={config.workflowAppConfigDeps?.some(d => 
-                            d.id.dependencySubstageId === dep.workflowSubstage.substageId
-                          ) || false}
+                          checked={selectedDependencies.includes(dep.workflowSubstage.substageId)}
                           onCheckedChange={(checked) => {
                             const currentDeps = config.workflowAppConfigDeps || [];
                             let newDeps;
@@ -2052,72 +2219,66 @@ const WorkflowConfigurationManager: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Parameters */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center space-x-2">
-                  <Settings className="h-4 w-4" />
-                  <span>Parameters</span>
-                </CardTitle>
-                <CardDescription>
-                  Configure parameters for this substage
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!state.metadata?.WorkflowParams || state.metadata.WorkflowParams.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No parameters available for this application
-                  </p>
-                ) : (
+            {/* Parameters - Only show if paramMapping exists */}
+            {availableParameters.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center space-x-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Parameters</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Configure parameters for this substage
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-3">
-                    {state.metadata.WorkflowParams
-                      .filter(param => param.paramType === 'DEFAULT')
-                      .map(param => {
-                        const currentParam = config.workflowAppConfigParams?.find(p => 
-                          p.name === param.name
-                        );
-                        
-                        return (
-                          <div key={param.paramId} className="space-y-2">
-                            <Label className="text-sm font-medium">{param.name}</Label>
-                            {param.description && (
-                              <p className="text-xs text-muted-foreground">{param.description}</p>
-                            )}
-                            <Input
-                              value={currentParam?.value || ''}
-                              onChange={(e) => {
-                                const currentParams = config.workflowAppConfigParams || [];
-                                const paramIndex = currentParams.findIndex(p => p.name === param.name);
-                                
-                                let newParams;
-                                if (paramIndex >= 0) {
-                                  newParams = [...currentParams];
-                                  newParams[paramIndex].value = e.target.value;
-                                } else {
-                                  newParams = [...currentParams, {
-                                    id: {
-                                      workflowAppConfigId: config.workflowAppConfigId,
-                                      name: param.name
-                                    },
-                                    name: param.name,
-                                    value: e.target.value
-                                  }];
-                                }
-                                
-                                handleSubstageUpdate('workflowAppConfigParams', newParams);
-                              }}
-                              placeholder={`Enter ${param.name}`}
-                            />
-                          </div>
-                        );
-                      })}
+                    {availableParameters.map(param => {
+                      const currentParam = config.workflowAppConfigParams?.find(p => 
+                        p.name === param.name
+                      );
+                      
+                      return (
+                        <div key={param.paramId} className="space-y-2">
+                          <Label className="text-sm font-medium">{param.name}</Label>
+                          {param.description && (
+                            <p className="text-xs text-muted-foreground">{param.description}</p>
+                          )}
+                          <Input
+                            value={currentParam?.value || ''}
+                            onChange={(e) => {
+                              const currentParams = config.workflowAppConfigParams || [];
+                              const paramIndex = currentParams.findIndex(p => p.name === param.name);
+                              
+                              let newParams;
+                              if (paramIndex >= 0) {
+                                newParams = [...currentParams];
+                                newParams[paramIndex].value = e.target.value;
+                              } else {
+                                newParams = [...currentParams, {
+                                  id: {
+                                    workflowAppConfigId: config.workflowAppConfigId,
+                                    name: param.name
+                                  },
+                                  name: param.name,
+                                  value: e.target.value
+                                }];
+                              }
+                              
+                              handleSubstageUpdate('workflowAppConfigParams', newParams);
+                            }}
+                            placeholder={`Enter ${param.name}`}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Attestations - Only show when attestation is selected */}
-            {config.attest === 'Y' && (
+            {/* Attestations - Only show when attestation is selected and attestationMapping exists */}
+            {config.attest === 'Y' && availableAttestations.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center space-x-2">
@@ -2129,50 +2290,42 @@ const WorkflowConfigurationManager: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {!state.metadata?.WorkflowAttest || state.metadata.WorkflowAttest.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No attestations available for this application
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {state.metadata.WorkflowAttest
-                        .filter(attest => attest.type === 'DEFAULT')
-                        .map(attest => (
-                          <div key={attest.attestationId} className="flex items-start space-x-2">
-                            <Checkbox
-                              checked={config.workflowAttests?.some(a => 
-                                a.attestationId === attest.attestationId
-                              ) || false}
-                              onCheckedChange={(checked) => {
-                                const currentAttests = config.workflowAttests || [];
-                                let newAttests;
-                                
-                                if (checked) {
-                                  newAttests = [...currentAttests, attest];
-                                } else {
-                                  newAttests = currentAttests.filter(a => 
-                                    a.attestationId !== attest.attestationId
-                                  );
-                                }
-                                
-                                handleSubstageUpdate('workflowAttests', newAttests);
-                              }}
-                            />
-                            <div className="space-y-1">
-                              <Label className="text-sm font-medium">{attest.name}</Label>
-                              {attest.description && (
-                                <p className="text-xs text-muted-foreground">{attest.description}</p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    {availableAttestations.map(attest => (
+                      <div key={attest.attestationId} className="flex items-start space-x-2">
+                        <Checkbox
+                          checked={config.workflowAttests?.some(a => 
+                            a.attestationId === attest.attestationId
+                          ) || false}
+                          onCheckedChange={(checked) => {
+                            const currentAttests = config.workflowAttests || [];
+                            let newAttests;
+                            
+                            if (checked) {
+                              newAttests = [...currentAttests, attest];
+                            } else {
+                              newAttests = currentAttests.filter(a => 
+                                a.attestationId !== attest.attestationId
+                              );
+                            }
+                            
+                            handleSubstageUpdate('workflowAttests', newAttests);
+                          }}
+                        />
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">{attest.name}</Label>
+                          {attest.description && (
+                            <p className="text-xs text-muted-foreground">{attest.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* File Upload Configuration */}
+            {/* File Upload Configuration - Only show when upload is selected */}
             {config.upload === 'Y' && (
               <Card>
                 <CardHeader>
