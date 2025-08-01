@@ -1361,45 +1361,35 @@ const WorkflowConfigurationManager: React.FC = () => {
   const renderWorkflowTree = () => (
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center p-4 border-b">
-        <h3 className="font-semibold">
-          {viewMode === 'config' ? 'Workflow Tree' : 'Stage & Substage Order'}
-        </h3>
+        <h3 className="font-semibold">Workflow Tree</h3>
         <div className="flex space-x-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setViewMode(viewMode === 'config' ? 'reorder' : 'config')}
+            onClick={() => setViewMode('reorder')}
             disabled={!state.selectedConfigId}
           >
-            {viewMode === 'config' ? (
-              <Rows className="h-4 w-4 mr-1" />
-            ) : (
-              <Settings className="h-4 w-4 mr-1" />
-            )}
-            {viewMode === 'config' ? 'Reorder View' : 'Config View'}
+            <Rows className="h-4 w-4 mr-1" />
+            Reorder
           </Button>
-          {viewMode === 'config' && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={showMultiSelectStageModal}
-                disabled={!state.metadata}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Stages
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setBulkEditMode(!bulkEditMode)}
-                className={bulkEditMode ? 'bg-primary/10' : ''}
-              >
-                <Edit3 className="h-4 w-4 mr-1" />
-                Bulk Edit
-              </Button>
-            </>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={showMultiSelectStageModal}
+            disabled={!state.metadata}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Stages
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setBulkEditMode(!bulkEditMode)}
+            className={bulkEditMode ? 'bg-primary/10' : ''}
+          >
+            <Edit3 className="h-4 w-4 mr-1" />
+            Bulk Edit
+          </Button>
         </div>
       </div>
 
@@ -2584,8 +2574,21 @@ const WorkflowConfigurationManager: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="w-full bg-muted/20">
-            {renderReorderView()}
+          <div className="w-full bg-muted/20 flex flex-col h-full">
+            <div className="flex justify-between items-center p-4 border-b bg-background">
+              <h3 className="font-semibold">Reorder Stages & Substages</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode('config')}
+              >
+                <Settings className="h-4 w-4 mr-1" />
+                Back to Configuration
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              {renderReorderView()}
+            </div>
           </div>
         )}
       </div>
