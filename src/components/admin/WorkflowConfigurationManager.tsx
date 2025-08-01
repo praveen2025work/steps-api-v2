@@ -534,20 +534,19 @@ const WorkflowConfigurationManager: React.FC = () => {
     );
   }, [state.metadata]);
 
-  // Get available attestations based on attestationMapping
-  const getAvailableAttestations = useCallback((substage: WorkflowSubstage) => {
-    if (!state.metadata?.WorkflowAttest || !substage.attestationMapping) {
+  // Get all available attestations (not filtered by mapping when step is not auto)
+  const getAvailableAttestations = useCallback((substage: WorkflowSubstage, isAutoType: boolean) => {
+    if (!state.metadata?.WorkflowAttest) {
       return [];
     }
 
-    const attestIds = substage.attestationMapping
-      .split(';')
-      .filter(id => id.trim())
-      .map(id => parseInt(id.trim()));
+    // If step is auto, no attestations are available
+    if (isAutoType) {
+      return [];
+    }
 
-    return state.metadata.WorkflowAttest.filter(attest => 
-      attestIds.includes(attest.attestationId)
-    );
+    // For non-auto steps, show all available attestations in the system
+    return state.metadata.WorkflowAttest;
   }, [state.metadata]);
 
   // Fix dependency binding
@@ -2033,11 +2032,9 @@ const WorkflowConfigurationManager: React.FC = () => {
 
     // Get available parameters and attestations based on mappings
     const availableParameters = getAvailableParameters(config.workflowSubstage);
-    const availableAttestations = getAvailableAttestations(config.workflowSubstage);
-    const selectedDependencies = getSelectedDependencies(config);
-
-    // Check if substage is auto type
     const isAutoType = config.auto === 'Y';
+    const availableAttestations = getAvailableAttestations(config.workflowSubstage, isAutoType);
+    const selectedDependencies = getSelectedDependencies(config);
 
     return (
       <div className="h-full flex flex-col">
@@ -2073,7 +2070,7 @@ const WorkflowConfigurationManager: React.FC = () => {
                   <Database className="h-4 w-4" />
                   <span className="hidden sm:inline">Parameters</span>
                 </TabsTrigger>
-                <TabsTrigger value="attestations" className="flex items-center space-x-1" disabled={config.attest !== 'Y' || availableAttestations.length === 0}>
+                <TabsTrigger value="attestations" className="flex items-center space-x-1" disabled={config.attest !== 'Y'}>
                   <CheckSquare className="h-4 w-4" />
                   <span className="hidden sm:inline">Attestations</span>
                 </TabsTrigger>
