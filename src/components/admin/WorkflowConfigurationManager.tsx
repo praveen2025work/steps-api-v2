@@ -30,18 +30,18 @@ import {
   CheckSquare,
   Square,
   MoreHorizontal,
-  ArrowUp,
-  ArrowDown,
   Loader2,
   Database,
   Network,
   Target,
   Link,
   Search,
-  X
+  X,
+  Rows
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { workflowConfigService } from '@/services/workflowConfigService';
+import { StageReorderView } from './dnd/StageReorderView';
 import { useMetadataManagement } from '@/hooks/useMetadataManagement';
 import type {
   WorkflowApp,
@@ -55,6 +55,8 @@ import type {
   WorkflowParameter,
   WorkflowConfigSavePayload
 } from '@/types/workflow-config-types';
+
+type StageWithFullSubstages = WorkflowStage & { substages: WorkflowAppConfig[] };
 
 interface TreeNode {
   id: string;
@@ -133,7 +135,7 @@ const WorkflowConfigurationManager: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [substageSelector, setSubstageSelector] = useState<SubstageSelector | null>(null);
-  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'config' | 'reorder'>('config');
 
   // Search state for workflow instances
   const [instanceSearchTerm, setInstanceSearchTerm] = useState('');
@@ -210,6 +212,40 @@ const WorkflowConfigurationManager: React.FC = () => {
       }
     }
   }, [state.metadata, state.currentConfig]);
+
+  // Drag and Drop Handlers
+  const handleOrderChange = (reorderedStages: StageWithFullSubstages[]) => {
+    const flattenedConfig: WorkflowAppConfig[] = [];
+    reorderedStages.forEach(stage => {
+      if (stage.substages) {
+        stage.substages.forEach(substageConfig => {
+            const fullConfig = state.currentConfig.find(c => c.workflowAppConfigId === substageConfig.workflowAppConfigId);
+            if (fullConfig) {
+                const updatedConfig = {
+                    ...fullConfig,
+                    workflowStage: {
+                        stageId: stage.stageId,
+                        name: stage.stageName,
+                        updatedby: 'system'
+                    }
+                };
+                flattenedConfig.push(updatedConfig);
+            }
+        });
+      }
+    });
+  
+    const finalConfig = flattenedConfig.map((config, index) => ({
+      ...config,
+      substageSeq: index + 1,
+    }));
+  
+    setState(prev => ({ ...prev, currentConfig: finalConfig }));
+    toast({
+      title: "Order Updated",
+      description: "Workflow order has been updated. Save to persist changes.",
+    });
+  };
 
   // API Methods
   const loadWorkflowInstances = async (appId: number) => {
@@ -425,82 +461,8 @@ const WorkflowConfigurationManager: React.FC = () => {
     }
   };
 
-  // Enhanced sequence editing with proper reordering logic
-  const handleSequenceUpdate = useCallback((newSequence: number) => {
-    if (!selectedSubstage) return;
-
-    const config = selectedSubstage.config;
-    const currentSequence = config.substageSeq;
-    
-    if (newSequence === currentSequence) return;
-
-    // Get all configs in the same stage
-    const stageId = typeof config.workflowStage === 'object' 
-      ? config.workflowStage.stageId 
-      : config.workflowStage;
-    
-    const stageConfigs = state.currentConfig.filter(c => {
-      const cStageId = typeof c.workflowStage === 'object' 
-        ? c.workflowStage.stageId 
-        : c.workflowStage;
-      return cStageId === stageId;
-    });
-
-    // Validate new sequence is within bounds
-    const maxSequence = stageConfigs.length;
-    const validSequence = Math.max(1, Math.min(newSequence, maxSequence));
-
-    setState(prev => ({
-      ...prev,
-      currentConfig: prev.currentConfig.map(c => {
-        const cStageId = typeof c.workflowStage === 'object' 
-          ? c.workflowStage.stageId 
-          : c.workflowStage;
-        
-        // Only update configs in the same stage
-        if (cStageId !== stageId) return c;
-
-        if (c === config) {
-          // Update the selected config's sequence
-          return { ...c, substageSeq: validSequence };
-        } else {
-          // Adjust other sequences in the same stage
-          if (currentSequence < validSequence) {
-            // Moving down: shift items up
-            if (c.substageSeq > currentSequence && c.substageSeq <= validSequence) {
-              return { ...c, substageSeq: c.substageSeq - 1 };
-            }
-          } else {
-            // Moving up: shift items down
-            if (c.substageSeq >= validSequence && c.substageSeq < currentSequence) {
-              return { ...c, substageSeq: c.substageSeq + 1 };
-            }
-          }
-          return c;
-        }
-      })
-    }));
-
-    // Update selected substage
-    setSelectedSubstage(prev => prev ? {
-      ...prev,
-      config: { ...prev.config, substageSeq: validSequence }
-    } : null);
-
-    toast({
-      title: "Success",
-      description: `Sequence updated to ${validSequence}`
-    });
-  }, [selectedSubstage, state.currentConfig]);
-
   const handleSubstageUpdate = useCallback((field: keyof WorkflowAppConfig, value: any) => {
     if (!selectedSubstage) return;
-
-    // Handle sequence updates with special logic
-    if (field === 'substageSeq') {
-      handleSequenceUpdate(value);
-      return;
-    }
 
     setState(prev => ({
       ...prev,
@@ -516,7 +478,7 @@ const WorkflowConfigurationManager: React.FC = () => {
       ...prev,
       config: { ...prev.config, [field]: value }
     } : null);
-  }, [selectedSubstage, handleSequenceUpdate]);
+  }, [selectedSubstage]);
 
   // Get available parameters based on paramMapping
   const getAvailableParameters = useCallback((substage: WorkflowSubstage) => {
@@ -717,43 +679,6 @@ const WorkflowConfigurationManager: React.FC = () => {
       title: "Success",
       description: "Substage duplicated successfully"
     });
-  };
-
-  const moveSubstage = (configIndex: number, direction: 'up' | 'down') => {
-    const newConfig = [...state.currentConfig];
-    const targetIndex = direction === 'up' ? configIndex - 1 : configIndex + 1;
-    
-    if (targetIndex < 0 || targetIndex >= newConfig.length) {
-      return;
-    }
-
-    // Swap the items
-    [newConfig[configIndex], newConfig[targetIndex]] = [newConfig[targetIndex], newConfig[configIndex]];
-    
-    // Update sequence numbers
-    newConfig.forEach((config, index) => {
-      config.substageSeq = index + 1;
-    });
-
-    setState(prev => ({
-      ...prev,
-      currentConfig: newConfig
-    }));
-
-    // Update selected substage index if it was moved
-    if (selectedSubstage) {
-      if (selectedSubstage.configIndex === configIndex) {
-        setSelectedSubstage(prev => prev ? {
-          ...prev,
-          configIndex: targetIndex
-        } : null);
-      } else if (selectedSubstage.configIndex === targetIndex) {
-        setSelectedSubstage(prev => prev ? {
-          ...prev,
-          configIndex: configIndex
-        } : null);
-      }
-    }
   };
 
   const saveWorkflowConfig = async () => {
@@ -1436,26 +1361,45 @@ const WorkflowConfigurationManager: React.FC = () => {
   const renderWorkflowTree = () => (
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center p-4 border-b">
-        <h3 className="font-semibold">Workflow Tree</h3>
+        <h3 className="font-semibold">
+          {viewMode === 'config' ? 'Workflow Tree' : 'Stage & Substage Order'}
+        </h3>
         <div className="flex space-x-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={showMultiSelectStageModal}
-            disabled={!state.metadata}
+            onClick={() => setViewMode(viewMode === 'config' ? 'reorder' : 'config')}
+            disabled={!state.selectedConfigId}
           >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Stages
+            {viewMode === 'config' ? (
+              <Rows className="h-4 w-4 mr-1" />
+            ) : (
+              <Settings className="h-4 w-4 mr-1" />
+            )}
+            {viewMode === 'config' ? 'Reorder View' : 'Config View'}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setBulkEditMode(!bulkEditMode)}
-            className={bulkEditMode ? 'bg-primary/10' : ''}
-          >
-            <Edit3 className="h-4 w-4 mr-1" />
-            Bulk Edit
-          </Button>
+          {viewMode === 'config' && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={showMultiSelectStageModal}
+                disabled={!state.metadata}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Stages
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setBulkEditMode(!bulkEditMode)}
+                className={bulkEditMode ? 'bg-primary/10' : ''}
+              >
+                <Edit3 className="h-4 w-4 mr-1" />
+                Bulk Edit
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -1627,34 +1571,6 @@ const WorkflowConfigurationManager: React.FC = () => {
                           )}
                           
                           <div className="flex space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveSubstage(substage.config ? 
-                                  state.currentConfig.findIndex(c => c === substage.config) : 
-                                  index, 'up'
-                                );
-                              }}
-                              disabled={index === 0}
-                            >
-                              <ArrowUp className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveSubstage(substage.config ? 
-                                  state.currentConfig.findIndex(c => c === substage.config) : 
-                                  index, 'down'
-                                );
-                              }}
-                              disabled={index === (stage.children?.length || 1) - 1}
-                            >
-                              <ArrowDown className="h-3 w-3" />
-                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -2033,6 +1949,58 @@ const WorkflowConfigurationManager: React.FC = () => {
     </div>
   );
 
+  const getStagesForReordering = (): StageWithFullSubstages[] => {
+    if (!state.metadata || state.currentConfig.length === 0) return [];
+  
+    const stageMap = new Map<number, StageWithFullSubstages>();
+  
+    // Use currentConfig which is sorted by sequence
+    state.currentConfig.forEach(config => {
+        const stageId = typeof config.workflowStage === 'object' ? config.workflowStage.stageId : config.workflowStage;
+        
+        if (!stageMap.has(stageId)) {
+            const stageDetails = state.metadata!.WorkflowStage.find(s => s.stageId === stageId);
+            stageMap.set(stageId, {
+                ...(stageDetails!),
+                stageName: stageDetails?.name || 'Unknown Stage',
+                substages: [],
+            });
+        }
+        
+        const stage = stageMap.get(stageId)!;
+        stage.substages.push(config);
+    });
+  
+    return Array.from(stageMap.values());
+  };
+
+  const renderReorderView = () => {
+    const stagesForReorder = getStagesForReordering();
+    
+    if (stagesForReorder.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h3 className="mt-2 text-lg font-semibold">Nothing to Reorder</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Configure some stages and substages first.
+          </p>
+        </div>
+      );
+    }
+    
+    return (
+      <ScrollArea className="h-full">
+        <div className="p-4 max-w-4xl mx-auto">
+          <StageReorderView
+            stages={stagesForReorder}
+            onOrderChange={handleOrderChange}
+          />
+        </div>
+      </ScrollArea>
+    );
+  };
+
   const renderConfigurationDetails = () => {
     if (!selectedSubstage) {
       return (
@@ -2227,42 +2195,6 @@ const WorkflowConfigurationManager: React.FC = () => {
                         </div>
                       </div>
                     )}
-
-                    {/* Sequence Setting */}
-                    <div className="space-y-4">
-                      <Separator />
-                      <h4 className="text-sm font-medium text-muted-foreground">Execution Order</h4>
-                      <div className="space-y-2">
-                        <Label>Sequence Number</Label>
-                        <Input
-                          type="number"
-                          value={config.substageSeq}
-                          onChange={(e) => handleSubstageUpdate('substageSeq', parseInt(e.target.value) || 1)}
-                          min={1}
-                          max={state.currentConfig.filter(c => {
-                            const cStageId = typeof c.workflowStage === 'object' 
-                              ? c.workflowStage.stageId 
-                              : c.workflowStage;
-                            const configStageId = typeof config.workflowStage === 'object' 
-                              ? config.workflowStage.stageId 
-                              : config.workflowStage;
-                            return cStageId === configStageId;
-                          }).length}
-                          className="w-32"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Order of execution within the stage (1-{state.currentConfig.filter(c => {
-                            const cStageId = typeof c.workflowStage === 'object' 
-                              ? c.workflowStage.stageId 
-                              : c.workflowStage;
-                            const configStageId = typeof config.workflowStage === 'object' 
-                              ? config.workflowStage.stageId 
-                              : config.workflowStage;
-                            return cStageId === configStageId;
-                          }).length})
-                        </p>
-                      </div>
-                    </div>
                   </CardContent>
                 </Card>
               </ScrollArea>
@@ -2639,15 +2571,23 @@ const WorkflowConfigurationManager: React.FC = () => {
 
       {/* Main Content - Two Column Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Workflow Tree */}
-        <div className="w-1/2 border-r bg-background">
-          {renderWorkflowTree()}
-        </div>
+        {viewMode === 'config' ? (
+          <>
+            {/* Left Panel - Workflow Tree */}
+            <div className="w-1/2 border-r bg-background">
+              {renderWorkflowTree()}
+            </div>
 
-        {/* Right Panel - Configuration Details */}
-        <div className="w-1/2 bg-background">
-          {renderConfigurationDetails()}
-        </div>
+            {/* Right Panel - Configuration Details */}
+            <div className="w-1/2 bg-background">
+              {renderConfigurationDetails()}
+            </div>
+          </>
+        ) : (
+          <div className="w-full bg-muted/20">
+            {renderReorderView()}
+          </div>
+        )}
       </div>
     </div>
   );
