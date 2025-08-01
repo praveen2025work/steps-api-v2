@@ -81,9 +81,8 @@ export const StageReorderView: React.FC<StageReorderViewProps> = ({ stages: init
             return stage;
           });
         } else {
-          // Drag to a different stage
-          const [movedSubstage] = sourceStage.substages.splice(oldSubstageIndex, 1);
-          destStage.substages.splice(newSubstageIndex, 0, movedSubstage);
+          // This is an invalid action, so we don't change the state.
+          // We can just return the existing stages.
           newStages = [...stages];
         }
       } else {
