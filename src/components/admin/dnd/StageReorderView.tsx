@@ -14,6 +14,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { DraggableStageItem } from './DraggableStageItem';
 import { DraggableSubstageItem } from './DraggableSubstageItem';
@@ -24,9 +25,10 @@ type StageWithFullSubstages = WorkflowStage & { substages: WorkflowAppConfig[] }
 interface StageReorderViewProps {
   stages: StageWithFullSubstages[];
   onOrderChange: (stages: StageWithFullSubstages[]) => void;
+  layout: 'grid' | 'list';
 }
 
-export const StageReorderView: React.FC<StageReorderViewProps> = ({ stages: initialStages, onOrderChange }) => {
+export const StageReorderView: React.FC<StageReorderViewProps> = ({ stages: initialStages, onOrderChange, layout }) => {
   const [stages, setStages] = useState<StageWithFullSubstages[]>(initialStages);
   const [activeId, setActiveId] = useState<string | number | null>(null);
 
@@ -112,6 +114,8 @@ export const StageReorderView: React.FC<StageReorderViewProps> = ({ stages: init
   const activeStage = stages.find(s => s.stageId === activeId);
   const activeConfig = stages.flatMap(s => s.substages || []).find(ss => ss.workflowAppConfigId === activeId);
 
+  const strategy = layout === 'grid' ? horizontalListSortingStrategy : verticalListSortingStrategy;
+
   return (
     <DndContext
       sensors={sensors}
@@ -119,8 +123,12 @@ export const StageReorderView: React.FC<StageReorderViewProps> = ({ stages: init
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={stageIds} strategy={verticalListSortingStrategy}>
-        <div className="p-4 bg-background rounded-lg">
+      <SortableContext items={stageIds} strategy={strategy}>
+        <div className={`p-4 bg-background rounded-lg ${
+          layout === 'grid' 
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' 
+            : 'space-y-4'
+        }`}>
           {stages.map(stage => (
             <DraggableStageItem key={stage.stageId} stage={stage} />
           ))}

@@ -37,7 +37,9 @@ import {
   Link,
   Search,
   X,
-  Rows
+  Rows,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { workflowConfigService } from '@/services/workflowConfigService';
@@ -136,6 +138,7 @@ const WorkflowConfigurationManager: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [substageSelector, setSubstageSelector] = useState<SubstageSelector | null>(null);
   const [viewMode, setViewMode] = useState<'config' | 'reorder'>('config');
+  const [reorderLayout, setReorderLayout] = useState<'grid' | 'list'>('grid');
 
   // Search state for workflow instances
   const [instanceSearchTerm, setInstanceSearchTerm] = useState('');
@@ -1981,10 +1984,11 @@ const WorkflowConfigurationManager: React.FC = () => {
     
     return (
       <ScrollArea className="h-full">
-        <div className="p-4 max-w-4xl mx-auto">
+        <div className="p-4">
           <StageReorderView
             stages={stagesForReorder}
             onOrderChange={handleOrderChange}
+            layout={reorderLayout}
           />
         </div>
       </ScrollArea>
@@ -2577,14 +2581,24 @@ const WorkflowConfigurationManager: React.FC = () => {
           <div className="w-full bg-muted/20 flex flex-col h-full">
             <div className="flex justify-between items-center p-4 border-b bg-background">
               <h3 className="font-semibold">Reorder Stages & Substages</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode('config')}
-              >
-                <Settings className="h-4 w-4 mr-1" />
-                Back to Configuration
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setReorderLayout(reorderLayout === 'grid' ? 'list' : 'grid')}
+                >
+                  {reorderLayout === 'grid' ? <List className="h-4 w-4 mr-1" /> : <LayoutGrid className="h-4 w-4 mr-1" />}
+                  {reorderLayout === 'grid' ? 'List View' : 'Grid View'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode('config')}
+                >
+                  <Settings className="h-4 w-4 mr-1" />
+                  Back to Configuration
+                </Button>
+              </div>
             </div>
             <div className="flex-1 overflow-hidden">
               {renderReorderView()}
