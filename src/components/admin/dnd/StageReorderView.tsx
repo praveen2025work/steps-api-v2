@@ -91,15 +91,23 @@ export const StageReorderView: React.FC<StageReorderViewProps> = ({ stages: init
       }
     }
     
-    const updatedStagesWithSequences = newStages.map((stage, stageIndex) => ({
-      ...stage,
-      stageSeq: stageIndex + 1,
-      substages: stage.substages?.map((substage, substageIndex) => ({
-        ...substage,
-        substageSeq: substageIndex + 1,
-        workflowStage: { stageId: stage.stageId, name: stage.stageName, updatedby: 'system' } // Update stage reference
-      })) || [],
-    }));
+    let globalSubstageCounter = 0;
+    const updatedStagesWithSequences = newStages.map((stage, stageIndex) => {
+      const updatedSubstages = stage.substages?.map(substage => {
+        globalSubstageCounter++;
+        return {
+          ...substage,
+          substageSeq: globalSubstageCounter,
+          workflowStage: { stageId: stage.stageId, name: stage.stageName, updatedby: 'system' }
+        };
+      }) || [];
+      
+      return {
+        ...stage,
+        stageSeq: stageIndex + 1,
+        substages: updatedSubstages,
+      };
+    });
 
     setStages(updatedStagesWithSequences);
     onOrderChange(updatedStagesWithSequences);
@@ -116,6 +124,8 @@ export const StageReorderView: React.FC<StageReorderViewProps> = ({ stages: init
 
   const strategy = layout === 'grid' ? horizontalListSortingStrategy : verticalListSortingStrategy;
 
+  let substageStartIndex = 0;
+
   return (
     <DndContext
       sensors={sensors}
@@ -129,14 +139,22 @@ export const StageReorderView: React.FC<StageReorderViewProps> = ({ stages: init
             ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' 
             : 'space-y-4'
         }`}>
-          {stages.map(stage => (
-            <DraggableStageItem key={stage.stageId} stage={stage} />
-          ))}
+          {stages.map(stage => {
+            const startIndex = substageStartIndex;
+            substageStartIndex += stage.substages?.length || 0;
+            return (
+              <DraggableStageItem 
+                key={stage.stageId} 
+                stage={stage} 
+                substageStartIndex={startIndex}
+              />
+            );
+          })}
         </div>
       </SortableContext>
       <DragOverlay>
-        {activeStage ? <DraggableStageItem stage={activeStage} /> : null}
-        {activeConfig ? <DraggableSubstageItem config={activeConfig} /> : null}
+        {activeStage ? <DraggableStageItem stage={activeStage} isOverlay /> : null}
+        {activeConfig ? <DraggableSubstageItem config={activeConfig} isOverlay /> : null}
       </DragOverlay>
     </DndContext>
   );

@@ -7,9 +7,11 @@ import { WorkflowAppConfig } from '@src/types/workflow-config-types';
 
 interface DraggableSubstageItemProps {
   config: WorkflowAppConfig;
+  sequenceNumber?: number;
+  isOverlay?: boolean;
 }
 
-export const DraggableSubstageItem: React.FC<DraggableSubstageItemProps> = ({ config }) => {
+export const DraggableSubstageItem: React.FC<DraggableSubstageItemProps> = ({ config, sequenceNumber, isOverlay = false }) => {
   const {
     attributes,
     listeners,
@@ -17,7 +19,7 @@ export const DraggableSubstageItem: React.FC<DraggableSubstageItemProps> = ({ co
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: config.workflowAppConfigId });
+  } = useSortable({ id: config.workflowAppConfigId, disabled: isOverlay });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -26,14 +28,24 @@ export const DraggableSubstageItem: React.FC<DraggableSubstageItemProps> = ({ co
     zIndex: isDragging ? 10 : 'auto',
   };
 
+  const content = (
+    <Card className="p-2 mb-2 flex items-center bg-background hover:bg-muted/50">
+      <button {...listeners} className="cursor-grab active:cursor-grabbing mr-2 text-muted-foreground">
+        <GripVertical size={16} />
+      </button>
+      <span className="text-sm font-semibold mr-2">{sequenceNumber}.</span>
+      <span className="text-sm flex-grow">{config.workflowSubstage.name}</span>
+      <span className="text-xs text-muted-foreground">({config.workflowSubstage.substageId})</span>
+    </Card>
+  );
+
+  if (isOverlay) {
+    return content;
+  }
+
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <Card className="p-2 mb-2 flex items-center bg-background hover:bg-muted/50">
-        <button {...listeners} className="cursor-grab active:cursor-grabbing mr-2 text-muted-foreground">
-          <GripVertical size={16} />
-        </button>
-        <span className="text-sm">{config.workflowSubstage.name} ({config.workflowSubstage.substageId})</span>
-      </Card>
+      {content}
     </div>
   );
 };
