@@ -2169,19 +2169,28 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
     const map = new Map<string, string>();
     if (config.workflowAppConfigParams) {
       for (const param of config.workflowAppConfigParams) {
-        map.set(param.name, param.value);
+        // Per user request, ensure the parameter's config ID matches the current substage's config ID.
+        // This handles cases where the API might return parameters for other substages.
+        if (param.id && param.id.workflowAppConfigId === config.workflowAppConfigId) {
+          map.set(param.name, param.value);
+        }
       }
     }
     return map;
-  }, [config.workflowAppConfigParams]);
+  }, [config.workflowAppConfigParams, config.workflowAppConfigId]);
 
   const existingAttestationIds = useMemo(() => {
     return new Set(config.workflowAttests?.map(a => a.attestationId) || []);
   }, [config.workflowAttests]);
 
   const existingDependencyIds = useMemo(() => {
-    return new Set(config.workflowAppConfigDeps?.map(d => d.id.dependencySubstageId) || []);
-  }, [config.workflowAppConfigDeps]);
+    // Per user request, ensure the dependency's config ID matches the current substage's config ID.
+    return new Set(
+      config.workflowAppConfigDeps
+        ?.filter(d => d.id && d.id.workflowAppConfigId === config.workflowAppConfigId)
+        .map(d => d.id.dependencySubstageId) || []
+    );
+  }, [config.workflowAppConfigDeps, config.workflowAppConfigId]);
 
   const existingFileConfigsMap = useMemo(() => {
     const map = new Map<string, WorkflowAppConfigFile>();
