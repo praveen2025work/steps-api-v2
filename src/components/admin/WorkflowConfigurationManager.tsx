@@ -2181,11 +2181,37 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
   }, [config.workflowAttests]);
 
   const existingDependencyIds = useMemo(() => {
-    // Fix: Properly bind dependencies based on dependencySubstageId
-    return new Set(
-      config.workflowAppConfigDeps?.map(d => d.id.dependencySubstageId) || []
-    );
-  }, [config.workflowAppConfigDeps]);
+    // Handle both sequence numbers (when saving) and workflowAppConfigId (when fetching)
+    const dependencyIds = new Set<number>();
+    
+    if (config.workflowAppConfigDeps) {
+      config.workflowAppConfigDeps.forEach(dep => {
+        const depId = dep.id.dependencySubstageId;
+        
+        // Check if this is a workflowAppConfigId (from API response) or sequence number (from UI)
+        // If it's a workflowAppConfigId, find the corresponding sequence number
+        const matchingConfig = state.currentConfig.find(c => c.workflowAppConfigId === depId);
+        if (matchingConfig) {
+          // This is a workflowAppConfigId, use the sequence number for UI binding
+          dependencyIds.add(matchingConfig.substageSeq);
+        } else {
+          // Check if it's a sequence number by finding a config with this sequence
+          const sequenceMatch = state.currentConfig.find(c => c.substageSeq === depId);
+          if (sequenceMatch) {
+            dependencyIds.add(depId);
+          } else {
+            // Fallback: try to find by substageId
+            const substageMatch = state.currentConfig.find(c => c.workflowSubstage.substageId === depId);
+            if (substageMatch) {
+              dependencyIds.add(substageMatch.substageSeq);
+            }
+          }
+        }
+      });
+    }
+    
+    return dependencyIds;
+  }, [config.workflowAppConfigDeps, state.currentConfig]);
 
   const existingFileConfigsMap = useMemo(() => {
     const map = new Map<string, WorkflowAppConfigFile>();
@@ -2483,36 +2509,39 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
                     <p className="text-sm text-muted-foreground">No prior substages to depend on.</p>
                   ) : (
                     availableDependencies.map(dep => (
-                      <div key={dep.workflowSubstage.substageId} className="flex items-center space-x-3">
+                      <div key={dep.substageSeq} className="flex items-center space-x-3">
                         <Checkbox
-                          id={`dep-${dep.workflowSubstage.substageId}`}
-                          checked={existingDependencyIds.has(dep.workflowSubstage.substageId)}
+                          id={`dep-${dep.substageSeq}`}
+                          checked={existingDependencyIds.has(dep.substageSeq)}
                           onCheckedChange={checked => {
                             const currentDeps = config.workflowAppConfigDeps || [];
                             let newDeps;
                             
                             if (checked) {
-                              // Add dependency if not already present
-                              const exists = currentDeps.some(d => d.id.dependencySubstageId === dep.workflowSubstage.substageId);
+                              // Add dependency using sequence number (not substageId)
+                              const exists = currentDeps.some(d => d.id.dependencySubstageId === dep.substageSeq);
                               if (!exists) {
                                 newDeps = [...currentDeps, {
                                   id: { 
                                     workflowAppConfigId: config.workflowAppConfigId, 
-                                    dependencySubstageId: dep.workflowSubstage.substageId 
+                                    dependencySubstageId: dep.substageSeq // Use sequence number for saving
                                   }
                                 }];
                               } else {
                                 newDeps = currentDeps;
                               }
                             } else {
-                              // Remove dependency
-                              newDeps = currentDeps.filter(d => d.id.dependencySubstageId !== dep.workflowSubstage.substageId);
+                              // Remove dependency by sequence number
+                              newDeps = currentDeps.filter(d => d.id.dependencySubstageId !== dep.substageSeq);
                             }
                             
                             handleSubstageUpdate('workflowAppConfigDeps', newDeps);
                           }}
                         />
-                        <Label htmlFor={`dep-${dep.workflowSubstage.substageId}`} className="font-normal">
+                        <Label htmlFor={`dep-${dep.substageSeq}`} className="font-normal">
+                          <span className="text-sm font-mono bg-muted px-2 py-1 rounded mr-2">
+                            {dep.substageSeq}
+                          </span>
                           {dep.workflowSubstage.name} <span className="text-muted-foreground">({typeof dep.workflowStage === 'object' ? dep.workflowStage.name : 'Stage'})</span>
                         </Label>
                       </div>
