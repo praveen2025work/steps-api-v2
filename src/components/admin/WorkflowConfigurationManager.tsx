@@ -538,12 +538,6 @@ const WorkflowConfigurationManager: React.FC = () => {
     return state.metadata.WorkflowAttest;
   }, [state.metadata]);
 
-  // This function is no longer needed as logic is moved into the component
-  // const getSelectedDependencies = useCallback((config: WorkflowAppConfig) => {
-  //   if (!config.workflowAppConfigDeps) return [];
-  //   return config.workflowAppConfigDeps.map(dep => dep.id.dependencySubstageId);
-  // }, []);
-
   const showSubstageSelector = (stageId: number) => {
     if (!state.metadata) {
       toast({
@@ -2164,14 +2158,16 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
 }) => {
   const { config } = selectedSubstage;
 
-  // Memoized lookups for efficient data binding
+  // Fixed data binding lookups
   const existingParamsMap = useMemo(() => {
     const map = new Map<string, string>();
     if (config.workflowAppConfigParams) {
       for (const param of config.workflowAppConfigParams) {
-        // Per user request, ensure the parameter's config ID matches the current substage's config ID.
-        // This handles cases where the API might return parameters for other substages.
-        if (param.id && param.id.workflowAppConfigId === config.workflowAppConfigId) {
+        // Fix: Properly handle parameter binding based on user's data structure
+        if (param.id && param.id.name && param.id.workflowAppConfigId === config.workflowAppConfigId) {
+          map.set(param.id.name, param.value);
+        } else if (param.name) {
+          // Fallback for direct name matching
           map.set(param.name, param.value);
         }
       }
@@ -2180,17 +2176,16 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
   }, [config.workflowAppConfigParams, config.workflowAppConfigId]);
 
   const existingAttestationIds = useMemo(() => {
+    // Fix: Properly bind attestations from workflowAttests array
     return new Set(config.workflowAttests?.map(a => a.attestationId) || []);
   }, [config.workflowAttests]);
 
   const existingDependencyIds = useMemo(() => {
-    // Per user request, ensure the dependency's config ID matches the current substage's config ID.
+    // Fix: Properly bind dependencies based on dependencySubstageId
     return new Set(
-      config.workflowAppConfigDeps
-        ?.filter(d => d.id && d.id.workflowAppConfigId === config.workflowAppConfigId)
-        .map(d => d.id.dependencySubstageId) || []
+      config.workflowAppConfigDeps?.map(d => d.id.dependencySubstageId) || []
     );
-  }, [config.workflowAppConfigDeps, config.workflowAppConfigId]);
+  }, [config.workflowAppConfigDeps]);
 
   const existingFileConfigsMap = useMemo(() => {
     const map = new Map<string, WorkflowAppConfigFile>();
@@ -2208,6 +2203,7 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
   const isAutoType = config.auto === 'Y';
   const availableAttestations = getAvailableAttestations(config.workflowSubstage, isAutoType);
 
+  // Fix: Get upload parameters (UPLOAD type only) - ensure they don't show in regular parameters
   const uploadParameters = useMemo(() => {
     if (!state.metadata?.WorkflowParams || !config.workflowSubstage.paramMapping) {
       return [];
@@ -2273,152 +2269,259 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
           </div>
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="flex-1 overflow-hidden"><ScrollArea className="h-full px-4 pb-4">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Substage Settings</CardTitle></CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-2"><Switch id="active" checked={config.isactive === 'Y'} onCheckedChange={c => handleSubstageUpdate('isactive', c ? 'Y' : 'N')} /><Label htmlFor="active">Active</Label></div>
-                  <div className="flex items-center space-x-2"><Switch id="auto" checked={isAutoType} onCheckedChange={c => handleSubstageUpdate('auto', c ? 'Y' : 'N')} /><Label htmlFor="auto">Auto</Label></div>
-                  <div className="flex items-center space-x-2"><Switch id="adhoc" checked={config.adhoc === 'Y'} onCheckedChange={c => handleSubstageUpdate('adhoc', c ? 'Y' : 'N')} /><Label htmlFor="adhoc">Adhoc</Label></div>
-                  <div className="flex items-center space-x-2"><Switch id="alteryx" checked={config.isalteryx === 'Y'} onCheckedChange={c => handleSubstageUpdate('isalteryx', c ? 'Y' : 'N')} /><Label htmlFor="alteryx">Alteryx</Label></div>
-                </div>
-                {!isAutoType && <>
-                  <Separator />
+          <TabsContent value="settings" className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full px-4 pb-4">
+              <Card>
+                <CardHeader><CardTitle className="text-base">Substage Settings</CardTitle></CardHeader>
+                <CardContent className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2"><Switch id="approval" checked={config.approval === 'Y'} onCheckedChange={c => handleSubstageUpdate('approval', c ? 'Y' : 'N')} /><Label htmlFor="approval">Requires Approval</Label></div>
-                    <div className="flex items-center space-x-2"><Switch id="attest" checked={config.attest === 'Y'} onCheckedChange={c => handleSubstageUpdate('attest', c ? 'Y' : 'N')} /><Label htmlFor="attest">Requires Attestation</Label></div>
-                    <div className="flex items-center space-x-2"><Switch id="upload" checked={config.upload === 'Y'} onCheckedChange={c => handleSubstageUpdate('upload', c ? 'Y' : 'N')} /><Label htmlFor="upload">Allows File Upload</Label></div>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="active" checked={config.isactive === 'Y'} onCheckedChange={c => handleSubstageUpdate('isactive', c ? 'Y' : 'N')} />
+                      <Label htmlFor="active">Active</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="auto" checked={isAutoType} onCheckedChange={c => handleSubstageUpdate('auto', c ? 'Y' : 'N')} />
+                      <Label htmlFor="auto">Auto</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="adhoc" checked={config.adhoc === 'Y'} onCheckedChange={c => handleSubstageUpdate('adhoc', c ? 'Y' : 'N')} />
+                      <Label htmlFor="adhoc">Adhoc</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="alteryx" checked={config.isalteryx === 'Y'} onCheckedChange={c => handleSubstageUpdate('isalteryx', c ? 'Y' : 'N')} />
+                      <Label htmlFor="alteryx">Alteryx</Label>
+                    </div>
                   </div>
-                </>}
-              </CardContent>
-            </Card>
-          </ScrollArea></TabsContent>
+                  {!isAutoType && (
+                    <>
+                      <Separator />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch id="approval" checked={config.approval === 'Y'} onCheckedChange={c => handleSubstageUpdate('approval', c ? 'Y' : 'N')} />
+                          <Label htmlFor="approval">Requires Approval</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="attest" checked={config.attest === 'Y'} onCheckedChange={c => handleSubstageUpdate('attest', c ? 'Y' : 'N')} />
+                          <Label htmlFor="attest">Requires Attestation</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="upload" checked={config.upload === 'Y'} onCheckedChange={c => handleSubstageUpdate('upload', c ? 'Y' : 'N')} />
+                          <Label htmlFor="upload">Allows File Upload</Label>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </ScrollArea>
+          </TabsContent>
 
           {/* Parameters Tab */}
-          <TabsContent value="parameters" className="flex-1 overflow-hidden"><ScrollArea className="h-full px-4 pb-4">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Parameters</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                {availableParameters.length === 0 ? <p className="text-sm text-muted-foreground">No parameters mapped.</p> :
-                  availableParameters.map(param => (
-                    <div key={param.paramId} className="space-y-2">
-                      <Label htmlFor={`param-${param.paramId}`}>{param.name}</Label>
-                      <Input
-                        id={`param-${param.paramId}`}
-                        value={existingParamsMap.get(param.name) || ''}
-                        onChange={e => {
-                          const newParams = new Map(existingParamsMap);
-                          newParams.set(param.name, e.target.value);
-                          const updatedParams = Array.from(newParams.entries()).map(([name, value]) => ({
-                            id: { workflowAppConfigId: config.workflowAppConfigId, name }, name, value
-                          }));
-                          handleSubstageUpdate('workflowAppConfigParams', updatedParams);
-                        }}
-                        placeholder={`Enter ${param.name}`}
-                      />
-                    </div>
-                  ))}
-              </CardContent>
-            </Card>
-          </ScrollArea></TabsContent>
+          <TabsContent value="parameters" className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full px-4 pb-4">
+              <Card>
+                <CardHeader><CardTitle className="text-base">Parameters</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {availableParameters.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No parameters mapped.</p>
+                  ) : (
+                    availableParameters.map(param => (
+                      <div key={param.paramId} className="space-y-2">
+                        <Label htmlFor={`param-${param.paramId}`}>{param.name}</Label>
+                        <Input
+                          id={`param-${param.paramId}`}
+                          value={existingParamsMap.get(param.name) || ''}
+                          onChange={e => {
+                            const currentParams = config.workflowAppConfigParams || [];
+                            const existingParamIndex = currentParams.findIndex(p => 
+                              (p.id?.name === param.name) || (p.name === param.name)
+                            );
+                            
+                            let updatedParams;
+                            if (existingParamIndex >= 0) {
+                              updatedParams = [...currentParams];
+                              updatedParams[existingParamIndex] = {
+                                ...updatedParams[existingParamIndex],
+                                value: e.target.value
+                              };
+                            } else {
+                              updatedParams = [...currentParams, {
+                                id: { workflowAppConfigId: config.workflowAppConfigId, name: param.name },
+                                name: param.name,
+                                value: e.target.value
+                              }];
+                            }
+                            handleSubstageUpdate('workflowAppConfigParams', updatedParams);
+                          }}
+                          placeholder={`Enter ${param.name}`}
+                        />
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </ScrollArea>
+          </TabsContent>
 
           {/* Attestations Tab */}
-          <TabsContent value="attestations" className="flex-1 overflow-hidden"><ScrollArea className="h-full px-4 pb-4">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Attestations</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {availableAttestations.length === 0 ? <p className="text-sm text-muted-foreground">No attestations available.</p> :
-                  availableAttestations.map(attest => (
-                    <div key={attest.attestationId} className="flex items-center space-x-3">
-                      <Checkbox
-                        id={`attest-${attest.attestationId}`}
-                        checked={existingAttestationIds.has(attest.attestationId)}
-                        onCheckedChange={checked => {
-                          const newAttestationIds = new Set(existingAttestationIds);
-                          if (checked) newAttestationIds.add(attest.attestationId);
-                          else newAttestationIds.delete(attest.attestationId);
-                          const newAttests = state.metadata!.WorkflowAttest.filter(a => newAttestationIds.has(a.attestationId));
-                          handleSubstageUpdate('workflowAttests', newAttests);
-                        }}
-                      />
-                      <Label htmlFor={`attest-${attest.attestationId}`} className="font-normal">{attest.name}</Label>
-                    </div>
-                  ))}
-              </CardContent>
-            </Card>
-          </ScrollArea></TabsContent>
+          <TabsContent value="attestations" className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full px-4 pb-4">
+              <Card>
+                <CardHeader><CardTitle className="text-base">Attestations</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  {availableAttestations.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No attestations available.</p>
+                  ) : (
+                    availableAttestations.map(attest => (
+                      <div key={attest.attestationId} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={`attest-${attest.attestationId}`}
+                          checked={existingAttestationIds.has(attest.attestationId)}
+                          onCheckedChange={checked => {
+                            const currentAttests = config.workflowAttests || [];
+                            let newAttests;
+                            
+                            if (checked) {
+                              // Add attestation if not already present
+                              const exists = currentAttests.some(a => a.attestationId === attest.attestationId);
+                              if (!exists) {
+                                newAttests = [...currentAttests, attest];
+                              } else {
+                                newAttests = currentAttests;
+                              }
+                            } else {
+                              // Remove attestation
+                              newAttests = currentAttests.filter(a => a.attestationId !== attest.attestationId);
+                            }
+                            
+                            handleSubstageUpdate('workflowAttests', newAttests);
+                          }}
+                        />
+                        <Label htmlFor={`attest-${attest.attestationId}`} className="font-normal">
+                          {attest.name}
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </ScrollArea>
+          </TabsContent>
 
-          {/* File Upload Tab */}
-          <TabsContent value="files" className="flex-1 overflow-hidden"><ScrollArea className="h-full px-4 pb-4">
-            <Card>
-              <CardHeader><CardTitle className="text-base">File Upload Configuration</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                {uploadParameters.length === 0 ? <p className="text-sm text-muted-foreground">No 'UPLOAD' type parameters mapped.</p> :
-                  uploadParameters.map(param => {
-                    const fileConfig = existingFileConfigsMap.get(param.name);
-                    return (
-                      <Card key={param.paramId} className="bg-muted/50">
-                        <CardHeader className="pb-2"><CardTitle className="text-sm">{param.name}</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                          <div>
-                            <Label className="text-xs">File Name / Pattern</Label>
-                            <Input
-                              value={fileConfig?.value || ''}
-                              onChange={e => handleFileConfigChange(param.name, 'value', e.target.value)}
-                              placeholder="e.g., MyReport.xlsx or *.csv"
-                            />
+          {/* File Upload Tab - Improved Design */}
+          <TabsContent value="files" className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full px-4 pb-4">
+              <Card>
+                <CardHeader><CardTitle className="text-base">File Upload Configuration</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  {uploadParameters.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No 'UPLOAD' type parameters mapped.</p>
+                  ) : (
+                    uploadParameters.map(param => {
+                      const fileConfig = existingFileConfigsMap.get(param.name);
+                      return (
+                        <div key={param.paramId} className="border rounded-lg p-3 bg-muted/30">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-medium text-sm">{param.name}</h4>
+                            <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-1">
+                                <Switch 
+                                  id={`validate-${param.paramId}`}
+                                  checked={fileConfig?.required === 'Y'} 
+                                  onCheckedChange={c => handleFileConfigChange(param.name, 'required', c ? 'Y' : 'N')}
+                                  size="sm"
+                                />
+                                <Label htmlFor={`validate-${param.paramId}`} className="text-xs">Validate</Label>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Switch 
+                                  id={`email-${param.paramId}`}
+                                  checked={fileConfig?.emailFile === 'Y'} 
+                                  onCheckedChange={c => handleFileConfigChange(param.name, 'emailFile', c ? 'Y' : 'N')}
+                                  size="sm"
+                                />
+                                <Label htmlFor={`email-${param.paramId}`} className="text-xs">Email File</Label>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <Label className="text-xs">Description</Label>
-                            <Textarea
-                              value={fileConfig?.description || ''}
-                              onChange={e => handleFileConfigChange(param.name, 'description', e.target.value)}
-                              placeholder="Instructions for this file upload..."
-                              rows={2}
-                            />
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Filename Pattern</Label>
+                              <Input
+                                value={fileConfig?.value || ''}
+                                onChange={e => handleFileConfigChange(param.name, 'value', e.target.value)}
+                                placeholder="*.xlsx, report.csv"
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Description</Label>
+                              <Input
+                                value={fileConfig?.description || ''}
+                                onChange={e => handleFileConfigChange(param.name, 'description', e.target.value)}
+                                placeholder="File description..."
+                                className="h-8 text-sm"
+                              />
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between pt-2">
-                            <div className="flex items-center space-x-2"><Switch checked={fileConfig?.required === 'Y'} onCheckedChange={c => handleFileConfigChange(param.name, 'required', c ? 'Y' : 'N')} /><Label className="text-xs">Required</Label></div>
-                            <div className="flex items-center space-x-2"><Switch checked={fileConfig?.emailFile === 'Y'} onCheckedChange={c => handleFileConfigChange(param.name, 'emailFile', c ? 'Y' : 'N')} /><Label className="text-xs">Email File</Label></div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-              </CardContent>
-            </Card>
-          </ScrollArea></TabsContent>
+                        </div>
+                      );
+                    })
+                  )}
+                </CardContent>
+              </Card>
+            </ScrollArea>
+          </TabsContent>
 
           {/* Dependencies Tab */}
-          <TabsContent value="dependencies" className="flex-1 overflow-hidden"><ScrollArea className="h-full px-4 pb-4">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Dependencies</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {availableDependencies.length === 0 ? <p className="text-sm text-muted-foreground">No prior substages to depend on.</p> :
-                  availableDependencies.map(dep => (
-                    <div key={dep.workflowSubstage.substageId} className="flex items-center space-x-3">
-                      <Checkbox
-                        id={`dep-${dep.workflowSubstage.substageId}`}
-                        checked={existingDependencyIds.has(dep.workflowSubstage.substageId)}
-                        onCheckedChange={checked => {
-                          const newDependencyIds = new Set(existingDependencyIds);
-                          if (checked) newDependencyIds.add(dep.workflowSubstage.substageId);
-                          else newDependencyIds.delete(dep.workflowSubstage.substageId);
-                          const newDeps = Array.from(newDependencyIds).map(id => ({
-                            id: { workflowAppConfigId: config.workflowAppConfigId, dependencySubstageId: id }
-                          }));
-                          handleSubstageUpdate('workflowAppConfigDeps', newDeps);
-                        }}
-                      />
-                      <Label htmlFor={`dep-${dep.workflowSubstage.substageId}`} className="font-normal">
-                        {dep.workflowSubstage.name} <span className="text-muted-foreground">({typeof dep.workflowStage === 'object' ? dep.workflowStage.name : 'Stage'})</span>
-                      </Label>
-                    </div>
-                  ))}
-              </CardContent>
-            </Card>
-          </ScrollArea></TabsContent>
+          <TabsContent value="dependencies" className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full px-4 pb-4">
+              <Card>
+                <CardHeader><CardTitle className="text-base">Dependencies</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  {availableDependencies.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No prior substages to depend on.</p>
+                  ) : (
+                    availableDependencies.map(dep => (
+                      <div key={dep.workflowSubstage.substageId} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={`dep-${dep.workflowSubstage.substageId}`}
+                          checked={existingDependencyIds.has(dep.workflowSubstage.substageId)}
+                          onCheckedChange={checked => {
+                            const currentDeps = config.workflowAppConfigDeps || [];
+                            let newDeps;
+                            
+                            if (checked) {
+                              // Add dependency if not already present
+                              const exists = currentDeps.some(d => d.id.dependencySubstageId === dep.workflowSubstage.substageId);
+                              if (!exists) {
+                                newDeps = [...currentDeps, {
+                                  id: { 
+                                    workflowAppConfigId: config.workflowAppConfigId, 
+                                    dependencySubstageId: dep.workflowSubstage.substageId 
+                                  }
+                                }];
+                              } else {
+                                newDeps = currentDeps;
+                              }
+                            } else {
+                              // Remove dependency
+                              newDeps = currentDeps.filter(d => d.id.dependencySubstageId !== dep.workflowSubstage.substageId);
+                            }
+                            
+                            handleSubstageUpdate('workflowAppConfigDeps', newDeps);
+                          }}
+                        />
+                        <Label htmlFor={`dep-${dep.workflowSubstage.substageId}`} className="font-normal">
+                          {dep.workflowSubstage.name} <span className="text-muted-foreground">({typeof dep.workflowStage === 'object' ? dep.workflowStage.name : 'Stage'})</span>
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </ScrollArea>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
