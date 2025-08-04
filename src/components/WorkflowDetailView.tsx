@@ -70,6 +70,7 @@ import {
   Play,
   Timer
 } from 'lucide-react';
+import WorkflowActionButtons from './workflow/WorkflowActionButtons';
 import { getFileIcon } from './DocumentsList';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
@@ -359,6 +360,16 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       setIsRefreshing(false);
     }
   }, [isRefreshing, preserveUIState, restoreUIState, onRefresh, refreshInterval]);
+
+  // Handle workflow action completion (Force Start, Re-run)
+  const handleActionComplete = useCallback(async (action: 'force-start' | 're-run', success: boolean, processId?: string) => {
+    if (success) {
+      // Refresh the workflow data after successful action
+      setTimeout(() => {
+        handleRefresh(false); // Silent refresh after action
+      }, 1000); // Small delay to allow backend processing
+    }
+  }, [handleRefresh]);
 
   // Toggle workflow lock state
   const toggleLock = () => {
@@ -1519,21 +1530,17 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                                 </Button>
                               )}
                               
-                              {/* Start button - Only for not-started or failed processes */}
-                              {(subStage.status === 'not-started' || subStage.status === 'failed') && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-6 w-6 p-0 hover:bg-muted"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    showSuccessToast(`Started ${subStage.name}`);
-                                  }}
-                                  title="Start"
-                                >
-                                  <PlayCircle className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
+                              {/* Workflow Action Buttons (Force Start / Re-run) */}
+                              <WorkflowActionButtons
+                                workflowProcessId={subStage.apiData?.workflowProcessId || subStage.processId}
+                                status={subStage.status}
+                                isLocked={subStage.meta?.lockedBy ? true : false}
+                                updatedBy="user" // Could be enhanced to use actual user context
+                                onActionComplete={handleActionComplete}
+                                size="sm"
+                                variant="ghost"
+                                className="h-6"
+                              />
                               
                               {/* Refresh button - For all statuses */}
                               <Button 
@@ -1549,22 +1556,6 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                                 <RefreshCw className="h-3.5 w-3.5" />
                               </Button>
                               
-                              {/* Complete button - Only for in-progress processes */}
-                              {subStage.status === 'in-progress' && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-6 w-6 p-0 hover:bg-muted"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    showSuccessToast(`Completed ${subStage.name}`);
-                                  }}
-                                  title="Complete"
-                                >
-                                  <ArrowRightCircle className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                              
                               {/* Skip button - Only for not-started or in-progress processes */}
                               {(subStage.status === 'not-started' || subStage.status === 'in-progress') && (
                                 <Button 
@@ -1578,22 +1569,6 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                                   title="Skip"
                                 >
                                   <SkipForward className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                              
-                              {/* Rerun button - Only for completed or failed processes */}
-                              {(subStage.status === 'completed' || subStage.status === 'failed') && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-6 w-6 p-0 hover:bg-muted"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    showInfoToast(`Rerunning ${subStage.name}`);
-                                  }}
-                                  title="Rerun"
-                                >
-                                  <RotateCcw className="h-3.5 w-3.5" />
                                 </Button>
                               )}
                               
