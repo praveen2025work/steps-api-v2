@@ -2286,7 +2286,6 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
     }
     handleSubstageUpdate('workflowAppConfigFiles', newFiles);
   };
-=======
 
   return (
     <div className="h-full flex flex-col">
