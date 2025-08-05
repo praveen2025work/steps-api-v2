@@ -473,6 +473,247 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       dependencies: [
         { name: 'Poll Book OFC Rec Factory', status: 'completed', id: 'poll_book' }
       ]
+    },
+    { 
+      id: 'data_validation',
+      name: 'Data Validation and Reconciliation',
+      type: 'auto',
+      status: 'completed',
+      progress: 100,
+      processId: 'PROC-1238',
+      timing: {
+        start: '08:00:00',
+        duration: '12m',
+        avgDuration: '10m',
+        avgStart: '08:00 AM'
+      },
+      stats: {
+        success: '98%',
+        lastRun: '2025-04-12T08:12:00'
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T08:12:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: 'System',
+        completedOn: '2025-04-12T08:12:00'
+      },
+      files: [
+        { name: 'validation_report.xlsx', type: 'download', size: '1.5 MB' },
+        { name: 'reconciliation_summary.pdf', type: 'preview', size: '800 KB' },
+        { name: 'error_log.txt', type: 'preview', size: '15 KB' }
+      ],
+      messages: ['Data validation completed successfully', 'All reconciliation checks passed'],
+      dependencies: [
+        { name: 'Create Trigger File for Rec Factory', status: 'completed', id: 'trigger_file' }
+      ]
+    },
+    { 
+      id: 'risk_calculation',
+      name: 'Risk Metrics Calculation',
+      type: 'manual',
+      status: 'completed',
+      progress: 100,
+      processId: 'PROC-1239',
+      timing: {
+        start: '08:15:00',
+        duration: '25m',
+        avgDuration: '20m',
+        avgStart: '08:15 AM'
+      },
+      stats: {
+        success: '96%',
+        lastRun: '2025-04-12T08:40:00'
+      },
+      meta: {
+        updatedBy: 'John Doe',
+        updatedOn: '2025-04-12T08:40:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: 'John Doe',
+        completedOn: '2025-04-12T08:40:00'
+      },
+      files: [
+        { name: 'risk_metrics.xlsx', type: 'download', size: '2.8 MB' },
+        { name: 'var_calculation.csv', type: 'download', size: '1.2 MB' },
+        { name: 'stress_test_results.pdf', type: 'preview', size: '950 KB' }
+      ],
+      messages: ['Risk calculations completed', 'VaR within acceptable limits', 'Stress test scenarios passed'],
+      dependencies: [
+        { name: 'Data Validation and Reconciliation', status: 'completed', id: 'data_validation' }
+      ]
+    },
+    { 
+      id: 'compliance_check',
+      name: 'Regulatory Compliance Verification',
+      type: 'auto',
+      status: 'completed',
+      progress: 100,
+      processId: 'PROC-1240',
+      timing: {
+        start: '08:45:00',
+        duration: '8m',
+        avgDuration: '7m',
+        avgStart: '08:45 AM'
+      },
+      stats: {
+        success: '100%',
+        lastRun: '2025-04-12T08:53:00'
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T08:53:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: 'System',
+        completedOn: '2025-04-12T08:53:00'
+      },
+      files: [
+        { name: 'compliance_report.pdf', type: 'download', size: '650 KB' },
+        { name: 'regulatory_checklist.xlsx', type: 'preview', size: '400 KB' },
+        { name: 'audit_trail.log', type: 'preview', size: '25 KB' }
+      ],
+      messages: ['All compliance checks passed', 'Regulatory requirements met'],
+      dependencies: [
+        { name: 'Risk Metrics Calculation', status: 'completed', id: 'risk_calculation' }
+      ]
+    },
+    { 
+      id: 'portfolio_analysis',
+      name: 'Portfolio Performance Analysis',
+      type: 'manual',
+      status: 'completed',
+      progress: 100,
+      processId: 'PROC-1241',
+      timing: {
+        start: '09:00:00',
+        duration: '35m',
+        avgDuration: '30m',
+        avgStart: '09:00 AM'
+      },
+      stats: {
+        success: '94%',
+        lastRun: '2025-04-12T09:35:00'
+      },
+      meta: {
+        updatedBy: 'Jane Smith',
+        updatedOn: '2025-04-12T09:35:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: 'Jane Smith',
+        completedOn: '2025-04-12T09:35:00'
+      },
+      files: [
+        { name: 'portfolio_summary.xlsx', type: 'download', size: '3.2 MB' },
+        { name: 'performance_charts.pdf', type: 'preview', size: '1.8 MB' },
+        { name: 'attribution_analysis.csv', type: 'download', size: '850 KB' },
+        { name: 'benchmark_comparison.xlsx', type: 'download', size: '1.1 MB' }
+      ],
+      messages: ['Portfolio analysis completed', 'Performance above benchmark', 'Attribution analysis available'],
+      dependencies: [
+        { name: 'Regulatory Compliance Verification', status: 'completed', id: 'compliance_check' }
+      ]
+    },
+    { 
+      id: 'market_data_refresh',
+      name: 'Market Data Refresh and Validation',
+      type: 'auto',
+      status: 'completed',
+      progress: 100,
+      processId: 'PROC-1242',
+      timing: {
+        start: '09:40:00',
+        duration: '15m',
+        avgDuration: '12m',
+        avgStart: '09:40 AM'
+      },
+      stats: {
+        success: '99%',
+        lastRun: '2025-04-12T09:55:00'
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T09:55:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: 'System',
+        completedOn: '2025-04-12T09:55:00'
+      },
+      files: [
+        { name: 'market_data_snapshot.csv', type: 'download', size: '5.5 MB' },
+        { name: 'price_validation_report.xlsx', type: 'preview', size: '1.3 MB' },
+        { name: 'data_quality_metrics.json', type: 'preview', size: '45 KB' }
+      ],
+      messages: ['Market data refreshed successfully', 'All price validations passed', 'Data quality within thresholds'],
+      dependencies: [
+        { name: 'Portfolio Performance Analysis', status: 'completed', id: 'portfolio_analysis' }
+      ]
+    },
+    { 
+      id: 'report_generation',
+      name: 'Final Report Generation',
+      type: 'auto',
+      status: 'in-progress',
+      progress: 65,
+      processId: 'PROC-1243',
+      timing: {
+        start: '10:00:00',
+        duration: '20m',
+        avgDuration: '18m',
+        avgStart: '10:00 AM'
+      },
+      stats: {
+        success: '97%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T10:13:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'draft_report.pdf', type: 'preview', size: '2.1 MB' },
+        { name: 'executive_summary.docx', type: 'preview', size: '450 KB' }
+      ],
+      messages: ['Report generation in progress', 'Executive summary completed'],
+      dependencies: [
+        { name: 'Market Data Refresh and Validation', status: 'completed', id: 'market_data_refresh' }
+      ]
+    },
+    { 
+      id: 'final_approval',
+      name: 'Final Approval and Sign-off',
+      type: 'manual',
+      status: 'not-started',
+      progress: 0,
+      processId: 'PROC-1244',
+      timing: {
+        start: '10:30:00',
+        duration: '10m',
+        avgDuration: '8m',
+        avgStart: '10:30 AM'
+      },
+      stats: {
+        success: '100%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [],
+      messages: ['Awaiting final approval'],
+      dependencies: [
+        { name: 'Final Report Generation', status: 'in-progress', id: 'report_generation' }
+      ]
     }
   ];
 
