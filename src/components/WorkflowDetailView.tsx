@@ -255,8 +255,8 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   // Dependency mapping state
   const [dependencyMap, setDependencyMap] = useState<Map<string, SubStage>>(new Map());
 
-  // UI state preservation during refresh - Enhanced to prevent jumping
-  const [preservedState, setPreservedState] = useState<{
+  // UI state preservation during refresh - using useRef for synchronous update
+  const preservedStateRef = useRef<{
     activeTab: string;
     selectedSubStage: string | null;
     rightPanelContent: string;
@@ -264,15 +264,8 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     scrollPosition: number;
     activeStage: string;
     expandedSections: Record<string, boolean>;
-  }>({
-    activeTab: 'overview',
-    selectedSubStage: null,
-    rightPanelContent: 'stage-overview',
-    showFilePreview: false,
-    scrollPosition: 0,
-    activeStage: stages[0]?.id || '',
-    expandedSections: { tasks: true }
-  });
+    rightPanelOpen: boolean;
+  }>();
 
   // Initialize hierarchy path from breadcrumb context
   useEffect(() => {
@@ -309,44 +302,36 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
 
   // Preserve UI state before refresh - Enhanced to prevent jumping
   const preserveUIState = useCallback(() => {
-    setPreservedState({
+    preservedStateRef.current = {
       activeTab,
       selectedSubStage,
       rightPanelContent,
       showFilePreview,
       scrollPosition: window.scrollY,
       activeStage,
-      expandedSections
-    });
-  }, [activeTab, selectedSubStage, rightPanelContent, showFilePreview, activeStage, expandedSections]);
+      expandedSections,
+      rightPanelOpen,
+    };
+  }, [activeTab, selectedSubStage, rightPanelContent, showFilePreview, activeStage, expandedSections, rightPanelOpen]);
 
   // Restore UI state after refresh - Enhanced to prevent jumping
   const restoreUIState = useCallback(() => {
-    // Only update state if it has actually changed to prevent unnecessary re-renders
-    if (preservedState.activeTab !== activeTab) {
-      setActiveTab(preservedState.activeTab);
+    if (preservedStateRef.current) {
+      const stateToRestore = preservedStateRef.current;
+      setActiveTab(stateToRestore.activeTab);
+      setSelectedSubStage(stateToRestore.selectedSubStage);
+      setRightPanelContent(stateToRestore.rightPanelContent as any);
+      setShowFilePreview(stateToRestore.showFilePreview);
+      setActiveStage(stateToRestore.activeStage);
+      setExpandedSections(stateToRestore.expandedSections);
+      setRightPanelOpen(stateToRestore.rightPanelOpen);
+
+      // Restore scroll position after a short delay to allow the UI to update
+      setTimeout(() => {
+        window.scrollTo(0, stateToRestore.scrollPosition);
+      }, 150);
     }
-    if (preservedState.selectedSubStage !== selectedSubStage) {
-      setSelectedSubStage(preservedState.selectedSubStage);
-    }
-    if (preservedState.rightPanelContent !== rightPanelContent) {
-      setRightPanelContent(preservedState.rightPanelContent as any);
-    }
-    if (preservedState.showFilePreview !== showFilePreview) {
-      setShowFilePreview(preservedState.showFilePreview);
-    }
-    if (preservedState.activeStage !== activeStage) {
-      setActiveStage(preservedState.activeStage);
-    }
-    if (JSON.stringify(preservedState.expandedSections) !== JSON.stringify(expandedSections)) {
-      setExpandedSections(preservedState.expandedSections);
-    }
-    
-    // Restore scroll position
-    setTimeout(() => {
-      window.scrollTo(0, preservedState.scrollPosition);
-    }, 100);
-  }, [preservedState, activeTab, selectedSubStage, rightPanelContent, showFilePreview, activeStage, expandedSections]);
+  }, []); // No dependencies, reads from ref
 
   // Enhanced refresh with data fetching for main view and all breadcrumb nodes
   const handleRefresh = useCallback(async (isManualRefresh: boolean = false) => {
