@@ -594,6 +594,44 @@ export class ApiClient {
     const endpoint = CORE_API_ENDPOINTS.GET_UNIQUE_APPLICATIONS;
     return this.makeRequest<UniqueApplication[]>(endpoint);
   }
+
+  // ===== HTTP METHOD HELPERS =====
+
+  // GET request helper
+  async get<T>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.makeRequest<T>(endpoint, { method: 'GET' });
+  }
+
+  // POST request helper
+  async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    const options: RequestInit = {
+      method: 'POST',
+    };
+
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+
+    return this.makeRequest<T>(endpoint, options);
+  }
+
+  // PUT request helper
+  async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    const options: RequestInit = {
+      method: 'PUT',
+    };
+
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+
+    return this.makeRequest<T>(endpoint, options);
+  }
+
+  // DELETE request helper
+  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.makeRequest<T>(endpoint, { method: 'DELETE' });
+  }
 }
 
 // Create a default instance

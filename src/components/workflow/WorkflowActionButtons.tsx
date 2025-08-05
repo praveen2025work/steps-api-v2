@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { toast } from '@/lib/toast';
+import { toast } from 'sonner';
 import { WorkflowActionService } from '@/services/workflowActionService';
 import { 
   PlayCircle, 
@@ -59,28 +59,14 @@ const WorkflowActionButtons: React.FC<WorkflowActionButtonsProps> = ({
       const result = await WorkflowActionService.forceStart(processId, updatedBy);
       
       if (result.success) {
-        toast({
-          title: "Force Start Successful",
-          description: result.message || `Process ${processId} has been force started`,
-          variant: "default"
-        });
-        
+        toast.success(result.message || `Process ${processId} has been force started`);
         onActionComplete?.('force-start', true);
       } else {
-        toast({
-          title: "Force Start Failed",
-          description: result.error || 'Failed to force start the process',
-          variant: "destructive"
-        });
-        
+        toast.error(result.error || 'Failed to force start the process');
         onActionComplete?.('force-start', false);
       }
     } catch (error: any) {
-      toast({
-        title: "Force Start Error",
-        description: error.message || 'An unexpected error occurred',
-        variant: "destructive"
-      });
+      toast.error(error.message || 'An unexpected error occurred');
       
       onActionComplete?.('force-start', false);
     } finally {
@@ -99,28 +85,14 @@ const WorkflowActionButtons: React.FC<WorkflowActionButtonsProps> = ({
       const result = await WorkflowActionService.reRun(processId, updatedBy);
       
       if (result.success) {
-        toast({
-          title: "Re-run Successful",
-          description: result.message || `Process ${processId} has been re-run`,
-          variant: "default"
-        });
-        
+        toast.success(result.message || `Process ${processId} has been re-run`);
         onActionComplete?.('re-run', true);
       } else {
-        toast({
-          title: "Re-run Failed",
-          description: result.error || 'Failed to re-run the process',
-          variant: "destructive"
-        });
-        
+        toast.error(result.error || 'Failed to re-run the process');
         onActionComplete?.('re-run', false);
       }
     } catch (error: any) {
-      toast({
-        title: "Re-run Error",
-        description: error.message || 'An unexpected error occurred',
-        variant: "destructive"
-      });
+      toast.error(error.message || 'An unexpected error occurred');
       
       onActionComplete?.('re-run', false);
     } finally {
