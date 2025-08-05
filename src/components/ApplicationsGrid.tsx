@@ -358,16 +358,10 @@ const ApplicationsGrid = () => {
     application: WorkflowApplication, 
     node: WorkflowNode
   ) => {
-    console.log('[ApplicationsGrid] Converting workflow summary to UI format:', {
-      processDataCount: summary.processData?.length || 0,
-      fileDataCount: summary.fileData?.length || 0,
-      dependencyDataCount: summary.dependencyData?.length || 0,
-      attestationDataCount: summary.attestationData?.length || 0,
-      dailyParamsCount: summary.dailyParams?.length || 0,
-      applicationsCount: summary.applications?.length || 0,
-      appParamsCount: summary.appParams?.length || 0,
-      processParamsCount: summary.processParams?.length || 0
-    });
+    // Reduced logging to prevent memory issues
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ApplicationsGrid] Converting workflow summary to UI format');
+    }
 
     // Build progress steps from breadcrumb context
     const progressSteps = breadcrumbState.nodes.map((item, index) => ({
@@ -955,22 +949,32 @@ const ApplicationsGrid = () => {
     );
 
     // Enhanced workflow data object with all necessary data for Modern and Step Function views
+    // Optimized to prevent memory issues by limiting data size
     const enhancedWorkflowData = {
       id: selectedWorkflow.node.configId || 'workflow-1',
       title: workflowData.workflowTitle,
       progressSteps: workflowData.progressSteps,
       stages: workflowData.stages,
       tasks: workflowData.tasks,
-      // Pass the raw API data for Modern and Step Function views
-      summaryData: selectedWorkflow.summary,
+      // Pass only essential API data to prevent memory issues
+      summaryData: selectedWorkflow.summary ? {
+        processData: selectedWorkflow.summary.processData?.slice(0, 100) || [], // Limit to 100 items
+        fileData: selectedWorkflow.summary.fileData?.slice(0, 50) || [], // Limit to 50 items
+        dependencyData: selectedWorkflow.summary.dependencyData?.slice(0, 50) || [], // Limit to 50 items
+        attestationData: selectedWorkflow.summary.attestationData?.slice(0, 50) || [], // Limit to 50 items
+        dailyParams: selectedWorkflow.summary.dailyParams?.slice(0, 20) || [], // Limit to 20 items
+        applications: selectedWorkflow.summary.applications?.slice(0, 10) || [], // Limit to 10 items
+        appParams: selectedWorkflow.summary.appParams?.slice(0, 20) || [], // Limit to 20 items
+        processParams: selectedWorkflow.summary.processParams?.slice(0, 50) || [] // Limit to 50 items
+      } : null,
       applicationData: selectedWorkflow.application,
       nodeData: selectedWorkflow.node,
       // Additional computed data
       progress: selectedWorkflow.node.percentageCompleted || 0,
       status: 'Active',
-      // Enhanced task counts from actual API data
+      // Enhanced task counts from actual API data (optimized)
       taskCounts: (() => {
-        const processData = selectedWorkflow.summary.processData || [];
+        const processData = selectedWorkflow.summary.processData?.slice(0, 100) || []; // Limit processing
         let completed = 0, failed = 0, rejected = 0, pending = 0, processing = 0;
         
         processData.forEach((process: any) => {
@@ -984,14 +988,14 @@ const ApplicationsGrid = () => {
         
         return { completed, failed, rejected, pending, processing };
       })(),
-      // File data from API
-      allFiles: selectedWorkflow.summary.fileData || [],
-      // Dependency data from API
-      allDependencies: selectedWorkflow.summary.dependencyData || [],
-      // Parameters from API
-      dailyParams: selectedWorkflow.summary.dailyParams || [],
-      appParams: selectedWorkflow.summary.appParams || [],
-      processParams: selectedWorkflow.summary.processParams || []
+      // File data from API (limited)
+      allFiles: selectedWorkflow.summary.fileData?.slice(0, 50) || [],
+      // Dependency data from API (limited)
+      allDependencies: selectedWorkflow.summary.dependencyData?.slice(0, 50) || [],
+      // Parameters from API (limited)
+      dailyParams: selectedWorkflow.summary.dailyParams?.slice(0, 20) || [],
+      appParams: selectedWorkflow.summary.appParams?.slice(0, 20) || [],
+      processParams: selectedWorkflow.summary.processParams?.slice(0, 50) || []
     };
 
     return (
