@@ -883,35 +883,54 @@ const ApplicationsGrid = () => {
         // Update the summary data for the selected workflow
         setSelectedWorkflow(prevState => prevState ? { ...prevState, summary: response.data } : null);
         
-        // Refresh breadcrumb node percentages
+        // Refresh breadcrumb node percentages using the correct hierarchy calls
         if (breadcrumbState.nodes.length > 0) {
-          const updatedNodesPromises = breadcrumbState.nodes.map(async (bNode) => {
-            const nodeConfigId = bNode.configId || (bNode.level > 0 ? bNode.id : null);
-            if (!nodeConfigId || !bNode.appId) return bNode;
-
+          const updatedNodesPromises = breadcrumbState.nodes.map(async (bNode, index) => {
             try {
-              // This logic assumes that each node can be refreshed with getWorkflowSummary.
-              // This might need adjustment based on API capabilities for different node levels.
-              const nodeSummaryResponse = await workflowService.getWorkflowSummary({
-                date: dateString,
-                configId: nodeConfigId.toString(),
-                appId: bNode.appId.toString(),
-              });
+              // For each breadcrumb node, use the same API call that was used to navigate to it
+              if (index === breadcrumbState.nodes.length - 1) {
+                // For the last node (current workflow instance), use getWorkflowSummary
+                const nodeSummaryResponse = await workflowService.getWorkflowSummary({
+                  date: dateString,
+                  configId: bNode.configId!,
+                  appId: bNode.appId!,
+                });
 
-              if (nodeSummaryResponse.success && nodeSummaryResponse.data?.processData) {
-                const { processData } = nodeSummaryResponse.data;
-                const total = processData.length;
-                const completed = processData.filter((p: any) => 
-                  (p.status || '').toUpperCase() === 'COMPLETED'
-                ).length;
-                const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-                return { ...bNode, completionPercentage };
+                if (nodeSummaryResponse.success && nodeSummaryResponse.data?.processData) {
+                  const { processData } = nodeSummaryResponse.data;
+                  const total = processData.length;
+                  const completed = processData.filter((p: any) => 
+                    (p.status || '').toUpperCase() === 'COMPLETED'
+                  ).length;
+                  const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+                  return { ...bNode, completionPercentage };
+                }
+              } else {
+                // For intermediate nodes, use getWorkflowNodes to get the updated progress
+                const nodeResponse = await workflowService.getWorkflowNodes({
+                  date: dateString,
+                  appId: bNode.appId!,
+                  configId: bNode.configId!,
+                  currentLevel: bNode.currentLevel!,
+                  nextLevel: bNode.nextLevel!
+                });
+
+                if (nodeResponse.success && nodeResponse.data) {
+                  // Calculate completion percentage based on child nodes
+                  const childNodes = nodeResponse.data;
+                  if (childNodes.length > 0) {
+                    const totalProgress = childNodes.reduce((sum, child) => sum + (child.percentageCompleted || 0), 0);
+                    const avgProgress = Math.round(totalProgress / childNodes.length);
+                    return { ...bNode, completionPercentage: avgProgress };
+                  }
+                }
               }
             } catch (e) {
               console.error(`Failed to refresh breadcrumb node ${bNode.name}:`, e);
             }
             return bNode;
           });
+          
           const updatedNodes = await Promise.all(updatedNodesPromises);
           buildPath(updatedNodes); // Use buildPath to ensure the state is fully replaced
         }
