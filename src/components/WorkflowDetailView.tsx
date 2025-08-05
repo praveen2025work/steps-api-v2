@@ -1049,13 +1049,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         return <ProcessOverview processId={currentProcessId} processName={currentProcessName} />;
       case 'stages':
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
-      // Second priority: Calculate from processData if available
-        const fileData = summaryData?.fileData || [];
-=======
       case 'documents':
-        const fileData = summaryData?.fileData || [];
-=======
-      // Second priority: Calculate from processData if available
         const fileData = summaryData?.fileData || [];
         
         let filesToShow: any[] = [];
@@ -1217,7 +1211,6 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       }
       
       // Second priority: Calculate from processData if available
-      const summaryData = (window as any).currentWorkflowSummary;
       if (summaryData && summaryData.processData && summaryData.processData.length > 0) {
         const processData = summaryData.processData;
         const totalProcesses = processData.length;
