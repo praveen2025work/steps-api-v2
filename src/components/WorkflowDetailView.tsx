@@ -73,7 +73,8 @@ import {
   Timer,
   ThumbsUp,
   ThumbsDown,
-  Send
+  Send,
+  X
 } from 'lucide-react';
 import WorkflowActionButtons from './workflow/WorkflowActionButtons';
 import ProcessApprovalDialog from './workflow/ProcessApprovalDialog';
@@ -1497,14 +1498,15 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
 
       <div className="flex gap-4">
         {/* Main Content - Only visible when file preview is not shown or explicitly kept visible */}
-        <div className={`${
+        <div className={`transition-all duration-300 ease-in-out ${
           showFilePreview ? 
             (filePreviewMode === 'enhanced' ? 'hidden' : (showSubStageCards ? 'flex-[0.3] relative' : 'hidden')) : 
-            'flex-[0.6]'
+            (rightPanelOpen ? 'flex-[0.6]' : 'flex-1')
         }`}>
           {/* Process Overview removed from main content as it's now in the right panel */}
-          <div className="space-y-4">
-            {(() => {
+          <div className="pr-2 overflow-y-auto" style={{ height: 'calc(100vh - 320px)' }}>
+            <div className="space-y-4">
+              {(() => {
               // Always prefer actual API data over mock data
               const subStagesToRender = stageSpecificSubStages.length > 0 ? stageSpecificSubStages : [];
               
@@ -1783,6 +1785,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                 </Collapsible>
               ));
             })()}
+            </div>
           </div>
         </div>
 
@@ -1824,158 +1827,164 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         )}
         
         {/* Right Panel - 40% width or 30% when file preview is shown */}
-        <div className={`bg-background border-l transition-all duration-200 ${
-          (!showWorkflowDetail && showFilePreview) || (filePreviewMode === 'enhanced') ? 'hidden' : 
+        <div className={`bg-background border-l transition-all duration-300 ease-in-out ${
+          !rightPanelOpen ? 'w-0 p-0 border-l-0' :
+          ((!showWorkflowDetail && showFilePreview) || (filePreviewMode === 'enhanced')) ? 'hidden' :
           rightPanelContent ? (showFilePreview ? 'flex-[0.3]' : 'flex-[0.4]') : 'w-[200px]'
         }`}>
-          {/* Sticky Header and Menu */}
-          <div className="sticky top-0 bg-background border-b z-10">
-            <div className="p-1">
-              {/* Simplified menu - only show Config and Overview by default */}
-              <div className="flex flex-wrap gap-1 items-center">
-                {/* Show navigation options when not in preview mode or when workflow detail is explicitly shown */}
-                {(!showFilePreview || showWorkflowDetail) && (
-                  <>
-                    {/* Stage-level navigation */}
-                    <Button 
-                      variant={rightPanelContent === 'stage-overview' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-6 text-xs"
-                      onClick={() => setRightPanelContent('stage-overview')}
-                    >
-                      <Layers className="h-3 w-3 mr-1" />
-                      Stage Overview
-                    </Button>
-                    
-                    <Button 
-                      variant={rightPanelContent === 'diagram' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-6 text-xs"
-                      onClick={() => setRightPanelContent('diagram')}
-                    >
-                      <GitBranch className="h-3 w-3 mr-1" />
-                      Step Function View
-                    </Button>
-                    
-                    <Button 
-                      variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-6 text-xs"
-                      onClick={() => setRightPanelContent('app-parameters')}
-                    >
-                      <Settings className="h-3 w-3 mr-1" />
-                      App Config
-                    </Button>
-                    
-                    <Button 
-                      variant={rightPanelContent === 'global-parameters' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-6 text-xs"
-                      onClick={() => setRightPanelContent('global-parameters')}
-                    >
-                      <Settings className="h-3 w-3 mr-1" />
-                      Global Config
-                    </Button>
-                    
-                    {/* Show process-level navigation only when a process is selected */}
-                    {selectedSubStage && (
-                      <>
-                        <Separator orientation="vertical" className="h-6 mx-1" />
-                        
-                        <Button 
-                          variant={rightPanelContent === 'process-overview' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('process-overview')}
-                        >
-                          <FileText className="h-3 w-3 mr-1" />
-                          Process Overview
-                        </Button>
-                        
-                        <Button 
-                          variant={rightPanelContent === 'parameters' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('parameters')}
-                        >
-                          <Settings className="h-3 w-3 mr-1" />
-                          Process Config
-                        </Button>
-                        
-                        <Button 
-                          variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={(e) => {
-                            // Prevent event bubbling
-                            e.stopPropagation();
-                            
-                            // Only navigate to documents section, never auto-preview
-                            setRightPanelContent('documents');
-                            
-                            // Set current sub-stage files without auto-previewing
-                            const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
-                              .find(s => s.id === selectedSubStage);
-                            
-                            if (subStage && subStage.files && subStage.files.length > 0) {
-                              // Set current sub-stage files
-                              setCurrentSubStageFiles(subStage.files.map((file, index) => ({
-                                id: `file-${subStage.id}-${index}`,
-                                name: file.name,
-                                type: file.name.split('.').pop() || '',
-                                size: file.size,
-                                category: file.type
-                              })));
+          <div className={!rightPanelOpen ? 'hidden' : 'flex flex-col h-full'}>
+            {/* Sticky Header and Menu */}
+            <div className="sticky top-0 bg-background border-b z-10">
+              <div className="flex items-center p-1">
+                {/* Simplified menu - only show Config and Overview by default */}
+                <div className="flex-grow flex flex-wrap gap-1 items-center">
+                  {/* Show navigation options when not in preview mode or when workflow detail is explicitly shown */}
+                  {(!showFilePreview || showWorkflowDetail) && (
+                    <>
+                      {/* Stage-level navigation */}
+                      <Button 
+                        variant={rightPanelContent === 'stage-overview' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => setRightPanelContent('stage-overview')}
+                      >
+                        <Layers className="h-3 w-3 mr-1" />
+                        Stage Overview
+                      </Button>
+                      
+                      <Button 
+                        variant={rightPanelContent === 'diagram' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => setRightPanelContent('diagram')}
+                      >
+                        <GitBranch className="h-3 w-3 mr-1" />
+                        Step Function View
+                      </Button>
+                      
+                      <Button 
+                        variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => setRightPanelContent('app-parameters')}
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        App Config
+                      </Button>
+                      
+                      <Button 
+                        variant={rightPanelContent === 'global-parameters' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => setRightPanelContent('global-parameters')}
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        Global Config
+                      </Button>
+                      
+                      {/* Show process-level navigation only when a process is selected */}
+                      {selectedSubStage && (
+                        <>
+                          <Separator orientation="vertical" className="h-6 mx-1" />
+                          
+                          <Button 
+                            variant={rightPanelContent === 'process-overview' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => setRightPanelContent('process-overview')}
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            Process Overview
+                          </Button>
+                          
+                          <Button 
+                            variant={rightPanelContent === 'parameters' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => setRightPanelContent('parameters')}
+                          >
+                            <Settings className="h-3 w-3 mr-1" />
+                            Process Config
+                          </Button>
+                          
+                          <Button 
+                            variant={rightPanelContent === 'documents' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={(e) => {
+                              // Prevent event bubbling
+                              e.stopPropagation();
                               
-                              // Explicitly ensure file preview is closed
-                              setShowFilePreview(false);
-                              setSelectedFile(null);
-                            }
-                          }}
-                        >
-                          <FileText className="h-3 w-3 mr-1" />
-                          Files
-                        </Button>
-                        
-                        <Button 
-                          variant={rightPanelContent === 'dependencies' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('dependencies')}
-                        >
-                          <Network className="h-3 w-3 mr-1" />
-                          Dependencies
-                        </Button>
-                        
-                        <Button 
-                          variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-6 text-xs"
-                          onClick={() => setRightPanelContent('queries')}
-                        >
-                          <MessageSquare className="h-3 w-3 mr-1" />
-                          Queries
-                        </Button>
-                      </>
-                    )}
-                  </>
-                )}
-                {/* When in preview mode and workflow detail is hidden, show a message */}
-                {showFilePreview && !showWorkflowDetail && (
-                  <div className="w-full text-center text-xs text-muted-foreground py-1">
-                    Navigation hidden in preview mode
-                  </div>
-                )}
+                              // Only navigate to documents section, never auto-preview
+                              setRightPanelContent('documents');
+                              
+                              // Set current sub-stage files without auto-previewing
+                              const subStage = (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+                                .find(s => s.id === selectedSubStage);
+                              
+                              if (subStage && subStage.files && subStage.files.length > 0) {
+                                // Set current sub-stage files
+                                setCurrentSubStageFiles(subStage.files.map((file, index) => ({
+                                  id: `file-${subStage.id}-${index}`,
+                                  name: file.name,
+                                  type: file.name.split('.').pop() || '',
+                                  size: file.size,
+                                  category: file.type
+                                })));
+                                
+                                // Explicitly ensure file preview is closed
+                                setShowFilePreview(false);
+                                setSelectedFile(null);
+                              }
+                            }}
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            Files
+                          </Button>
+                          
+                          <Button 
+                            variant={rightPanelContent === 'dependencies' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => setRightPanelContent('dependencies')}
+                          >
+                            <Network className="h-3 w-3 mr-1" />
+                            Dependencies
+                          </Button>
+                          
+                          <Button 
+                            variant={rightPanelContent === 'queries' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => setRightPanelContent('queries')}
+                          >
+                            <MessageSquare className="h-3 w-3 mr-1" />
+                            Queries
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {/* When in preview mode and workflow detail is hidden, show a message */}
+                  {showFilePreview && !showWorkflowDetail && (
+                    <div className="w-full text-center text-xs text-muted-foreground py-1">
+                      Navigation hidden in preview mode
+                    </div>
+                  )}
+                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setRightPanelOpen(false)} title="Close Panel">
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          </div>
 
-          {/* Panel Content */}
-          {rightPanelContent && (
-            <div className="flex-1 overflow-y-auto p-3 bg-background">
-              {renderRightPanelContent()}
-            </div>
-          )}
+            {/* Panel Content */}
+            {rightPanelContent && (
+              <div className="flex-1 overflow-y-auto p-3 bg-background">
+                {renderRightPanelContent()}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
