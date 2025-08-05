@@ -633,15 +633,18 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
 
   // Load stage-specific data when active stage changes (memory optimized)
   useEffect(() => {
-    // Create a lookup map from processId to sub-stage name for all tasks.
+    // Create a comprehensive lookup map from any ID to sub-stage name for all tasks.
     const processIdToNameMap = new Map<string, string>();
     Object.values(tasks).flat().forEach(task => {
+      // Map all potential identifiers to the task name for robust dependency resolution.
+      if (task.id) {
+        processIdToNameMap.set(String(task.id), task.name);
+      }
       if (task.processId) {
         processIdToNameMap.set(String(task.processId), task.name);
       }
-      // Also map by task.id as a fallback, as dependency might use it.
-      if (task.id) {
-        processIdToNameMap.set(String(task.id), task.name);
+      if (task.workflowProcessId) {
+        processIdToNameMap.set(String(task.workflowProcessId), task.name);
       }
     });
 
@@ -1542,6 +1545,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
               return subStagesToRender.map((subStage, index) => (
                 <Collapsible key={subStage.id}>
                   <div 
+                    data-process-id={subStage.processId}
                     className={`${
                       subStage.status === 'completed' ? 'border-l-[3px] border-l-green-500' :
                       subStage.status === 'in-progress' ? 'border-l-[3px] border-l-blue-500' :
