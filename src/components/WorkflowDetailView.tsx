@@ -1050,8 +1050,12 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       case 'stages':
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
       case 'documents':
-        // Get the workflow summary data from global storage
-        const summaryData = (window as any).currentWorkflowSummary;
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+      // Second priority: Calculate from processData if available
+      const summaryData = (window as any).currentWorkflowSummary;
+=======
+      // Second priority: Calculate from processData if available
         const fileData = summaryData?.fileData || [];
         
         let filesToShow: any[] = [];
@@ -1247,7 +1251,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     } catch (error) {
       return 0;
     }
-  }, [hierarchyPath, stageSpecificSubStages, tasks]);
+  }, [hierarchyPath, stageSpecificSubStages, tasks, summaryData]);
 
   // Enhanced calculation of task counts with proper data binding
   const calculateTaskCounts = useCallback(() => {
@@ -1259,7 +1263,6 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       let processing = 0;
       
       // First priority: Use processData from workflow summary if available
-      const summaryData = (window as any).currentWorkflowSummary;
       if (summaryData && summaryData.processData && summaryData.processData.length > 0) {
         summaryData.processData.forEach((process: any) => {
           const status = process.status?.toLowerCase();
@@ -1301,7 +1304,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     } catch (error) {
       return { completed: 0, failed: 0, rejected: 0, pending: 0, processing: 0 };
     }
-  }, [stageSpecificSubStages, tasks]);
+  }, [stageSpecificSubStages, tasks, summaryData]);
 
   // Prepare enhanced workflow data for Modern and Step Function views
   const workflowData = enhancedWorkflowData || {

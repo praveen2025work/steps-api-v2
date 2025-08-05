@@ -767,11 +767,6 @@ const ApplicationsGrid = () => {
       console.error('[ApplicationsGrid] No tasks created! This will cause the UI to show empty stages.');
     }
 
-    // Store the summary data globally for right panel access with enhanced structure
-    (window as any).currentWorkflowSummary = summary;
-    (window as any).currentWorkflowApplication = application;
-    (window as any).currentWorkflowNode = node;
-
     // Construct a proper workflow title avoiding duplication
     let workflowTitle = node.configName;
     
