@@ -610,7 +610,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   }, []);
 
   // Enhanced dependency click handler
-  const handleDependencyClick = useCallback((dependencyId: string) => {
+  const handleDependencyClick = useCallback((dependencyId: string, dependencyName: string) => {
     const targetSubStage = dependencyMap.get(dependencyId);
     if (targetSubStage) {
       // Navigate to the sub-stage
@@ -627,12 +627,24 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       
       showInfoToast(`Navigated to dependency: ${targetSubStage.name}`);
     } else {
-      showWarningToast(`Dependency "${dependencyId}" not found in current stage`);
+      showWarningToast(`Dependency "${dependencyName}" not found in current stage`);
     }
   }, [dependencyMap]);
 
   // Load stage-specific data when active stage changes (memory optimized)
   useEffect(() => {
+    // Create a lookup map from processId to sub-stage name for all tasks.
+    const processIdToNameMap = new Map<string, string>();
+    Object.values(tasks).flat().forEach(task => {
+      if (task.processId) {
+        processIdToNameMap.set(String(task.processId), task.name);
+      }
+      // Also map by task.id as a fallback, as dependency might use it.
+      if (task.id) {
+        processIdToNameMap.set(String(task.id), task.name);
+      }
+    });
+
     if (activeStage && tasks[activeStage]) {
       // Convert actual API tasks to SubStage format with enhanced field mapping
       // Handle large workflows with 100+ substages
@@ -715,11 +727,16 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         }
 
         // Enhanced dependencies with better status mapping and navigation
-        const dependencies = task.dependencies?.map(dep => ({
-          name: dep.name,
-          status: dep.status === 'in_progress' ? 'in-progress' : dep.status,
-          id: dep.id || dep.name.toLowerCase().replace(/\s+/g, '_'),
-        })) || [];
+        const dependencies = task.dependencies?.map(dep => {
+          const depId = String(dep.id || dep.name); // Assuming dep.id or dep.name is the processId
+          const depName = processIdToNameMap.get(depId) || dep.name; // Look up the name, fallback to original
+
+          return {
+            name: depName,
+            status: dep.status === 'in_progress' ? 'in-progress' : dep.status,
+            id: depId, // Use the original ID for navigation
+          };
+        }) || [];
 
         // Clean up processId format - convert "task-1234" to "PROC-1234" for consistency
         let cleanProcessId = task.processId;
@@ -1715,7 +1732,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                                     className="h-auto p-0 text-xs underline hover:text-primary"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleDependencyClick(dep.id);
+                                      handleDependencyClick(dep.id, dep.name);
                                     }}
                                     title={`Navigate to dependency: ${dep.name}`}
                                   >
