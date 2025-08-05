@@ -1,8 +1,7 @@
-import { apiClient } from '@/lib/api-client';
 import { getCurrentEnvironment } from '@/config/api-environments';
 
 export interface WorkflowActionRequest {
-  updatedBy: string;
+  'updated by': string; // Fixed: Use 'updated by' instead of 'updatedBy'
   workflowProcessId: string;
 }
 
@@ -31,8 +30,54 @@ const isDevelopmentMode = (): boolean => {
 
 /**
  * Service for handling workflow process actions (Force Start, Re-run)
+ * Uses the same pattern as workflowConfigService for Java API calls
  */
 export class WorkflowActionService {
+  private static environment = getCurrentEnvironment();
+
+  // Generic API call method (same pattern as workflowConfigService)
+  private static async makeRequest<T>(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const method = options.method || 'GET';
+
+    const headers: HeadersInit = {
+      ...(options.headers || {}),
+    };
+
+    // Only add Content-Type for methods that send a body
+    if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+      headers['Content-Type'] = 'application/json';
+      headers['Accept'] = 'application/json';
+    }
+    
+    const defaultOptions: RequestInit = {
+      method,
+      mode: 'cors',
+      cache: 'no-store', // Prevent browser from adding Cache-Control header
+      credentials: 'omit', // Use 'omit' for Java API calls (same as workflowConfigService)
+      ...options,
+      headers,
+    };
+
+    try {
+      console.log('Making workflow action API request:', { url, options: defaultOptions });
+      const response = await fetch(url, defaultOptions);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Workflow action API response received:', { url, data });
+      return data;
+    } catch (error: any) {
+      console.error('Workflow action API request failed:', { url, error: error.message });
+      throw error;
+    }
+  }
+
   /**
    * Force start a workflow process
    * @param workflowProcessId - The workflow process ID
@@ -42,7 +87,7 @@ export class WorkflowActionService {
   static async forceStart(workflowProcessId: string, updatedBy: string = 'user'): Promise<WorkflowActionResponse> {
     try {
       const requestBody: WorkflowActionRequest = {
-        updatedBy,
+        'updated by': updatedBy, // Fixed: Use 'updated by' instead of 'updatedBy'
         workflowProcessId
       };
 
@@ -59,26 +104,13 @@ export class WorkflowActionService {
         };
       }
 
-      // Use Java API endpoint instead of .NET endpoint
-      const environment = getCurrentEnvironment();
-      const javaApiUrl = environment.javaApiUrl;
+      // Use Java API endpoint (same pattern as workflowConfigService)
+      const url = `${this.environment.javaApiUrl}/process/${workflowProcessId}?isForceStart=true`;
       
-      const response = await fetch(`${javaApiUrl}/process/${workflowProcessId}?isForceStart=true`, {
+      const data = await this.makeRequest<any>(url, {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
         body: JSON.stringify(requestBody),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
       
       return {
         success: true,
@@ -103,7 +135,7 @@ export class WorkflowActionService {
   static async reRun(workflowProcessId: string, updatedBy: string = 'user'): Promise<WorkflowActionResponse> {
     try {
       const requestBody: WorkflowActionRequest = {
-        updatedBy,
+        'updated by': updatedBy, // Fixed: Use 'updated by' instead of 'updatedBy'
         workflowProcessId
       };
 
@@ -120,26 +152,13 @@ export class WorkflowActionService {
         };
       }
 
-      // Use Java API endpoint instead of .NET endpoint
-      const environment = getCurrentEnvironment();
-      const javaApiUrl = environment.javaApiUrl;
+      // Use Java API endpoint (same pattern as workflowConfigService)
+      const url = `${this.environment.javaApiUrl}/process/${workflowProcessId}?isReRun=true`;
       
-      const response = await fetch(`${javaApiUrl}/process/${workflowProcessId}?isReRun=true`, {
+      const data = await this.makeRequest<any>(url, {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
         body: JSON.stringify(requestBody),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
       
       return {
         success: true,
