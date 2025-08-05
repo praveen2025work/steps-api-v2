@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { getCurrentEnvironment } from '@/config/api-environments';
 
 export interface WorkflowActionRequest {
   updatedBy: string;
@@ -58,20 +59,32 @@ export class WorkflowActionService {
         };
       }
 
-      const response = await apiClient.post(`/process/${workflowProcessId}?isForceStart=true`, requestBody);
+      // Use Java API endpoint instead of .NET endpoint
+      const environment = getCurrentEnvironment();
+      const javaApiUrl = environment.javaApiUrl;
       
-      if (response.success) {
-        return {
-          success: true,
-          message: response.data?.message || 'Process force started successfully',
-          data: response.data
-        };
-      } else {
-        return {
-          success: false,
-          error: response.error || 'Failed to force start process'
-        };
+      const response = await fetch(`${javaApiUrl}/process/${workflowProcessId}?isForceStart=true`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        message: data?.message || 'Process force started successfully',
+        data: data
+      };
     } catch (error: any) {
       console.error('Force start failed:', error);
       return {
@@ -107,20 +120,32 @@ export class WorkflowActionService {
         };
       }
 
-      const response = await apiClient.post(`/process/${workflowProcessId}?isReRun=true`, requestBody);
+      // Use Java API endpoint instead of .NET endpoint
+      const environment = getCurrentEnvironment();
+      const javaApiUrl = environment.javaApiUrl;
       
-      if (response.success) {
-        return {
-          success: true,
-          message: response.data?.message || 'Process re-run started successfully',
-          data: response.data
-        };
-      } else {
-        return {
-          success: false,
-          error: response.error || 'Failed to re-run process'
-        };
+      const response = await fetch(`${javaApiUrl}/process/${workflowProcessId}?isReRun=true`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const data = await response.json();
+      
+      return {
+        success: true,
+        message: data?.message || 'Process re-run started successfully',
+        data: data
+      };
     } catch (error: any) {
       console.error('Re-run failed:', error);
       return {
