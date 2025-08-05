@@ -648,8 +648,8 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   useEffect(() => {
     if (activeStage && tasks[activeStage]) {
       // Convert actual API tasks to SubStage format with enhanced field mapping
-      // Limit to first 20 tasks to prevent memory issues
-      const stageTasks = tasks[activeStage].slice(0, 20).map((task, index) => {
+      // Handle large workflows with 100+ substages
+      const stageTasks = tasks[activeStage].map((task, index) => {
         // Enhanced progress calculation based on API fields
         let progress = 0;
         if (task.status === 'completed') {
@@ -800,10 +800,10 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       setStageSpecificSubStages(stageTasks);
       buildDependencyMap(stageTasks);
       
-      // Enhanced document extraction with better categorization (optimized)
-      const stageDocuments = tasks[activeStage].slice(0, 50).reduce((docs: any[], task) => {
-        if (task.documents && docs.length < 100) { // Limit total documents
-          task.documents.slice(0, 10).forEach((doc, index) => { // Limit documents per task
+      // Enhanced document extraction with better categorization (optimized for large workflows)
+      const stageDocuments = tasks[activeStage].reduce((docs: any[], task) => {
+        if (task.documents && docs.length < 500) { // Increased limit for large workflows
+          task.documents.forEach((doc, index) => { // Process all documents per task
             const fileExtension = doc.name.split('.').pop()?.toLowerCase() || 'unknown';
             docs.push({
               id: `${task.id}-doc-${index}`,
