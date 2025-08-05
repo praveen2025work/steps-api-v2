@@ -77,7 +77,7 @@ import {
   X
 } from 'lucide-react';
 import WorkflowActionButtons from './workflow/WorkflowActionButtons';
-import ProcessApprovalDialog from './workflow/ProcessApprovalDialog';
+import InlineApproval from './workflow/InlineApproval';
 import { getFileIcon } from './DocumentsList';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
@@ -231,6 +231,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   const [currentSubStageFiles, setCurrentSubStageFiles] = useState<any[]>([]);
   const [showWorkflowDetail, setShowWorkflowDetail] = useState<boolean>(true);
   const [showSubStageCards, setShowSubStageCards] = useState<boolean>(true);
+  const [approvalProcessId, setApprovalProcessId] = useState<string | null>(null);
   
   // Enhanced file preview state
   const [filePreviewMode, setFilePreviewMode] = useState<'none' | 'enhanced' | 'legacy'>('none');
@@ -1595,30 +1596,21 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                                 </Button>
                               )}
                               
-                              {/* Process Approval Dialog - Only for in-progress processes requiring approval */}
+                              {/* Inline Approval - Only for in-progress processes requiring approval */}
                               {subStage.status === 'in-progress' && subStage.apiData && subStage.apiData.approval === 'Y' && (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <ProcessApprovalDialog
-                                    workflowProcessId={subStage.apiData.workflowProcessId || subStage.processId}
-                                    processName={subStage.name}
-                                    status={subStage.status}
-                                    approval={subStage.apiData.approval || 'N'}
-                                    existingCommentary={subStage.apiData.userCommentary || ''}
-                                    updatedBy="user"
-                                    onActionComplete={(action, success) => handleActionComplete(action, success, subStage.processId)}
-                                    trigger={
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
-                                        title="Approve or Reject Process"
-                                      >
-                                        <MessageSquare className="h-3.5 w-3.5" />
-                                        <span className="text-xs">Approval</span>
-                                      </Button>
-                                    }
-                                  />
-                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
+                                  title="Approve or Reject Process"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setApprovalProcessId(approvalProcessId === subStage.processId ? null : subStage.processId);
+                                  }}
+                                >
+                                  <MessageSquare className="h-3.5 w-3.5" />
+                                  <span className="text-xs">Approval</span>
+                                </Button>
                               )}
                               
                               {/* Workflow Action Buttons (Force Start / Re-run) */}
@@ -1746,6 +1738,19 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                         )}
                       </div>
                     </div>
+
+                    {approvalProcessId === subStage.processId && (
+                      <InlineApproval
+                        workflowProcessId={subStage.apiData.workflowProcessId || subStage.processId}
+                        processName={subStage.name}
+                        existingCommentary={subStage.apiData.userCommentary || ''}
+                        updatedBy="user"
+                        onActionComplete={(action, success) => {
+                          setApprovalProcessId(null);
+                          handleActionComplete(action, success, subStage.processId);
+                        }}
+                      />
+                    )}
 
                     <CollapsibleTrigger className="w-full text-left mt-1">
                       <Button variant="ghost" size="sm" className="h-6 text-xs gap-1">
