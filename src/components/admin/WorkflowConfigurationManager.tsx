@@ -755,14 +755,21 @@ const WorkflowConfigurationManager: React.FC = () => {
             dependencySubstageId: dep.id.dependencySubstageId
           }
         })) || [],
-        workflowAppConfigFiles: config.workflowAppConfigFiles?.map(file => ({
+        // FIXED: Filter out empty file configurations and ensure only meaningful entries are sent
+        workflowAppConfigFiles: config.workflowAppConfigFiles?.filter(file => {
+          // Only include file configs that have meaningful data
+          return file.value?.trim() || 
+                 file.description?.trim() || 
+                 file.required === 'Y' || 
+                 file.emailFile === 'Y';
+        }).map(file => ({
           id: {
             workflowAppConfigId: null,
             name: file.name,
             paramType: file.paramType
           },
-          value: file.value,
-          description: file.description,
+          value: file.value || '',
+          description: file.description || '',
           emailFile: file.emailFile,
           fileUpload: file.fileUpload,
           isEmailFile: file.emailFile === 'Y',
@@ -2248,23 +2255,38 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
     let newFiles;
 
     if (fileIndex >= 0) {
+      // Update existing file config
       newFiles = [...currentFiles];
       newFiles[fileIndex] = { ...newFiles[fileIndex], [field]: value };
     } else {
-      newFiles = [...currentFiles, {
-        id: { workflowAppConfigId: config.workflowAppConfigId, name: paramName, paramType: 'UPLOAD' },
-        name: paramName,
-        paramType: 'UPLOAD',
-        value: '',
-        description: '',
-        required: 'N',
-        emailFile: 'N',
-        fileUpload: 'Y',
-        [field]: value,
-      }];
+      // Only create new entry if the value is meaningful (not empty/default)
+      // This prevents creating empty entries when just toggling switches
+      const shouldCreateEntry = value && (
+        (field === 'value' && value.trim() !== '') ||
+        (field === 'description' && value.trim() !== '') ||
+        (field === 'required' && value === 'Y') ||
+        (field === 'emailFile' && value === 'Y')
+      );
+
+      if (shouldCreateEntry) {
+        newFiles = [...currentFiles, {
+          id: { workflowAppConfigId: config.workflowAppConfigId, name: paramName, paramType: 'UPLOAD' },
+          name: paramName,
+          paramType: 'UPLOAD',
+          value: field === 'value' ? value : '',
+          description: field === 'description' ? value : '',
+          required: field === 'required' ? value : 'N',
+          emailFile: field === 'emailFile' ? value : 'N',
+          fileUpload: 'Y',
+        }];
+      } else {
+        // Don't create a new entry for empty/default values
+        newFiles = currentFiles;
+      }
     }
     handleSubstageUpdate('workflowAppConfigFiles', newFiles);
   };
+=======
 
   return (
     <div className="h-full flex flex-col">
