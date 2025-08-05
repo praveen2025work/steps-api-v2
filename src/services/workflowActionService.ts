@@ -1,7 +1,7 @@
 import { getCurrentEnvironment } from '@/config/api-environments';
 
 export interface WorkflowActionRequest {
-  'updated by': string; // Fixed: Use 'updated by' instead of 'updatedBy'
+  updatedby: string; // Fixed: Use 'updatedby' without space
   workflowProcessId: string;
 }
 
@@ -87,7 +87,7 @@ export class WorkflowActionService {
   static async forceStart(workflowProcessId: string, updatedBy: string = 'user'): Promise<WorkflowActionResponse> {
     try {
       const requestBody: WorkflowActionRequest = {
-        'updated by': updatedBy, // Fixed: Use 'updated by' instead of 'updatedBy'
+        updatedby: updatedBy, // Fixed: Use 'updatedby' without space
         workflowProcessId
       };
 
@@ -135,7 +135,7 @@ export class WorkflowActionService {
   static async reRun(workflowProcessId: string, updatedBy: string = 'user'): Promise<WorkflowActionResponse> {
     try {
       const requestBody: WorkflowActionRequest = {
-        'updated by': updatedBy, // Fixed: Use 'updated by' instead of 'updatedBy'
+        updatedby: updatedBy, // Fixed: Use 'updatedby' without space
         workflowProcessId
       };
 
