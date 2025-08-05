@@ -770,7 +770,7 @@ const WorkflowConfigurationManager: React.FC = () => {
           isRequired: file.required === 'Y',
           required: file.required
         })) || [],
-        // FIXED: Include name field properly in parameters payload
+        // FIXED: Include name field properly in parameters payload - avoid duplication
         workflowAppConfigParams: config.workflowAppConfigParams?.map(param => ({
           id: {
             workflowTransactionid: null,
