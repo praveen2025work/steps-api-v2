@@ -108,7 +108,7 @@ export class WorkflowActionService {
       const url = `${this.environment.javaApiUrl}/process/${workflowProcessId}?isForceStart=true`;
       
       const data = await this.makeRequest<any>(url, {
-        method: 'POST',
+        method: 'PUT',
         body: JSON.stringify(requestBody),
       });
       
@@ -156,7 +156,7 @@ export class WorkflowActionService {
       const url = `${this.environment.javaApiUrl}/process/${workflowProcessId}?isReRun=true`;
       
       const data = await this.makeRequest<any>(url, {
-        method: 'POST',
+        method: 'PUT',
         body: JSON.stringify(requestBody),
       });
       
