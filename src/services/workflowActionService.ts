@@ -343,4 +343,4 @@ export class WorkflowActionService {
   }
 }
 
-export default WorkflowActionService;
+export const workflowActionService = WorkflowActionService;
