@@ -228,7 +228,7 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
     
     const term = searchTerm.toLowerCase();
     const matches = nodes.filter(node => 
-      node.label.toLowerCase().includes(term) || 
+      (node.label && node.label.toLowerCase().includes(term)) || 
       (node.data?.processId && node.data.processId.toLowerCase().includes(term))
     ).map(node => node.id);
     
@@ -574,7 +574,7 @@ const WorkflowStepFunctionDiagram: React.FC<WorkflowStepFunctionDiagramProps> = 
                 textAnchor="start"
                 dominantBaseline="middle"
               >
-                {node.label.length > 35 ? `${node.label.substring(0, 35)}...` : node.label}
+                {node.label && node.label.length > 35 ? `${node.label.substring(0, 35)}...` : (node.label || '')}
               </text>
               
               {/* Status badge */}
