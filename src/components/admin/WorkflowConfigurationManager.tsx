@@ -748,9 +748,10 @@ const WorkflowConfigurationManager: React.FC = () => {
         substage_dependency: null,
         updatedby: 'system',
         upload: config.upload,
+        // FIXED: Include workflowAppConfigId in dependencies payload
         workflowAppConfigDeps: config.workflowAppConfigDeps?.map(dep => ({
           id: {
-            workflowAppConfigId: null,
+            workflowAppConfigId: config.workflowAppConfigId || null,
             dependencySubstageId: dep.id.dependencySubstageId
           }
         })) || [],
@@ -769,10 +770,11 @@ const WorkflowConfigurationManager: React.FC = () => {
           isRequired: file.required === 'Y',
           required: file.required
         })) || [],
+        // FIXED: Include name field properly in parameters payload
         workflowAppConfigParams: config.workflowAppConfigParams?.map(param => ({
           id: {
             workflowTransactionid: null,
-            name: param.name
+            name: param.id?.name || param.name
           },
           value: param.value
         })) || [],
