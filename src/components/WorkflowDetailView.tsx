@@ -1049,11 +1049,11 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         return <ProcessOverview processId={currentProcessId} processName={currentProcessName} />;
       case 'stages':
         return <SubStagesList subStages={stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages} />;
-      case 'documents':
->>>>>>> REPLACE
-<<<<<<< SEARCH
       // Second priority: Calculate from processData if available
-      const summaryData = (window as any).currentWorkflowSummary;
+        const fileData = summaryData?.fileData || [];
+=======
+      case 'documents':
+        const fileData = summaryData?.fileData || [];
 =======
       // Second priority: Calculate from processData if available
         const fileData = summaryData?.fileData || [];
