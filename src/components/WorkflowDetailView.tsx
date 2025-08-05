@@ -718,7 +718,6 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
           name: dep.name,
           status: dep.status === 'in_progress' ? 'in-progress' : dep.status,
           id: dep.id || dep.name.toLowerCase().replace(/\s+/g, '_'),
-          onClick: () => handleDependencyClick(dep.id || dep.name)
         })) || [];
 
         // Clean up processId format - convert "task-1234" to "PROC-1234" for consistency
@@ -815,7 +814,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       setStageSpecificDocuments([]);
       setDependencyMap(new Map());
     }
-  }, [activeStage, tasks, buildDependencyMap, handleDependencyClick]);
+  }, [activeStage, tasks, buildDependencyMap]);
 
 
 
