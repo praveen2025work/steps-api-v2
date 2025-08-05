@@ -197,19 +197,148 @@ export class WorkflowActionService {
   }
 
   /**
+   * Approve a workflow process
+   * @param workflowProcessId - The workflow process ID
+   * @param updatedBy - Username of the person approving
+   * @param userCommentary - Commentary text for the approval
+   * @returns Promise with the API response
+   */
+  static async approveProcess(workflowProcessId: string, updatedBy: string = 'user', userCommentary: string = ''): Promise<WorkflowActionResponse> {
+    try {
+      const requestBody = {
+        workflowProcessId: parseInt(workflowProcessId),
+        status: "COMPLETED",
+        updatedBy: updatedBy,
+        workflowProcessParams: [
+          {
+            id: {
+              name: "USER COMMENTARY"
+            },
+            value: userCommentary
+          }
+        ]
+      };
+
+      // Use mock response in development/preview environments
+      if (isDevelopmentMode()) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Simulate success response
+        return {
+          success: true,
+          message: `Process ${workflowProcessId} has been approved successfully (Mock)`,
+          data: { processId: workflowProcessId, status: 'approved' }
+        };
+      }
+
+      // Use Java API endpoint
+      const url = `${this.environment.javaApiUrl}/process/${workflowProcessId}`;
+      
+      const data = await this.makeRequest<any>(url, {
+        method: 'PUT',
+        body: JSON.stringify(requestBody),
+      });
+      
+      return {
+        success: true,
+        message: data?.message || 'Process approved successfully',
+        data: data
+      };
+    } catch (error: any) {
+      console.error('Process approval failed:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to approve process'
+      };
+    }
+  }
+
+  /**
+   * Reject a workflow process
+   * @param workflowProcessId - The workflow process ID
+   * @param updatedBy - Username of the person rejecting
+   * @param userCommentary - Commentary text for the rejection
+   * @returns Promise with the API response
+   */
+  static async rejectProcess(workflowProcessId: string, updatedBy: string = 'user', userCommentary: string = ''): Promise<WorkflowActionResponse> {
+    try {
+      const requestBody = {
+        workflowProcessId: parseInt(workflowProcessId),
+        status: "REJECT",
+        updatedBy: updatedBy,
+        workflowProcessParams: [
+          {
+            id: {
+              name: "USER COMMENTARY"
+            },
+            value: userCommentary
+          }
+        ]
+      };
+
+      // Use mock response in development/preview environments
+      if (isDevelopmentMode()) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Simulate success response
+        return {
+          success: true,
+          message: `Process ${workflowProcessId} has been rejected successfully (Mock)`,
+          data: { processId: workflowProcessId, status: 'rejected' }
+        };
+      }
+
+      // Use Java API endpoint
+      const url = `${this.environment.javaApiUrl}/process/${workflowProcessId}`;
+      
+      const data = await this.makeRequest<any>(url, {
+        method: 'PUT',
+        body: JSON.stringify(requestBody),
+      });
+      
+      return {
+        success: true,
+        message: data?.message || 'Process rejected successfully',
+        data: data
+      };
+    } catch (error: any) {
+      console.error('Process rejection failed:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to reject process'
+      };
+    }
+  }
+
+  /**
+   * Check if a process requires approval based on its state
+   * @param status - Current process status
+   * @param approval - Whether approval is required (Y/N)
+   * @returns boolean indicating if approval is needed
+   */
+  static requiresApproval(status: string, approval: string): boolean {
+    return status.toLowerCase() === 'in-progress' && approval.toUpperCase() === 'Y';
+  }
+
+  /**
    * Get the appropriate action button configuration for a process
    * @param status - Current process status
    * @param isLocked - Whether the process is locked
+   * @param approval - Whether approval is required (Y/N)
    * @returns Object with button configurations
    */
-  static getActionButtons(status: string, isLocked: boolean = false) {
+  static getActionButtons(status: string, isLocked: boolean = false, approval: string = 'N') {
     const normalizedStatus = status.toLowerCase();
     
     return {
       showForceStart: this.canForceStart(status, isLocked),
       showReRun: this.canReRun(status),
+      showApproval: this.requiresApproval(status, approval),
       forceStartEnabled: !isLocked && this.canForceStart(status, isLocked),
-      reRunEnabled: this.canReRun(status)
+      reRunEnabled: this.canReRun(status),
+      approvalEnabled: this.requiresApproval(status, approval)
     };
   }
 }

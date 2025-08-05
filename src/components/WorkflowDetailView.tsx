@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { toast, showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
 import { useDate } from '@/contexts/DateContext';
 import { useUserActivity } from '@/hooks/useUserActivity';
@@ -68,9 +70,13 @@ import {
   GitBranch,
   Pause,
   Play,
-  Timer
+  Timer,
+  ThumbsUp,
+  ThumbsDown,
+  Send
 } from 'lucide-react';
 import WorkflowActionButtons from './workflow/WorkflowActionButtons';
+import ProcessApprovalDialog from './workflow/ProcessApprovalDialog';
 import { getFileIcon } from './DocumentsList';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SubStagesList from './SubStagesList';
@@ -249,19 +255,23 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   // Dependency mapping state
   const [dependencyMap, setDependencyMap] = useState<Map<string, SubStage>>(new Map());
 
-  // UI state preservation during refresh
+  // UI state preservation during refresh - Enhanced to prevent jumping
   const [preservedState, setPreservedState] = useState<{
     activeTab: string;
     selectedSubStage: string | null;
     rightPanelContent: string;
     showFilePreview: boolean;
     scrollPosition: number;
+    activeStage: string;
+    expandedSections: Record<string, boolean>;
   }>({
     activeTab: 'overview',
     selectedSubStage: null,
     rightPanelContent: 'stage-overview',
     showFilePreview: false,
-    scrollPosition: 0
+    scrollPosition: 0,
+    activeStage: stages[0]?.id || '',
+    expandedSections: { tasks: true }
   });
 
   // Initialize hierarchy path from breadcrumb context
@@ -297,19 +307,22 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     }
   }, [breadcrumbState.nodes, router, navigateToLevel, onBack]);
 
-  // Preserve UI state before refresh
+  // Preserve UI state before refresh - Enhanced to prevent jumping
   const preserveUIState = useCallback(() => {
     setPreservedState({
       activeTab,
       selectedSubStage,
       rightPanelContent,
       showFilePreview,
-      scrollPosition: window.scrollY
+      scrollPosition: window.scrollY,
+      activeStage,
+      expandedSections
     });
-  }, [activeTab, selectedSubStage, rightPanelContent, showFilePreview]);
+  }, [activeTab, selectedSubStage, rightPanelContent, showFilePreview, activeStage, expandedSections]);
 
-  // Restore UI state after refresh
+  // Restore UI state after refresh - Enhanced to prevent jumping
   const restoreUIState = useCallback(() => {
+    // Only update state if it has actually changed to prevent unnecessary re-renders
     if (preservedState.activeTab !== activeTab) {
       setActiveTab(preservedState.activeTab);
     }
@@ -322,11 +335,18 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     if (preservedState.showFilePreview !== showFilePreview) {
       setShowFilePreview(preservedState.showFilePreview);
     }
+    if (preservedState.activeStage !== activeStage) {
+      setActiveStage(preservedState.activeStage);
+    }
+    if (JSON.stringify(preservedState.expandedSections) !== JSON.stringify(expandedSections)) {
+      setExpandedSections(preservedState.expandedSections);
+    }
+    
     // Restore scroll position
     setTimeout(() => {
       window.scrollTo(0, preservedState.scrollPosition);
     }, 100);
-  }, [preservedState, activeTab, selectedSubStage, rightPanelContent, showFilePreview]);
+  }, [preservedState, activeTab, selectedSubStage, rightPanelContent, showFilePreview, activeStage, expandedSections]);
 
   // Enhanced refresh with data fetching for main view and all breadcrumb nodes
   const handleRefresh = useCallback(async (isManualRefresh: boolean = false) => {
@@ -361,8 +381,8 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     }
   }, [isRefreshing, preserveUIState, restoreUIState, onRefresh, refreshInterval]);
 
-  // Handle workflow action completion (Force Start, Re-run)
-  const handleActionComplete = useCallback(async (action: 'force-start' | 're-run', success: boolean, processId?: string) => {
+  // Handle workflow action completion (Force Start, Re-run, Approve, Reject)
+  const handleActionComplete = useCallback(async (action: 'force-start' | 're-run' | 'approve' | 'reject', success: boolean, processId?: string) => {
     if (success) {
       // Refresh the workflow data after successful action
       setTimeout(() => {
@@ -768,7 +788,8 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
             entitlementMapping: task.entitlementMapping,
             userCommentary: task.userCommentary,
             skipCommentary: task.skipCommentary,
-            dep_Sub_Stage_Seq: task.dep_Sub_Stage_Seq
+            dep_Sub_Stage_Seq: task.dep_Sub_Stage_Seq,
+            approval: task.approval // Add approval field for ProcessApprovalDialog
           }
         };
       });
@@ -1589,6 +1610,32 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                                   <FileText className="h-3.5 w-3.5" />
                                   <span className="text-xs">Files</span>
                                 </Button>
+                              )}
+                              
+                              {/* Process Approval Dialog - Only for in-progress processes requiring approval */}
+                              {subStage.status === 'in-progress' && subStage.apiData && (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <ProcessApprovalDialog
+                                    workflowProcessId={subStage.apiData.workflowProcessId || subStage.processId}
+                                    processName={subStage.name}
+                                    status={subStage.status}
+                                    approval={subStage.apiData.approval || 'N'}
+                                    existingCommentary={subStage.apiData.userCommentary || ''}
+                                    updatedBy="user"
+                                    onActionComplete={(action, success) => handleActionComplete(action, success, subStage.processId)}
+                                    trigger={
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-6 px-1.5 hover:bg-muted flex items-center gap-1"
+                                        title="Approve or Reject Process"
+                                      >
+                                        <MessageSquare className="h-3.5 w-3.5" />
+                                        <span className="text-xs">Approval</span>
+                                      </Button>
+                                    }
+                                  />
+                                </div>
                               )}
                               
                               {/* Workflow Action Buttons (Force Start / Re-run) */}
