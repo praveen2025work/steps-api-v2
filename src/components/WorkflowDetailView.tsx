@@ -775,7 +775,8 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
             userCommentary: task.userCommentary,
             skipCommentary: task.skipCommentary,
             dep_Sub_Stage_Seq: task.dep_Sub_Stage_Seq,
-            approval: task.approval // Add approval field for ProcessApprovalDialog
+            approval: task.approval, // Add approval field for ProcessApprovalDialog
+            isLocked: task.isLocked // Pass isLocked status
           }
         };
       });
@@ -1596,7 +1597,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                               )}
                               
                               {/* Process Approval Dialog - Only for in-progress processes requiring approval */}
-                              {subStage.status === 'in-progress' && subStage.apiData && (
+                              {subStage.status === 'in-progress' && subStage.apiData && subStage.apiData.approval === 'Y' && (
                                 <div onClick={(e) => e.stopPropagation()}>
                                   <ProcessApprovalDialog
                                     workflowProcessId={subStage.apiData.workflowProcessId || subStage.processId}
@@ -1625,7 +1626,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                               <WorkflowActionButtons
                                 workflowProcessId={subStage.apiData?.workflowProcessId || subStage.processId}
                                 status={subStage.status}
-                                isLocked={subStage.meta?.lockedBy ? true : false}
+                                isLocked={subStage.apiData?.isLocked === 'Y'}
                                 updatedBy="user" // Could be enhanced to use actual user context
                                 onActionComplete={handleActionComplete}
                                 size="sm"

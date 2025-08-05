@@ -158,8 +158,63 @@ const EnhancedWorkflowFilePreview: React.FC<EnhancedWorkflowFilePreviewProps> = 
       );
     }
 
+    const isCsv = activeFile.name.toLowerCase().endsWith('.csv');
+
+    if (isCsv && excelData && Array.isArray(excelData) && excelData.length > 0 && typeof excelData[0] === 'object' && excelData[0] !== null) {
+      // Handle CSV data, assuming it's an array of objects
+      const headers = Object.keys(excelData[0]);
+      const dataRows = excelData.map((row: any) => headers.map(header => row[header]));
+
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium">
+              {activeFile.name} - {excelData.length} records
+            </h3>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm">
+                <Search className="h-4 w-4 mr-1" />
+                Search
+              </Button>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-1" />
+                Filter
+              </Button>
+            </div>
+          </div>
+          
+          <ScrollArea className="h-[400px] w-full border rounded-md">
+            <div className="p-4">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    {headers.map((header, index) => (
+                      <th key={index} className="text-left p-2 font-medium bg-muted/50">
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {dataRows.map((row, rowIndex) => (
+                    <tr key={rowIndex} className="border-b hover:bg-muted/30">
+                      {row.map((cell, cellIndex) => (
+                        <td key={cellIndex} className="p-2">
+                          {cell?.toString() || ''}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ScrollArea>
+        </div>
+      );
+    }
+
     if (excelData && excelData.length > 0) {
-      // Find the first sheet with actual data
+      // Find the first sheet with actual data for non-CSV files (e.g., XLSX)
       const dataSheet = excelData.find(sheet => 
         sheet.data && sheet.data.length > 0 && 
         !sheet.name.toLowerCase().includes('no data')
@@ -181,7 +236,7 @@ const EnhancedWorkflowFilePreview: React.FC<EnhancedWorkflowFilePreviewProps> = 
                     sheet === dataSheet ? 'ring-2 ring-primary' : 'hover:shadow-md'
                   }`}
                   onClick={() => {
-                    // Switch to this sheet (you could implement sheet switching here)
+                    // Future implementation: switch to this sheet
                   }}
                 >
                   <CardContent className="p-3">
@@ -196,7 +251,7 @@ const EnhancedWorkflowFilePreview: React.FC<EnhancedWorkflowFilePreviewProps> = 
                         {hasData ? recordCount : 'Empty'}
                       </Badge>
                     </div>
-                  </CardContent>
+                  </CardContent>.
                 </Card>
               );
             })}
