@@ -42,18 +42,18 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   return itemRank.passed;
 };
 
-interface DataTableProps&lt;TData, TValue&gt; {
-  columns: ColumnDef&lt;TData, TValue&gt;[];
+interface DataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
 
-export function DataGrid&lt;TData, TValue&gt;({
+export function DataGrid<TData, TValue>({
   columns,
   data,
-}: DataTableProps&lt;TData, TValue&gt;) {
-  const [sorting, setSorting] = React.useState&lt;SortingState&gt;([]);
-  const [columnFilters, setColumnFilters] = React.useState&lt;ColumnFiltersState&gt;([]);
-  const [columnVisibility, setColumnVisibility] = React.useState&lt;VisibilityState&gt;({});
+}: DataTableProps<TData, TValue>) {
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [globalFilter, setGlobalFilter] = React.useState('');
 

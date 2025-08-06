@@ -29,9 +29,9 @@ import {
 } from '@/components/ui/select';
 import { ChevronsRight, ChevronsDown, Minus } from 'lucide-react';
 
-interface PivotGridProps&lt;TData extends object&gt; {
+interface PivotGridProps<TData extends object> {
   data: TData[];
-  columns: ColumnDef&lt;TData, any&gt;[];
+  columns: ColumnDef<TData, any>[];
 }
 
 const aggregationFns = {
@@ -43,14 +43,14 @@ const aggregationFns = {
 
 type AggregationFn = keyof typeof aggregationFns;
 
-export function PivotGrid&lt;TData extends object&gt;({
+export function PivotGrid<TData extends object>({
   data,
   columns: initialColumns,
-}: PivotGridProps&lt;TData&gt;) {
-  const [grouping, setGrouping] = React.useState&lt;string[]&gt;([]);
-  const [aggregation, setAggregation] = React.useState&lt;Record&lt;string, AggregationFn&gt;&gt;({});
+}: PivotGridProps<TData>) {
+  const [grouping, setGrouping] = React.useState<string[]>([]);
+  const [aggregation, setAggregation] = React.useState<Record<string, AggregationFn>>({});
 
-  const columns = React.useMemo&lt;ColumnDef&lt;TData&gt;[]&gt;(() =&gt; {
+  const columns = React.useMemo<ColumnDef<TData>[]>(() => {
     return initialColumns.map(col =&gt; ({
       ...col,
       aggregationFn: col.id && aggregation[col.id] ? aggregationFns[aggregation[col.id]] : undefined,
