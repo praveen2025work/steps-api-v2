@@ -254,8 +254,9 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     events: ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click', 'keydown']
   });
 
-  // Dependency mapping state
-  const [dependencyMap, setDependencyMap] = useState<Map<string, SubStage>>(new Map());
+  // Global process map for dependency navigation
+  const [globalProcessMap, setGlobalProcessMap] = useState<Map<string, any>>(new Map());
+  const [pendingNavigation, setPendingNavigation] = useState<{ processId: string } | null>(null);
 
   // UI state preservation during refresh - using useRef for synchronous update
   const preservedStateRef = useRef<{
@@ -598,75 +599,114 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
     ]
   };
 
-  // Build dependency mapping for navigation
-  const buildDependencyMap = useCallback((subStages: SubStage[]) => {
-    const map = new Map<string, SubStage>();
-    subStages.forEach(subStage => {
-      map.set(subStage.id, subStage);
-      map.set(subStage.processId, subStage);
-      map.set(subStage.name, subStage);
-    });
-    setDependencyMap(map);
-  }, []);
-
-  // Enhanced dependency click handler
+  // Enhanced dependency click handler for smart navigation
   const handleDependencyClick = useCallback((dependencyId: string, dependencyName: string) => {
-    const targetSubStage = dependencyMap.get(dependencyId);
-    if (targetSubStage) {
-      // Navigate to the sub-stage
-      setSelectedSubStage(targetSubStage.id);
-      setRightPanelContent('process-overview');
-      setRightPanelOpen(true);
-      setIsRightPanelExpanded(true);
-      
-      // Scroll to the sub-stage card if it's visible
-      const element = document.querySelector(`[data-process-id="${targetSubStage.processId}"]`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      
-      showInfoToast(`Navigated to dependency: ${targetSubStage.name}`);
-    } else {
-      showWarningToast(`Dependency "${dependencyName}" not found in current stage`);
-    }
-  }, [dependencyMap]);
+    const targetProcess = globalProcessMap.get(dependencyId);
 
-  // Load stage-specific data when active stage changes (memory optimized)
+    if (targetProcess) {
+        const targetStageId = targetProcess.stageId;
+        const targetProcessId = targetProcess.processId || targetProcess.id;
+
+        if (activeStage === targetStageId) {
+            // Already on the right stage, just navigate
+            setSelectedSubStage(targetProcess.id);
+            setRightPanelContent('process-overview');
+            setRightPanelOpen(true);
+            setIsRightPanelExpanded(true);
+            
+            const element = document.querySelector(`[data-process-id="${targetProcessId}"]`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            showInfoToast(`Navigated to dependency: ${targetProcess.name}`);
+        } else {
+            // Need to switch stage first
+            const stageName = stages.find(s => s.id === targetStageId)?.name || targetStageId;
+            showInfoToast(`Navigating to stage: ${stageName}...`);
+            setActiveStage(targetStageId);
+            setPendingNavigation({ processId: targetProcessId });
+        }
+    } else {
+        showErrorToast(`Could not find dependency "${dependencyName}" in the workflow.`);
+    }
+  }, [globalProcessMap, activeStage, stages]);
+
+  // Effect to handle pending navigation after stage switch
   useEffect(() => {
-    // Create a comprehensive lookup map from any ID to sub-stage name for all tasks.
+    if (pendingNavigation && stageSpecificSubStages.some(s => s.processId === pendingNavigation.processId || s.id === pendingNavigation.processId)) {
+      const targetProcessId = pendingNavigation.processId;
+      const targetSubStage = stageSpecificSubStages.find(s => s.processId === targetProcessId || s.id === targetProcessId);
+      
+      if (targetSubStage) {
+        setSelectedSubStage(targetSubStage.id);
+        setRightPanelContent('process-overview');
+        setRightPanelOpen(true);
+        setIsRightPanelExpanded(true);
+
+        // Scroll to the sub-stage card after a short delay
+        setTimeout(() => {
+            const element = document.querySelector(`[data-process-id="${targetSubStage.processId}"]`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                showInfoToast(`Navigated to dependency: ${targetSubStage.name}`);
+            }
+        }, 200);
+
+        setPendingNavigation(null); // Clear the pending action
+      }
+    }
+  }, [pendingNavigation, stageSpecificSubStages]);
+
+  // Load stage-specific data and build global maps when tasks change
+  useEffect(() => {
+    // Create a comprehensive lookup map from any ID to sub-stage object for all tasks.
+    const newGlobalProcessMap = new Map<string, any>();
+    const childDependenciesMap = new Map<string, { id: string; name: string; }[]>();
     const processIdToNameMap = new Map<string, string>();
-    Object.values(tasks).flat().forEach(task => {
-      // Map all potential identifiers to the task name for robust dependency resolution.
-      if (task.id) {
-        processIdToNameMap.set(String(task.id), task.name);
-      }
-      if (task.processId) {
-        processIdToNameMap.set(String(task.processId), task.name);
-      }
-      if (task.workflowProcessId) {
-        processIdToNameMap.set(String(task.workflowProcessId), task.name);
-      }
+
+    Object.entries(tasks).forEach(([stageId, stageTasks]) => {
+      stageTasks.forEach(task => {
+        const taskWithStage = { ...task, stageId };
+        // Map all potential identifiers to the task object for robust navigation.
+        if (task.id) newGlobalProcessMap.set(String(task.id), taskWithStage);
+        if (task.processId) newGlobalProcessMap.set(String(task.processId), taskWithStage);
+        if (task.workflowProcessId) newGlobalProcessMap.set(String(task.workflowProcessId), taskWithStage);
+
+        // Also populate the name map
+        if (task.id) processIdToNameMap.set(String(task.id), task.name);
+        if (task.processId) processIdToNameMap.set(String(task.processId), task.name);
+        if (task.workflowProcessId) processIdToNameMap.set(String(task.workflowProcessId), task.name);
+      });
     });
+
+    // Second pass to build child dependencies
+    newGlobalProcessMap.forEach(task => {
+        task.dependencies?.forEach((dep: any) => {
+            const parentId = String(dep.id || dep.name);
+            if (!childDependenciesMap.has(parentId)) {
+                childDependenciesMap.set(parentId, []);
+            }
+            childDependenciesMap.get(parentId)!.push({ id: task.processId || task.id, name: task.name });
+        });
+    });
+
+    setGlobalProcessMap(newGlobalProcessMap);
 
     if (activeStage && tasks[activeStage]) {
       // Convert actual API tasks to SubStage format with enhanced field mapping
-      // Handle large workflows with 100+ substages
       const stageTasks = tasks[activeStage].map((task, index) => {
-        // Enhanced progress calculation based on API fields
+        // ... (existing mapping logic)
         let progress = 0;
         if (task.status === 'completed') {
           progress = 100;
         } else if (task.status === 'in_progress' || task.status === 'in-progress') {
-          // Use percentage from API if available, otherwise default to 50
           progress = task.percentage || 50;
         } else if (task.status === 'failed') {
-          // Failed tasks might have partial progress
           progress = task.partialComplete === 'Y' ? (task.percentage || 25) : 0;
         } else {
           progress = 0;
         }
 
-        // Enhanced timing information
         const timing = {
           start: task.expectedStart || '09:00',
           duration: task.actualDuration || `${task.duration || 0}m`,
@@ -674,7 +714,6 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
           avgStart: task.expectedStart || '09:00'
         };
 
-        // Enhanced metadata with all available API fields
         const meta = {
           updatedBy: task.updatedBy || null,
           updatedOn: task.updatedAt || null,
@@ -684,70 +723,36 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
           completedOn: task.completedOn || null
         };
 
-        // Enhanced file mapping with better type detection
-        const files = task.documents?.map(doc => {
-          const fileExtension = doc.name.split('.').pop()?.toLowerCase() || '';
-          let fileType = 'download'; // default
-          
-          // Determine file type based on task properties and file extension
-          if (task.uploadAllowed === 'Y' && ['xlsx', 'csv', 'txt', 'json'].includes(fileExtension)) {
-            fileType = 'upload';
-          } else if (['log', 'txt', 'json', 'xml'].includes(fileExtension)) {
-            fileType = 'preview';
-          }
-          
-          return {
-            name: doc.name,
-            type: fileType,
-            size: doc.size
-          };
-        }) || [];
+        const files = task.documents?.map(doc => ({
+          name: doc.name,
+          type: 'download',
+          size: doc.size
+        })) || [];
 
-        // Enhanced messages with API-specific information
         const messages = [...(task.messages || [])];
-        
-        // Add additional contextual messages based on API fields
-        if (task.isLocked === 'Y' && task.lockedBy) {
-          messages.push(`Process locked by ${task.lockedBy}`);
-        }
-        
-        if (task.attestRequired === 'Y' && !task.attestedBy) {
-          messages.push('Attestation required before completion');
-        } else if (task.attestRequired === 'Y' && task.attestedBy) {
-          messages.push(`Attested by ${task.attestedBy}`);
-        }
-        
-        if (task.approval === 'Y') {
-          messages.push('Requires approval');
-        }
-        
-        if (task.isRTB) {
-          messages.push('Run-The-Bank (RTB) process');
-        }
-        
-        if (task.isAlteryx === 'Y') {
-          messages.push('Alteryx workflow process');
-        }
+        if (task.isLocked === 'Y' && task.lockedBy) messages.push(`Process locked by ${task.lockedBy}`);
+        if (task.attestRequired === 'Y' && !task.attestedBy) messages.push('Attestation required');
+        if (task.approval === 'Y') messages.push('Requires approval');
 
-        // Enhanced dependencies with better status mapping and navigation
+        // PARENT dependencies
         const dependencies = task.dependencies?.map(dep => {
-          const depId = String(dep.id || dep.name); // Assuming dep.id or dep.name is the processId
-          const depName = processIdToNameMap.get(depId) || dep.name; // Look up the name, fallback to original
-
+          const depId = String(dep.id || dep.name);
+          const depName = processIdToNameMap.get(depId) || dep.name;
           return {
             name: depName,
             status: dep.status === 'in_progress' ? 'in-progress' : dep.status,
-            id: depId, // Use the original ID for navigation
+            id: depId,
           };
         }) || [];
 
-        // Clean up processId format - convert "task-1234" to "PROC-1234" for consistency
+        // CHILD dependencies
+        const childDeps = childDependenciesMap.get(String(task.processId)) || childDependenciesMap.get(String(task.id)) || [];
+
         let cleanProcessId = task.processId;
         if (task.processId && task.processId.startsWith('task-')) {
           cleanProcessId = task.processId.replace('task-', 'PROC-');
         }
 
-        // Use dep_Sub_Stage_Seq for global sequencing if available
         const globalSequence = task.dep_Sub_Stage_Seq || task.subStageSeq || (index + 1);
         
         return {
@@ -757,27 +762,21 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
           status: task.status === 'in_progress' ? 'in-progress' as const : task.status,
           progress,
           processId: cleanProcessId,
-          sequence: globalSequence, // Use global sequence
+          sequence: globalSequence,
           timing,
-          stats: {
-            success: '95%', // Could be enhanced with historical data
-            lastRun: task.completedOn || null
-          },
+          stats: { success: '95%', lastRun: task.completedOn || null },
           meta,
           files,
           messages,
           dependencies,
-          
-          // Additional configuration based on API fields
+          children: childDeps, // Add children here
           config: {
             canTrigger: task.isActive === 'y' && task.status === 'not_started',
             canRerun: task.status === 'completed' || task.status === 'failed',
             canForceStart: task.adhoc === 'Y',
             canSkip: task.status === 'not_started' || task.status === 'in_progress',
-            canSendEmail: true // Could be based on notification settings
+            canSendEmail: true
           },
-          
-          // Store original API data for right panel access
           apiData: {
             workflowProcessId: task.workflowProcessId,
             workflowAppConfigId: task.workflowAppConfigId,
@@ -795,22 +794,18 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
             userCommentary: task.userCommentary,
             skipCommentary: task.skipCommentary,
             dep_Sub_Stage_Seq: task.dep_Sub_Stage_Seq,
-            approval: task.approval, // Add approval field for ProcessApprovalDialog
-            isLocked: task.isLocked // Pass isLocked status
+            approval: task.approval,
+            isLocked: task.isLocked
           }
         };
       });
 
-      // Sort by global sequence to ensure proper ordering
       stageTasks.sort((a, b) => a.sequence - b.sequence);
-      
       setStageSpecificSubStages(stageTasks);
-      buildDependencyMap(stageTasks);
       
-      // Enhanced document extraction with better categorization (optimized for large workflows)
       const stageDocuments = tasks[activeStage].reduce((docs: any[], task) => {
-        if (task.documents && docs.length < 500) { // Increased limit for large workflows
-          task.documents.forEach((doc, index) => { // Process all documents per task
+        if (task.documents && docs.length < 500) {
+          task.documents.forEach((doc, index) => {
             const fileExtension = doc.name.split('.').pop()?.toLowerCase() || 'unknown';
             docs.push({
               id: `${task.id}-doc-${index}`,
@@ -830,12 +825,10 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       
       setStageSpecificDocuments(stageDocuments);
     } else {
-      // If no stage-specific data found, clear the data
       setStageSpecificSubStages([]);
       setStageSpecificDocuments([]);
-      setDependencyMap(new Map());
     }
-  }, [activeStage, tasks, buildDependencyMap]);
+  }, [activeStage, tasks]);
 
 
 
@@ -1742,6 +1735,32 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                                   >
                                     {dep.name}
                                     {depIndex < subStage.dependencies.length - 1 && ','}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Child Dependencies */}
+                          {subStage.children && subStage.children.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <GitBranch className="h-3 w-3" />
+                              <span>Child Deps: </span>
+                              <div className="flex flex-wrap gap-1">
+                                {subStage.children.map((child, childIndex) => (
+                                  <Button
+                                    key={child.id}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-auto p-0 text-xs underline hover:text-primary"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDependencyClick(child.id, child.name);
+                                    }}
+                                    title={`Navigate to child dependency: ${child.name}`}
+                                  >
+                                    {child.name}
+                                    {childIndex < subStage.children.length - 1 && ','}
                                   </Button>
                                 ))}
                               </div>
