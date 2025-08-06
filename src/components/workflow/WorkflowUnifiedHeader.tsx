@@ -100,7 +100,7 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
   date
 }) => {
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
-  const [showAdhocManager, setShowAdhocManager] = useState(false);
+
   
   // Calculate task counts if not provided
   const defaultTaskCounts = taskCounts || {
@@ -147,10 +147,7 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
     }
   };
 
-  // Handle action buttons
-  const handleAddAdhocStage = () => {
-    setShowAdhocManager(true);
-  };
+
 
   const handleResetWorkflow = () => {
     showWarningToast("Reset Workflow functionality would be implemented here");
@@ -162,19 +159,6 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
 
   return (
     <div className="space-y-2">
-      {/* Adhoc Stage Manager */}
-      {showAdhocManager && appGroupId && appId && date && (
-        <AdhocStageManager
-          appGroupId={appGroupId}
-          appId={appId}
-          date={date}
-          onRefresh={() => {
-            onRefresh();
-            setShowAdhocManager(false);
-          }}
-        />
-      )}
-
       <Card className="mb-2">
         <CardHeader className="py-1.5 px-3 flex flex-row justify-between items-center">
         <div className="flex items-center gap-2">
@@ -276,16 +260,16 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
             )}
           </Button>
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7"
-            onClick={handleAddAdhocStage}
-            title="Add Adhoc Stages"
-            disabled={!appGroupId || !appId || !date}
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
+          {/* Adhoc Stage Manager - renders as button when closed, modal when open */}
+          {appGroupId && appId && date && (
+            <AdhocStageManager
+              appGroupId={appGroupId}
+              appId={appId}
+              date={date}
+              onRefresh={onRefresh}
+              className="h-7 w-7"
+            />
+          )}
           
           <Button 
             variant="ghost" 
