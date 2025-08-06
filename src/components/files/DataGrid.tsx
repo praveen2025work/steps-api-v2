@@ -86,62 +86,62 @@ export function DataGrid<TData, TValue>({
   });
 
   return (
-    &lt;div className="w-full space-y-4"&gt;
-      &lt;div className="flex items-center justify-between"&gt;
-        &lt;Input
+    <div className="w-full space-y-4">
+      <div className="flex items-center justify-between">
+        <Input
           placeholder="Filter all columns..."
           value={globalFilter ?? ''}
-          onChange={(event) =&gt;
+          onChange={(event) =>
             setGlobalFilter(String(event.target.value))
           }
           className="max-w-sm"
-        /&gt;
-        &lt;DropdownMenu&gt;
-          &lt;DropdownMenuTrigger asChild&gt;
-            &lt;Button variant="outline" className="ml-auto"&gt;
-              Columns &lt;ChevronDown className="ml-2 h-4 w-4" /&gt;
-            &lt;/Button&gt;
-          &lt;/DropdownMenuTrigger&gt;
-          &lt;DropdownMenuContent align="end"&gt;
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Columns <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
             {table
               .getAllColumns()
-              .filter((column) =&gt; column.getCanHide())
-              .map((column) =&gt; {
+              .filter((column) => column.getCanHide())
+              .map((column) => {
                 return (
-                  &lt;DropdownMenuCheckboxItem
+                  <DropdownMenuCheckboxItem
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) =&gt;
+                    onCheckedChange={(value) =>
                       column.toggleVisibility(!!value)
                     }
-                  &gt;
+                  >
                     {column.id}
-                  &lt;/DropdownMenuCheckboxItem&gt;
+                  </DropdownMenuCheckboxItem>
                 );
               })}
-          &lt;/DropdownMenuContent&gt;
-        &lt;/DropdownMenu&gt;
-      &lt;/div&gt;
-      &lt;div className="rounded-md border"&gt;
-        &lt;Table&gt;
-          &lt;TableHeader&gt;
-            {table.getHeaderGroups().map((headerGroup) =&gt; (
-              &lt;TableRow key={headerGroup.id}&gt;
-                {headerGroup.headers.map((header) =&gt; {
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
                   return (
-                    &lt;TableHead key={header.id}&gt;
+                    <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : (
-                          &lt;div
+                          <div
                             {...{
                               className: header.column.getCanSort()
                                 ? 'cursor-pointer select-none flex items-center'
                                 : '',
                               onClick: header.column.getToggleSortingHandler(),
                             }}
-                          &gt;
+                          >
                             {flexRender(
                               header.column.columnDef.header,
                               header.getContext()
@@ -150,110 +150,110 @@ export function DataGrid<TData, TValue>({
                               asc: ' ▲',
                               desc: ' ▼',
                             }[header.column.getIsSorted() as string] ?? null}
-                          &lt;/div&gt;
+                          </div>
                         )}
-                    &lt;/TableHead&gt;
+                    </TableHead>
                   );
                 })}
-              &lt;/TableRow&gt;
+              </TableRow>
             ))}
-          &lt;/TableHeader&gt;
-          &lt;TableBody&gt;
+          </TableHeader>
+          <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) =&gt; (
-                &lt;TableRow
+              table.getRowModel().rows.map((row) => (
+                <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                &gt;
-                  {row.getVisibleCells().map((cell) =&gt; (
-                    &lt;TableCell key={cell.id}&gt;
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
                       )}
-                    &lt;/TableCell&gt;
+                    </TableCell>
                   ))}
-                &lt;/TableRow&gt;
+                </TableRow>
               ))
             ) : (
-              &lt;TableRow&gt;
-                &lt;TableCell
+              <TableRow>
+                <TableCell
                   colSpan={columns.length}
                   className="h-24 text-center"
-                &gt;
+                >
                   No results.
-                &lt;/TableCell&gt;
-              &lt;/TableRow&gt;
+                </TableCell>
+              </TableRow>
             )}
-          &lt;/TableBody&gt;
-        &lt;/Table&gt;
-      &lt;/div&gt;
-      &lt;div className="flex items-center justify-between"&gt;
-        &lt;div className="flex-1 text-sm text-muted-foreground"&gt;
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}
           {table.getFilteredRowModel().rows.length} row(s) selected.
-        &lt;/div&gt;
-        &lt;div className="flex items-center space-x-6 lg:space-x-8"&gt;
-          &lt;div className="flex items-center space-x-2"&gt;
-            &lt;p className="text-sm font-medium"&gt;Rows per page&lt;/p&gt;
-            &lt;select
+        </div>
+        <div className="flex items-center space-x-6 lg:space-x-8">
+          <div className="flex items-center space-x-2">
+            <p className="text-sm font-medium">Rows per page</p>
+            <select
               value={table.getState().pagination.pageSize}
-              onChange={e =&gt; {
+              onChange={e => {
                 table.setPageSize(Number(e.target.value))
               }}
               className="h-8 w-[70px] text-sm"
-            &gt;
-              {[10, 20, 30, 40, 50].map(pageSize =&gt; (
-                &lt;option key={pageSize} value={pageSize}&gt;
+            >
+              {[10, 20, 30, 40, 50].map(pageSize => (
+                <option key={pageSize} value={pageSize}>
                   {pageSize}
-                &lt;/option&gt;
+                </option>
               ))}
-            &lt;/select&gt;
-          &lt;/div&gt;
-          &lt;div className="flex w-[100px] items-center justify-center text-sm font-medium"&gt;
+            </select>
+          </div>
+          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
             Page {table.getState().pagination.pageIndex + 1} of{' '}
             {table.getPageCount()}
-          &lt;/div&gt;
-          &lt;div className="flex items-center space-x-2"&gt;
-            &lt;Button
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
               variant="outline"
               className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() =&gt; table.setPageIndex(0)}
+              onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
-            &gt;
-              &lt;span className="sr-only"&gt;Go to first page&lt;/span&gt;
-              &lt;&lt;
-            &lt;/Button&gt;
-            &lt;Button
+            >
+              <span className="sr-only">Go to first page</span>
+              {'<<'}
+            </Button>
+            <Button
               variant="outline"
               className="h-8 w-8 p-0"
-              onClick={() =&gt; table.previousPage()}
+              onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-            &gt;
-              &lt;span className="sr-only"&gt;Go to previous page&lt;/span&gt;
-              &lt;
-            &lt;/Button&gt;
-            &lt;Button
+            >
+              <span className="sr-only">Go to previous page</span>
+              {'<'}
+            </Button>
+            <Button
               variant="outline"
               className="h-8 w-8 p-0"
-              onClick={() =&gt; table.nextPage()}
+              onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-            &gt;
-              &lt;span className="sr-only"&gt;Go to next page&lt;/span&gt;
-              &gt;
-            &lt;/Button&gt;
-            &lt;Button
+            >
+              <span className="sr-only">Go to next page</span>
+              {'>'}
+            </Button>
+            <Button
               variant="outline"
               className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() =&gt; table.setPageIndex(table.getPageCount() - 1)}
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
-            &gt;
-              &lt;span className="sr-only"&gt;Go to last page&lt;/span&gt;
-              &gt;&gt;
-            &lt;/Button&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
-    &lt;/div&gt;
+            >
+              <span className="sr-only">Go to last page</span>
+              {'>>'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
