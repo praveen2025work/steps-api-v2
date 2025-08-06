@@ -512,6 +512,166 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       ]
     },
     { 
+      id: 'data_processing',
+      name: 'Data Processing',
+      type: 'auto',
+      status: 'in-progress',
+      progress: 60,
+      processId: 'PROC-1239',
+      timing: {
+        start: '08:15:00',
+        duration: '20m',
+        avgDuration: '18m',
+        avgStart: '08:15 AM'
+      },
+      stats: {
+        success: '95%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T08:25:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [],
+      messages: ['Processing batch 3 of 5...'],
+      dependencies: [
+        { name: 'Data Validation and Reconciliation', status: 'completed', id: 'data_validation' }
+      ]
+    },
+    { 
+      id: 'risk_calculation',
+      name: 'Risk Calculation',
+      type: 'auto',
+      status: 'failed',
+      progress: 30,
+      processId: 'PROC-1240',
+      timing: {
+        start: '08:35:00',
+        duration: '15m',
+        avgDuration: '12m',
+        avgStart: '08:35 AM'
+      },
+      stats: {
+        success: '90%',
+        lastRun: '2025-04-12T08:40:00'
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T08:40:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'risk_error_log.txt', type: 'download', size: '15 KB' }
+      ],
+      messages: ['Error: Connection to risk engine timed out.'],
+      dependencies: [
+        { name: 'Data Processing', status: 'in-progress', id: 'data_processing' }
+      ]
+    },
+    { 
+      id: 'generate_reports',
+      name: 'Generate Reports',
+      type: 'auto',
+      status: 'completed',
+      progress: 100,
+      processId: 'PROC-1241',
+      timing: {
+        start: '09:00:00',
+        duration: '8m',
+        avgDuration: '7m',
+        avgStart: '09:00 AM'
+      },
+      stats: {
+        success: '100%',
+        lastRun: '2025-04-12T09:08:00'
+      },
+      meta: {
+        updatedBy: 'System',
+        updatedOn: '2025-04-12T09:08:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: 'System',
+        completedOn: '2025-04-12T09:08:00'
+      },
+      files: [
+        { name: 'summary_report.pdf', type: 'download', size: '800 KB' },
+        { name: 'detailed_report.csv', type: 'download', size: '5.2 MB' }
+      ],
+      messages: ['Reports generated successfully.'],
+      dependencies: [
+        { name: 'Risk Calculation', status: 'failed', id: 'risk_calculation' }
+      ]
+    },
+    { 
+      id: 'optional_archiving',
+      name: 'Optional Archiving',
+      type: 'manual',
+      status: 'skipped',
+      progress: 0,
+      processId: 'PROC-1242',
+      timing: {
+        start: '09:15:00',
+        duration: '5m',
+        avgDuration: '4m',
+        avgStart: '09:15 AM'
+      },
+      stats: {
+        success: '100%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: 'j.doe',
+        updatedOn: '2025-04-12T09:16:00',
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [],
+      messages: ['Skipped by user.'],
+      dependencies: [
+        { name: 'Generate Reports', status: 'completed', id: 'generate_reports' }
+      ]
+    },
+    { 
+      id: 'management_review',
+      name: 'Management Review',
+      type: 'manual',
+      status: 'in-progress',
+      progress: 50,
+      processId: 'PROC-1243',
+      timing: {
+        start: '09:30:00',
+        duration: '30m',
+        avgDuration: '25m',
+        avgStart: '09:30 AM'
+      },
+      stats: {
+        success: '100%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: 's.smith',
+        updatedOn: '2025-04-12T09:35:00',
+        lockedBy: 's.smith',
+        lockedOn: '2025-04-12T09:32:00',
+        completedBy: null,
+        completedOn: null
+      },
+      files: [],
+      messages: ['Awaiting approval from management. Commentary added.'],
+      dependencies: [
+        { name: 'Generate Reports', status: 'completed', id: 'generate_reports' }
+      ]
+    },
+    { 
       id: 'final_approval',
       name: 'Final Approval and Sign-off',
       type: 'manual',
@@ -539,7 +699,40 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       files: [],
       messages: ['Awaiting final approval'],
       dependencies: [
-        { name: 'Data Validation and Reconciliation', status: 'completed', id: 'data_validation' }
+        { name: 'Management Review', status: 'in-progress', id: 'management_review' }
+      ]
+    },
+    { 
+      id: 'upload_signed_docs',
+      name: 'Upload Signed Documents',
+      type: 'manual',
+      status: 'not-started',
+      progress: 0,
+      processId: 'PROC-1245',
+      timing: {
+        start: '11:00:00',
+        duration: '5m',
+        avgDuration: '3m',
+        avgStart: '11:00 AM'
+      },
+      stats: {
+        success: '100%',
+        lastRun: null
+      },
+      meta: {
+        updatedBy: null,
+        updatedOn: null,
+        lockedBy: null,
+        lockedOn: null,
+        completedBy: null,
+        completedOn: null
+      },
+      files: [
+        { name: 'signed_approval.pdf', type: 'upload', size: '1.1 MB' }
+      ],
+      messages: ['Waiting for user to upload signed documents.'],
+      dependencies: [
+        { name: 'Final Approval and Sign-off', status: 'not-started', id: 'final_approval' }
       ]
     }
   ];
