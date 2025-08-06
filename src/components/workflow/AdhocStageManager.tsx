@@ -10,11 +10,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { 
-  Plus, 
+  Wand2, 
   RotateCcw, 
   X, 
   Loader2, 
-  AlertCircle
+  AlertCircle,
+  Plus
 } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import { useApiClient } from '@/lib/api-client';
@@ -189,15 +190,20 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
         })
       });
 
-      const responseData = await response.json();
-      console.log(`${action} adhoc stage response:`, responseData);
-
       if (!response.ok) {
-        if (response.status === 400 && responseData.message?.includes('already added')) {
-          showErrorToast('Adhoc process already exists. Consider using Reset or contact admin.');
-          return;
+        let errorMessage = `Failed to ${action} stage.`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || JSON.stringify(errorData);
+          if (response.status === 400 && errorMessage.includes('already added')) {
+            showErrorToast('Adhoc process already exists. Consider using Reset or contact admin.');
+            return;
+          }
+        } catch (e) {
+          // Response body is not JSON or is empty
+          errorMessage = `HTTP ${response.status}: ${response.statusText || 'An unknown error occurred.'}`;
         }
-        throw new Error(responseData.message || `HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(errorMessage);
       }
 
       // Success handling
@@ -247,14 +253,13 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
   if (!isOpen) {
     return (
       <Button
-        variant="outline"
-        size="sm"
+        variant="ghost"
+        size="icon"
         onClick={handleOpenModal}
-        className={`gap-2 ${className}`}
+        className={className}
         title="Add Adhoc Stages"
       >
-        <Plus className="h-4 w-4" />
-        Add Adhoc Stage
+        <Wand2 className="h-4 w-4" />
       </Button>
     );
   }

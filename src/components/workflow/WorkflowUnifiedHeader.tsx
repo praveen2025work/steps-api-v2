@@ -23,7 +23,8 @@ import {
   Pause,
   Play,
   Settings,
-  Users
+  Users,
+  KeyRound
 } from 'lucide-react';
 import { useDate } from '@/contexts/DateContext';
 import { formatDate } from '@/lib/dateUtils';
@@ -207,7 +208,7 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {/* Auto-refresh controls */}
           <div className="flex items-center gap-2 mr-3">
             <div className="flex items-center gap-2">
@@ -288,7 +289,7 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
             onClick={handleReopenTollGate}
             title="Reopen Toll Gate"
           >
-            <Unlock className="h-3.5 w-3.5" />
+            <KeyRound className="h-3.5 w-3.5" />
           </Button>
           
           <Button 
