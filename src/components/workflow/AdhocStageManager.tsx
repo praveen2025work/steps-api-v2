@@ -28,6 +28,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { showSuccessToast, showErrorToast, showInfoToast } from '@/lib/toast';
+import { useApiClient } from '@/lib/api-client';
+import { getCurrentEnvironment } from '@/config/api-environments';
 
 interface AdhocStage {
   stageId: number;
@@ -59,6 +61,10 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addedStages, setAddedStages] = useState<Set<number>>(new Set());
+  
+  // Get API client and environment
+  const apiClient = useApiClient();
+  const environment = getCurrentEnvironment();
 
   // Fetch adhoc stage configurations
   const fetchAdhocStages = async () => {
@@ -68,13 +74,26 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
     setError(null);
 
     try {
-      const response = await fetch(`/api/workflowconfig/${appGroupId}/${appId}/all?adhoc=Y`);
+      // Use Java API endpoint for workflow config
+      const url = `${environment.javaApiUrl}/workflowconfig/${appGroupId}/${appId}/all?adhoc=Y`;
+      console.log('Fetching adhoc stages from:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('Adhoc stages response:', data);
       
       // Extract adhoc stages from the response
       const stages: AdhocStage[] = [];
@@ -132,12 +151,17 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
 
     try {
       const isAdd = action === 'add';
-      const url = `/api/process/adhoc/${appId}/${appGroupId}/${date}/${stageId}/${isAdd}`;
+      // Use Java API endpoint for process actions
+      const url = `${environment.javaApiUrl}/process/adhoc/${appId}/${appGroupId}/${date}/${stageId}/${isAdd}`;
+      console.log(`${action} adhoc stage request to:`, url);
       
       const response = await fetch(url, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
         },
         body: JSON.stringify({
           updatedby: 'user' // Could be enhanced to use actual user context
@@ -145,6 +169,7 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
       });
 
       const responseData = await response.json();
+      console.log(`${action} adhoc stage response:`, responseData);
 
       if (!response.ok) {
         // Handle specific error cases
