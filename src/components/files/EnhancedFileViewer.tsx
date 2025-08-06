@@ -119,102 +119,158 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
   const renderPreviewContent = () => {
     if (!selectedFile) return null;
 
-    const isExcelFile = ['xlsx', 'xls', 'csv'].includes(
-      selectedFile.name.split('.').pop()?.toLowerCase() || ''
-    );
+    const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase() || '';
+    const isExcelFile = ['xlsx', 'xls'].includes(fileExtension);
+    const isCsvFile = fileExtension === 'csv';
 
-    if (isExcelFile && excelData) {
-      // Find the first sheet with data to set as default
-      const firstDataSheet = excelData.sheets.find(sheet => 
-        !(sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND")
-      );
-      const defaultSheetName = firstDataSheet?.name || excelData.sheets[0]?.name;
+    if ((isExcelFile || isCsvFile) && excelData) {
+      // Handle CSV files (array of objects)
+      if (isCsvFile && Array.isArray(excelData)) {
+        if (excelData.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Database className="h-12 w-12 mb-4 opacity-50" />
+              <p className="text-lg font-medium">No data available</p>
+              <p className="text-sm">This CSV file contains no data to display</p>
+            </div>
+          );
+        }
 
-      return (
-        <div className="space-y-4">
-          <Tabs defaultValue={defaultSheetName} className="w-full">
-            {/* Horizontal sheet cards instead of vertical tabs */}
-            <TabsList className="flex gap-2 overflow-x-auto pb-2 mb-4 h-auto bg-transparent">
-              {excelData.sheets.map((sheet) => {
-                const isEmpty = sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND";
-                return (
-                  <TabsTrigger 
-                    key={sheet.name} 
-                    value={sheet.name}
-                    className="flex-shrink-0 px-4 py-2 rounded-lg border bg-card hover:bg-accent transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-auto"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="whitespace-nowrap font-medium">{sheet.name}</span>
-                      {isEmpty ? (
-                        <Badge variant="secondary" className="h-4 px-1 text-xs">
-                          No Data
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="h-4 px-1 text-xs">
-                          {sheet.data.length - 1} rows
-                        </Badge>
-                      )}
+        // Get column names from the first object's keys
+        const columnNames = Object.keys(excelData[0] || {});
+
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {/* Show record count at the top */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Showing {excelData.length} records</span>
+                <span>File: {selectedFile.name}</span>
+              </div>
+              <ScrollArea className="w-full h-96 border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {columnNames.map((columnName, index) => (
+                        <TableHead key={index} className="whitespace-nowrap font-semibold bg-muted/50">
+                          {columnName}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {excelData.map((row, rowIndex) => (
+                      <TableRow key={rowIndex} className="hover:bg-muted/30">
+                        {columnNames.map((columnName, colIndex) => (
+                          <TableCell key={colIndex} className="whitespace-nowrap">
+                            {row[columnName] || ''}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </div>
+          </div>
+        );
+      }
+
+      // Handle Excel files (with sheets)
+      if (isExcelFile && excelData.sheets) {
+        // Find the first sheet with data to set as default
+        const firstDataSheet = excelData.sheets.find(sheet => 
+          !(sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND")
+        );
+        const defaultSheetName = firstDataSheet?.name || excelData.sheets[0]?.name;
+
+        return (
+          <div className="space-y-4">
+            <Tabs defaultValue={defaultSheetName} className="w-full">
+              {/* Horizontal sheet cards instead of vertical tabs */}
+              <TabsList className="flex gap-2 overflow-x-auto pb-2 mb-4 h-auto bg-transparent">
+                {excelData.sheets.map((sheet) => {
+                  const isEmpty = sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND";
+                  return (
+                    <TabsTrigger 
+                      key={sheet.name} 
+                      value={sheet.name}
+                      className="flex-shrink-0 px-4 py-2 rounded-lg border bg-card hover:bg-accent transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-auto"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="whitespace-nowrap font-medium">{sheet.name}</span>
+                        {isEmpty ? (
+                          <Badge variant="secondary" className="h-4 px-1 text-xs">
+                            No Data
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="h-4 px-1 text-xs">
+                            {sheet.data.length - 1} rows
+                          </Badge>
+                        )}
+                      </div>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+              
+              {excelData.sheets.map((sheet) => (
+                <TabsContent key={sheet.name} value={sheet.name} className="mt-0">
+                  {sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND" ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                      <Database className="h-12 w-12 mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No data available</p>
+                      <p className="text-sm">This sheet contains no data to display</p>
                     </div>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-            
-            {excelData.sheets.map((sheet) => (
-              <TabsContent key={sheet.name} value={sheet.name} className="mt-0">
-                {sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND" ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                    <Database className="h-12 w-12 mb-4 opacity-50" />
-                    <p className="text-lg font-medium">No data available</p>
-                    <p className="text-sm">This sheet contains no data to display</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {/* Show record count at the top */}
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>Showing {sheet.data.length - 1} records</span>
-                      <span>Sheet: {sheet.name}</span>
-                    </div>
-                    <ScrollArea className="w-full h-96 border rounded-md">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            {sheet.data[0]?.map((header, index) => (
-                              <TableHead key={index} className="whitespace-nowrap font-semibold bg-muted/50">
-                                {header || `Column ${index + 1}`}
-                              </TableHead>
-                            ))}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {sheet.data.slice(1).map((row, rowIndex) => (
-                            <TableRow key={rowIndex} className="hover:bg-muted/30">
-                              {sheet.data[0]?.map((_, colIndex) => (
-                                <TableCell key={colIndex} className="whitespace-nowrap">
-                                  {row[colIndex] || ''}
-                                </TableCell>
+                  ) : (
+                    <div className="space-y-2">
+                      {/* Show record count at the top */}
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>Showing {sheet.data.length - 1} records</span>
+                        <span>Sheet: {sheet.name}</span>
+                      </div>
+                      <ScrollArea className="w-full h-96 border rounded-md">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              {sheet.data[0]?.map((header, index) => (
+                                <TableHead key={index} className="whitespace-nowrap font-semibold bg-muted/50">
+                                  {header || `Column ${index + 1}`}
+                                </TableHead>
                               ))}
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
-                  </div>
-                )}
-              </TabsContent>
-            ))}
-          </Tabs>
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <FileText className="h-12 w-12 mb-4 opacity-50" />
-          <p className="text-lg font-medium">Preview not available</p>
-          <p className="text-sm">This file type cannot be previewed</p>
-        </div>
-      );
+                          </TableHeader>
+                          <TableBody>
+                            {sheet.data.slice(1).map((row, rowIndex) => (
+                              <TableRow key={rowIndex} className="hover:bg-muted/30">
+                                {sheet.data[0]?.map((_, colIndex) => (
+                                  <TableCell key={colIndex} className="whitespace-nowrap">
+                                    {row[colIndex] || ''}
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </div>
+                  )}
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
+        );
+      }
     }
+
+    // Fallback for unsupported file types or no data
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+        <FileText className="h-12 w-12 mb-4 opacity-50" />
+        <p className="text-lg font-medium">Preview not available</p>
+        <p className="text-sm">This file type cannot be previewed</p>
+      </div>
+    );
   };
 
   if (files.length === 0) {
