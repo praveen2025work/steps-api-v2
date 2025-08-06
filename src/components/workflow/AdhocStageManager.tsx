@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -10,24 +9,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { 
   Plus, 
   RotateCcw, 
   X, 
   Loader2, 
-  AlertCircle, 
-  CheckCircle,
-  Settings,
-  Users,
-  RefreshCw
+  AlertCircle
 } from 'lucide-react';
-import { showSuccessToast, showErrorToast, showInfoToast } from '@/lib/toast';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import { useApiClient } from '@/lib/api-client';
 import { getCurrentEnvironment } from '@/config/api-environments';
 
@@ -56,17 +45,32 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [adhocStages, setAdhocStages] = useState<AdhocStage[]>([]);
-  const [selectedStage, setSelectedStage] = useState<AdhocStage | null>(null);
+  const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [addedStages, setAddedStages] = useState<Set<number>>(new Set());
   
   // Get API client and environment
   const apiClient = useApiClient();
   const environment = getCurrentEnvironment();
 
-  // Fetch adhoc stage configurations using the same pattern as workflowActionService
+  // Format date to "27-Jun-2025" format
+  const formatDateForApi = (dateStr: string): string => {
+    try {
+      const date = new Date(dateStr);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateStr; // fallback to original
+    }
+  };
+
+  // Fetch adhoc stage configurations
   const fetchAdhocStages = async () => {
     if (!appGroupId || !appId) return;
 
@@ -74,15 +78,14 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
     setError(null);
 
     try {
-      // Use Java API endpoint for workflow config - same pattern as workflowActionService
       const url = `${environment.javaApiUrl}/workflowconfig/${appGroupId}/${appId}/all?adhoc=Y`;
       console.log('Fetching adhoc stages from:', url);
       
       const response = await fetch(url, {
         method: 'GET',
         mode: 'cors',
-        cache: 'no-store', // Prevent browser from adding Cache-Control header
-        credentials: 'omit', // Use 'omit' for Java API calls (same as workflowActionService)
+        cache: 'no-store',
+        credentials: 'omit',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -102,19 +105,29 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
       if (data && Array.isArray(data)) {
         data.forEach((config: any) => {
           if (config.workflowStage) {
+            let stageName = '';
+            let stageId = 0;
+            
             // Handle both object and lazy-loaded integer cases
             if (typeof config.workflowStage === 'object' && config.workflowStage.stageId) {
-              stages.push({
-                stageId: config.workflowStage.stageId,
-                stageName: config.workflowStage.workflowApplication?.name || `Stage ${config.workflowStage.stageId}`,
-                workflowApplication: config.workflowStage.workflowApplication
-              });
+              stageId = config.workflowStage.stageId;
+              // Try to get stage name from various possible locations
+              stageName = config.workflowStage.stageName || 
+                         config.workflowStage.name || 
+                         config.workflowStage.workflowApplication?.name || 
+                         config.name ||
+                         `Stage ${stageId}`;
             } else if (typeof config.workflowStage === 'number') {
               // Lazy-loaded case - use the integer as stageId
+              stageId = config.workflowStage;
+              stageName = config.name || `Stage ${stageId}`;
+            }
+            
+            if (stageId > 0) {
               stages.push({
-                stageId: config.workflowStage,
-                stageName: `Stage ${config.workflowStage}`,
-                workflowApplication: undefined
+                stageId: stageId,
+                stageName: stageName,
+                workflowApplication: config.workflowStage?.workflowApplication
               });
             }
           }
@@ -129,8 +142,8 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
       setAdhocStages(uniqueStages);
       
       // Automatically select the first stage if available
-      if (uniqueStages.length > 0 && !selectedStage) {
-        setSelectedStage(uniqueStages[0]);
+      if (uniqueStages.length > 0) {
+        setSelectedStageId(uniqueStages[0].stageId.toString());
       }
       
       if (uniqueStages.length === 0) {
@@ -144,34 +157,35 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
     }
   };
 
-  // Handle adhoc stage action (Add or Reset) - same pattern as workflowActionService
-  const handleStageAction = async (action: 'add' | 'reset', stageId: number) => {
-    if (!appGroupId || !appId || !date) {
-      showErrorToast('Missing required parameters for adhoc stage action');
+  // Handle adhoc stage action (Add or Reset)
+  const handleStageAction = async (action: 'add' | 'reset') => {
+    if (!selectedStageId || !appGroupId || !appId || !date) {
+      showErrorToast('Please select a stage and ensure all parameters are available');
       return;
     }
 
-    const actionKey = `${action}-${stageId}`;
-    setActionLoading(actionKey);
+    setActionLoading(true);
     setError(null);
 
     try {
       const isAdd = action === 'add';
-      // Use Java API endpoint for process actions - same pattern as workflowActionService
-      const url = `${environment.javaApiUrl}/process/adhoc/${appId}/${appGroupId}/${date}/${stageId}/${isAdd}`;
+      const formattedDate = formatDateForApi(date);
+      const url = `${environment.javaApiUrl}/process/adhoc/${appId}/${appGroupId}/${formattedDate}/${selectedStageId}/${isAdd}`;
+      
       console.log(`${action} adhoc stage request to:`, url);
+      console.log('Original date:', date, 'Formatted date:', formattedDate);
       
       const response = await fetch(url, {
         method: 'PUT',
         mode: 'cors',
-        cache: 'no-store', // Prevent browser from adding Cache-Control header
-        credentials: 'omit', // Use 'omit' for Java API calls (same as workflowActionService)
+        cache: 'no-store',
+        credentials: 'omit',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          updatedby: 'user' // Could be enhanced to use actual user context
+          updatedby: 'user'
         })
       });
 
@@ -179,77 +193,57 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
       console.log(`${action} adhoc stage response:`, responseData);
 
       if (!response.ok) {
-        // Handle specific error cases
         if (response.status === 400 && responseData.message?.includes('already added')) {
-          // Mark this stage as already added and suppress the Add action
-          setAddedStages(prev => new Set(prev).add(stageId));
           showErrorToast('Adhoc process already exists. Consider using Reset or contact admin.');
           return;
         }
-        
         throw new Error(responseData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       // Success handling
+      const selectedStage = adhocStages.find(s => s.stageId.toString() === selectedStageId);
+      const stageName = selectedStage?.stageName || `Stage ${selectedStageId}`;
+      
       if (isAdd) {
-        setAddedStages(prev => new Set(prev).add(stageId));
-        showSuccessToast(`Successfully added adhoc stage: ${selectedStage?.stageName || `Stage ${stageId}`}`);
+        showSuccessToast(`Successfully added adhoc stage: ${stageName}`);
       } else {
-        setAddedStages(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(stageId);
-          return newSet;
-        });
-        showSuccessToast(`Successfully reset adhoc stage: ${selectedStage?.stageName || `Stage ${stageId}`}`);
+        showSuccessToast(`Successfully reset adhoc stage: ${stageName}`);
       }
 
       // Trigger workflow refresh if callback provided
       if (onRefresh) {
         setTimeout(() => {
           onRefresh();
-        }, 1000); // Small delay to allow backend processing
+        }, 1000);
       }
+
+      // Close the modal after successful action
+      handleClose();
 
     } catch (err: any) {
       console.error(`Error ${action}ing adhoc stage:`, err);
       showErrorToast(`Failed to ${action} adhoc stage: ${err.message}`);
     } finally {
-      setActionLoading(null);
+      setActionLoading(false);
     }
   };
-
-  // Load adhoc stages when component opens
-  useEffect(() => {
-    if (isOpen && appGroupId && appId) {
-      fetchAdhocStages();
-    }
-  }, [isOpen, appGroupId, appId]);
 
   // Reset state when closing
   const handleClose = () => {
     setIsOpen(false);
-    setSelectedStage(null);
+    setSelectedStageId('');
     setError(null);
-    setAddedStages(new Set());
+    setAdhocStages([]);
   };
 
   // Handle opening the modal and automatically fetching stages
   const handleOpenModal = () => {
     setIsOpen(true);
     // Automatically fetch stages when opening
-    if (appGroupId && appId) {
-      fetchAdhocStages();
-    }
+    fetchAdhocStages();
   };
 
-  // Quick add function - automatically add the first available stage
-  const handleQuickAdd = async () => {
-    if (adhocStages.length > 0) {
-      const firstStage = adhocStages[0];
-      await handleStageAction('add', firstStage.stageId);
-    }
-  };
-
+  // Render the button when modal is closed
   if (!isOpen) {
     return (
       <Button
@@ -260,33 +254,18 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
         title="Add Adhoc Stages"
       >
         <Plus className="h-4 w-4" />
-        Add Adhoc Stages
+        Add Adhoc Stage
       </Button>
     );
   }
 
+  // Render the modal content
   return (
-    <Card className={`w-full max-w-2xl ${className}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Adhoc Stage Management
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchAdhocStages}
-              disabled={loading}
-              title="Refresh adhoc stages"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-            </Button>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-background rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Add Adhoc Stage</h3>
             <Button
               variant="ghost"
               size="sm"
@@ -295,182 +274,112 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
               <X className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-        <div className="text-sm text-muted-foreground">
-          App ID: {appId} • Config ID: {appGroupId} • Date: {date}
-        </div>
-      </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Error Display */}
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Loading adhoc stages...</p>
-            </div>
+          <div className="text-sm text-muted-foreground">
+            App ID: {appId} • Config ID: {appGroupId} • Date: {formatDateForApi(date)}
           </div>
-        )}
 
-        {/* Stage Selection */}
-        {!loading && adhocStages.length > 0 && (
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Select Adhoc Stage
-              </label>
-              <Select
-                value={selectedStage?.stageId.toString() || ""}
-                onValueChange={(value) => {
-                  const stage = adhocStages.find(s => s.stageId.toString() === value);
-                  setSelectedStage(stage || null);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose an adhoc stage..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {adhocStages.map((stage) => (
-                    <SelectItem key={stage.stageId} value={stage.stageId.toString()}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{stage.stageName}</span>
-                        <Badge variant="outline" className="ml-2">
-                          ID: {stage.stageId}
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Error Display */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Loading adhoc stages...</p>
+              </div>
             </div>
+          )}
 
-            {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2 pt-2">
-              {/* Quick Add Button - Add first available stage */}
-              {adhocStages.length > 0 && (
-                <Button
-                  onClick={handleQuickAdd}
-                  disabled={actionLoading !== null}
-                  className="gap-2 flex-1"
-                  size="sm"
+          {/* Stage Selection */}
+          {!loading && adhocStages.length > 0 && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Select Stage:
+                </label>
+                <Select
+                  value={selectedStageId}
+                  onValueChange={setSelectedStageId}
                 >
-                  {actionLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
-                  Quick Add ({adhocStages[0]?.stageName})
-                </Button>
-              )}
-            </div>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a stage..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {adhocStages.map((stage) => (
+                      <SelectItem key={stage.stageId} value={stage.stageId.toString()}>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {stage.stageId}
+                          </Badge>
+                          <span>{stage.stageName}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Stage Actions */}
-            {selectedStage && (
-              <Card className="bg-muted/30">
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="font-medium">{selectedStage.stageName}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Stage ID: {selectedStage.stageId}
-                      </p>
-                    </div>
-                    {addedStages.has(selectedStage.stageId) && (
-                      <Badge variant="default" className="gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        Added
-                      </Badge>
+              {/* Action Buttons */}
+              {selectedStageId && (
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleStageAction('add')}
+                    disabled={actionLoading}
+                    className="flex-1 gap-2"
+                  >
+                    {actionLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
                     )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* Add Button */}
-                    <Button
-                      onClick={() => handleStageAction('add', selectedStage.stageId)}
-                      disabled={
-                        actionLoading === `add-${selectedStage.stageId}` ||
-                        addedStages.has(selectedStage.stageId)
-                      }
-                      className="gap-2"
-                      size="sm"
-                    >
-                      {actionLoading === `add-${selectedStage.stageId}` ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Plus className="h-4 w-4" />
-                      )}
-                      {addedStages.has(selectedStage.stageId) ? 'Already Added' : 'Add Stage'}
-                    </Button>
-
-                    {/* Reset Button */}
-                    <Button
-                      variant="outline"
-                      onClick={() => handleStageAction('reset', selectedStage.stageId)}
-                      disabled={actionLoading === `reset-${selectedStage.stageId}`}
-                      className="gap-2"
-                      size="sm"
-                    >
-                      {actionLoading === `reset-${selectedStage.stageId}` ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RotateCcw className="h-4 w-4" />
-                      )}
-                      Reset Stage
-                    </Button>
-
-                    {/* Close Selection Button */}
-                    <Button
-                      variant="ghost"
-                      onClick={() => setSelectedStage(null)}
-                      size="sm"
-                    >
-                      Close
-                    </Button>
-                  </div>
-
-                  {/* Additional Actions Info */}
-                  {addedStages.has(selectedStage.stageId) && (
-                    <Alert className="mt-3">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription className="text-sm">
-                        This adhoc stage has been added to the workflow. Use Reset to remove it and allow re-adding.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Summary */}
-            <div className="text-sm text-muted-foreground">
-              <p>Available adhoc stages: {adhocStages.length}</p>
-              {addedStages.size > 0 && (
-                <p>Added stages: {addedStages.size}</p>
+                    Add
+                  </Button>
+                  <Button 
+                    onClick={() => handleStageAction('reset')}
+                    disabled={actionLoading}
+                    variant="outline"
+                    className="flex-1 gap-2"
+                  >
+                    {actionLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                    Reset
+                  </Button>
+                  <Button 
+                    onClick={handleClose}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                </div>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Empty State */}
-        {!loading && adhocStages.length === 0 && !error && (
-          <div className="text-center py-8">
-            <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Adhoc Stages Found</h3>
-            <p className="text-muted-foreground">
-              No adhoc stage configurations are available for this workflow.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {/* Empty State */}
+          {!loading && adhocStages.length === 0 && !error && (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground mb-4">
+                No adhoc stages available for this workflow
+              </p>
+              <Button variant="outline" onClick={handleClose}>
+                Close
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

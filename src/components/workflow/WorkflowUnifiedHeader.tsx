@@ -162,28 +162,17 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
 
   return (
     <div className="space-y-2">
-      {/* Adhoc Stage Manager Modal/Overlay */}
+      {/* Adhoc Stage Manager */}
       {showAdhocManager && appGroupId && appId && date && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background rounded-lg shadow-lg max-w-2xl w-full mx-4">
-            <AdhocStageManager
-              appGroupId={appGroupId}
-              appId={appId}
-              date={date}
-              onRefresh={onRefresh}
-              className="border-0"
-            />
-            <div className="p-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => setShowAdhocManager(false)}
-                className="w-full"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
+        <AdhocStageManager
+          appGroupId={appGroupId}
+          appId={appId}
+          date={date}
+          onRefresh={() => {
+            onRefresh();
+            setShowAdhocManager(false);
+          }}
+        />
       )}
 
       <Card className="mb-2">
