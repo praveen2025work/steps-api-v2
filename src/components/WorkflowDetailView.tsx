@@ -1566,6 +1566,9 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         isRefreshing={isRefreshing}
         onBreadcrumbNavigate={handleBreadcrumbNavigation}
         onBack={onBack}
+        appGroupId={nodeData?.configId || applicationData?.configId}
+        appId={nodeData?.appId || applicationData?.appId}
+        date={selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
       />
 
       {/* Modified to include completion percentage */}

@@ -21,7 +21,9 @@ import {
   GitBranch,
   Timer,
   Pause,
-  Play
+  Play,
+  Settings,
+  Users
 } from 'lucide-react';
 import { useDate } from '@/contexts/DateContext';
 import { formatDate } from '@/lib/dateUtils';
@@ -30,6 +32,7 @@ import { HierarchyNode } from '../WorkflowHierarchyBreadcrumb';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { ChevronRight } from 'lucide-react';
 import { showSuccessToast, showInfoToast, showWarningToast } from '@/lib/toast';
+import AdhocStageManager from './AdhocStageManager';
 
 interface WorkflowUnifiedHeaderProps {
   workflowId: string;
@@ -58,6 +61,10 @@ interface WorkflowUnifiedHeaderProps {
   isRefreshing?: boolean;
   // Navigation props
   onBack?: () => void; // Callback to navigate back to previous view
+  // Adhoc stage management props
+  appGroupId?: string;
+  appId?: number;
+  date?: string;
 }
 
 const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = (props) => {
@@ -87,9 +94,13 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
   refreshInterval = 10,
   countdown = 10,
   isRefreshing = false,
-  onBack
+  onBack,
+  appGroupId,
+  appId,
+  date
 }) => {
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
+  const [showAdhocManager, setShowAdhocManager] = useState(false);
   
   // Calculate task counts if not provided
   const defaultTaskCounts = taskCounts || {
@@ -138,7 +149,7 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
 
   // Handle action buttons
   const handleAddAdhocStage = () => {
-    showInfoToast("Add Adhoc Stage functionality would be implemented here");
+    setShowAdhocManager(true);
   };
 
   const handleResetWorkflow = () => {
@@ -150,8 +161,33 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
   };
 
   return (
-    <Card className="mb-2">
-      <CardHeader className="py-1.5 px-3 flex flex-row justify-between items-center">
+    <div className="space-y-2">
+      {/* Adhoc Stage Manager Modal/Overlay */}
+      {showAdhocManager && appGroupId && appId && date && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background rounded-lg shadow-lg max-w-2xl w-full mx-4">
+            <AdhocStageManager
+              appGroupId={appGroupId}
+              appId={appId}
+              date={date}
+              onRefresh={onRefresh}
+              className="border-0"
+            />
+            <div className="p-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setShowAdhocManager(false)}
+                className="w-full"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Card className="mb-2">
+        <CardHeader className="py-1.5 px-3 flex flex-row justify-between items-center">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium">{workflowTitle}</h3>
           {status === "Active" ? (
@@ -256,7 +292,8 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
             size="icon" 
             className="h-7 w-7"
             onClick={handleAddAdhocStage}
-            title="Add Adhoc Stage"
+            title="Add Adhoc Stages"
+            disabled={!appGroupId || !appId || !date}
           >
             <Plus className="h-3.5 w-3.5" />
           </Button>
@@ -384,6 +421,7 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };
 
