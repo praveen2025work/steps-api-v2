@@ -16,10 +16,16 @@ import {
   Loader2, 
   X,
   AlertCircle,
-  Database
+  Database,
+  Table as TableIcon,
+  LayoutGrid
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useExcelData } from '@/hooks/useExcelData';
+import { DataGrid } from './DataGrid';
+import { PivotGrid } from './PivotGrid';
+import { ColumnDef } from '@tanstack/react-table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface FileItem {
   id: string;
@@ -53,6 +59,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
   const [loadingPreview, setLoadingPreview] = useState<string | null>(null);
+  const [viewType, setViewType] = useState<'grid' | 'pivot'>('grid');
 
   // Use Excel data hook for the selected file
   const { data: excelData, loading: excelLoading, error: excelError } = useExcelData({
@@ -120,157 +127,88 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
     if (!selectedFile) return null;
 
     const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase() || '';
-    const isExcelFile = ['xlsx', 'xls'].includes(fileExtension);
-    const isCsvFile = fileExtension === 'csv';
+    const isSupported = ['xlsx', 'xls', 'csv'].includes(fileExtension);
 
-    if ((isExcelFile || isCsvFile) && excelData) {
-      // Handle CSV files (array of objects)
-      if (isCsvFile && Array.isArray(excelData)) {
-        if (excelData.length === 0) {
-          return (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Database className="h-12 w-12 mb-4 opacity-50" />
-              <p className="text-lg font-medium">No data available</p>
-              <p className="text-sm">This CSV file contains no data to display</p>
-            </div>
-          );
-        }
-
-        // Get column names from the first object's keys
-        const columnNames = Object.keys(excelData[0] || {});
-
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              {/* Show record count at the top */}
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Showing {excelData.length} records</span>
-                <span>File: {selectedFile.name}</span>
-              </div>
-              <ScrollArea className="w-full h-96 border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {columnNames.map((columnName, index) => (
-                        <TableHead key={index} className="whitespace-nowrap font-semibold bg-muted/50">
-                          {columnName}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {excelData.map((row, rowIndex) => (
-                      <TableRow key={rowIndex} className="hover:bg-muted/30">
-                        {columnNames.map((columnName, colIndex) => (
-                          <TableCell key={colIndex} className="whitespace-nowrap">
-                            {row[columnName] || ''}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </div>
-          </div>
-        );
-      }
-
-      // Handle Excel files (with sheets)
-      if (isExcelFile && excelData.sheets) {
-        // Find the first sheet with data to set as default
-        const firstDataSheet = excelData.sheets.find(sheet => 
-          !(sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND")
-        );
-        const defaultSheetName = firstDataSheet?.name || excelData.sheets[0]?.name;
-
-        return (
-          <div className="space-y-4">
-            <Tabs defaultValue={defaultSheetName} className="w-full">
-              {/* Horizontal sheet cards instead of vertical tabs */}
-              <TabsList className="flex gap-2 overflow-x-auto pb-2 mb-4 h-auto bg-transparent">
-                {excelData.sheets.map((sheet) => {
-                  const isEmpty = sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND";
-                  return (
-                    <TabsTrigger 
-                      key={sheet.name} 
-                      value={sheet.name}
-                      className="flex-shrink-0 px-4 py-2 rounded-lg border bg-card hover:bg-accent transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-auto"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="whitespace-nowrap font-medium">{sheet.name}</span>
-                        {isEmpty ? (
-                          <Badge variant="secondary" className="h-4 px-1 text-xs">
-                            No Data
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="h-4 px-1 text-xs">
-                            {sheet.data.length - 1} rows
-                          </Badge>
-                        )}
-                      </div>
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-              
-              {excelData.sheets.map((sheet) => (
-                <TabsContent key={sheet.name} value={sheet.name} className="mt-0">
-                  {sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND" ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                      <Database className="h-12 w-12 mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No data available</p>
-                      <p className="text-sm">This sheet contains no data to display</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {/* Show record count at the top */}
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>Showing {sheet.data.length - 1} records</span>
-                        <span>Sheet: {sheet.name}</span>
-                      </div>
-                      <ScrollArea className="w-full h-96 border rounded-md">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              {sheet.data[0]?.map((header, index) => (
-                                <TableHead key={index} className="whitespace-nowrap font-semibold bg-muted/50">
-                                  {header || `Column ${index + 1}`}
-                                </TableHead>
-                              ))}
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {sheet.data.slice(1).map((row, rowIndex) => (
-                              <TableRow key={rowIndex} className="hover:bg-muted/30">
-                                {sheet.data[0]?.map((_, colIndex) => (
-                                  <TableCell key={colIndex} className="whitespace-nowrap">
-                                    {row[colIndex] || ''}
-                                  </TableCell>
-                                ))}
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </ScrollArea>
-                    </div>
-                  )}
-                </TabsContent>
-              ))}
-            </Tabs>
-          </div>
-        );
-      }
+    if (!isSupported || !excelData) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <FileText className="h-12 w-12 mb-4 opacity-50" />
+          <p className="text-lg font-medium">Preview not available</p>
+          <p className="text-sm">This file type cannot be previewed or data is empty.</p>
+        </div>
+      );
     }
 
-    // Fallback for unsupported file types or no data
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <FileText className="h-12 w-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Preview not available</p>
-        <p className="text-sm">This file type cannot be previewed</p>
-      </div>
-    );
+    const renderGridForSheet = (sheetData: any[]) => {
+      if (!sheetData || sheetData.length === 0) {
+        return (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <Database className="h-12 w-12 mb-4 opacity-50" />
+            <p className="text-lg font-medium">No data available</p>
+            <p className="text-sm">This sheet contains no data to display.</p>
+          </div>
+        );
+      }
+
+      const headers = Array.isArray(sheetData[0]) ? sheetData[0] : Object.keys(sheetData[0]);
+      const dataRows = Array.isArray(sheetData[0]) ? sheetData.slice(1) : sheetData;
+
+      const data = dataRows.map((row: any) => {
+        if (Array.isArray(row)) {
+          return headers.reduce((obj, header, index) => {
+            obj[header] = row[index];
+            return obj;
+          }, {} as Record<string, any>);
+        }
+        return row;
+      });
+
+      const columns: ColumnDef<any>[] = headers.map((header: string) => ({
+        accessorKey: header,
+        header: header,
+        id: header,
+      }));
+
+      return viewType === 'grid' ? (
+        <DataGrid columns={columns} data={data} />
+      ) : (
+        <PivotGrid columns={columns} data={data} />
+      );
+    };
+
+    if (fileExtension === 'csv' && Array.isArray(excelData)) {
+      return renderGridForSheet(excelData);
+    }
+
+    if (['xlsx', 'xls'].includes(fileExtension) && excelData.sheets) {
+      const firstDataSheet = excelData.sheets.find(sheet => 
+        !(sheet.data.length === 1 && sheet.data[0][0] === "NO DATA FOUND")
+      );
+      const defaultSheetName = firstDataSheet?.name || excelData.sheets[0]?.name;
+
+      return (
+        <Tabs defaultValue={defaultSheetName} className="w-full">
+          <TabsList className="flex gap-2 overflow-x-auto pb-2 mb-4 h-auto bg-transparent">
+            {excelData.sheets.map((sheet) => (
+              <TabsTrigger 
+                key={sheet.name} 
+                value={sheet.name}
+                className="flex-shrink-0 px-4 py-2 rounded-lg border bg-card hover:bg-accent transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-auto"
+              >
+                {sheet.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {excelData.sheets.map((sheet) => (
+            <TabsContent key={sheet.name} value={sheet.name} className="mt-0">
+              {renderGridForSheet(sheet.data)}
+            </TabsContent>
+          ))}
+        </Tabs>
+      );
+    }
+
+    return null; // Should not be reached if logic is correct
   };
 
   if (files.length === 0) {
@@ -404,13 +342,30 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
                   Preview: {selectedFile.name}
                 </CardTitle>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={closePreview}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-4">
+                <ToggleGroup 
+                  type="single" 
+                  value={viewType} 
+                  onValueChange={(value) => {
+                    if (value) setViewType(value as 'grid' | 'pivot');
+                  }}
+                  aria-label="View Type"
+                >
+                  <ToggleGroupItem value="grid" aria-label="Grid View">
+                    <TableIcon className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="pivot" aria-label="Pivot View">
+                    <LayoutGrid className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={closePreview}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="text-sm text-muted-foreground break-all">
               Location: {selectedFile.location}
