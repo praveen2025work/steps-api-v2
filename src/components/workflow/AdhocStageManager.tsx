@@ -66,7 +66,7 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
   const apiClient = useApiClient();
   const environment = getCurrentEnvironment();
 
-  // Fetch adhoc stage configurations
+  // Fetch adhoc stage configurations using the same pattern as workflowActionService
   const fetchAdhocStages = async () => {
     if (!appGroupId || !appId) return;
 
@@ -74,17 +74,18 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
     setError(null);
 
     try {
-      // Use Java API endpoint for workflow config
+      // Use Java API endpoint for workflow config - same pattern as workflowActionService
       const url = `${environment.javaApiUrl}/workflowconfig/${appGroupId}/${appId}/all?adhoc=Y`;
       console.log('Fetching adhoc stages from:', url);
       
       const response = await fetch(url, {
         method: 'GET',
-        credentials: 'include',
+        mode: 'cors',
+        cache: 'no-store', // Prevent browser from adding Cache-Control header
+        credentials: 'omit', // Use 'omit' for Java API calls (same as workflowActionService)
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
         },
       });
       
@@ -127,6 +128,11 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
 
       setAdhocStages(uniqueStages);
       
+      // Automatically select the first stage if available
+      if (uniqueStages.length > 0 && !selectedStage) {
+        setSelectedStage(uniqueStages[0]);
+      }
+      
       if (uniqueStages.length === 0) {
         setError('No adhoc stages found for this workflow configuration.');
       }
@@ -138,7 +144,7 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
     }
   };
 
-  // Handle adhoc stage action (Add or Reset)
+  // Handle adhoc stage action (Add or Reset) - same pattern as workflowActionService
   const handleStageAction = async (action: 'add' | 'reset', stageId: number) => {
     if (!appGroupId || !appId || !date) {
       showErrorToast('Missing required parameters for adhoc stage action');
@@ -151,17 +157,18 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
 
     try {
       const isAdd = action === 'add';
-      // Use Java API endpoint for process actions
+      // Use Java API endpoint for process actions - same pattern as workflowActionService
       const url = `${environment.javaApiUrl}/process/adhoc/${appId}/${appGroupId}/${date}/${stageId}/${isAdd}`;
       console.log(`${action} adhoc stage request to:`, url);
       
       const response = await fetch(url, {
         method: 'PUT',
-        credentials: 'include',
+        mode: 'cors',
+        cache: 'no-store', // Prevent browser from adding Cache-Control header
+        credentials: 'omit', // Use 'omit' for Java API calls (same as workflowActionService)
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
         },
         body: JSON.stringify({
           updatedby: 'user' // Could be enhanced to use actual user context
@@ -226,14 +233,31 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
     setAddedStages(new Set());
   };
 
+  // Handle opening the modal and automatically fetching stages
+  const handleOpenModal = () => {
+    setIsOpen(true);
+    // Automatically fetch stages when opening
+    if (appGroupId && appId) {
+      fetchAdhocStages();
+    }
+  };
+
+  // Quick add function - automatically add the first available stage
+  const handleQuickAdd = async () => {
+    if (adhocStages.length > 0) {
+      const firstStage = adhocStages[0];
+      await handleStageAction('add', firstStage.stageId);
+    }
+  };
+
   if (!isOpen) {
     return (
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpenModal}
         className={`gap-2 ${className}`}
-        title="Manage Adhoc Stages"
+        title="Add Adhoc Stages"
       >
         <Plus className="h-4 w-4" />
         Add Adhoc Stages
@@ -328,6 +352,26 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
               </Select>
             </div>
 
+            {/* Quick Action Buttons */}
+            <div className="flex items-center gap-2 pt-2">
+              {/* Quick Add Button - Add first available stage */}
+              {adhocStages.length > 0 && (
+                <Button
+                  onClick={handleQuickAdd}
+                  disabled={actionLoading !== null}
+                  className="gap-2 flex-1"
+                  size="sm"
+                >
+                  {actionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  Quick Add ({adhocStages[0]?.stageName})
+                </Button>
+              )}
+            </div>
+
             {/* Stage Actions */}
             {selectedStage && (
               <Card className="bg-muted/30">
@@ -363,7 +407,7 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
                       ) : (
                         <Plus className="h-4 w-4" />
                       )}
-                      {addedStages.has(selectedStage.stageId) ? 'Already Added' : 'Add'}
+                      {addedStages.has(selectedStage.stageId) ? 'Already Added' : 'Add Stage'}
                     </Button>
 
                     {/* Reset Button */}
@@ -379,10 +423,10 @@ const AdhocStageManager: React.FC<AdhocStageManagerProps> = ({
                       ) : (
                         <RotateCcw className="h-4 w-4" />
                       )}
-                      Reset
+                      Reset Stage
                     </Button>
 
-                    {/* Close Button */}
+                    {/* Close Selection Button */}
                     <Button
                       variant="ghost"
                       onClick={() => setSelectedStage(null)}
