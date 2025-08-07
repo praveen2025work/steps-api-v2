@@ -248,7 +248,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
   }
 
   return (
-    <div className={cn("flex flex-col", className)}>
+    <div className={cn("flex flex-col w-full", className)}>
       {/* Sub-stage info bar - only shown when file preview is active and sub-stage info is provided */}
       {subStageInfo && (
         <div className="flex items-center justify-between p-3 bg-muted/40 border-b">
@@ -280,7 +280,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
               >
                 {showSubStagePanel ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 <span className="ml-1 text-xs">
-                  {showSubStagePanel ? 'Hide' : 'Show'} Sub-Stages
+                  {showSubStagePanel ? 'Hide' : 'Show'} Sub-Stage Panel
                 </span>
               </Button>
             )}
@@ -288,15 +288,15 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
         </div>
       )}
 
-      {/* File preview container with proper sizing */}
+      {/* File preview container with proper sizing and responsive layout */}
       <div className={cn(
-        "flex flex-col border rounded-lg bg-card",
+        "flex flex-col border rounded-lg bg-card w-full",
         isFullscreen ? "h-full" : "h-[calc(100vh-200px)] max-h-[800px] min-h-[500px]"
       )}>
         <Tabs
           value={activeFileId || ""}
           onValueChange={setActiveFileId}
-          className="flex-grow flex flex-col h-full"
+          className="flex-grow flex flex-col h-full w-full"
         >
           <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-2 flex-shrink-0">
             <ScrollArea className="flex-1 mr-4">
@@ -348,11 +348,11 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
             </div>
           </div>
 
-          {/* File preview content with contained scrolling */}
-          <div className="flex-1 min-h-0 overflow-hidden">
+          {/* File preview content with contained scrolling and responsive grid */}
+          <div className="flex-1 min-h-0 overflow-hidden w-full">
             {activeFile && (
-              <TabsContent value={activeFileId || ""} className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
-                <div className="flex-1 min-h-0 overflow-hidden">
+              <TabsContent value={activeFileId || ""} className="mt-0 h-full w-full data-[state=active]:flex data-[state=active]:flex-col">
+                <div className="flex-1 min-h-0 overflow-hidden w-full">
                   {excelLoading ? (
                     <div className="flex items-center justify-center h-full">
                       <Loader2 className="h-8 w-8 animate-spin mr-2" />
@@ -364,7 +364,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
                       <AlertDescription>Failed to load file data: {excelError}</AlertDescription>
                     </Alert>
                   ) : (
-                    <div className="h-full overflow-hidden">
+                    <div className="h-full w-full overflow-hidden">
                       {previewContent}
                     </div>
                   )}
