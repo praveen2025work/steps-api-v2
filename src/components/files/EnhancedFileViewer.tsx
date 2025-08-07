@@ -349,26 +349,22 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
           </div>
 
           {/* File preview content with contained scrolling and responsive grid */}
-          <div className="flex-1 min-h-0 overflow-hidden w-full">
+          <div className="flex-1 min-h-0 overflow-hidden w-full p-4">
             {activeFile && (
-              <TabsContent value={activeFileId || ""} className="mt-0 h-full w-full data-[state=active]:flex data-[state=active]:flex-col">
-                <div className="flex-1 min-h-0 overflow-hidden w-full">
-                  {excelLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                      <Loader2 className="h-8 w-8 animate-spin mr-2" />
-                      <span>Loading file data...</span>
-                    </div>
-                  ) : excelError && !excelData ? (
-                    <Alert variant="destructive" className="m-4">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>Failed to load file data: {excelError}</AlertDescription>
-                    </Alert>
-                  ) : (
-                    <div className="h-full w-full overflow-hidden">
-                      {previewContent}
-                    </div>
-                  )}
-                </div>
+              <TabsContent value={activeFileId || ""} className="mt-0 h-full w-full">
+                {excelLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin mr-2" />
+                    <span>Loading file data...</span>
+                  </div>
+                ) : excelError && !excelData ? (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>Failed to load file data: {excelError}</AlertDescription>
+                  </Alert>
+                ) : (
+                  previewContent
+                )}
               </TabsContent>
             )}
           </div>

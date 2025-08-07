@@ -1709,17 +1709,19 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                                 </Button>
                               )}
                               
-                              {/* Workflow Action Buttons (Force Start / Re-run) */}
-                              <WorkflowActionButtons
-                                workflowProcessId={subStage.apiData?.workflowProcessId || subStage.processId}
-                                status={subStage.status}
-                                isLocked={subStage.apiData?.isLocked === 'Y'}
-                                updatedBy="user" // Could be enhanced to use actual user context
-                                onActionComplete={handleActionComplete}
-                                size="sm"
-                                variant="ghost"
-                                className="h-6"
-                              />
+                              {/* Workflow Action Buttons (Force Start / Re-run) - Conditionally rendered */}
+                              {(subStage.config.canRerun || subStage.config.canForceStart) && (
+                                <WorkflowActionButtons
+                                  workflowProcessId={subStage.apiData?.workflowProcessId || subStage.processId}
+                                  status={subStage.status}
+                                  isLocked={subStage.apiData?.isLocked === 'Y'}
+                                  updatedBy="user" // Could be enhanced to use actual user context
+                                  onActionComplete={handleActionComplete}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6"
+                                />
+                              )}
                             </div>
                           </div>
                           
@@ -1728,7 +1730,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                               {subStage.progress}%
                             </span>
                             <Progress 
-                              value={subStage.progress} 
+                              value={subStage.status === 'in-progress' || subStage.status === 'post-manual' ? subStage.progress : (subStage.status === 'completed' ? 100 : 0)}
                               className="w-12 h-1.5"
                               {...(subStage.status === 'failed' && { 
                                 className: "w-12 h-1.5 bg-destructive" 
