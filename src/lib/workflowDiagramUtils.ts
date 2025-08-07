@@ -1,5 +1,90 @@
 import { MarkerType } from 'reactflow';
 
+// Helper function to calculate stage status based on its substages
+const calculateStageStatus = (substages: any[]): 'completed' | 'in_progress' | 'failed' | 'not_started' => {
+    if (!substages || substages.length === 0) {
+        return 'not_started';
+    }
+    if (substages.some(s => s.status === 'failed')) return 'failed';
+    if (substages.some(s => s.status === 'in_progress')) return 'in_progress';
+    if (substages.every(s => s.status === 'completed')) return 'completed';
+    return 'not_started';
+};
+
+// Helper to map API status to diagram status
+const mapStatus = (status: string | undefined): 'completed' | 'in_progress' | 'failed' | 'not_started' => {
+    const s = status?.toLowerCase().replace(/_/g, ' ').trim();
+    switch (s) {
+        case 'completed':
+            return 'completed';
+        case 'in progress':
+        case 'running':
+            return 'in_progress';
+        case 'failed':
+        case 'error':
+            return 'failed';
+        case 'not started':
+        case 'pending':
+        default:
+            return 'not_started';
+    }
+};
+
+export const transformWorkflowToFlowDiagramData = (workflow: any) => {
+    if (!workflow || !workflow.stages || !workflow.tasks) {
+        return { stages: [] };
+    }
+
+    const allTasks = Object.values(workflow.tasks).flat() as any[];
+    const allTasksById = new Map(allTasks.map(t => [t.id, t]));
+    const allTasksByProcessId = new Map(allTasks.map(t => [t.processId, t]));
+
+    const getTaskByDependency = (dep: any) => {
+        if (!dep) return null;
+        // Try matching by processId first, then by name as a fallback
+        return allTasksByProcessId.get(dep.id) || allTasks.find(t => t.name === dep.name);
+    };
+
+    const stages = workflow.stages.map((stage: any, stageIndex: number) => {
+        const stageSubstages = (workflow.tasks[stage.id] || []).map((task: any, substageIndex: number) => {
+            const processData = workflow.summaryData?.processData?.find((p: any) => p.id === task.processId) || {};
+            
+            let type: 'auto' | 'manual' | 'upload' = 'manual';
+            if (task.config?.auto === 'Y') type = 'auto';
+            if (task.config?.upload === 'Y') type = 'upload';
+
+            const dependencies = (task.dependencies || [])
+                .map(getTaskByDependency)
+                .filter(Boolean)
+                .map((t: any) => t.id);
+
+            return {
+                ...task,
+                id: task.id,
+                name: task.name,
+                x: 300 + (substageIndex % 3) * 220,
+                y: 100 + stageIndex * 250 + Math.floor(substageIndex / 3) * 80,
+                status: mapStatus(processData.status || task.status),
+                type: type,
+                dependencies: dependencies,
+                processData: processData,
+            };
+        });
+
+        return {
+            id: stage.id,
+            name: stage.name,
+            x: 50,
+            y: 100 + stageIndex * 250,
+            status: calculateStageStatus(stageSubstages),
+            substages: stageSubstages,
+        };
+    });
+
+    return { stages };
+};
+
+
 export const generateSampleWorkflowDiagram = () => {
   return {
     nodes: [

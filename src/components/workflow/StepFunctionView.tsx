@@ -23,8 +23,8 @@ import {
   Layers,
   Sparkles
 } from 'lucide-react';
-import { generateWorkflowGraph } from '@/lib/workflowDiagramUtils';
-import WorkflowStepFunctionDiagram from './WorkflowStepFunctionDiagram';
+import { transformWorkflowToFlowDiagramData } from '@/lib/workflowDiagramUtils';
+import WorkflowFlowDiagram from './WorkflowFlowDiagram';
 import StageOverview from './StageOverview';
 import AppParameters from './AppParameters';
 import GlobalParameters from './GlobalParameters';
@@ -45,11 +45,11 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
   const [detailsTab, setDetailsTab] = useState<string>("stageOverview");
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [showLeftPanel, setShowLeftPanel] = useState(false);
-  const [showRightPanel, setShowRightPanel] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(true);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
   
-  const diagramData = generateWorkflowGraph(workflow);
+  const diagramData = transformWorkflowToFlowDiagramData(workflow);
   
   // Extract all tasks with enhanced API data support
   const allTasks = Object.values(workflow.tasks || {}).flat();
@@ -102,36 +102,22 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
     });
   }
   
-  // Handle node click with improved navigation
-  const handleNodeClick = (nodeId: string) => {
-    console.log("Node clicked:", nodeId);
+  const handleNodeClick = (nodeData: any) => {
+    console.log("Node clicked:", nodeData);
+
+    // Adapt the clicked node data to the structure expected by the right panel
+    const adaptedNode = {
+      id: nodeData.id,
+      label: nodeData.name,
+      data: {
+        ...nodeData,
+        ...nodeData.processData,
+        label: nodeData.name,
+      },
+    };
     
-    // Find the node data
-    const node = diagramData.nodes.find(n => n.id === nodeId);
-    setSelectedNode(node);
-    
-    // Show right panel with details
+    setSelectedNode(adaptedNode);
     setShowRightPanel(true);
-    
-    // If node is a stage or substage, we could navigate to it
-    if (nodeId.startsWith('stage-')) {
-      const stageId = nodeId.replace('stage-', '');
-      const stage = workflow.stages.find((s: any) => s.id === stageId);
-      if (stage) {
-        console.log(`Navigate to stage: ${stage.name}`);
-      }
-    } else if (nodeId.startsWith('substage-')) {
-      const substageId = nodeId.replace('substage-', '');
-      // Find the stage containing this substage
-      for (const stage of workflow.stages) {
-        const stageTasks = workflow.tasks[stage.id] || [];
-        const task = stageTasks.find((t: any) => t.id === substageId);
-        if (task) {
-          console.log(`Navigate to substage: ${task.name} in stage: ${stage.name}`);
-          break;
-        }
-      }
-    }
   };
   
   // Handle node action
@@ -392,12 +378,10 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
                 
                 {/* Main Diagram Area */}
                 <div className={`${layoutClasses.mainArea} h-full`}>
-                  <WorkflowStepFunctionDiagram 
-                    workflowId={workflow.id || 'workflow-1'}
-                    workflowTitle={workflow.title}
-                    nodes={diagramData.nodes}
-                    edges={diagramData.edges}
+                  <WorkflowFlowDiagram
+                    workflowData={diagramData}
                     onNodeClick={handleNodeClick}
+                    selectedNodeId={selectedNode?.id}
                   />
                 </div>
                 
