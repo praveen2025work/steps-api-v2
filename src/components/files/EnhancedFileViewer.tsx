@@ -1,8 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { 
@@ -89,7 +87,6 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
         const baseUrl = process.env.NEXT_PUBLIC_FILE_API_BASE_URL;
         if (!baseUrl) {
           console.error("NEXT_PUBLIC_FILE_API_BASE_URL is not set.");
-          // Optionally, show a toast notification to the user
           return;
         }
         const url = `${baseUrl}/DownloadNew?id=${processId}&FileName=${item.name}`;
@@ -193,44 +190,30 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
     return null;
   }, [activeFile, excelData, renderGridForSheet]);
 
-  const filePreviewPanel = (
-    <div className={cn(
-      "flex flex-col h-full bg-card border rounded-lg",
-      isFullscreen && "fixed inset-0 z-50"
-    )}>
-      <div className="flex items-center justify-between p-2 border-b flex-shrink-0">
-        {activeFile && (
-          <div className="flex items-center gap-3 min-w-0">
-            {getFileIcon(activeFile.name)}
-            <div className="flex-1 min-w-0">
-              <h4 className="font-medium truncate">{activeFile.name}</h4>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{activeFile.size}</span>
-                <Separator orientation="vertical" className="h-4" />
-                <span>{activeFile.type.toUpperCase()}</span>
-              </div>
-            </div>
+  if (files.length === 0) {
+    return (
+      <div className={cn("flex flex-col items-center justify-center py-12 text-muted-foreground", className)}>
+        <FileText className="h-12 w-12 mb-4 opacity-50" />
+        <p className="text-lg font-medium">No files found</p>
+        <p className="text-sm">No files available for process: {processName}</p>
+      </div>
+    );
+  }
+
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background">
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-3">
+            {activeFile && getFileIcon(activeFile.name)}
+            <h2 className="text-lg font-semibold">{activeFile?.name}</h2>
           </div>
-        )}
-        <div className="flex items-center gap-2">
-          {activeFile?.param_Type === 'upload' && activeFile.processStatus === 'IN PROGRESS' && (
-            <Button size="sm" variant="outline" onClick={() => handleUpload(activeFile)} title="Upload file">
-              <Upload className="h-4 w-4 mr-1" /> Upload
-            </Button>
-          )}
-          {activeFile?.param_Type === 'download' && (
-            <Button size="sm" variant="outline" onClick={() => handleDownload(activeFile)} title="Download file">
-              <Download className="h-4 w-4 mr-1" /> Download
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
-            {isFullscreen ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+          <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(false)}>
+            <Shrink className="h-4 w-4" />
           </Button>
         </div>
-      </div>
-      <div className="flex-grow relative">
-        <ScrollArea className="absolute inset-0">
-          <div className="p-4">
+        <div className="flex-1 p-4" style={{ height: 'calc(100vh - 80px)' }}>
+          <ScrollArea className="h-full">
             {excelLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin mr-2" />
@@ -244,78 +227,94 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
             ) : (
               previewContent
             )}
-          </div>
-        </ScrollArea>
+          </ScrollArea>
+        </div>
       </div>
-    </div>
-  );
-
-  if (files.length === 0) {
-    return (
-      <Card className={className}>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <FileText className="h-12 w-12 mb-4 opacity-50" />
-            <p className="text-lg font-medium">No files found</p>
-            <p className="text-sm">No files available for process: {processName}</p>
-          </div>
-        </CardContent>
-      </Card>
     );
   }
 
-  if (isFullscreen) {
-    return filePreviewPanel;
-  }
-
   return (
-    <Card className={cn("flex flex-col", className)} style={{ minHeight: '500px', maxHeight: '80vh' }}>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            <span>Files - {processName}</span>
-            <Badge variant="outline">{files.length} files</Badge>
-          </div>
-          {files.some(f => f.param_Type === 'download') && (
-            <Button variant="outline" size="sm" onClick={() => handleDownload('all')}>
-              <Download className="h-4 w-4 mr-2" />
-              Download All
-            </Button>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-grow flex flex-col p-0">
-        <Tabs
-          value={activeFileId || ""}
-          onValueChange={setActiveFileId}
-          className="flex-grow flex flex-col"
-        >
-          <div className="px-6 pt-4 border-b">
-            <ScrollArea orientation="horizontal" className="pb-2">
-              <TabsList>
-                {files.map((file) => (
-                  <TabsTrigger key={file.id} value={file.id} className="flex-shrink-0">
-                    <div className="flex items-center">
-                      {getFileIcon(file.name)}
-                      <span className="ml-2 truncate">{file.name}</span>
-                    </div>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-          </div>
-          <div className="flex-grow p-6 h-0">
-            {activeFile && (
-              <TabsContent value={activeFileId || ""} className="mt-0 h-full">
-                {filePreviewPanel}
-              </TabsContent>
+    <div className={cn("flex flex-col border rounded-lg bg-card", className)} style={{ height: '70vh', minHeight: '500px' }}>
+      <Tabs
+        value={activeFileId || ""}
+        onValueChange={setActiveFileId}
+        className="flex-grow flex flex-col h-full"
+      >
+        <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-2">
+          <ScrollArea className="flex-1 mr-4">
+            <TabsList className="h-auto p-1 bg-transparent">
+              {files.map((file) => (
+                <TabsTrigger 
+                  key={file.id} 
+                  value={file.id} 
+                  className="flex-shrink-0 px-3 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    {getFileIcon(file.name)}
+                    <span className="truncate max-w-[120px]">{file.name}</span>
+                    <Badge 
+                      variant={file.param_Type === 'upload' ? 'default' : 'secondary'}
+                      className="text-xs ml-1"
+                    >
+                      {file.param_Type === 'upload' ? 'UP' : 'DL'}
+                    </Badge>
+                  </div>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+          
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {activeFile?.param_Type === 'upload' && activeFile.processStatus === 'IN PROGRESS' && (
+              <Button size="sm" variant="outline" onClick={() => handleUpload(activeFile)}>
+                <Upload className="h-4 w-4 mr-1" />
+                Upload
+              </Button>
             )}
+            {activeFile?.param_Type === 'download' && (
+              <Button size="sm" variant="outline" onClick={() => handleDownload(activeFile)}>
+                <Download className="h-4 w-4 mr-1" />
+                Download
+              </Button>
+            )}
+            {files.some(f => f.param_Type === 'download') && (
+              <Button size="sm" variant="outline" onClick={() => handleDownload('all')}>
+                <Download className="h-4 w-4 mr-1" />
+                All
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(true)}>
+              <Expand className="h-4 w-4" />
+            </Button>
           </div>
-        </Tabs>
-      </CardContent>
-    </Card>
+        </div>
+
+        <div className="flex-1 overflow-hidden">
+          {activeFile && (
+            <TabsContent value={activeFileId || ""} className="mt-0 h-full">
+              <ScrollArea className="h-full">
+                <div className="p-4">
+                  {excelLoading ? (
+                    <div className="flex items-center justify-center h-64">
+                      <Loader2 className="h-8 w-8 animate-spin mr-2" />
+                      <span>Loading file data...</span>
+                    </div>
+                  ) : excelError && !excelData ? (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>Failed to load file data: {excelError}</AlertDescription>
+                    </Alert>
+                  ) : (
+                    previewContent
+                  )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          )}
+        </div>
+      </Tabs>
+    </div>
   );
 };
 
