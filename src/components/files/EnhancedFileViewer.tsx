@@ -150,24 +150,42 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
         );
       }
 
-      const headers = Array.isArray(sheetData[0]) ? sheetData[0] : Object.keys(sheetData[0]);
-      const dataRows = Array.isArray(sheetData[0]) ? sheetData.slice(1) : sheetData;
+      // Handle both array of arrays (Excel/CSV from API) and array of objects (processed data)
+      let headers: string[];
+      let dataRows: any[];
 
-      const data = dataRows.map((row: any) => {
+      if (Array.isArray(sheetData[0])) {
+        // Data is array of arrays (from API)
+        headers = sheetData[0].map((header: any, index: number) => 
+          header != null ? String(header) : `Column_${index + 1}`
+        );
+        dataRows = sheetData.slice(1);
+      } else {
+        // Data is array of objects (already processed)
+        headers = Object.keys(sheetData[0]);
+        dataRows = sheetData;
+      }
+
+      // Convert data to object format for TanStack Table
+      const data = dataRows.map((row: any, rowIndex: number) => {
         if (Array.isArray(row)) {
           return headers.reduce((obj, header, index) => {
-            obj[header] = row[index];
+            obj[header] = row[index] != null ? String(row[index]) : '';
             return obj;
           }, {} as Record<string, any>);
         }
         return row;
       });
 
-      const columns: ColumnDef<any>[] = headers.map((header: string) => ({
-        accessorKey: header,
-        header: header,
-        id: header,
-      }));
+      // Create columns with proper IDs
+      const columns: ColumnDef<any>[] = headers.map((header: string, index: number) => {
+        const columnId = header || `column_${index}`;
+        return {
+          accessorKey: columnId,
+          header: columnId,
+          id: columnId,
+        };
+      });
 
       return viewType === 'grid' ? (
         <DataGrid columns={columns} data={data} />
