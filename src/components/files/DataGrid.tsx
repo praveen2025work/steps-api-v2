@@ -124,72 +124,74 @@ export function DataGrid<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <ScrollArea className="rounded-md border whitespace-nowrap">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : (
-                          <div
-                            {...{
-                              className: header.column.getCanSort()
-                                ? 'cursor-pointer select-none flex items-center'
-                                : '',
-                              onClick: header.column.getToggleSortingHandler(),
-                            }}
-                          >
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                            {{
-                              asc: ' ▲',
-                              desc: ' ▼',
-                            }[header.column.getIsSorted() as string] ?? null}
-                          </div>
-                        )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
+      <div className="rounded-md border h-full flex flex-col min-h-0">
+        <ScrollArea className="flex-1 min-h-0">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id} className="whitespace-nowrap">
+                        {header.isPlaceholder
+                          ? null
+                          : (
+                            <div
+                              {...{
+                                className: header.column.getCanSort()
+                                  ? 'cursor-pointer select-none flex items-center'
+                                  : '',
+                                onClick: header.column.getToggleSortingHandler(),
+                              }}
+                            >
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                              {{
+                                asc: ' ▲',
+                                desc: ' ▼',
+                              }[header.column.getIsSorted() as string] ?? null}
+                            </div>
+                          )}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && 'selected'}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="whitespace-nowrap">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </div>
       <div className="flex items-center justify-between">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}

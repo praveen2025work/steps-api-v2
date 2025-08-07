@@ -1331,45 +1331,44 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
           // This would typically trigger a download from the file location
         };
         
-        // Check if we should use enhanced preview
-        if (filesToShow.length > 0 && selectedSubStage) {
-          return (
-            <div className="space-y-4">
-              {/* Enhanced file preview trigger */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Process Files</h4>
-                  <p className="text-sm text-muted-foreground">{filesToShow.length} files available</p>
-                </div>
-                <Button
-                  onClick={() => handleEnhancedFilePreview(filesToShow, currentProcessName, currentProcessId)}
-                  className="flex items-center gap-2"
-                >
-                  <Eye className="h-4 w-4" />
-                  Enhanced Preview
-                </Button>
-              </div>
-              
-              {/* Fallback to standard file viewer */}
-              <EnhancedFileViewer
-                files={filesToShow}
-                processName={currentProcessName}
-                processId={currentProcessId}
-                onFileUpload={handleFileUpload}
-                onFileDownload={handleFileDownload}
+        // Get sub-stage info for the file viewer
+        const selectedProcess = selectedSubStage ? 
+          (stageSpecificSubStages.length > 0 ? stageSpecificSubStages : mockSubStages)
+            .find(s => s.id === selectedSubStage) : null;
+        
+        const subStageInfo = selectedProcess ? {
+          name: selectedProcess.name,
+          processId: selectedProcess.processId,
+          status: selectedProcess.status,
+          message: selectedProcess.messages?.[0],
+          actions: (
+            <div className="flex items-center gap-1">
+              <WorkflowActionButtons
+                workflowProcessId={selectedProcess.apiData?.workflowProcessId || selectedProcess.processId}
+                status={selectedProcess.status}
+                isLocked={selectedProcess.apiData?.isLocked === 'Y'}
+                updatedBy="user"
+                onActionComplete={handleActionComplete}
+                size="sm"
+                variant="ghost"
+                className="h-6"
               />
             </div>
-          );
-        }
+          )
+        } : undefined;
         
         return (
-          <div>
+          <div className="h-full">
             <EnhancedFileViewer
               files={filesToShow}
               processName={currentProcessName}
               processId={currentProcessId}
               onFileUpload={handleFileUpload}
               onFileDownload={handleFileDownload}
+              showSubStagePanel={showSubStageCards}
+              onToggleSubStagePanel={toggleSubStageCards}
+              subStageInfo={subStageInfo}
+              className="h-full"
             />
           </div>
         );
