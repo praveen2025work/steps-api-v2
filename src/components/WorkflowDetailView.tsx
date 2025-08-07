@@ -854,6 +854,14 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
 
   // Load stage-specific data and build global maps when tasks change
   useEffect(() => {
+    // Set up global data for parameter components (temporary solution)
+    if (summaryData) {
+      (window as any).currentWorkflowSummary = summaryData;
+    }
+    if (applicationData) {
+      (window as any).currentWorkflowApplication = applicationData;
+    }
+
     // Create a comprehensive lookup map from any ID to sub-stage object for all tasks.
     const newGlobalProcessMap = new Map<string, any>();
     const childDependenciesMap = new Map<string, { id: string; name: string; }[]>();
@@ -1023,9 +1031,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       setStageSpecificSubStages([]);
       setStageSpecificDocuments([]);
     }
-  }, [activeStage, tasks]);
-
-
+  }, [activeStage, tasks, summaryData, applicationData]);
 
   // Enhanced hierarchy node click handler to properly navigate between levels
   const handleHierarchyNodeClick = (node: HierarchyNode) => {
@@ -1155,7 +1161,6 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   const toggleSubStageCards = () => {
     setShowSubStageCards(!showSubStageCards);
   };
-=======
   
   const handleCloseFilePreview = () => {
     setShowFilePreview(false);
@@ -1587,8 +1592,6 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         onStageClick={handleStageClick} 
       />
 
-
-
       <div className="flex gap-4">
         {/* Main Content - Only visible when file preview is not shown or explicitly kept visible */}
         <div className={`transition-all duration-300 ease-in-out ${
@@ -1717,50 +1720,6 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                                 variant="ghost"
                                 className="h-6"
                               />
-                              
-                              {/* Refresh button - For all statuses */}
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-6 w-6 p-0 hover:bg-muted"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  showInfoToast(`Refreshing ${subStage.name}`);
-                                }}
-                                title="Refresh"
-                              >
-                                <RefreshCw className="h-3.5 w-3.5" />
-                              </Button>
-                              
-                              {/* Skip button - Only for not-started or in-progress processes */}
-                              {(subStage.status === 'not-started' || subStage.status === 'in-progress') && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-6 w-6 p-0 hover:bg-muted"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    showWarningToast(`Skipped ${subStage.name}`);
-                                  }}
-                                  title="Skip"
-                                >
-                                  <SkipForward className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                              
-                              {/* Notification button - For all statuses */}
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-6 w-6 p-0 hover:bg-muted"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  showInfoToast(`Notification sent for ${subStage.name}`);
-                                }}
-                                title="Send Notification"
-                              >
-                                <Mail className="h-3.5 w-3.5" />
-                              </Button>
                             </div>
                           </div>
                           
