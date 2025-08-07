@@ -280,7 +280,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
               >
                 {showSubStagePanel ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 <span className="ml-1 text-xs">
-                  {showSubStagePanel ? 'Hide' : 'Show'} Stages
+                  {showSubStagePanel ? 'Hide' : 'Show'} Sub-Stages
                 </span>
               </Button>
             )}

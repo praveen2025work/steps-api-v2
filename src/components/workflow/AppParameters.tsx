@@ -19,9 +19,20 @@ interface AppParametersProps {
 }
 
 const AppParameters: React.FC<AppParametersProps> = ({ processId, processName }) => {
-  // Get the workflow summary data from global storage
-  const summaryData = (window as any).currentWorkflowSummary;
-  const applicationData = (window as any).currentWorkflowApplication;
+  // Get the workflow summary data from the WorkflowDetailView component
+  const summaryData = React.useMemo(() => {
+    // Try to get from global window first (fallback)
+    const globalSummary = (window as any).currentWorkflowSummary;
+    // In the future, this should be passed as a prop from WorkflowDetailView
+    return globalSummary;
+  }, []);
+
+  const applicationData = React.useMemo(() => {
+    // Try to get from global window first (fallback)
+    const globalApp = (window as any).currentWorkflowApplication;
+    // In the future, this should be passed as a prop from WorkflowDetailView
+    return globalApp;
+  }, []);
   
   // Extract app parameters from the summary data
   const appParams = summaryData?.appParams || [];
@@ -38,13 +49,17 @@ const AppParameters: React.FC<AppParametersProps> = ({ processId, processName })
   const [searchTerm, setSearchTerm] = React.useState('');
 
   // Transform API data to display format
-  const parameters = appParams.map((param: any) => ({
-    param_Id: param.param_Id,
-    name: param.name,
-    value: param.value,
-    updatedBy: param.updatedBy,
-    updatedOn: param.updatedOn
-  }));
+  const parameters = React.useMemo(() => {
+    if (!appParams || appParams.length === 0) return [];
+    
+    return appParams.map((param: any) => ({
+      param_Id: param.param_Id,
+      name: param.name,
+      value: param.value,
+      updatedBy: param.updatedBy,
+      updatedOn: param.updatedOn
+    }));
+  }, [appParams]);
 
   const filteredParameters = parameters.filter((param: any) => 
     param.name.toLowerCase().includes(searchTerm.toLowerCase()) || 

@@ -19,58 +19,54 @@ interface ProcessParametersProps {
 }
 
 const ProcessParameters: React.FC<ProcessParametersProps> = ({ processId, processName }) => {
-  // Get the workflow summary data from global storage
-  const summaryData = (window as any).currentWorkflowSummary;
+  // Get the workflow summary data from the WorkflowDetailView component
+  const summaryData = React.useMemo(() => {
+    // Try to get from global window first (fallback)
+    const globalSummary = (window as any).currentWorkflowSummary;
+    // In the future, this should be passed as a prop from WorkflowDetailView
+    return globalSummary;
+  }, []);
   
   // Extract process parameters from the summary data
   const processParams = summaryData?.processParams || [];
   
-  console.log('[ProcessParameters] Debug info:', {
-    processId,
-    processName,
-    processParamsLength: processParams.length,
-    sampleProcessParam: processParams[0],
-    allProcessIds: processParams.map((p: any) => p.workflow_Process_Id)
-  });
-  
   // Extract the numeric process ID from the processId string (e.g., "PROC-1237" -> "1237")
-  let numericProcessId = processId;
-  if (processId.startsWith('PROC-')) {
-    numericProcessId = processId.replace('PROC-', '');
-  } else if (processId.startsWith('task-')) {
-    numericProcessId = processId.replace('task-', '');
-  }
+  const numericProcessId = React.useMemo(() => {
+    let id = processId;
+    if (processId.startsWith('PROC-')) {
+      id = processId.replace('PROC-', '');
+    } else if (processId.startsWith('task-')) {
+      id = processId.replace('task-', '');
+    }
+    return id;
+  }, [processId]);
   
   // Filter parameters for the current process - try multiple matching strategies
-  const currentProcessParams = processParams.filter((param: any) => {
-    if (!param.workflow_Process_Id) return false;
+  const currentProcessParams = React.useMemo(() => {
+    if (!processParams || processParams.length === 0) return [];
     
-    const paramProcessId = param.workflow_Process_Id?.toString();
-    
-    // Try exact matches with different formats
-    const matches = [
-      // Direct workflow_Process_Id match (exact)
-      paramProcessId === numericProcessId,
-      // Match with original processId format
-      paramProcessId === processId,
-      // Match with PROC- prefix
-      paramProcessId === `PROC-${numericProcessId}`,
-      // Match with task- prefix
-      paramProcessId === `task-${numericProcessId}`,
-      // Try parsing as number and comparing
-      parseInt(paramProcessId) === parseInt(numericProcessId)
-    ];
-    
-    return matches.some(match => match);
-  });
-
-  console.log('[ProcessParameters] Filtered parameters:', {
-    processId,
-    numericProcessId,
-    currentProcessParamsLength: currentProcessParams.length,
-    currentProcessParams: currentProcessParams.slice(0, 3), // Show first 3 for debugging
-    allProcessIds: processParams.map((p: any) => p.workflow_Process_Id).slice(0, 10) // Show first 10 process IDs
-  });
+    return processParams.filter((param: any) => {
+      if (!param.workflow_Process_Id) return false;
+      
+      const paramProcessId = param.workflow_Process_Id?.toString();
+      
+      // Try exact matches with different formats
+      const matches = [
+        // Direct workflow_Process_Id match (exact)
+        paramProcessId === numericProcessId,
+        // Match with original processId format
+        paramProcessId === processId,
+        // Match with PROC- prefix
+        paramProcessId === `PROC-${numericProcessId}`,
+        // Match with task- prefix
+        paramProcessId === `task-${numericProcessId}`,
+        // Try parsing as number and comparing
+        parseInt(paramProcessId) === parseInt(numericProcessId)
+      ];
+      
+      return matches.some(match => match);
+    });
+  }, [processParams, processId, numericProcessId]);
 
   const [loading, setLoading] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -78,33 +74,37 @@ const ProcessParameters: React.FC<ProcessParametersProps> = ({ processId, proces
   const [editValue, setEditValue] = React.useState('');
 
   // Transform API data to display format with better field mapping
-  const parameters = currentProcessParams.map((param: any, index: number) => {
-    // Use parameterName as the primary name field
-    const paramName = param.parameterName || param.resolvedParameterName || param.parameter_Name || `Parameter ${index + 1}`;
+  const parameters = React.useMemo(() => {
+    if (!currentProcessParams || currentProcessParams.length === 0) return [];
     
-    // Use parameterValue as the primary value field
-    const paramValue = param.parameterValue || param.resolvedParameterValue || param.parameter_Value || param.value || 'Not Set';
-    
-    // Create a meaningful description
-    let description = param.description || param.parameter_Description;
-    if (!description) {
-      if (param.substage_Name && param.substage_Name !== 'parameterName') {
-        description = `Parameter for ${param.substage_Name}`;
-      } else {
-        description = `Process parameter for ${processName}`;
+    return currentProcessParams.map((param: any, index: number) => {
+      // Use parameterName as the primary name field
+      const paramName = param.parameterName || param.resolvedParameterName || param.parameter_Name || `Parameter ${index + 1}`;
+      
+      // Use parameterValue as the primary value field
+      const paramValue = param.parameterValue || param.resolvedParameterValue || param.parameter_Value || param.value || 'Not Set';
+      
+      // Create a meaningful description
+      let description = param.description || param.parameter_Description;
+      if (!description) {
+        if (param.substage_Name && param.substage_Name !== 'parameterName') {
+          description = `Parameter for ${param.substage_Name}`;
+        } else {
+          description = `Process parameter for ${processName}`;
+        }
       }
-    }
-    
-    return {
-      workflow_Process_Id: param.workflow_Process_Id,
-      name: paramName,
-      value: paramValue,
-      description: description,
-      isEditing: false,
-      // Additional fields for debugging
-      rawParam: param
-    };
-  });
+      
+      return {
+        workflow_Process_Id: param.workflow_Process_Id,
+        name: paramName,
+        value: paramValue,
+        description: description,
+        isEditing: false,
+        // Additional fields for debugging
+        rawParam: param
+      };
+    });
+  }, [currentProcessParams, processName]);
 
   const filteredParameters = parameters.filter((param: any) => 
     param.name.toLowerCase().includes(searchTerm.toLowerCase()) || 

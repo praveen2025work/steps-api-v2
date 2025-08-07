@@ -21,9 +21,20 @@ interface GlobalParametersProps {
 }
 
 const GlobalParameters: React.FC<GlobalParametersProps> = ({ processId, processName }) => {
-  // Get the workflow summary data from global storage
-  const summaryData = (window as any).currentWorkflowSummary;
-  const applicationData = (window as any).currentWorkflowApplication;
+  // Get the workflow summary data from the WorkflowDetailView component
+  const summaryData = React.useMemo(() => {
+    // Try to get from global window first (fallback)
+    const globalSummary = (window as any).currentWorkflowSummary;
+    // In the future, this should be passed as a prop from WorkflowDetailView
+    return globalSummary;
+  }, []);
+
+  const applicationData = React.useMemo(() => {
+    // Try to get from global window first (fallback)
+    const globalApp = (window as any).currentWorkflowApplication;
+    // In the future, this should be passed as a prop from WorkflowDetailView
+    return globalApp;
+  }, []);
   
   // Extract daily parameters from the summary data
   const dailyParams = summaryData?.dailyParams || [];
@@ -39,17 +50,21 @@ const GlobalParameters: React.FC<GlobalParametersProps> = ({ processId, processN
   const [categoryFilter, setCategoryFilter] = React.useState<string | null>(null);
 
   // Transform API data to display format
-  const parameters = dailyParams.map((param: any) => ({
-    name: param.name,
-    value: param.value,
-    description: param.comments || 'No description available',
-    category: param.name.includes('AUTH') || param.name.includes('SECURITY') ? 'security' :
-              param.name.includes('DATE') || param.name.includes('REGION') ? 'business' : 'system',
-    isEditable: param.isEditable === 'Y',
-    updatedBy: param.updatedBy,
-    updatedOn: param.updatedOn,
-    businessDate: param.businessDate
-  }));
+  const parameters = React.useMemo(() => {
+    if (!dailyParams || dailyParams.length === 0) return [];
+    
+    return dailyParams.map((param: any) => ({
+      name: param.name,
+      value: param.value,
+      description: param.comments || 'No description available',
+      category: param.name.includes('AUTH') || param.name.includes('SECURITY') ? 'security' :
+                param.name.includes('DATE') || param.name.includes('REGION') ? 'business' : 'system',
+      isEditable: param.isEditable === 'Y',
+      updatedBy: param.updatedBy,
+      updatedOn: param.updatedOn,
+      businessDate: param.businessDate
+    }));
+  }, [dailyParams]);
 
   const filteredParameters = parameters.filter((param: any) => 
     (param.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
