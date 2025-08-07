@@ -49,7 +49,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
   processName,
   processId,
   onFileUpload,
-  onFileDownload,
+  onFileDownload: onFileDownloadProp,
   className = ""
 }) => {
   const [activeFileId, setActiveFileId] = useState<string | null>(files.length > 0 ? files[0].id : null);
@@ -81,9 +81,29 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
     onFileUpload?.(file);
   }, [onFileUpload]);
 
-  const handleDownload = useCallback((file: FileItem) => {
-    onFileDownload?.(file);
-  }, [onFileDownload]);
+  const handleDownload = useCallback((file: FileItem | 'all') => {
+    const download = (item: FileItem) => {
+      if (onFileDownloadProp) {
+        onFileDownloadProp(item);
+      } else {
+        const baseUrl = process.env.NEXT_PUBLIC_FILE_API_BASE_URL;
+        if (!baseUrl) {
+          console.error("NEXT_PUBLIC_FILE_API_BASE_URL is not set.");
+          // Optionally, show a toast notification to the user
+          return;
+        }
+        const url = `${baseUrl}/DownloadNew?id=${processId}&FileName=${item.name}`;
+        console.log(`Downloading from URL: ${url}`);
+        window.open(url, '_blank');
+      }
+    };
+
+    if (file === 'all') {
+      files.filter(f => f.param_Type === 'download').forEach(download);
+    } else {
+      download(file);
+    }
+  }, [files, processId, onFileDownloadProp]);
 
   const renderGridForSheet = useCallback((sheetData: any[]) => {
     if (!sheetData || sheetData.length === 0) {
@@ -249,14 +269,20 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
   }
 
   return (
-    <Card className={cn("h-[700px] flex flex-col", className)}>
+    <Card className={cn("flex flex-col", className)} style={{ minHeight: '500px', maxHeight: '80vh' }}>
       <CardHeader>
         <CardTitle className="text-lg flex items-center justify-between">
-          <div className="flex items-center">
-            <FileText className="h-5 w-5 mr-2" />
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
             <span>Files - {processName}</span>
+            <Badge variant="outline">{files.length} files</Badge>
           </div>
-          <Badge variant="outline">{files.length} files</Badge>
+          {files.some(f => f.param_Type === 'download') && (
+            <Button variant="outline" size="sm" onClick={() => handleDownload('all')}>
+              <Download className="h-4 w-4 mr-2" />
+              Download All
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col p-0">
