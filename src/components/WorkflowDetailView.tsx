@@ -329,10 +329,12 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
       setExpandedSections(stateToRestore.expandedSections);
       setRightPanelOpen(stateToRestore.rightPanelOpen);
 
-      // Restore scroll position after a short delay to allow the UI to update
-      setTimeout(() => {
-        window.scrollTo(0, stateToRestore.scrollPosition);
-      }, 150);
+      // Restore scroll position only if file preview is not active
+      if (!stateToRestore.showFilePreview) {
+        setTimeout(() => {
+          window.scrollTo(0, stateToRestore.scrollPosition);
+        }, 150);
+      }
     }
   }, []); // No dependencies, reads from ref
 

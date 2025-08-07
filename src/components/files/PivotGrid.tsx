@@ -83,12 +83,12 @@ export function PivotGrid<TData extends object>({
       <div className="flex flex-wrap gap-4 p-4 border rounded-md">
         <div className="flex-1 min-w-[200px]">
           <Label>Group By</Label>
-          <Select onValueChange={value => setGrouping(value ? [value] : [])}>
+          <Select onValueChange={value => setGrouping(value === 'none' ? [] : (value ? [value] : []))}>
             <SelectTrigger>
               <SelectValue placeholder="Select a column to group..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {potentialGroupingColumns.map(col => (
                 <SelectItem key={col} value={col}>{col}</SelectItem>
               ))}
