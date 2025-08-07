@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -81,8 +81,8 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
     }
   };
 
-  // Handle file preview
-  const handlePreview = async (file: FileItem) => {
+  // Memoized callback functions to prevent cursor jumping
+  const handlePreview = useCallback(async (file: FileItem) => {
     console.log('[EnhancedFileViewer] Preview clicked for file:', {
       fileName: file.name,
       location: file.location,
@@ -102,28 +102,89 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
     } finally {
       setLoadingPreview(null);
     }
-  };
+  }, [processId, processName]);
 
   // Handle file upload
-  const handleUpload = (file: FileItem) => {
+  const handleUpload = useCallback((file: FileItem) => {
     console.log('[EnhancedFileViewer] Upload clicked for file:', file);
     onFileUpload?.(file);
-  };
+  }, [onFileUpload]);
 
   // Handle file download
-  const handleDownload = (file: FileItem) => {
+  const handleDownload = useCallback((file: FileItem) => {
     console.log('[EnhancedFileViewer] Download clicked for file:', file);
     onFileDownload?.(file);
-  };
+  }, [onFileDownload]);
 
   // Close preview
-  const closePreview = () => {
+  const closePreview = useCallback(() => {
     setSelectedFile(null);
     setPreviewMode(false);
-  };
+  }, []);
 
-  // Render file preview content
-  const renderPreviewContent = () => {
+  // Memoized view type change handler
+  const handleViewTypeChange = useCallback((value: string | undefined) => {
+    if (value) setViewType(value as 'grid' | 'pivot');
+  }, []);
+
+  // Memoized render functions to prevent cursor jumping
+  const renderGridForSheet = useCallback((sheetData: any[]) => {
+    if (!sheetData || sheetData.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <Database className="h-12 w-12 mb-4 opacity-50" />
+          <p className="text-lg font-medium">No data available</p>
+          <p className="text-sm">This sheet contains no data to display.</p>
+        </div>
+      );
+    }
+
+    // Handle both array of arrays (Excel/CSV from API) and array of objects (processed data)
+    let headers: string[];
+    let dataRows: any[];
+
+    if (Array.isArray(sheetData[0])) {
+      // Data is array of arrays (from API)
+      headers = sheetData[0].map((header: any, index: number) => 
+        header != null ? String(header) : `Column_${index + 1}`
+      );
+      dataRows = sheetData.slice(1);
+    } else {
+      // Data is array of objects (already processed)
+      headers = Object.keys(sheetData[0]);
+      dataRows = sheetData;
+    }
+
+    // Convert data to object format for TanStack Table
+    const data = dataRows.map((row: any, rowIndex: number) => {
+      if (Array.isArray(row)) {
+        return headers.reduce((obj, header, index) => {
+          obj[header] = row[index] != null ? String(row[index]) : '';
+          return obj;
+        }, {} as Record<string, any>);
+      }
+      return row;
+    });
+
+    // Create columns with proper IDs
+    const columns: ColumnDef<any>[] = headers.map((header: string, index: number) => {
+      const columnId = header || `column_${index}`;
+      return {
+        accessorKey: columnId,
+        header: columnId,
+        id: columnId,
+      };
+    });
+
+    return viewType === 'grid' ? (
+      <DataGrid columns={columns} data={data} />
+    ) : (
+      <PivotGrid columns={columns} data={data} />
+    );
+  }, [viewType]);
+
+  // Memoized preview content to prevent unnecessary re-renders
+  const previewContent = useMemo(() => {
     if (!selectedFile) return null;
 
     const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase() || '';
@@ -138,61 +199,6 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
         </div>
       );
     }
-
-    const renderGridForSheet = (sheetData: any[]) => {
-      if (!sheetData || sheetData.length === 0) {
-        return (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Database className="h-12 w-12 mb-4 opacity-50" />
-            <p className="text-lg font-medium">No data available</p>
-            <p className="text-sm">This sheet contains no data to display.</p>
-          </div>
-        );
-      }
-
-      // Handle both array of arrays (Excel/CSV from API) and array of objects (processed data)
-      let headers: string[];
-      let dataRows: any[];
-
-      if (Array.isArray(sheetData[0])) {
-        // Data is array of arrays (from API)
-        headers = sheetData[0].map((header: any, index: number) => 
-          header != null ? String(header) : `Column_${index + 1}`
-        );
-        dataRows = sheetData.slice(1);
-      } else {
-        // Data is array of objects (already processed)
-        headers = Object.keys(sheetData[0]);
-        dataRows = sheetData;
-      }
-
-      // Convert data to object format for TanStack Table
-      const data = dataRows.map((row: any, rowIndex: number) => {
-        if (Array.isArray(row)) {
-          return headers.reduce((obj, header, index) => {
-            obj[header] = row[index] != null ? String(row[index]) : '';
-            return obj;
-          }, {} as Record<string, any>);
-        }
-        return row;
-      });
-
-      // Create columns with proper IDs
-      const columns: ColumnDef<any>[] = headers.map((header: string, index: number) => {
-        const columnId = header || `column_${index}`;
-        return {
-          accessorKey: columnId,
-          header: columnId,
-          id: columnId,
-        };
-      });
-
-      return viewType === 'grid' ? (
-        <DataGrid columns={columns} data={data} />
-      ) : (
-        <PivotGrid columns={columns} data={data} />
-      );
-    };
 
     if (fileExtension === 'csv' && Array.isArray(excelData)) {
       return renderGridForSheet(excelData);
@@ -226,8 +232,8 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
       );
     }
 
-    return null; // Should not be reached if logic is correct
-  };
+    return null;
+  }, [selectedFile, excelData, renderGridForSheet]);
 
   if (files.length === 0) {
     return (
@@ -364,9 +370,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
                 <ToggleGroup 
                   type="single" 
                   value={viewType} 
-                  onValueChange={(value) => {
-                    if (value) setViewType(value as 'grid' | 'pivot');
-                  }}
+                  onValueChange={handleViewTypeChange}
                   aria-label="View Type"
                 >
                   <ToggleGroupItem value="grid" aria-label="Grid View">
@@ -403,7 +407,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
                 </AlertDescription>
               </Alert>
             ) : (
-              renderPreviewContent()
+              previewContent
             )}
           </CardContent>
         </Card>
