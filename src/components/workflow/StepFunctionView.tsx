@@ -2,27 +2,26 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  ArrowLeft, 
-  Info, 
-  HelpCircle, 
-  GitBranch, 
-  GitMerge, 
-  Workflow, 
-  FileText, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  MessageSquare, 
-  Users, 
+import {
+  Info,
+  HelpCircle,
+  GitBranch,
+  GitMerge,
+  Workflow,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Clock,
+  MessageSquare,
+  Users,
   RefreshCw,
   PanelLeft,
   PanelRight,
   PanelLeftClose,
   PanelRightClose,
-  Layers,
-  Sparkles
 } from 'lucide-react';
+import WorkflowUnifiedHeader from './WorkflowUnifiedHeader';
+import { useDate } from '@/contexts/DateContext';
 import { transformWorkflowToFlowDiagramData } from '@/lib/workflowDiagramUtils';
 import WorkflowFlowDiagram from './WorkflowFlowDiagram';
 import StageOverview from './StageOverview';
@@ -38,69 +37,56 @@ interface StepFunctionViewProps {
   workflow: any;
   onViewToggle?: (mode: 'classic' | 'modern' | 'step-function') => void;
   viewMode?: 'classic' | 'modern' | 'step-function';
+  onRefresh?: () => void;
+  onBack?: () => void;
 }
 
-const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewToggle, viewMode }) => {
-  const [activeTab, setActiveTab] = useState<string>("diagram");
-  const [detailsTab, setDetailsTab] = useState<string>("stageOverview");
+const StepFunctionView: React.FC<StepFunctionViewProps> = ({
+  workflow,
+  onViewToggle,
+  viewMode,
+  onRefresh,
+  onBack,
+}) => {
+  const { selectedDate } = useDate();
+  const [activeTab, setActiveTab] = useState<string>('diagram');
+  const [detailsTab, setDetailsTab] = useState<string>('stageOverview');
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [showLeftPanel, setShowLeftPanel] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(true);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
-  
+  const [isLocked, setIsLocked] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const diagramData = transformWorkflowToFlowDiagramData(workflow);
-  
-  // Extract all tasks with enhanced API data support
   const allTasks = Object.values(workflow.tasks || {}).flat();
+  const {
+    hierarchyPath = [],
+    taskCounts: apiTaskCounts,
+    progress: apiProgress,
+  } = workflow;
   
-  // Calculate progress using enhanced data if available
-  let progressPercentage = 0;
-  let totalTasks = 0;
-  let completedTasks = 0;
-  
-  if (workflow.summaryData && workflow.summaryData.processData) {
-    const processData = workflow.summaryData.processData;
-    totalTasks = processData.length;
-    completedTasks = processData.filter((p: any) => 
-      p.status === 'COMPLETED' || p.status === 'completed'
-    ).length;
-    progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  } else {
-    // Fallback to task-based calculation
-    completedTasks = allTasks.filter((task: any) => task.status === 'completed').length;
-    totalTasks = allTasks.length;
-    progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  }
-  
-  // Enhanced task counts from API data if available
-  let taskCounts = {
+  const totalTasks = allTasks.length;
+  const completedTasks = allTasks.filter((task: any) => task.status === 'completed').length;
+  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  const taskCounts = apiTaskCounts || {
     completed: completedTasks,
-    failed: 0,
+    failed: allTasks.filter((task: any) => task.status === 'failed').length,
     rejected: 0,
-    pending: totalTasks - completedTasks,
-    processing: 0
+    pending: allTasks.filter((task: any) => task.status === 'pending' || task.status === 'not_started').length,
+    processing: allTasks.filter((task: any) => task.status === 'in_progress').length,
   };
-  
-  if (workflow.summaryData && workflow.summaryData.processData) {
-    const processData = workflow.summaryData.processData;
-    taskCounts = {
-      completed: 0,
-      failed: 0,
-      rejected: 0,
-      pending: 0,
-      processing: 0
-    };
-    
-    processData.forEach((process: any) => {
-      const status = process.status?.toLowerCase();
-      if (status === 'completed') taskCounts.completed++;
-      else if (status === 'failed') taskCounts.failed++;
-      else if (status === 'rejected') taskCounts.rejected++;
-      else if (status === 'in_progress' || status === 'in-progress' || status === 'running') taskCounts.processing++;
-      else taskCounts.pending++;
-    });
-  }
+
+  const progress = apiProgress || progressPercentage;
+
+  const toggleLock = () => setIsLocked(!isLocked);
+  const handleRefresh = () => {
+    if (onRefresh) onRefresh();
+  };
   
   const handleNodeClick = (nodeData: any) => {
     console.log("Node clicked:", nodeData);
@@ -142,127 +128,83 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({ workflow, onViewTog
   const getLayoutClasses = () => {
     if (showLeftPanel && showRightPanel) {
       return {
-        container: "grid grid-cols-12 gap-4",
-        leftPanel: "col-span-3",
-        mainArea: "col-span-6",
-        rightPanel: "col-span-3"
+        container: 'grid grid-cols-12 gap-4',
+        leftPanel: 'col-span-3',
+        mainArea: 'col-span-6',
+        rightPanel: 'col-span-3',
       };
     } else if (showLeftPanel) {
       return {
-        container: "grid grid-cols-12 gap-4",
-        leftPanel: "col-span-3",
-        mainArea: "col-span-9",
-        rightPanel: "hidden"
+        container: 'grid grid-cols-12 gap-4',
+        leftPanel: 'col-span-3',
+        mainArea: 'col-span-9',
+        rightPanel: 'hidden',
       };
     } else if (showRightPanel) {
       return {
-        container: "grid grid-cols-12 gap-4",
-        leftPanel: "hidden",
-        mainArea: "col-span-9",
-        rightPanel: "col-span-3"
+        container: 'grid grid-cols-12 gap-4',
+        leftPanel: 'hidden',
+        mainArea: 'col-span-9',
+        rightPanel: 'col-span-3',
       };
     } else {
       return {
-        container: "grid grid-cols-1 gap-4",
-        leftPanel: "hidden",
-        mainArea: "col-span-1",
-        rightPanel: "hidden"
+        container: 'grid grid-cols-1 gap-4',
+        leftPanel: 'hidden',
+        mainArea: 'col-span-1',
+        rightPanel: 'hidden',
       };
     }
   };
-  
+
   const layoutClasses = getLayoutClasses();
-  
+
   return (
-    <div className="flex flex-col h-screen w-full">
-      <div className="flex items-center justify-between p-3 border-b bg-muted/30">
-        <div className="flex items-center">
-          <h1 className="text-lg font-semibold flex items-center">
-            <GitBranch className="h-5 w-5 mr-2 text-blue-600" />
-            {workflow.title} - Step Function View
-          </h1>
-          {/* Enhanced progress indicator */}
-          <div className="ml-4 text-sm text-muted-foreground">
-            Progress: {progressPercentage}% ({completedTasks}/{totalTasks} tasks)
-          </div>
+    <div className="flex flex-col h-full w-full">
+      <WorkflowUnifiedHeader
+        workflowId={hierarchyPath[hierarchyPath.length - 1]?.id || ''}
+        workflowTitle={workflow.title}
+        hierarchyPath={hierarchyPath}
+        progress={progress}
+        status="Active"
+        isLocked={isLocked}
+        onToggleLock={toggleLock}
+        onRefresh={handleRefresh}
+        taskCounts={taskCounts}
+        lastRefreshed={lastRefreshed}
+        viewMode={viewMode}
+        onViewToggle={onViewToggle}
+        autoRefreshEnabled={autoRefreshEnabled}
+        onAutoRefreshToggle={setAutoRefreshEnabled}
+        isRefreshing={isRefreshing}
+        onBack={onBack}
+        appGroupId={workflow.nodeData?.configId || workflow.applicationData?.configId}
+        appId={workflow.nodeData?.appId || workflow.applicationData?.appId}
+        date={selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+      >
+        <div className="flex items-center gap-2">
+          <Button
+            variant={showLeftPanel ? 'default' : 'outline'}
+            size="icon"
+            onClick={toggleLeftPanel}
+            title={showLeftPanel ? 'Hide left panel' : 'Show left panel'}
+            className="h-8 w-8"
+          >
+            {showLeftPanel ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant={showRightPanel ? 'default' : 'outline'}
+            size="icon"
+            onClick={toggleRightPanel}
+            title={showRightPanel ? 'Hide right panel' : 'Show right panel'}
+            className="h-8 w-8"
+          >
+            {showRightPanel ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
+          </Button>
         </div>
-        
-        <div className="flex items-center gap-4">
-          {/* View toggle icons */}
-          <div className="bg-muted rounded-lg p-1 flex mr-2">
-            <Button
-              variant={viewMode === 'classic' ? 'default' : 'ghost'}
-              size="icon"
-              onClick={() => onViewToggle?.('classic')}
-              title="Classic View"
-              className="h-8 w-8"
-            >
-              <Layers className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'modern' ? 'default' : 'ghost'}
-              size="icon"
-              onClick={() => onViewToggle?.('modern')}
-              title="Modern View"
-              className="h-8 w-8"
-            >
-              <Sparkles className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'step-function' ? 'default' : 'ghost'}
-              size="icon"
-              onClick={() => onViewToggle?.('step-function')}
-              title="Step Function View"
-              className="h-8 w-8"
-            >
-              <GitBranch className="h-4 w-4" />
-            </Button>
-          </div>
-          {/* Enhanced status indicators */}
-          <div className="flex items-center gap-2 text-sm">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span>{taskCounts.completed}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-              <span>{taskCounts.processing}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              <span>{taskCounts.failed}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-              <span>{taskCounts.pending}</span>
-            </div>
-          </div>
-          
-          {/* Panel toggles */}
-          <div className="flex items-center gap-2">
-            <Button 
-              variant={showLeftPanel ? "default" : "outline"} 
-              size="icon"
-              onClick={toggleLeftPanel}
-              title={showLeftPanel ? "Hide left panel" : "Show left panel"}
-              className="h-8 w-8"
-            >
-              {showLeftPanel ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-            </Button>
-            <Button 
-              variant={showRightPanel ? "default" : "outline"} 
-              size="icon"
-              onClick={toggleRightPanel}
-              title={showRightPanel ? "Hide right panel" : "Show right panel"}
-              className="h-8 w-8"
-            >
-              {showRightPanel ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
-            </Button>
-          </div>
-        </div>
-      </div>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+      </WorkflowUnifiedHeader>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col mt-4">
         <div className="border-b px-4">
           <TabsList className="h-10">
             <TabsTrigger value="diagram" className="flex items-center gap-1">

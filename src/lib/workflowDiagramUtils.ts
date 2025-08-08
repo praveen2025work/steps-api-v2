@@ -45,8 +45,25 @@ export const transformWorkflowToFlowDiagramData = (workflow: any) => {
         return allTasksByProcessId.get(dep.id) || allTasks.find(t => t.name === dep.name);
     };
 
-    const stages = workflow.stages.map((stage: any, stageIndex: number) => {
-        const stageSubstages = (workflow.tasks[stage.id] || []).map((task: any, substageIndex: number) => {
+    let currentY = 100; // Initial Y position
+    const STAGE_V_GAP = 80;
+    const SUBSTAGE_V_GAP = 100;
+    const SUBSTAGE_H_GAP = 250;
+    const SUBSTAGES_PER_ROW = 4;
+    const STAGE_HEADER_HEIGHT = 60;
+
+    const stages = workflow.stages.map((stage: any) => {
+        const stageSubstagesSource = workflow.tasks[stage.id] || [];
+        const numSubstages = stageSubstagesSource.length;
+
+        // Calculate the height required for the current stage
+        const stageContentHeight = numSubstages > 0 
+            ? STAGE_HEADER_HEIGHT + (Math.ceil(numSubstages / SUBSTAGES_PER_ROW)) * SUBSTAGE_V_GAP
+            : STAGE_HEADER_HEIGHT;
+
+        const stageY = currentY;
+
+        const stageSubstages = stageSubstagesSource.map((task: any, substageIndex: number) => {
             const processData = workflow.summaryData?.processData?.find((p: any) => p.id === task.processId) || {};
             
             let type: 'auto' | 'manual' | 'upload' = 'manual';
@@ -62,8 +79,8 @@ export const transformWorkflowToFlowDiagramData = (workflow: any) => {
                 ...task,
                 id: task.id,
                 name: task.name,
-                x: 300 + (substageIndex % 3) * 220,
-                y: 100 + stageIndex * 250 + Math.floor(substageIndex / 3) * 80,
+                x: 300 + (substageIndex % SUBSTAGES_PER_ROW) * SUBSTAGE_H_GAP,
+                y: stageY + STAGE_HEADER_HEIGHT + Math.floor(substageIndex / SUBSTAGES_PER_ROW) * SUBSTAGE_V_GAP,
                 status: mapStatus(processData.status || task.status),
                 type: type,
                 dependencies: dependencies,
@@ -71,14 +88,19 @@ export const transformWorkflowToFlowDiagramData = (workflow: any) => {
             };
         });
 
-        return {
+        const stageResult = {
             id: stage.id,
             name: stage.name,
             x: 50,
-            y: 100 + stageIndex * 250,
+            y: stageY,
             status: calculateStageStatus(stageSubstages),
             substages: stageSubstages,
         };
+
+        // Update Y for the next stage, ensuring a minimum gap
+        currentY += stageContentHeight + STAGE_V_GAP;
+
+        return stageResult;
     });
 
     return { stages };

@@ -20,13 +20,10 @@ import ProcessDependencies from "@/components/workflow/ProcessDependencies";
 import ProcessQueries from "@/components/workflow/ProcessQueries";
 import WorkflowStepFunctionDiagram from "@/components/workflow/WorkflowStepFunctionDiagram";
 import { generateSampleWorkflowDiagram, convertWorkflowToDiagram } from "@/lib/workflowDiagramUtils";
-import { 
-  FileText, 
-  ArrowLeft,
+import {
+  FileText,
   RefreshCw,
   Clock,
-  Calendar,
-  User,
   CheckCircle,
   XCircle,
   AlertTriangle,
@@ -38,59 +35,56 @@ import {
   ChevronUp,
   Filter,
   Search,
-  MoreHorizontal,
-  MessageSquare,
   Paperclip,
   Link,
-  ExternalLink,
   Upload,
   UserCheck,
   Sparkles,
-  GitBranch
-} from "lucide-react";
+  GitBranch,
+} from 'lucide-react';
+import WorkflowUnifiedHeader from './WorkflowUnifiedHeader';
+import { useDate } from '@/contexts/DateContext';
 
 interface ModernWorkflowViewProps {
   workflow: any;
   onViewToggle?: (mode: 'classic' | 'modern' | 'step-function') => void;
   viewMode?: 'classic' | 'modern' | 'step-function';
+  onRefresh?: () => void;
+  onBack?: () => void;
 }
 
 const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   workflow,
   onViewToggle,
-  viewMode
+  viewMode,
+  onRefresh,
+  onBack,
 }) => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const { selectedDate } = useDate();
+  const [activeTab, setActiveTab] = useState('overview');
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
-  const [configTab, setConfigTab] = useState("stageOverview");
+  const [configTab, setConfigTab] = useState('stageOverview');
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [selectAllTasks, setSelectAllTasks] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
-  
-  // Extract tasks from workflow data with enhanced API data support
+  const [isLocked, setIsLocked] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const allTasks = Object.values(workflow.tasks || {}).flat();
+  const {
+    hierarchyPath = [],
+    taskCounts = { completed: 0, failed: 0, rejected: 0, pending: 0, processing: 0 },
+    progress = 0,
+  } = workflow;
   
-  // Calculate overall progress using enhanced data if available
-  let progressPercentage = 0;
-  let completedTasks = 0;
-  let totalTasks = 0;
-  
-  // First priority: Use summaryData from API if available
-  if (workflow.summaryData && workflow.summaryData.processData) {
-    const processData = workflow.summaryData.processData;
-    totalTasks = processData.length;
-    completedTasks = processData.filter((p: any) => 
-      p.status === 'COMPLETED' || p.status === 'completed'
-    ).length;
-    progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  } else {
-    // Fallback to task-based calculation
-    completedTasks = allTasks.filter((task: any) => task.status === 'completed').length;
-    totalTasks = allTasks.length;
-    progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  }
+  const toggleLock = () => setIsLocked(!isLocked);
+  const handleRefresh = () => {
+    if (onRefresh) onRefresh();
+  };
   
   // Handle file click
   const handleFileClick = (file: any) => {
@@ -296,44 +290,6 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
         </div>
         
         <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh Workflow
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <User className="h-4 w-4 mr-2" />
-                  Assign to Team
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Mark as Complete
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Flag as Priority
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export Report
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Add Comment
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Open in Classic View
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Recent Files</CardTitle>
@@ -744,80 +700,27 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   
   return (
     <div className="space-y-4">
-      {/* Compact header with workflow info and key stats */}
-      <Card>
-        <CardHeader className="pb-2 pt-3">
-          <div className="flex flex-wrap justify-between items-center gap-2">
-            <div className="flex items-center gap-2">
-              <div>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">{workflow.title}</CardTitle>
-                  <Badge variant="outline" className="ml-auto">
-                    {progressPercentage === 100 ? 'Completed' : 'In Progress'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* View toggle icons */}
-              <div className="bg-muted rounded-lg p-1 flex mr-2">
-                <Button
-                  variant={viewMode === 'classic' ? 'default' : 'ghost'}
-                  size="icon"
-                  onClick={() => onViewToggle?.('classic')}
-                  title="Classic View"
-                  className="h-8 w-8"
-                >
-                  <Layers className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'modern' ? 'default' : 'ghost'}
-                  size="icon"
-                  onClick={() => onViewToggle?.('modern')}
-                  title="Modern View"
-                  className="h-8 w-8"
-                >
-                  <Sparkles className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'step-function' ? 'default' : 'ghost'}
-                  size="icon"
-                  onClick={() => onViewToggle?.('step-function')}
-                  title="Step Function View"
-                  className="h-8 w-8"
-                >
-                  <GitBranch className="h-4 w-4" />
-                </Button>
-              </div>
-              <Button variant="outline" size="sm" className="gap-1">
-                <RefreshCw className="h-4 w-4" />
-                <span>Refresh</span>
-              </Button>
-              <Button variant="default" size="sm">
-                Actions
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 pb-2">
-          {/* Progress Steps - Horizontal scrollable bar */}
-          <div className="flex items-center gap-2 overflow-x-auto py-2">
-            {workflow.progressSteps.map((step: any, index: number) => (
-              <React.Fragment key={index}>
-                {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
-                <div className="flex items-center gap-1 bg-muted/40 px-3 py-1 rounded-md">
-                  <span className="text-sm whitespace-nowrap">{step.name}</span>
-                  <Badge variant="outline" className="ml-1 text-xs">
-                    {step.progress}%
-                  </Badge>
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Main content with tabs */}
+      <WorkflowUnifiedHeader
+        workflowId={hierarchyPath[hierarchyPath.length - 1]?.id || ''}
+        workflowTitle={workflow.title}
+        hierarchyPath={hierarchyPath}
+        progress={progress}
+        status="Active"
+        isLocked={isLocked}
+        onToggleLock={toggleLock}
+        onRefresh={handleRefresh}
+        taskCounts={taskCounts}
+        lastRefreshed={lastRefreshed}
+        viewMode={viewMode}
+        onViewToggle={onViewToggle}
+        autoRefreshEnabled={autoRefreshEnabled}
+        onAutoRefreshToggle={setAutoRefreshEnabled}
+        isRefreshing={isRefreshing}
+        onBack={onBack}
+        appGroupId={workflow.nodeData?.configId || workflow.applicationData?.configId}
+        appId={workflow.nodeData?.appId || workflow.applicationData?.appId}
+        date={selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+      />
       {showFilePreview && selectedFile ? (
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">

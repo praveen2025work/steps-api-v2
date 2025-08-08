@@ -1937,16 +1937,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                         Stage Overview
                       </Button>
                       
-                      <Button 
-                        variant={rightPanelContent === 'diagram' ? 'secondary' : 'ghost'}
-                        size="sm"
-                        className="h-6 text-xs"
-                        onClick={() => setRightPanelContent('diagram')}
-                      >
-                        <GitBranch className="h-3 w-3 mr-1" />
-                        Step Function View
-                      </Button>
-                      
+
                       <Button 
                         variant={rightPanelContent === 'app-parameters' ? 'secondary' : 'ghost'}
                         size="sm"
