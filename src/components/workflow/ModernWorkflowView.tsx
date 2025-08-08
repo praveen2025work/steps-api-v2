@@ -85,6 +85,8 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   });
 
   const allTasks = Object.values(workflow.tasks || {}).flat();
+  const totalTasks = allTasks.length;
+  const completedTasks = allTasks.filter((task: any) => task.status === 'completed').length;
   const {
     hierarchyPath = [],
     taskCounts = { completed: 0, failed: 0, rejected: 0, pending: 0, processing: 0 },
