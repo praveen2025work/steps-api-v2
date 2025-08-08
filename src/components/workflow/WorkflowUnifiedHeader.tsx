@@ -66,6 +66,7 @@ interface WorkflowUnifiedHeaderProps {
   appGroupId?: string;
   appId?: number;
   date?: string;
+  filterControls?: React.ReactNode;
 }
 
 const WorkflowUnifiedHeader: React.FC<WorkflowUnifiedHeaderProps> = (props) => {
@@ -98,7 +99,8 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
   onBack,
   appGroupId,
   appId,
-  date
+  date,
+  filterControls
 }) => {
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
 
@@ -261,6 +263,8 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
             )}
           </Button>
           
+          {filterControls}
+
           {/* Adhoc Stage Manager - renders as button when closed, modal when open */}
           {appGroupId && appId && date && (
             <AdhocStageManager

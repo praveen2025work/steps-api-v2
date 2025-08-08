@@ -20,6 +20,7 @@ import ProcessDependencies from "@/components/workflow/ProcessDependencies";
 import ProcessQueries from "@/components/workflow/ProcessQueries";
 import WorkflowStepFunctionDiagram from "@/components/workflow/WorkflowStepFunctionDiagram";
 import { generateSampleWorkflowDiagram, convertWorkflowToDiagram } from "@/lib/workflowDiagramUtils";
+import { WorkflowFilterPanel, WorkflowFilters } from './WorkflowFilterPanel';
 import {
   FileText,
   RefreshCw,
@@ -73,6 +74,15 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [filters, setFilters] = useState<WorkflowFilters>({
+    status: 'all',
+    processName: '',
+  });
+  const [appliedFilters, setAppliedFilters] = useState<WorkflowFilters>({
+    status: 'all',
+    processName: '',
+  });
 
   const allTasks = Object.values(workflow.tasks || {}).flat();
   const {
@@ -84,6 +94,22 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   const toggleLock = () => setIsLocked(!isLocked);
   const handleRefresh = () => {
     if (onRefresh) onRefresh();
+  };
+
+  const handleFiltersChange = (newFilters: WorkflowFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters(filters);
+    setIsFilterPanelOpen(false);
+  };
+
+  const handleResetFilters = () => {
+    const resetFiltersState = { status: 'all', processName: '' };
+    setFilters(resetFiltersState);
+    setAppliedFilters(resetFiltersState);
+    setIsFilterPanelOpen(false);
   };
   
   // Handle file click
@@ -358,27 +384,18 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
   };
 
   // Render the stages tab content
-  const renderStagesContent = () => (
-    <div className="space-y-4 pt-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search tasks and stages..."
-              className="pl-8 w-[250px]"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1">
-            <Filter className="h-4 w-4" />
-            <span>Filter</span>
-          </Button>
-        </div>
-      </div>
+  const renderStagesContent = () => {
+    const filteredStages = workflow.stages.map((stage: any) => ({
+      ...stage,
+      tasks: (workflow.tasks[stage.id] || []).filter((task: any) => {
+        const statusMatch = appliedFilters.status === 'all' || task.status.toLowerCase() === appliedFilters.status.toLowerCase();
+        const nameMatch = !appliedFilters.processName || task.name.toLowerCase().includes(appliedFilters.processName.toLowerCase());
+        return statusMatch && nameMatch;
+      }),
+    })).filter((stage: any) => stage.tasks.length > 0);
 
+    return (
+    <div className="space-y-4 pt-4">
       {/* Bulk Actions */}
       {selectedTasks.length > 0 && (
         <div className="flex items-center justify-between bg-muted/30 p-2 rounded-md">
@@ -417,8 +434,8 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
       )}
       
       <div className="space-y-4">
-        {workflow.stages.map((stage: any) => {
-          const stageTasks = workflow.tasks[stage.id] || [];
+        {filteredStages.map((stage: any) => {
+          const stageTasks = stage.tasks || [];
           const isExpanded = expandedStage === stage.id;
           
           return (
@@ -578,7 +595,7 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
         })}
       </div>
     </div>
-  );
+  )};
   
   // Render the files tab content
   const renderFilesContent = () => (
@@ -698,6 +715,17 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
     </div>
   );
   
+  const filterControls = (
+    <WorkflowFilterPanel
+      open={isFilterPanelOpen}
+      onOpenChange={setIsFilterPanelOpen}
+      filters={filters}
+      onFiltersChange={handleFiltersChange}
+      onApplyFilters={handleApplyFilters}
+      onResetFilters={handleResetFilters}
+    />
+  );
+  
   return (
     <div className="space-y-4">
       <WorkflowUnifiedHeader
@@ -720,6 +748,7 @@ const ModernWorkflowView: React.FC<ModernWorkflowViewProps> = ({
         appGroupId={workflow.nodeData?.configId || workflow.applicationData?.configId}
         appId={workflow.nodeData?.appId || workflow.applicationData?.appId}
         date={selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+        filterControls={filterControls}
       />
       {showFilePreview && selectedFile ? (
         <Card>

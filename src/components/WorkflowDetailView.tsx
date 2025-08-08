@@ -34,6 +34,7 @@ import EnhancedFileViewer from './files/EnhancedFileViewer';
 import EnhancedWorkflowFilePreview from './files/EnhancedWorkflowFilePreview';
 import ModernWorkflowView from './workflow/ModernWorkflowView';
 import StepFunctionView from './workflow/StepFunctionView';
+import { WorkflowFilterPanel, WorkflowFilters } from './workflow/WorkflowFilterPanel';
 import { 
   FileText, 
   Lock, 
@@ -233,11 +234,41 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   const [showSubStageCards, setShowSubStageCards] = useState<boolean>(true);
   const [approvalProcessId, setApprovalProcessId] = useState<string | null>(null);
   
+  // Filter state
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [filters, setFilters] = useState<WorkflowFilters>({
+    status: 'all',
+    processName: '',
+  });
+  const [appliedFilters, setAppliedFilters] = useState<WorkflowFilters>({
+    status: 'all',
+    processName: '',
+  });
+
   // Enhanced file preview state
   const [filePreviewMode, setFilePreviewMode] = useState<'none' | 'enhanced' | 'legacy'>('none');
   const [filePreviewLeftPanel, setFilePreviewLeftPanel] = useState<boolean>(true);
   const [filePreviewRightPanel, setFilePreviewRightPanel] = useState<boolean>(false);
   const [filePreviewFullscreen, setFilePreviewFullscreen] = useState<boolean>(false);
+
+  // Filter handlers
+  const handleFiltersChange = (newFilters: WorkflowFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters(filters);
+    setIsFilterPanelOpen(false);
+    showSuccessToast('Filters applied.');
+  };
+
+  const handleResetFilters = () => {
+    const resetFiltersState = { status: 'all', processName: '' };
+    setFilters(resetFiltersState);
+    setAppliedFilters(resetFiltersState);
+    setIsFilterPanelOpen(false);
+    showInfoToast('Filters have been reset.');
+  };
 
   // Build hierarchy path from progressSteps
   const [hierarchyPath, setHierarchyPath] = useState<HierarchyNode[]>([]);
@@ -1542,6 +1573,17 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
   }
 
   // Default Classic view
+  const filterControls = (
+    <WorkflowFilterPanel
+      open={isFilterPanelOpen}
+      onOpenChange={setIsFilterPanelOpen}
+      filters={filters}
+      onFiltersChange={handleFiltersChange}
+      onApplyFilters={handleApplyFilters}
+      onResetFilters={handleResetFilters}
+    />
+  );
+
   return (
     <div className="space-y-2">
       {/* Unified Workflow Header Card with Auto-Refresh Controls */}
@@ -1568,6 +1610,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
         appGroupId={nodeData?.configId || applicationData?.configId}
         appId={nodeData?.appId || applicationData?.appId}
         date={selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+        filterControls={filterControls}
       />
 
       {/* Modified to include completion percentage */}
@@ -1606,10 +1649,17 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
               // Always prefer actual API data over mock data
               const subStagesToRender = stageSpecificSubStages.length > 0 ? stageSpecificSubStages : [];
               
-              if (subStagesToRender.length === 0) {
+              const filteredSubStages = subStagesToRender.filter(subStage => {
+                if (!appliedFilters) return true;
+                const statusMatch = appliedFilters.status === 'all' || subStage.status.toLowerCase() === appliedFilters.status.toLowerCase();
+                const nameMatch = !appliedFilters.processName || subStage.name.toLowerCase().includes(appliedFilters.processName.toLowerCase());
+                return statusMatch && nameMatch;
+              });
+
+              if (filteredSubStages.length === 0) {
                 return (
                   <div className="text-center py-8 text-muted-foreground">
-                    <div className="text-sm">No sub-stages found for this stage</div>
+                    <div className="text-sm">{subStagesToRender.length > 0 ? 'No sub-stages match your filter criteria.' : 'No sub-stages found for this stage.'}</div>
                     <div className="text-xs mt-1">
                       Active Stage: {activeStage} | Tasks Available: {tasks[activeStage]?.length || 0}
                     </div>
@@ -1617,7 +1667,7 @@ const WorkflowDetailViewContent: React.FC<WorkflowDetailViewProps & { router: an
                 );
               }
               
-              return subStagesToRender.map((subStage, index) => (
+              return filteredSubStages.map((subStage, index) => (
                 <Collapsible key={subStage.id}>
                   <div 
                     data-process-id={subStage.processId}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { WorkflowFilterPanel, WorkflowFilters } from './WorkflowFilterPanel';
 import {
   Info,
   HelpCircle,
@@ -60,8 +61,48 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [filters, setFilters] = useState<WorkflowFilters>({
+    status: 'all',
+    processName: '',
+  });
+  const [appliedFilters, setAppliedFilters] = useState<WorkflowFilters>({
+    status: 'all',
+    processName: '',
+  });
 
-  const diagramData = transformWorkflowToFlowDiagramData(workflow);
+  const handleFiltersChange = (newFilters: WorkflowFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters(filters);
+    setIsFilterPanelOpen(false);
+  };
+
+  const handleResetFilters = () => {
+    const resetFiltersState = { status: 'all', processName: '' };
+    setFilters(resetFiltersState);
+    setAppliedFilters(resetFiltersState);
+    setIsFilterPanelOpen(false);
+  };
+
+  const filteredWorkflow = {
+    ...workflow,
+    tasks: Object.entries(workflow.tasks).reduce((acc, [stageId, tasks]) => {
+      const filtered = (tasks as any[]).filter(task => {
+        const statusMatch = appliedFilters.status === 'all' || task.status.toLowerCase() === appliedFilters.status.toLowerCase();
+        const nameMatch = !appliedFilters.processName || task.name.toLowerCase().includes(appliedFilters.processName.toLowerCase());
+        return statusMatch && nameMatch;
+      });
+      if (filtered.length > 0) {
+        acc[stageId] = filtered;
+      }
+      return acc;
+    }, {} as Record<string, any[]>),
+  };
+
+  const diagramData = transformWorkflowToFlowDiagramData(filteredWorkflow);
   const allTasks = Object.values(workflow.tasks || {}).flat();
   const {
     hierarchyPath = [],
@@ -159,6 +200,17 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({
 
   const layoutClasses = getLayoutClasses();
 
+  const filterControls = (
+    <WorkflowFilterPanel
+      open={isFilterPanelOpen}
+      onOpenChange={setIsFilterPanelOpen}
+      filters={filters}
+      onFiltersChange={handleFiltersChange}
+      onApplyFilters={handleApplyFilters}
+      onResetFilters={handleResetFilters}
+    />
+  );
+
   return (
     <div className="flex flex-col h-full w-full">
       <WorkflowUnifiedHeader
@@ -181,6 +233,7 @@ const StepFunctionView: React.FC<StepFunctionViewProps> = ({
         appGroupId={workflow.nodeData?.configId || workflow.applicationData?.configId}
         appId={workflow.nodeData?.appId || workflow.applicationData?.appId}
         date={selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+        filterControls={filterControls}
       >
         <div className="flex items-center gap-2">
           <Button
