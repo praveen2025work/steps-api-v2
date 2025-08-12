@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -15,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,10 +27,11 @@ import {
   AlertCircle,
   Search,
 } from 'lucide-react';
-import { useApi } from '@/hooks/useWorkflowService';
+import { useApplicationParameters } from '@/hooks/useWorkflowService';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+// Define the type based on the API response structure
 interface AppParameter {
   appId: number;
   paramId: number;
@@ -51,10 +51,15 @@ const AppParameters: React.FC<AppParametersProps> = ({
   applicationId,
   applicationName,
 }) => {
-  const { get, post } = useApi();
-  const [parameters, setParameters] = useState<AppParameter[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Use the dedicated hook for managing application parameters
+  const {
+    parameters,
+    loading,
+    error,
+    refresh: fetchParameters,
+    saveParameter,
+  } = useApplicationParameters(applicationId);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -67,20 +72,6 @@ const AppParameters: React.FC<AppParametersProps> = ({
     active: true,
     ignore: false,
   });
-
-  const fetchParameters = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await get<AppParameter[]>(`/WF/appparam/${applicationId}`);
-      setParameters(data || []);
-    } catch (err: any) {
-      setError('Failed to fetch application parameters.');
-      showErrorToast(err.message || 'An unknown error occurred.');
-    } finally {
-      setLoading(false);
-    }
-  }, [applicationId, get]);
 
   useEffect(() => {
     if (applicationId) {
@@ -108,7 +99,7 @@ const AppParameters: React.FC<AppParametersProps> = ({
   };
 
   const handleSave = async () => {
-    const payload: Omit<AppParameter, 'updatedBy'> & { updatedBy: string } = {
+    const payload = {
       appId: applicationId,
       paramId: selectedParam?.paramId || 0,
       name: formState.name,
@@ -118,9 +109,8 @@ const AppParameters: React.FC<AppParametersProps> = ({
       updatedBy: 'system', // This should be replaced with the actual user
     };
 
-    setLoading(true);
     try {
-      await post('/WF/WorkflowAppParam', payload);
+      await saveParameter(payload);
       showSuccessToast(
         `Parameter "${payload.name}" has been ${
           selectedParam ? 'updated' : 'saved'
@@ -130,36 +120,30 @@ const AppParameters: React.FC<AppParametersProps> = ({
       fetchParameters();
     } catch (err: any) {
       showErrorToast(err.message || 'Failed to save parameter.');
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleDelete = async () => {
     if (!paramToDelete) return;
 
-    // "Deleting" by setting the parameter to inactive, as there is no DELETE endpoint
     const payload = {
       ...paramToDelete,
-      active: 'N',
-      updatedBy: 'system', // This should be replaced with the actual user
+      active: 'N' as 'N',
+      updatedBy: 'system',
     };
 
-    setLoading(true);
     try {
-      await post('/WF/WorkflowAppParam', payload);
+      await saveParameter(payload);
       showSuccessToast(`Parameter "${paramToDelete.name}" has been deleted.`);
       setIsDeleteDialogOpen(false);
       setParamToDelete(null);
       fetchParameters();
     } catch (err: any) {
       showErrorToast(err.message || 'Failed to delete parameter.');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const filteredParameters = parameters.filter(
+  const filteredParameters = (parameters || []).filter(
     (param) =>
       param.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       param.value.toLowerCase().includes(searchTerm.toLowerCase())

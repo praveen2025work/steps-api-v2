@@ -1029,38 +1029,23 @@ class WorkflowService {
   private isMockMode(): boolean {
     const apiMode = process.env.NEXT_PUBLIC_API_MODE;
     const forceRealApi = process.env.NEXT_PUBLIC_FORCE_REAL_API;
-    
-    // If explicitly set to mock mode
-    if (apiMode === 'mock') {
-      return true;
-    }
-    
-    // If force real API is explicitly false
-    if (forceRealApi === 'false') {
-      return true;
-    }
-    
-    // If force real API is explicitly true, use real API
-    if (forceRealApi === 'true') {
-      return false;
-    }
-    
-    // Check environment variables for real API usage
     const coDevEnv = process.env.NEXT_PUBLIC_CO_DEV_ENV;
+
     if (coDevEnv === 'true' || forceRealApi === 'true') {
       return false;
     }
-    
-    // Default behavior: use mock for localhost and preview environments
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      return hostname.includes('localhost') || 
-             hostname.includes('preview.co.dev') || 
-             hostname.includes('vercel.app') ||
-             hostname.includes('127.0.0.1');
+
+    if (apiMode === 'mock' || forceRealApi === 'false') {
+      return true;
     }
     
-    return false;
+    // Default behavior: use mock for localhost unless forced
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      return hostname.includes('localhost') || hostname.includes('127.0.0.1');
+    }
+    
+    return true; // Default to mock on server-side if no other conditions met
   }
 
   private async simulateNetworkDelay(ms: number = 500): Promise<void> {
@@ -1212,6 +1197,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Fetching application parameters from API for appId:', appId);
+      // Use the correct .NET instance and full path if needed, but the base URL should handle it.
       const response = await this.dotNetAxiosInstance.get<ApplicationParameter[]>(`/appparam/${appId}`);
       
       return this.createApiResponse(response.data);
@@ -1255,6 +1241,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving application parameter to API:', parameter);
+      // Use the correct .NET instance and full path if needed, but the base URL should handle it.
       const response = await this.dotNetAxiosInstance.post<ApplicationParameter[]>('/WorkflowAppParam', parameter);
       
       return this.createApiResponse(response.data);

@@ -267,41 +267,6 @@ export const useApplicationParameters = (appId: number) => {
     }
   }, []);
 
-  // Add a new application parameter
-  const addParameter = useCallback(async (param: Omit<ApplicationParameter, 'paramId'>): Promise<boolean> => {
-    const newParam: ApplicationParameter = {
-      ...param,
-      paramId: Date.now(), // Temporary ID, server should assign real ID
-      appId: appId,
-    };
-    
-    return saveParameter(newParam);
-  }, [appId, saveParameter]);
-
-  // Update an existing application parameter
-  const updateParameter = useCallback(async (updatedParam: ApplicationParameter): Promise<boolean> => {
-    return saveParameter(updatedParam);
-  }, [saveParameter]);
-
-  // Delete an application parameter
-  const deleteParameter = useCallback(async (paramId: number): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // For delete, we'll need to implement a delete endpoint later
-      // For now, we'll simulate by removing from local state
-      setParameters(prevParams => prevParams.filter(param => param.paramId !== paramId));
-      setLastFetch(new Date());
-      return true;
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Refresh parameters
   const refresh = useCallback(() => {
     fetchParameters();
@@ -319,12 +284,8 @@ export const useApplicationParameters = (appId: number) => {
     loading,
     error,
     lastFetch,
-    fetchParameters,
-    saveParameter,
-    addParameter,
-    updateParameter,
-    deleteParameter,
     refresh,
+    saveParameter,
   };
 };
 
