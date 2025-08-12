@@ -755,42 +755,49 @@ const WorkflowConfigurationManager: React.FC = () => {
             dependencySubstageId: dep.id.dependencySubstageId
           }
         })) || [],
-        // FIXED: Filter out empty file configurations, ensure uniqueness by name, and send only meaningful entries
         workflowAppConfigFiles: (() => {
-          if (!config.workflowAppConfigFiles) return [];
-          
-          // Create a map to ensure uniqueness by parameter name
-          const uniqueFiles = new Map<string, WorkflowAppConfigFile>();
-          
-          config.workflowAppConfigFiles.forEach(file => {
-            // Only include file configs that have meaningful data
-            const hasMeaningfulData = file.value?.trim() || 
-                                    file.description?.trim() || 
-                                    file.required === 'Y' || 
-                                    file.emailFile === 'Y';
-            
-            if (hasMeaningfulData) {
-              // Use the parameter name as key to ensure uniqueness
-              uniqueFiles.set(file.name, file);
-            }
-          });
-          
-          // Convert map back to array and format for API
-          return Array.from(uniqueFiles.values()).map(file => ({
-            id: {
-              workflowAppConfigId: null,
-              name: file.name,
-              paramType: file.paramType
-            },
-            value: file.value || '',
-            description: file.description || '',
-            emailFile: file.emailFile,
-            fileUpload: file.fileUpload,
-            isEmailFile: file.emailFile === 'Y',
-            isFileUpload: file.fileUpload === 'Y',
-            isRequired: file.required === 'Y',
-            required: file.required
-          }));
+          if (config.upload !== 'Y' || !config.workflowSubstage.paramMapping) return [];
+
+          const uploadParamIds = new Set(
+            config.workflowSubstage.paramMapping.split(';').filter(id => id.trim()).map(id => parseInt(id.trim()))
+          );
+
+          const uploadParams = (state.metadata?.WorkflowParams || []).filter(p =>
+            uploadParamIds.has(p.paramId) && p.paramType?.toUpperCase() === 'UPLOAD'
+          );
+
+          return uploadParams
+            .map(param => {
+              const fileConfig = (config.workflowAppConfigFiles || []).find(f => f.name === param.name);
+              
+              const hasMeaningfulData = fileConfig && (
+                fileConfig.value?.trim() ||
+                fileConfig.description?.trim() ||
+                fileConfig.required === 'Y' ||
+                fileConfig.emailFile === 'Y'
+              );
+
+              if (!hasMeaningfulData) {
+                return null;
+              }
+
+              return {
+                id: {
+                  workflowAppConfigId: config.workflowAppConfigId || null,
+                  name: param.name,
+                  paramType: 'UPLOAD'
+                },
+                value: fileConfig.value || '',
+                description: fileConfig.description || '',
+                required: fileConfig.required || 'N',
+                emailFile: fileConfig.emailFile || 'N',
+                fileUpload: 'Y',
+                isEmailFile: fileConfig.emailFile === 'Y',
+                isFileUpload: true,
+                isRequired: fileConfig.required === 'Y',
+              };
+            })
+            .filter((file): file is NonNullable<typeof file> => file !== null);
         })(),
         // FIXED: Include name field properly in parameters payload - avoid duplication
         workflowAppConfigParams: config.workflowAppConfigParams?.map(param => ({
