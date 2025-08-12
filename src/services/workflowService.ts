@@ -1659,7 +1659,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving application-calendar mapping to API:', mapping);
-      const response = await this.dotNetAxiosInstance.post<number>('/SetApplicationToCalendarMap', mapping);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetApplicationCalendarMap', mapping);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -1844,7 +1844,7 @@ class WorkflowService {
       }
 
       console.log('[Workflow Service] Saving application-run calendar mapping to API:', mapping);
-      const response = await this.dotNetAxiosInstance.post<number>('/SetApplicationToRunCalendarMap', mapping);
+      const response = await this.dotNetAxiosInstance.post<number>('/SetApplicationRunCalendarMap', mapping);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {

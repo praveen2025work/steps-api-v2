@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -135,6 +135,7 @@ const HolidayCalendarManagement: React.FC = () => {
   });
   const [newDateInput, setNewDateInput] = useState('');
   const [dateToDelete, setDateToDelete] = useState<{ calendarName: string; businessDate: string } | null>(null);
+  const [pendingAssignments, setPendingAssignments] = useState<Record<string, string>>({});
   
   // Load data on component mount
   useEffect(() => {
@@ -358,38 +359,65 @@ const HolidayCalendarManagement: React.FC = () => {
     return applicationMappings.filter(mapping => mapping.calendarName === calendarName);
   };
 
+  const handleSaveAssignments = async () => {
+    const changesToProcess = Object.entries(pendingAssignments);
+    if (changesToProcess.length === 0) return;
+
+    setLoading(true);
+    let hasError = false;
+
+    for (const [appIdStr, newCalendarName] of changesToProcess) {
+        const appId = parseInt(appIdStr, 10);
+        const currentMapping = applicationMappings.find(m => m.applicationId === appId);
+        const oldCalendarName = currentMapping?.calendarName;
+
+        if (newCalendarName === (oldCalendarName || 'none')) continue;
+
+        try {
+            // Unassign if there was an old calendar
+            if (oldCalendarName) {
+                await handleApplicationAssignment(appId, oldCalendarName, false);
+            }
+            // Assign new calendar if it's not 'none'
+            if (newCalendarName !== 'none') {
+                await handleApplicationAssignment(appId, newCalendarName, true);
+            }
+        } catch (error) {
+            hasError = true;
+            console.error(`Failed to process assignment for app ${appId}:`, error);
+        }
+    }
+
+    if (hasError) {
+        toast({
+            title: "Error",
+            description: "Some assignments failed to update. Please check the console and try again.",
+            variant: "destructive"
+        });
+    } else {
+        toast({
+            title: "Success",
+            description: "Application assignments updated successfully."
+        });
+        setPendingAssignments({});
+    }
+    
+    await loadData(); // Reload data regardless of success or failure to reflect current state
+  };
+
   // Handle application assignment
   const handleApplicationAssignment = async (applicationId: number, calendarName: string, isAssigned: boolean) => {
-    try {
-      console.log('[HolidayCalendarManagement] Handling assignment:', { applicationId, calendarName, isAssigned });
-      
-      const mapping: CalendarSaveRequest = {
-        action: isAssigned ? 1 : 3, // 1 = assign, 3 = unassign
-        applicationId: applicationId,
-        calendarName: calendarName
-      };
+    const mapping: CalendarSaveRequest = {
+      action: isAssigned ? 1 : 3, // 1 = assign, 3 = unassign
+      applicationId: applicationId,
+      calendarName: calendarName
+    };
 
-      console.log('[HolidayCalendarManagement] Sending mapping request:', mapping);
-      const response = await workflowService.saveApplicationCalendarMapping(mapping);
-      
-      console.log('[HolidayCalendarManagement] Response received:', response);
-      
-      if (response.success) {
-        toast({
-          title: "Success",
-          description: `Application ${isAssigned ? 'assigned to' : 'unassigned from'} calendar successfully.`
-        });
-        await loadData(); // Reload data
-      } else {
-        throw new Error(response.error || 'Failed to update assignment');
-      }
-    } catch (error: any) {
-      console.error('[HolidayCalendarManagement] Assignment error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update application assignment",
-        variant: "destructive"
-      });
+    const response = await workflowService.saveApplicationCalendarMapping(mapping);
+    
+    if (!response.success) {
+      console.error('[HolidayCalendarManagement] Assignment error:', response.error);
+      throw new Error(response.error || `Failed to update assignment for app ${applicationId}`);
     }
   };
 
@@ -513,15 +541,19 @@ const HolidayCalendarManagement: React.FC = () => {
             <CardHeader>
               <CardTitle>Application Calendar Assignments</CardTitle>
               <CardDescription>
-                Assign holiday calendars to applications
+                Assign holiday calendars to applications. Changes must be saved.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {applications.map((app) => {
-                  const currentMapping = applicationMappings.find(m => m.applicationId === parseInt(app.configId));
+                  const appIdStr = app.configId;
+                  const currentMapping = applicationMappings.find(m => m.applicationId === parseInt(appIdStr));
+                  const originalValue = currentMapping?.calendarName || 'none';
+                  const selectedValue = pendingAssignments[appIdStr] !== undefined ? pendingAssignments[appIdStr] : originalValue;
+
                   return (
-                    <div key={app.configId} className="flex items-center justify-between p-4 border rounded">
+                    <div key={appIdStr} className={`flex items-center justify-between p-4 border rounded ${pendingAssignments[appIdStr] !== undefined ? 'bg-blue-50 border-blue-200' : ''}`}>
                       <div className="flex items-center gap-3">
                         <Building2 className="h-5 w-5" />
                         <div>
@@ -530,48 +562,16 @@ const HolidayCalendarManagement: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        {currentMapping && (
-                          <Badge variant="secondary">
-                            {currentMapping.calendarName}
-                          </Badge>
-                        )}
                         <Select
-                          value={currentMapping?.calendarName || 'none'}
-                          onValueChange={async (value) => {
-                            try {
-                              const appId = parseInt(app.configId, 10);
-                              
-                              if (isNaN(appId)) {
-                                console.error('[HolidayCalendarManagement] Invalid application ID:', app.configId);
-                                toast({
-                                  title: "Error",
-                                  description: "Invalid application ID",
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-
-                              if (value === 'none') {
-                                // Unassign current calendar
-                                if (currentMapping) {
-                                  await handleApplicationAssignment(appId, currentMapping.calendarName, false);
-                                }
-                              } else {
-                                // First unassign current calendar if exists
-                                if (currentMapping && currentMapping.calendarName !== value) {
-                                  await handleApplicationAssignment(appId, currentMapping.calendarName, false);
-                                }
-                                // Then assign new calendar
-                                await handleApplicationAssignment(appId, value, true);
-                              }
-                            } catch (error: any) {
-                              console.error('[HolidayCalendarManagement] Select change error:', error);
-                              toast({
-                                title: "Error",
-                                description: "Failed to update calendar assignment",
-                                variant: "destructive"
-                              });
+                          value={selectedValue}
+                          onValueChange={(value) => {
+                            const newPending = { ...pendingAssignments };
+                            if (value === originalValue) {
+                              delete newPending[appIdStr];
+                            } else {
+                              newPending[appIdStr] = value;
                             }
+                            setPendingAssignments(newPending);
                           }}
                         >
                           <SelectTrigger className="w-64">
@@ -592,6 +592,17 @@ const HolidayCalendarManagement: React.FC = () => {
                 })}
               </div>
             </CardContent>
+            {Object.keys(pendingAssignments).length > 0 && (
+              <CardFooter className="flex justify-end gap-2 pt-4 border-t mt-4">
+                <Button variant="outline" onClick={() => setPendingAssignments({})}>
+                  Discard Changes
+                </Button>
+                <Button onClick={handleSaveAssignments}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Assignments ({Object.keys(pendingAssignments).length})
+                </Button>
+              </CardFooter>
+            )}
           </Card>
         </TabsContent>
       </Tabs>
