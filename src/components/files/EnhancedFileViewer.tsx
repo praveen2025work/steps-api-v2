@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useExcelData } from '@/hooks/useExcelData';
-import { DataGrid } from './DataGrid';
+import { FilterableDataGrid } from './FilterableDataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { cn } from '@/lib/utils';
 
@@ -116,7 +116,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
     }
   }, [files, processId, onFileDownloadProp]);
 
-  const renderGridForSheet = useCallback((sheetData: any[]) => {
+  const renderGridForSheet = useCallback((sheetData: any[], sheetName?: string) => {
     if (!sheetData || sheetData.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -156,8 +156,21 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
       id: header || `column_${index}`,
     }));
 
-    return <DataGrid columns={columns} data={data} />;
-  }, []);
+    // Determine file type and context
+    const fileExtension = activeFile?.name.split('.').pop()?.toLowerCase() || '';
+    const fileType = ['xlsx', 'xls'].includes(fileExtension) ? 'excel' : 
+                     fileExtension === 'csv' ? 'csv' : 'json';
+
+    return (
+      <FilterableDataGrid 
+        columns={columns} 
+        data={data} 
+        sheetName={sheetName}
+        fileName={activeFile?.name}
+        fileType={fileType}
+      />
+    );
+  }, [activeFile?.name]);
 
   const previewContent = useMemo(() => {
     if (!activeFile) return null;
@@ -194,7 +207,7 @@ const EnhancedFileViewer: React.FC<EnhancedFileViewerProps> = ({
           </TabsList>
           {excelData.sheets.map((sheet) => (
             <TabsContent key={sheet.name} value={sheet.name} className="flex-grow mt-2 h-full">
-              {renderGridForSheet(sheet.data)}
+              {renderGridForSheet(sheet.data, sheet.name)}
             </TabsContent>
           ))}
         </Tabs>
