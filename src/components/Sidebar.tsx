@@ -21,7 +21,7 @@ import {
   CalendarClock,
   GitFork,
   Tags,
-  Workflow,
+  GitBranch,
   Shield,
   Sparkles,
   TrendingUp,
@@ -58,7 +58,7 @@ const navSections: NavSection[] = [
       {
         title: 'Task Center',
         href: '/workflow-inbox',
-        icon: <Workflow className="h-5 w-5" />,
+        icon: <GitBranch className="h-5 w-5" />,
         pattern: /^\/workflow-inbox/
       },
       {
@@ -153,7 +153,7 @@ const navSections: NavSection[] = [
       {
         title: 'Workflow Config',
         href: '/admin/workflow-config',
-        icon: <Workflow className="h-5 w-5" />,
+        icon: <GitBranch className="h-5 w-5" />,
         pattern: /^\/admin\/workflow-config/
       },
       {
