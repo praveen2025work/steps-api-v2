@@ -1,149 +1,374 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Search, RefreshCw, Info, Plus, Edit, Trash2 } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import {
+  RefreshCw,
+  Plus,
+  Edit,
+  Trash2,
+  AlertCircle,
+  Search,
+} from 'lucide-react';
+import { useApi } from '@/hooks/useWorkflowService';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
-import { useApplicationParameters } from '@/hooks/useWorkflowService';
-import { ApplicationParameter } from '@/types/application-types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-interface AppParametersProps {
-  processId: string;
-  processName: string;
+interface AppParameter {
+  appId: number;
+  paramId: number;
+  name: string;
+  value: string;
+  active: 'Y' | 'N';
+  updatedBy: string;
+  ignore: 'Y' | 'N';
 }
 
-const AppParameters: React.FC<AppParametersProps> = ({ processId, processName }) => {
-  // Get the workflow summary data from the WorkflowDetailView component
-  const summaryData = React.useMemo(() => {
-    // Try to get from global window first (fallback)
-    const globalSummary = (window as any).currentWorkflowSummary;
-    // In the future, this should be passed as a prop from WorkflowDetailView
-    return globalSummary;
-  }, []);
+interface AppParametersProps {
+  applicationId: number;
+  applicationName: string;
+}
 
-  const applicationData = React.useMemo(() => {
-    // Try to get from global window first (fallback)
-    const globalApp = (window as any).currentWorkflowApplication;
-    // In the future, this should be passed as a prop from WorkflowDetailView
-    return globalApp;
-  }, []);
-  
-  // Extract app parameters from the summary data
-  const appParams = summaryData?.appParams || [];
-  const applications = summaryData?.applications || [];
-  
-  // Find the current application info
-  const currentApp = applications.find((app: any) => 
-    app.appId === applicationData?.appId
-  ) || { appId: applicationData?.appId || 0, name: 'Unknown Application' };
+const AppParameters: React.FC<AppParametersProps> = ({
+  applicationId,
+  applicationName,
+}) => {
+  const { get, post } = useApi();
+  const [parameters, setParameters] = useState<AppParameter[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedParam, setSelectedParam] = useState<AppParameter | null>(null);
+  const [paramToDelete, setParamToDelete] = useState<AppParameter | null>(null);
 
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [formState, setFormState] = useState({
+    name: '',
+    value: '',
+    active: true,
+    ignore: false,
+  });
 
-  const [searchTerm, setSearchTerm] = React.useState('');
-
-  // Transform API data to display format
-  const parameters = React.useMemo(() => {
-    if (!appParams || appParams.length === 0) return [];
-    
-    return appParams.map((param: any) => ({
-      param_Id: param.param_Id,
-      name: param.name,
-      value: param.value,
-      updatedBy: param.updatedBy,
-      updatedOn: param.updatedOn
-    }));
-  }, [appParams]);
-
-  const filteredParameters = parameters.filter((param: any) => 
-    param.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    param.value.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleRefresh = () => {
+  const fetchParameters = useCallback(async () => {
     setLoading(true);
-    // Simulate refresh - in real app this would refetch data
-    setTimeout(() => {
+    setError(null);
+    try {
+      const data = await get<AppParameter[]>(`/WF/appparam/${applicationId}`);
+      setParameters(data || []);
+    } catch (err: any) {
+      setError('Failed to fetch application parameters.');
+      showErrorToast(err.message || 'An unknown error occurred.');
+    } finally {
       setLoading(false);
-      showSuccessToast("Application parameters refreshed successfully");
-    }, 1000);
+    }
+  }, [applicationId, get]);
+
+  useEffect(() => {
+    if (applicationId) {
+      fetchParameters();
+    }
+  }, [applicationId, fetchParameters]);
+
+  const handleFormChange = (field: keyof typeof formState, value: any) => {
+    setFormState((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handleOpenDialog = (param: AppParameter | null = null) => {
+    setSelectedParam(param);
+    if (param) {
+      setFormState({
+        name: param.name,
+        value: param.value,
+        active: param.active === 'Y',
+        ignore: param.ignore === 'Y',
+      });
+    } else {
+      setFormState({ name: '', value: '', active: true, ignore: false });
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    const payload: Omit<AppParameter, 'updatedBy'> & { updatedBy: string } = {
+      appId: applicationId,
+      paramId: selectedParam?.paramId || 0,
+      name: formState.name,
+      value: formState.value,
+      active: formState.active ? 'Y' : 'N',
+      ignore: formState.ignore ? 'Y' : 'N',
+      updatedBy: 'system', // This should be replaced with the actual user
+    };
+
+    setLoading(true);
+    try {
+      await post('/WF/WorkflowAppParam', payload);
+      showSuccessToast(
+        `Parameter "${payload.name}" has been ${
+          selectedParam ? 'updated' : 'saved'
+        } successfully.`
+      );
+      setIsDialogOpen(false);
+      fetchParameters();
+    } catch (err: any) {
+      showErrorToast(err.message || 'Failed to save parameter.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!paramToDelete) return;
+
+    // "Deleting" by setting the parameter to inactive, as there is no DELETE endpoint
+    const payload = {
+      ...paramToDelete,
+      active: 'N',
+      updatedBy: 'system', // This should be replaced with the actual user
+    };
+
+    setLoading(true);
+    try {
+      await post('/WF/WorkflowAppParam', payload);
+      showSuccessToast(`Parameter "${paramToDelete.name}" has been deleted.`);
+      setIsDeleteDialogOpen(false);
+      setParamToDelete(null);
+      fetchParameters();
+    } catch (err: any) {
+      showErrorToast(err.message || 'Failed to delete parameter.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredParameters = parameters.filter(
+    (param) =>
+      param.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      param.value.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium">Application Parameters</h3>
-          <p className="text-sm text-muted-foreground">
-            {currentApp.name} (ID: {currentApp.appId})
-          </p>
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      <div className="flex justify-between items-center">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search parameters..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
-      <div className="relative w-full max-w-sm">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search parameters..."
-          className="pl-8"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchParameters}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+            />
+            Refresh
+          </Button>
+          <Button size="sm" onClick={() => handleOpenDialog()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Parameter
+          </Button>
+        </div>
       </div>
 
       <div className="border rounded-md">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[30%]">Name</TableHead>
-              <TableHead className="w-[40%]">Value</TableHead>
-              <TableHead className="w-[30%]">Updated By</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Value</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-4">
-                  Loading parameters...
+                <TableCell colSpan={4} className="text-center py-4">
+                  Loading...
                 </TableCell>
               </TableRow>
-            ) : filteredParameters.length > 0 ? (
-              filteredParameters.map((param: any) => (
-                <TableRow key={param.param_Id}>
+            ) : filteredParameters.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-4">
+                  No parameters found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredParameters.map((param) => (
+                <TableRow key={param.paramId}>
                   <TableCell className="font-medium">{param.name}</TableCell>
-                  <TableCell className="font-mono text-sm">{param.value}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {param.updatedBy}
-                    {param.updatedOn && (
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(param.updatedOn).toLocaleDateString()}
-                      </div>
-                    )}
+                  <TableCell>{param.value}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        param.active === 'Y'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {param.active === 'Y' ? 'Active' : 'Inactive'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleOpenDialog(param)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setParamToDelete(param);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                  <div className="flex flex-col items-center gap-2">
-                    <Info className="h-8 w-8 text-muted-foreground/50" />
-                    <p>No application parameters found</p>
-                  </div>
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedParam ? 'Edit' : 'Add'} Parameter
+            </DialogTitle>
+            <DialogDescription>
+              Manage parameter for {applicationName}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={formState.name}
+                onChange={(e) => handleFormChange('name', e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="value" className="text-right">
+                Value
+              </Label>
+              <Input
+                id="value"
+                value={formState.value}
+                onChange={(e) => handleFormChange('value', e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="active" className="text-right">
+                Active
+              </Label>
+              <Switch
+                id="active"
+                checked={formState.active}
+                onCheckedChange={(checked) =>
+                  handleFormChange('active', checked)
+                }
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="ignore" className="text-right">
+                Ignore
+              </Label>
+              <Switch
+                id="ignore"
+                checked={formState.ignore}
+                onCheckedChange={(checked) =>
+                  handleFormChange('ignore', checked)
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+            <DialogDescription>
+              This will delete the parameter "{paramToDelete?.name}". This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={loading}
+            >
+              {loading ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
