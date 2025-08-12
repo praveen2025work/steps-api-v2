@@ -10,6 +10,10 @@
     "build": "next build",
     "build:static": "next build",
     "build:iis": "next build",
+    "build:local": "dotenv -e .env.local next build",
+    "build:dev": "dotenv -e .env.dev next build",
+    "build:uat": "dotenv -e .env.uat next build",
+    "build:prod": "dotenv -e .env.prod next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -89,6 +93,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/uuid": "^9.0.8",
     "autoprefixer": "^10.4.20",
+    "dotenv-cli": "^7.4.2",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "typescript": "^5"
