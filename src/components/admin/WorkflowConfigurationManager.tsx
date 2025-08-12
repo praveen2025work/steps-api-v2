@@ -768,7 +768,7 @@ const WorkflowConfigurationManager: React.FC = () => {
 
           return uploadParams
             .map(param => {
-              const fileConfig = (config.workflowAppConfigFiles || []).find(f => f.name === param.name);
+              const fileConfig = (config.workflowAppConfigFiles || []).find(f => (f.id?.name || f.name) === param.name);
               
               const hasMeaningfulData = fileConfig && (
                 fileConfig.value?.trim() ||
@@ -2245,7 +2245,10 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
     const map = new Map<string, WorkflowAppConfigFile>();
     if (config.workflowAppConfigFiles) {
       for (const file of config.workflowAppConfigFiles) {
-        map.set(file.name, file);
+        const fileName = file.id?.name || file.name;
+        if (fileName) {
+          map.set(fileName, file);
+        }
       }
     }
     return map;
@@ -2270,7 +2273,7 @@ const SubstageConfigurationPanel: React.FC<SubstageConfigurationPanelProps> = ({
 
   const handleFileConfigChange = (paramName: string, field: keyof WorkflowAppConfigFile, value: any) => {
     const currentFiles = config.workflowAppConfigFiles || [];
-    const fileIndex = currentFiles.findIndex(f => f.name === paramName);
+    const fileIndex = currentFiles.findIndex(f => (f.id?.name || f.name) === paramName);
     let newFiles;
 
     if (fileIndex >= 0) {
