@@ -830,27 +830,24 @@ const WorkflowConfigurationManager: React.FC = () => {
       // Determine if this is a new configuration or update
       const hasExistingConfig = state.currentConfig.some(config => config.workflowAppConfigId > 0);
       
-      let result;
       if (hasExistingConfig) {
-        result = await workflowConfigService.updateWorkflowConfig(
+        await workflowConfigService.updateWorkflowConfig(
           state.selectedConfigId,
           state.selectedAppId,
           savePayload
         );
       } else {
-        result = await workflowConfigService.saveWorkflowConfig(
+        await workflowConfigService.saveWorkflowConfig(
           state.selectedConfigId,
           state.selectedAppId,
           savePayload
         );
       }
 
-      setState(prev => ({
-        ...prev,
-        currentConfig: result,
-        isLoading: false
-      }));
-      setStructureChangeCounter(c => c + 1);
+      // After saving, it's crucial to reload the configuration to get the latest state from the server,
+      // including any new IDs for created items and to ensure data consistency.
+      // This also prevents errors if the save/update API returns a non-array response.
+      await loadWorkflowConfig(state.selectedConfigId, state.selectedAppId);
 
       toast({
         title: "Success",
