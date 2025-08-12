@@ -8,7 +8,6 @@ import RoleManagement from './RoleManagement';
 import HolidayCalendarManagement from './HolidayCalendarManagement';
 import RunCalendarManagement from './RunCalendarManagement';
 import HierarchyManagement from './HierarchyManagement';
-import CorsDebugger from './CorsDebugger';
 
 interface WorkflowDashboardProps {
   defaultTab?: string;
@@ -58,7 +57,7 @@ const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'app
   return (
     <div className="container mx-auto py-6">
       <Tabs defaultValue="applications" value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid grid-cols-4 md:grid-cols-9 mb-6">
+        <TabsList className="grid grid-cols-4 md:grid-cols-8 mb-6">
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="holidays">Holiday Calendar</TabsTrigger>
@@ -66,7 +65,6 @@ const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'app
           <TabsTrigger value="hierarchy">Hierarchy</TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
           <TabsTrigger value="workflow">Workflow Config</TabsTrigger>
-          <TabsTrigger value="cors-debug">CORS Debug</TabsTrigger>
           <TabsTrigger value="admin">Admin</TabsTrigger>
         </TabsList>
         
@@ -80,7 +78,6 @@ const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'app
               {activeTab === 'hierarchy' && 'Hierarchy Management'}
               {activeTab === 'metadata' && 'Metadata Management'}
               {activeTab === 'workflow' && 'Workflow Instance Configuration'}
-              {activeTab === 'cors-debug' && 'CORS Debugging Tool'}
               {activeTab === 'admin' && 'Admin Dashboard'}
             </CardTitle>
             <CardDescription>
@@ -91,7 +88,6 @@ const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'app
               {activeTab === 'hierarchy' && 'Define hierarchical structures for your organization'}
               {activeTab === 'metadata' && 'Manage stages, substages, parameters, and templates'}
               {activeTab === 'workflow' && 'Configure workflow instances for hierarchy nodes'}
-              {activeTab === 'cors-debug' && 'Debug CORS issues and test API connectivity'}
               {activeTab === 'admin' && 'Administrative tools and audit logs'}
             </CardDescription>
           </CardHeader>
@@ -143,10 +139,6 @@ const WorkflowDashboard: React.FC<WorkflowDashboardProps> = ({ defaultTab = 'app
                   </Button>
                 </CardContent>
               </Card>
-            </TabsContent>
-            
-            <TabsContent value="cors-debug" className="mt-0">
-              <CorsDebugger />
             </TabsContent>
             
             <TabsContent value="admin" className="mt-0">
