@@ -105,7 +105,7 @@ const TollgateModal: React.FC<TollgateModalProps> = ({
                       <SelectTrigger>
                         <SelectValue placeholder="Select a process..." />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[400px]">
+                      <SelectContent className="max-h-[500px] overflow-y-auto">
                         {state.processes.map((process) => (
                           <SelectItem
                             key={process.workflowProcessId}

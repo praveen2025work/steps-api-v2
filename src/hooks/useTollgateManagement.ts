@@ -112,9 +112,14 @@ export function useTollgateManagement({
       toast.success(`Tollgate process ${workflowProcessId} reopened successfully`);
       setState(prev => ({ ...prev, loading: false }));
 
-      if (onSuccess) {
-        onSuccess();
-      }
+      // Check if refresh should wait (greater than 5 seconds)
+      const refreshDelay = 5000; // 5 seconds
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess();
+        }
+      }, refreshDelay);
+
     } catch (error: any) {
       console.error('[useTollgateManagement] Error reopening tollgate:', error);
       setState(prev => ({

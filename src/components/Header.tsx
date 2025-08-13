@@ -70,38 +70,39 @@ const HeaderContent = ({ router }: { router: any }) => {
     if (userInfo) {
       return (
         <HoverCard>
-          <DropdownMenu>
-            <HoverCardTrigger asChild>
+          <HoverCardTrigger asChild>
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2">
                   <User className="h-5 w-5" />
-                  <span className="hidden sm:inline">{userInfo.displayName}</span>
+                  <span className="hidden sm:inline">{userInfo.displayName || userInfo.userName}</span>
                 </Button>
               </DropdownMenuTrigger>
-            </HoverCardTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{userInfo.displayName}</DropdownMenuLabel>
-              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{userInfo.emailAddress}</DropdownMenuLabel>
-              <div className="px-2 py-1 text-xs text-muted-foreground">
-                Last updated: {lastUpdated.toLocaleTimeString()}
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/help')}>Help</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <HoverCardContent>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{userInfo.displayName || userInfo.userName}</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{userInfo.emailAddress}</DropdownMenuLabel>
+                <div className="px-2 py-1 text-xs text-muted-foreground">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/help')}>Help</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-80">
             <div className="space-y-2">
-              <h3 className="text-lg font-bold">{userInfo.displayName}</h3>
-              <p className="text-sm">{userInfo.description}</p>
+              <h3 className="text-lg font-bold">{userInfo.displayName || userInfo.userName}</h3>
+              {userInfo.description && <p className="text-sm">{userInfo.description}</p>}
               <p className="text-sm text-muted-foreground">{userInfo.emailAddress}</p>
               <div className="text-xs text-muted-foreground space-y-1">
                 <p><b>Username:</b> {userInfo.userName}</p>
-                <p><b>Employee ID:</b> {userInfo.employeeId}</p>
-                <p><b>Distinguished Name:</b> {userInfo.distinguishedName}</p>
+                {userInfo.employeeId && <p><b>Employee ID:</b> {userInfo.employeeId}</p>}
+                {userInfo.samAccountName && <p><b>SAM Account:</b> {userInfo.samAccountName}</p>}
+                {userInfo.distinguishedName && <p><b>Distinguished Name:</b> {userInfo.distinguishedName}</p>}
               </div>
             </div>
           </HoverCardContent>
