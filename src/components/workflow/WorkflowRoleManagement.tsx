@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import RoleAssignmentDashboard from '@/components/dashboard/RoleAssignmentDashboard';
-import TollgateModal from '@/components/dashboard/TollgateModal';
+import RoleManagementModal from '@/components/dashboard/RoleManagementModal';
 import { 
-  Users, 
-  Settings, 
-  Shield,
-  RefreshCw
+  Shield
 } from 'lucide-react';
 
 interface WorkflowRoleManagementProps {
@@ -28,60 +22,25 @@ const WorkflowRoleManagement: React.FC<WorkflowRoleManagementProps> = ({
   variant = 'outline',
   size = 'sm'
 }) => {
-  const [roleAssignmentOpen, setRoleAssignmentOpen] = useState(false);
-  const [tollgateModalOpen, setTollgateModalOpen] = useState(false);
+  const [roleManagementOpen, setRoleManagementOpen] = useState(false);
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      {/* Role Assignment Button */}
-      <Dialog open={roleAssignmentOpen} onOpenChange={setRoleAssignmentOpen}>
-        <DialogTrigger asChild>
-          <Button 
-            variant={variant} 
-            size={size}
-            className="flex items-center gap-2"
-            title="Manage Role Assignments"
-          >
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Role Assignments</span>
-            <span className="sm:hidden">Roles</span>
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Role Assignment Management
-            </DialogTitle>
-          </DialogHeader>
-          <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
-            <RoleAssignmentDashboard
-              appId={appId}
-              appGroupId={appGroupId}
-              applicationName={applicationName}
-              onClose={() => setRoleAssignmentOpen(false)}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Tollgate Management Button */}
+    <div className={`flex items-center ${className}`}>
+      {/* Role Management Button - Icon Only */}
       <Button 
         variant={variant} 
-        size={size}
-        onClick={() => setTollgateModalOpen(true)}
-        className="flex items-center gap-2"
-        title="Manage Tollgate Processes"
+        size="icon"
+        onClick={() => setRoleManagementOpen(true)}
+        className="h-7 w-7"
+        title="Manage Role Assignments"
       >
-        <RefreshCw className="h-4 w-4" />
-        <span className="hidden sm:inline">Reopen Tollgate</span>
-        <span className="sm:hidden">Tollgate</span>
+        <Shield className="h-4 w-4" />
       </Button>
 
-      {/* Tollgate Modal */}
-      <TollgateModal
-        isOpen={tollgateModalOpen}
-        onClose={() => setTollgateModalOpen(false)}
+      {/* Role Management Modal */}
+      <RoleManagementModal
+        isOpen={roleManagementOpen}
+        onClose={() => setRoleManagementOpen(false)}
         appId={appId}
         appGroupId={appGroupId}
         applicationName={applicationName}
