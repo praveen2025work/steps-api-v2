@@ -17,7 +17,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch(process.env.NEXT_PUBLIC_USER_INFO_API_URL!);
+        const response = await fetch(process.env.NEXT_PUBLIC_USER_INFO_API_URL!, {
+          credentials: 'include',
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch user info');
         }

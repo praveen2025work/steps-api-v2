@@ -105,19 +105,23 @@ const TollgateModal: React.FC<TollgateModalProps> = ({
                       <SelectTrigger>
                         <SelectValue placeholder="Select a process..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-[400px]">
                         {state.processes.map((process) => (
-                          <SelectItem key={process.workflowProcessId} value={process.workflowProcessId.toString()}>
-                            <div className="flex flex-col gap-1 py-1">
-                              <div className="font-semibold">
+                          <SelectItem
+                            key={process.workflowProcessId}
+                            value={process.workflowProcessId.toString()}
+                            className="p-2"
+                          >
+                            <div className="flex flex-col gap-1.5">
+                              <div className="font-semibold text-sm">
                                 {process.workflowStage.name} - {process.workflowSubstage.name}
                               </div>
                               <div className="text-xs text-muted-foreground grid grid-cols-3 gap-x-4">
                                 <span>ID: {process.workflowProcessId}</span>
-                                <span>Status: <Badge variant="secondary" className="text-xs px-1">{process.status}</Badge></span>
+                                <span>Status: <Badge variant="secondary" className="text-xs px-1.5 py-0.5">{process.status}</Badge></span>
                                 <span>By: {process.updatedBy}</span>
                               </div>
-                               <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-muted-foreground">
                                 Updated: {formatDateTime(process.updatedOn)}
                               </div>
                             </div>
