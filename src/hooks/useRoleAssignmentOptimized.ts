@@ -5,11 +5,11 @@ import {
   WorkflowUniqueRole,
   NplAccessResponse,
   NplAccessRequest,
-  TollgateProcessResponse,
   SystemEntitlements,
   UserEntitlements
 } from '@/types/role-assignment-types';
 import { useDate } from '@/contexts/DateContext';
+import { useUser } from '@/contexts/UserContext';
 import { toast } from '@/lib/toast';
 
 interface UseRoleAssignmentProps {
@@ -19,13 +19,11 @@ interface UseRoleAssignmentProps {
 }
 
 interface UseRoleAssignmentReturn {
-  state: RoleAssignmentState;
+  state: Omit<RoleAssignmentState, 'tollgateData'>;
   actions: {
     loadRoleAssignments: () => Promise<void>;
     assignRole: (username: string, roleId: number) => Promise<void>;
     removeRole: (username: string, roleId: number) => Promise<void>;
-    loadTollgateProcesses: () => Promise<void>;
-    reopenTollgate: (processId: string, action?: 'reopen' | 'close') => Promise<void>;
     clearPendingChanges: () => void;
     savePendingChanges: () => Promise<void>;
     refreshWorkflow: () => void;
@@ -44,19 +42,17 @@ export function useRoleAssignmentOptimized({
   enabled = true
 }: UseRoleAssignmentProps): UseRoleAssignmentReturn {
   const { selectedDate } = useDate();
-  const [state, setState] = useState<RoleAssignmentState>({
+  const { userInfo } = useUser();
+  const [state, setState] = useState<Omit<RoleAssignmentState, 'tollgateData'>>({
     loading: false,
     error: null,
     data: null,
-    tollgateData: null,
     pendingChanges: new Map()
   });
 
   // Use refs to track loading states and prevent duplicate calls
   const loadingRoleAssignments = useRef(false);
-  const loadingTollgateProcesses = useRef(false);
   const lastLoadedRoleParams = useRef<string>('');
-  const lastLoadedTollgateParams = useRef<string>('');
   const workflowRefreshCallback = useRef<(() => void) | null>(null);
 
   // Format date for API calls
@@ -131,53 +127,8 @@ export function useRoleAssignmentOptimized({
     }
   }, [enabled, appId, appGroupId, selectedDate, formatDateForApi]);
 
-  // Internal function to reload tollgate processes without circular dependencies
-  const internalLoadTollgateProcesses = useCallback(async (forceReload = false) => {
-    if (!enabled || loadingTollgateProcesses.current) return;
-
-    const currentParams = `${appId}-${appGroupId}-${selectedDate.toISOString()}`;
-    if (!forceReload && lastLoadedTollgateParams.current === currentParams) {
-      return; // Already loaded for these parameters
-    }
-
-    loadingTollgateProcesses.current = true;
-    setState(prev => ({ ...prev, loading: true, error: null }));
-
-    try {
-      const businessDate = formatDateForApi(selectedDate);
-      const response = await roleAssignmentService.getTollgateProcesses(appId, appGroupId, businessDate);
-
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to load tollgate processes');
-      }
-
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        tollgateData: {
-          availableProcesses: response.data,
-          selectedProcess: null
-        }
-      }));
-
-      lastLoadedTollgateParams.current = currentParams;
-
-    } catch (error: any) {
-      console.error('[useRoleAssignmentOptimized] Error loading tollgate processes:', error);
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error.message || 'Failed to load tollgate processes'
-      }));
-      toast.error(error.message || 'Failed to load tollgate processes');
-    } finally {
-      loadingTollgateProcesses.current = false;
-    }
-  }, [enabled, appId, appGroupId, selectedDate, formatDateForApi]);
-
   // Public API functions with stable references
   const loadRoleAssignments = useCallback(() => internalLoadRoleAssignments(true), [internalLoadRoleAssignments]);
-  const loadTollgateProcesses = useCallback(() => internalLoadTollgateProcesses(true), [internalLoadTollgateProcesses]);
 
   // Assign role to user
   const assignRole = useCallback(async (username: string, roleId: number) => {
@@ -187,11 +138,16 @@ export function useRoleAssignmentOptimized({
       toast.error('Role assignment data not loaded');
       return;
     }
+    if (!userInfo) {
+      toast.error('User information not available. Cannot assign role.');
+      return;
+    }
 
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
       const businessDate = formatDateForApi(selectedDate);
+      const userId = userInfo.userName || userInfo.samAccountName;
       
       const request: NplAccessRequest = {
         workflowNplAccess: {
@@ -201,7 +157,7 @@ export function useRoleAssignmentOptimized({
           roleId,
           username,
           businessDate,
-          updatedBy: 'current_user', // This should come from auth context
+          updatedBy: userId,
           updatedOn: null,
           createdBy: null,
           createdOn: null
@@ -235,14 +191,19 @@ export function useRoleAssignmentOptimized({
       }));
       toast.error(error.message || 'Failed to assign role');
     }
-  }, [appId, appGroupId, selectedDate, formatDateForApi, internalLoadRoleAssignments, state.data]);
+  }, [appId, appGroupId, selectedDate, formatDateForApi, internalLoadRoleAssignments, state.data, userInfo]);
 
   // Remove role from user
   const removeRole = useCallback(async (username: string, roleId: number) => {
+    if (!userInfo) {
+      toast.error('User information not available. Cannot remove role.');
+      return;
+    }
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
       const businessDate = formatDateForApi(selectedDate);
+      const userId = userInfo.userName || userInfo.samAccountName;
       
       const response = await roleAssignmentService.removeRoleAssignment(
         appId,
@@ -250,7 +211,7 @@ export function useRoleAssignmentOptimized({
         username,
         roleId,
         businessDate,
-        'current_user' // This should come from auth context
+        userId
       );
 
       if (!response.success) {
@@ -276,48 +237,7 @@ export function useRoleAssignmentOptimized({
       }));
       toast.error(error.message || 'Failed to remove role');
     }
-  }, [appId, appGroupId, selectedDate, formatDateForApi, internalLoadRoleAssignments]);
-
-  // Reopen or close tollgate process
-  const reopenTollgate = useCallback(async (processId: string, action: 'reopen' | 'close' = 'reopen') => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-
-    try {
-      const businessDate = formatDateForApi(selectedDate);
-      const response = await roleAssignmentService.reopenTollgateProcess(
-        appId, 
-        appGroupId, 
-        businessDate, 
-        processId, 
-        action
-      );
-
-      if (!response.success) {
-        throw new Error(response.error || `Failed to ${action} tollgate process`);
-      }
-
-      toast.success(`Tollgate process ${processId} ${action}ed successfully`);
-      
-      // Force reload tollgate processes to reflect changes
-      await internalLoadTollgateProcesses(true);
-      
-      // Trigger workflow refresh if callback is available
-      if (workflowRefreshCallback.current) {
-        workflowRefreshCallback.current();
-      }
-      
-      setState(prev => ({ ...prev, loading: false }));
-
-    } catch (error: any) {
-      console.error(`[useRoleAssignmentOptimized] Error ${action}ing tollgate:`, error);
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error.message || `Failed to ${action} tollgate`
-      }));
-      toast.error(error.message || `Failed to ${action} tollgate`);
-    }
-  }, [appId, appGroupId, selectedDate, formatDateForApi, internalLoadTollgateProcesses]);
+  }, [appId, appGroupId, selectedDate, formatDateForApi, internalLoadRoleAssignments, userInfo]);
 
   // Clear pending changes
   const clearPendingChanges = useCallback(() => {
@@ -415,8 +335,6 @@ export function useRoleAssignmentOptimized({
       loadRoleAssignments,
       assignRole,
       removeRole,
-      loadTollgateProcesses,
-      reopenTollgate,
       clearPendingChanges,
       savePendingChanges,
       refreshWorkflow

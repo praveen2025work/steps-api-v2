@@ -28,3 +28,18 @@ export interface UserFormData {
   department: string;
   applications: UserApplication[];
 }
+
+export interface UserInfo {
+  samAccountName: string;
+  description: string;
+  displayName: string;
+  distinguishedName: string;
+  emailAddress: string;
+  employeeId: string;
+  name: string;
+  givenName: string;
+  middleName: string | null;
+  surname: string;
+  domain: string | null;
+  userName: string;
+}

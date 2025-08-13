@@ -7,6 +7,7 @@ import { SidebarProvider } from '@/contexts/SidebarContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { DateProvider } from '@/contexts/DateContext';
 import { ApiEnvironmentProvider } from '@/contexts/ApiEnvironmentContext';
+import { UserProvider } from '@/contexts/UserContext';
 import { BreadcrumbProvider, useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useDate } from '@/contexts/DateContext';
 import { workflowService } from '@/services/workflowService';
@@ -221,13 +222,15 @@ export default function App({ Component, pageProps }: AppProps) {
           <NotificationsProvider>
             <DateProvider>
               <ApiEnvironmentProvider>
-                <BreadcrumbProvider>
-                  <GlobalRefreshLogic />
-                  <div className="min-h-screen">
-                    <Component {...pageProps} />
-                    <Toaster />
-                  </div>
-                </BreadcrumbProvider>
+                <UserProvider>
+                  <BreadcrumbProvider>
+                    <GlobalRefreshLogic />
+                    <div className="min-h-screen">
+                      <Component {...pageProps} />
+                      <Toaster />
+                    </div>
+                  </BreadcrumbProvider>
+                </UserProvider>
               </ApiEnvironmentProvider>
             </DateProvider>
           </NotificationsProvider>

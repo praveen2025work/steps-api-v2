@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { roleAssignmentService } from '@/services/roleAssignmentService';
 import { TollgateProcess } from '@/types/tollgate-types';
 import { useDate } from '@/contexts/DateContext';
+import { useUser } from '@/contexts/UserContext';
 import { toast } from '@/lib/toast';
 
 interface UseTollgateManagementProps {
@@ -24,6 +25,7 @@ export function useTollgateManagement({
   onSuccess,
 }: UseTollgateManagementProps) {
   const { selectedDate } = useDate();
+  const { userInfo, loading: userLoading, error: userError } = useUser();
   const [state, setState] = useState<TollgateManagementState>({
     loading: false,
     error: null,
@@ -85,16 +87,22 @@ export function useTollgateManagement({
   }, [enabled, appId, appGroupId, selectedDate, formatDateForApi]);
 
   const reopenTollgate = useCallback(async (workflowProcessId: number) => {
+    if (!userInfo) {
+      toast.error('User information not available. Cannot reopen tollgate.');
+      return;
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
       const businessDate = formatDateForApi(selectedDate);
+      const userId = userInfo.userName || userInfo.samAccountName;
       const response = await roleAssignmentService.reopenTollgateProcess(
         appId,
         appGroupId,
         businessDate,
         [workflowProcessId], // Send as an array as per new requirement
-        'current_user' // This should come from auth context
+        userId
       );
 
       if (!response.success) {
@@ -116,7 +124,7 @@ export function useTollgateManagement({
       }));
       toast.error(error.message || 'Failed to reopen tollgate');
     }
-  }, [appId, appGroupId, selectedDate, formatDateForApi, onSuccess]);
+  }, [appId, appGroupId, selectedDate, formatDateForApi, onSuccess, userInfo]);
 
   return {
     state,

@@ -6,6 +6,8 @@ import { Bell, User, RefreshCw } from 'lucide-react';
 import DateSelector from './DateSelector';
 import ThemeSwitcher from './ThemeSwitcher';
 import { Badge } from '@/components/ui/badge';
+import { useUser } from '@/contexts/UserContext';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +34,7 @@ const HeaderContent = ({ router }: { router: any }) => {
     togglePanel, 
     closePanel 
   } = useNotifications();
+  const { userInfo, loading, error } = useUser();
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   
   useEffect(() => {
@@ -49,6 +52,44 @@ const HeaderContent = ({ router }: { router: any }) => {
       window.removeEventListener('app:refresh', handleRefresh);
     };
   }, []);
+
+  const renderUserMenu = () => {
+    if (loading) {
+      return <Skeleton className="h-8 w-24" />;
+    }
+
+    if (error) {
+      return <span className="text-xs text-destructive">Error</span>;
+    }
+
+    if (userInfo) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center space-x-2">
+              <User className="h-5 w-5" />
+              <span className="hidden sm:inline">{userInfo.displayName}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>{userInfo.name}</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{userInfo.emailAddress}</DropdownMenuLabel>
+            <div className="px-2 py-1 text-xs text-muted-foreground">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/help')}>Help</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Logout</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="w-full border-b">
@@ -90,25 +131,7 @@ const HeaderContent = ({ router }: { router: any }) => {
             </Button>
           </div>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Praveen Kumar</DropdownMenuLabel>
-              <div className="px-2 py-1 text-xs text-muted-foreground">
-                Last updated: {lastUpdated.toLocaleTimeString()}
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/help')}>Help</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {renderUserMenu()}
         </div>
       </div>
       
