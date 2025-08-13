@@ -35,6 +35,7 @@ import { ChevronRight } from 'lucide-react';
 import { showSuccessToast, showInfoToast, showWarningToast } from '@/lib/toast';
 import AdhocStageManager from './AdhocStageManager';
 import WorkflowRoleManagement from './WorkflowRoleManagement';
+import TollgateModal from '../dashboard/TollgateModal';
 
 interface WorkflowUnifiedHeaderProps {
   workflowId: string;
@@ -104,6 +105,7 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
   filterControls
 }) => {
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
+  const [isTollgateModalOpen, setIsTollgateModalOpen] = useState(false);
 
   
   // Calculate task counts if not provided
@@ -152,10 +154,6 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
   };
 
 
-
-  const handleResetWorkflow = () => {
-    showWarningToast("Reset Workflow functionality would be implemented here");
-  };
 
   return (
     <div className="space-y-2">
@@ -273,26 +271,28 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
             />
           )}
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7"
-            onClick={handleResetWorkflow}
-            title="Reset Workflow"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </Button>
-          
           {/* Role Management and Tollgate Controls */}
           {appGroupId && appId && (
-            <WorkflowRoleManagement
-              appId={appId}
-              appGroupId={appGroupId}
-              applicationName={workflowTitle}
-              variant="ghost"
-              size="sm"
-              className="h-7"
-            />
+            <>
+              <WorkflowRoleManagement
+                appId={appId}
+                appGroupId={appGroupId}
+                applicationName={workflowTitle}
+                variant="ghost"
+                size="sm"
+                className="h-7"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7"
+                onClick={() => setIsTollgateModalOpen(true)}
+                title="Reopen Tollgate"
+              >
+                <KeyRound className="h-3.5 w-3.5 mr-1" />
+                Reopen Tollgate
+              </Button>
+            </>
           )}
           
           <Button 
@@ -398,6 +398,19 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
         </div>
       </CardContent>
     </Card>
+      {appGroupId && appId && date && (
+        <TollgateModal
+          isOpen={isTollgateModalOpen}
+          onClose={() => setIsTollgateModalOpen(false)}
+          appId={appId}
+          appGroupId={appGroupId}
+          date={date}
+          onSuccess={() => {
+            setIsTollgateModalOpen(false);
+            onRefresh();
+          }}
+        />
+      )}
     </div>
   );
 };
