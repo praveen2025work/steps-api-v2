@@ -53,10 +53,14 @@ export function useRoleAssignment({
 
   // Format date for API calls
   const formatDateForApi = useCallback((date: Date): string => {
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
     const day = String(date.getDate()).padStart(2, '0');
+    const month = months[date.getMonth()];
     const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
+    return `${day}-${month}-${year}`;
   }, []);
 
   // Load role assignments data
@@ -178,8 +182,27 @@ export function useRoleAssignment({
         throw new Error(response.error || 'Failed to assign role');
       }
 
-      // Reload data to reflect changes
-      await loadRoleAssignments();
+      // Reload data to reflect changes - call the function directly to avoid circular dependency
+      if (enabled) {
+        const [rolesResponse, assignmentsResponse, entitlementsResponse] = await Promise.all([
+          roleAssignmentService.getWorkflowUniqueRoles(),
+          roleAssignmentService.getCurrentRoleAssignments(appId, appGroupId, undefined, undefined, businessDate),
+          roleAssignmentService.getEntitlements()
+        ]);
+
+        if (rolesResponse.success && assignmentsResponse.success && entitlementsResponse.success) {
+          setState(prev => ({
+            ...prev,
+            loading: false,
+            data: {
+              availableRoles: rolesResponse.data,
+              currentAssignments: assignmentsResponse.data,
+              systemEntitlements: entitlementsResponse.data.systemEntitlements,
+              userEntitlements: entitlementsResponse.data.userEntitlements
+            }
+          }));
+        }
+      }
       
       toast.success(`Successfully assigned role to ${username}`);
 
@@ -192,7 +215,7 @@ export function useRoleAssignment({
       }));
       toast.error(error.message || 'Failed to assign role');
     }
-  }, [state.data, appId, appGroupId, selectedDate, formatDateForApi, loadRoleAssignments]);
+  }, [state.data, appId, appGroupId, selectedDate, formatDateForApi, enabled]);
 
   // Remove role from user
   const removeRole = useCallback(async (username: string, roleId: number) => {
@@ -214,8 +237,27 @@ export function useRoleAssignment({
         throw new Error(response.error || 'Failed to remove role');
       }
 
-      // Reload data to reflect changes
-      await loadRoleAssignments();
+      // Reload data to reflect changes - call the function directly to avoid circular dependency
+      if (enabled) {
+        const [rolesResponse, assignmentsResponse, entitlementsResponse] = await Promise.all([
+          roleAssignmentService.getWorkflowUniqueRoles(),
+          roleAssignmentService.getCurrentRoleAssignments(appId, appGroupId, undefined, undefined, businessDate),
+          roleAssignmentService.getEntitlements()
+        ]);
+
+        if (rolesResponse.success && assignmentsResponse.success && entitlementsResponse.success) {
+          setState(prev => ({
+            ...prev,
+            loading: false,
+            data: {
+              availableRoles: rolesResponse.data,
+              currentAssignments: assignmentsResponse.data,
+              systemEntitlements: entitlementsResponse.data.systemEntitlements,
+              userEntitlements: entitlementsResponse.data.userEntitlements
+            }
+          }));
+        }
+      }
       
       toast.success(`Successfully removed role from ${username}`);
 
@@ -228,7 +270,7 @@ export function useRoleAssignment({
       }));
       toast.error(error.message || 'Failed to remove role');
     }
-  }, [appId, appGroupId, selectedDate, formatDateForApi, loadRoleAssignments]);
+  }, [appId, appGroupId, selectedDate, formatDateForApi, enabled]);
 
   // Reopen or close tollgate process
   const reopenTollgate = useCallback(async (processId: string, action: 'reopen' | 'close' = 'reopen') => {
@@ -250,10 +292,25 @@ export function useRoleAssignment({
 
       toast.success(`Tollgate process ${processId} ${action}ed successfully`);
       
-      // Reload tollgate processes to reflect changes
-      await loadTollgateProcesses();
-      
-      setState(prev => ({ ...prev, loading: false }));
+      // Reload tollgate processes to reflect changes - call the service directly to avoid circular dependency
+      if (enabled) {
+        const tollgateResponse = await roleAssignmentService.getTollgateProcesses(appId, appGroupId, businessDate);
+        
+        if (tollgateResponse.success) {
+          setState(prev => ({
+            ...prev,
+            loading: false,
+            tollgateData: {
+              availableProcesses: tollgateResponse.data,
+              selectedProcess: null
+            }
+          }));
+        } else {
+          setState(prev => ({ ...prev, loading: false }));
+        }
+      } else {
+        setState(prev => ({ ...prev, loading: false }));
+      }
 
     } catch (error: any) {
       console.error(`[useRoleAssignment] Error ${action}ing tollgate:`, error);
@@ -264,7 +321,7 @@ export function useRoleAssignment({
       }));
       toast.error(error.message || `Failed to ${action} tollgate`);
     }
-  }, [appId, appGroupId, selectedDate, formatDateForApi, loadTollgateProcesses]);
+  }, [appId, appGroupId, selectedDate, formatDateForApi, enabled]);
 
   // Clear pending changes
   const clearPendingChanges = useCallback(() => {
@@ -338,12 +395,12 @@ export function useRoleAssignment({
     );
   }
 
-  // Load data on mount and when dependencies change
+  // Load data on mount and when key dependencies change
   useEffect(() => {
     if (enabled) {
       loadRoleAssignments();
     }
-  }, [loadRoleAssignments]);
+  }, [enabled, appId, appGroupId, selectedDate]);
 
   return {
     state,
