@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useDate } from '@/contexts/DateContext';
+import { useRoleAssignment } from '@/hooks/useRoleAssignment';
 import { 
   ArrowLeft, 
   Shield, 
@@ -30,60 +31,12 @@ interface RoleAssignmentDashboardProps {
   onClose: () => void;
 }
 
-interface WorkflowRole {
-  configId: string;
-  configName: string;
-}
-
-interface UserAccess {
-  accessId: number;
-  appId: number;
-  appGroupId: string;
-  roleId: number;
-  businessDate: string;
-  username: string;
-  createdBy: string;
-  createdOn: string;
-  updatedBy?: string;
-  updatedOn?: string;
-}
-
 interface TollgateProcess {
-  workflowProcessId: number;
-  workflowSubstage: {
-    substageId: number;
-    name: string;
-    defaultStage: number;
-    paramMapping: string;
-    attestationMapping: string;
-    updatedBy: string;
-    updatedOn: string;
-    entitlementMapping: number;
-    sendEmailAtStart: string;
-    followUp: string;
-  };
-  workflowStage: {
-    stageId: number;
-    workflowApplication: { appId: number };
-    name: string;
-    updatedBy: string;
-    updatedOn: string;
-  };
-  workflowApplication: { appId: number };
+  processId: string;
+  name: string;
   status: string;
-  businessDate: string;
-  workflowAppConfigId: number;
-  appGroupId: string;
-  depSubStageSeq: number;
-  auto: string;
-  attest: string;
-  upload: string;
-  updatedBy: string;
-  updatedOn: string;
-  approval: string;
-  isActive: string;
-  adhoc: string;
-  isAlteryx: string;
+  canReopen: boolean;
+  lastUpdated: string;
 }
 
 const RoleAssignmentDashboard: React.FC<RoleAssignmentDashboardProps> = ({
@@ -92,479 +45,291 @@ const RoleAssignmentDashboard: React.FC<RoleAssignmentDashboardProps> = ({
   applicationName,
   onClose
 }) => {
-  const { selectedDate, dateString } = useDate();
+  const { dateString } = useDate();
   
-  // State management
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Use the role assignment hook
+  const { state, actions, computed } = useRoleAssignment({
+    appId,
+    appGroupId,
+    enabled: true
+  });
+  
+  // Local state for UI
   const [activeTab, setActiveTab] = useState('roles');
-  
-  // Role management state
-  const [availableRoles, setAvailableRoles] = useState<WorkflowRole[]>([]);
-  const [userAccesses, setUserAccesses] = useState<UserAccess[]>([]);
-  const [systemEntitlements, setSystemEntitlements] = useState<Record<string, number>>({});
-  const [userEntitlements, setUserEntitlements] = useState<Record<string, number>>({});
-  
-  // Role assignment state
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('');
-  const [pendingAssignments, setPendingAssignments] = useState<Array<{
-    username: string;
-    roleId: number;
-    action: 'assign' | 'unassign';
-  }>>([]);
-  
-  // Tollgate management state
-  const [tollgateProcesses, setTollgateProcesses] = useState<TollgateProcess[]>([]);
   const [selectedTollgate, setSelectedTollgate] = useState<string>('');
+  const [tollgateProcesses, setTollgateProcesses] = useState<TollgateProcess[]>([]);
 
-  // Mock API calls - replace with actual API integration
-  const fetchWorkflowRoles = async () => {
-    try {
-      setLoading(true);
-      // Mock data based on the provided API structure
-      const mockRoles: WorkflowRole[] = [
-        { configId: "6", configName: "Financial Control-Permanent Approver-SME-RW" },
-        { configId: "4", configName: "Financial Control-Producer-User-RW" },
-        { configId: "2", configName: "Financial Control-Approver-SME-RW" },
-        { configId: "3", configName: "Financial Control-Permanent Approver-SME-RW" }
-      ];
-      setAvailableRoles(mockRoles);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch workflow roles');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Load tollgate processes on component mount
+  useEffect(() => {
+    actions.loadTollgateProcesses();
+  }, [actions]);
 
-  const fetchUserAccesses = async () => {
-    try {
-      setLoading(true);
-      // Mock data based on the provided API structure
-      const mockAccesses: UserAccess[] = [
-        {
-          accessId: 1400006,
-          appId: appId,
-          appGroupId: appGroupId,
-          roleId: 1,
-          businessDate: dateString,
-          username: "user456",
-          createdBy: "user456",
-          createdOn: "2025-07-31 20:24:57",
-          updatedBy: "user456",
-          updatedOn: "2025-07-31 20:24:57"
-        },
-        {
-          accessId: 1156773,
-          appId: appId,
-          appGroupId: appGroupId,
-          roleId: 28,
-          businessDate: dateString,
-          username: "user789",
-          createdBy: "SYSTEM_PROCESS",
-          createdOn: "2025-05-01 01:14:42"
-        }
-      ];
-      setUserAccesses(mockAccesses);
-      
-      // Mock entitlements
-      setSystemEntitlements({
-        "PRODUCT CONTROL-APPROVER IR-SME-RW": 29,
-        "PRODUCT CONTROL-APPROVER RIS-SME-RW": 30,
-        "PRODUCT CONTROL-APPROVER RNA-SME-RW": 28,
-        "PRODUCT CONTROL-APPROVER-SME-RW": 2,
-        "PRODUCT CONTROL-PERMANENT APPROVER-SME-RW": 3
-      });
-      
-      setUserEntitlements({
-        "PRODUCT CONTROL-PRODUCER-USER-RW": 1,
-        "PRODUCT CONTROL-APPROVER-SME-RW": 2,
-        "PRODUCT CONTROL-PERMANENT APPROVER-SME-RW": 3,
-        "PRODUCT CONTROL-APPROVER RNA-SME-RW": 28,
-        "PRODUCT CONTROL-APPROVER IR-SME-RW": 29
-      });
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch user accesses');
-    } finally {
-      setLoading(false);
+  // Update local tollgate processes when hook data changes
+  useEffect(() => {
+    if (state.tollgateData?.availableProcesses) {
+      setTollgateProcesses(state.tollgateData.availableProcesses);
     }
-  };
-
-  const fetchTollgateProcesses = async () => {
-    try {
-      setLoading(true);
-      // Mock data based on the provided API structure
-      const mockProcess: TollgateProcess = {
-        workflowProcessId: 24293160,
-        workflowSubstage: {
-          substageId: 2858,
-          name: "TG3 - Publish Attestation (PL Executor)",
-          defaultStage: 29,
-          paramMapping: "70;71;69;64;1292;1011;1812;",
-          attestationMapping: "128;3681;3682;",
-          updatedBy: "user999",
-          updatedOn: "2024-09-08 14:36:55",
-          entitlementMapping: 1,
-          sendEmailAtStart: "N",
-          followUp: "N"
-        },
-        workflowStage: {
-          stageId: 29,
-          workflowApplication: { appId: appId },
-          name: "Publish",
-          updatedBy: "SYSTEM",
-          updatedOn: "2020-05-15 19:36:16"
-        },
-        workflowApplication: { appId: appId },
-        status: "COMPLETED",
-        businessDate: dateString,
-        workflowAppConfigId: 129526,
-        appGroupId: appGroupId,
-        depSubStageSeq: 82,
-        auto: "N",
-        attest: "Y",
-        upload: "N",
-        updatedBy: "SYSTEM_TOOL",
-        updatedOn: "2025-08-12 19:04:31",
-        approval: "Y",
-        isActive: "Y",
-        adhoc: "N",
-        isAlteryx: "N"
-      };
-      setTollgateProcesses([mockProcess]);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch tollgate processes');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [state.tollgateData]);
 
   const handleRoleAssignment = async (username: string, roleId: number, action: 'assign' | 'unassign') => {
-    // Add to pending assignments instead of immediate API call
-    setPendingAssignments(prev => [
-      ...prev.filter(p => !(p.username === username && p.roleId === roleId)),
-      { username, roleId, action }
-    ]);
-  };
-
-  const handleSaveAssignments = async () => {
-    try {
-      setLoading(true);
-      
-      // Process all pending assignments
-      for (const assignment of pendingAssignments) {
-        // Mock API call structure based on provided endpoints
-        const payload = {
-          workflowNplAccess: {
-            accessId: null,
-            appId: appId,
-            appGroupId: appGroupId,
-            roleId: assignment.roleId,
-            username: assignment.username,
-            businessDate: dateString,
-            updatedBy: assignment.username,
-            updatedOn: null,
-            createdBy: null,
-            createdOn: null
-          },
-          systemEntitlements,
-          userEntitlements
-        };
-        
-        console.log(`${assignment.action === 'assign' ? 'Assigning' : 'Unassigning'} role ${assignment.roleId} to/from user ${assignment.username}`, payload);
-        
-        // Here you would make the actual API call to /api/nplaccess
-        // await fetch('/api/nplaccess', { method: 'POST', body: JSON.stringify(payload) });
-      }
-      
-      // Clear pending assignments and refresh data
-      setPendingAssignments([]);
-      await fetchUserAccesses();
-      
-    } catch (err: any) {
-      setError(err.message || 'Failed to save role assignments');
-    } finally {
-      setLoading(false);
+    if (action === 'assign') {
+      await actions.assignRole(username, roleId);
+    } else {
+      await actions.removeRole(username, roleId);
     }
   };
 
-  const handleDiscardChanges = () => {
-    setPendingAssignments([]);
-  };
-
-  const handleTollgateReopen = async () => {
+  const handleTollgateAction = async (action: 'reopen' | 'close') => {
     if (!selectedTollgate) return;
-    
-    try {
-      setLoading(true);
-      
-      // Mock API call to reopen tollgate
-      console.log(`Reopening tollgate: ${selectedTollgate} for app ${appId}, group ${appGroupId}, date ${dateString}`);
-      
-      // Here you would make the actual API call to the tollgate endpoint
-      // await fetch(`/api/process/tollgate/${appId}/${appGroupId}/${dateString}`, { method: 'POST' });
-      
-      await fetchTollgateProcesses();
-      
-    } catch (err: any) {
-      setError(err.message || 'Failed to reopen tollgate');
-    } finally {
-      setLoading(false);
-    }
+    await actions.reopenTollgate(selectedTollgate, action);
+    setSelectedTollgate(''); // Clear selection after action
   };
 
-  // Load data on component mount
-  useEffect(() => {
-    fetchWorkflowRoles();
-    fetchUserAccesses();
-    fetchTollgateProcesses();
-  }, [appId, appGroupId, dateString]);
+  const renderRoleManagement = () => {
+    const availableRoles = state.data?.availableRoles || [];
+    const currentAssignments = state.data?.currentAssignments || [];
 
-  const renderRoleManagement = () => (
-    <div className="space-y-6">
-      {/* Available Roles */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Available Workflow Roles
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3">
-            {availableRoles.map((role) => (
-              <div key={role.configId} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">{role.configName}</p>
-                  <p className="text-sm text-muted-foreground">Role ID: {role.configId}</p>
-                </div>
-                <Badge variant="outline">Available</Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* User Access Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Current User Assignments
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {userAccesses.map((access) => {
-              const roleName = availableRoles.find(r => parseInt(r.configId) === access.roleId)?.configName || `Role ${access.roleId}`;
-              const hasPendingChange = pendingAssignments.some(p => p.username === access.username && p.roleId === access.roleId);
-              
-              return (
-                <div key={access.accessId} className={`flex items-center justify-between p-3 border rounded-lg ${hasPendingChange ? 'bg-blue-50 border-blue-200' : ''}`}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="h-4 w-4 text-green-600" />
-                      <p className="font-medium">{access.username}</p>
-                      {hasPendingChange && <Badge variant="outline" className="text-xs">Pending Change</Badge>}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{roleName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Assigned: {new Date(access.createdOn).toLocaleDateString()} by {access.createdBy}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRoleAssignment(access.username, access.roleId, 'unassign')}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <UserX className="h-4 w-4 mr-1" />
-                    Unassign
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* New Assignment */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
-            Assign New Role
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Username</label>
-              <input
-                type="text"
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                placeholder="Enter username"
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Role</label>
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRoles.map((role) => (
-                    <SelectItem key={role.configId} value={role.configId}>
-                      {role.configName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button
-                onClick={() => {
-                  if (selectedUser && selectedRole) {
-                    handleRoleAssignment(selectedUser, parseInt(selectedRole), 'assign');
-                    setSelectedUser('');
-                    setSelectedRole('');
-                  }
-                }}
-                disabled={!selectedUser || !selectedRole}
-                className="w-full"
-              >
-                <UserCheck className="h-4 w-4 mr-2" />
-                Assign Role
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Pending Changes Actions */}
-      {pendingAssignments.length > 0 && (
-        <Card className="border-blue-200 bg-blue-50">
+    return (
+      <div className="space-y-6">
+        {/* Available Roles */}
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-800">
-              <Clock className="h-5 w-5" />
-              Pending Changes ({pendingAssignments.length})
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Available Workflow Roles
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 mb-4">
-              {pendingAssignments.map((assignment, index) => (
-                <div key={index} className="flex items-center justify-between text-sm">
-                  <span>
-                    {assignment.action === 'assign' ? 'Assign' : 'Unassign'} role {assignment.roleId} {assignment.action === 'assign' ? 'to' : 'from'} {assignment.username}
-                  </span>
-                  <Badge variant={assignment.action === 'assign' ? 'default' : 'destructive'}>
-                    {assignment.action}
-                  </Badge>
+            <div className="grid gap-3">
+              {availableRoles.map((role) => (
+                <div key={role.configId} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{role.configName}</p>
+                    <p className="text-sm text-muted-foreground">Role ID: {role.configId}</p>
+                  </div>
+                  <Badge variant="outline">Available</Badge>
                 </div>
               ))}
             </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSaveAssignments} disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                Save Changes
-              </Button>
-              <Button variant="outline" onClick={handleDiscardChanges}>
-                <XCircle className="h-4 w-4 mr-2" />
-                Discard Changes
-              </Button>
+          </CardContent>
+        </Card>
+
+        {/* User Access Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Current User Assignments
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {currentAssignments.map((access) => {
+                const roleName = availableRoles.find(r => parseInt(r.configId) === access.roleId)?.configName || `Role ${access.roleId}`;
+                
+                return (
+                  <div key={access.accessId} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="h-4 w-4 text-green-600" />
+                        <p className="font-medium">{access.username}</p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{roleName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Assigned: {new Date(access.createdOn).toLocaleDateString()} by {access.createdBy}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRoleAssignment(access.username, access.roleId, 'unassign')}
+                      className="text-red-600 hover:text-red-700"
+                      disabled={state.loading}
+                    >
+                      <UserX className="h-4 w-4 mr-1" />
+                      Unassign
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
-      )}
-    </div>
-  );
+
+        {/* New Assignment */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5" />
+              Assign New Role
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Username</label>
+                <input
+                  type="text"
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  placeholder="Enter username"
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Role</label>
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map((role) => (
+                      <SelectItem key={role.configId} value={role.configId}>
+                        {role.configName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end">
+                <Button
+                  onClick={() => {
+                    if (selectedUser && selectedRole) {
+                      handleRoleAssignment(selectedUser, parseInt(selectedRole), 'assign');
+                      setSelectedUser('');
+                      setSelectedRole('');
+                    }
+                  }}
+                  disabled={!selectedUser || !selectedRole || state.loading}
+                  className="w-full"
+                >
+                  {state.loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCheck className="h-4 w-4 mr-2" />}
+                  Assign Role
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   const renderTollgateManagement = () => (
     <div className="space-y-6">
+      {/* Available Tollgate Processes */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Tollgate Processes
+            Available Tollgate Processes
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {tollgateProcesses.map((process) => (
-              <div key={process.workflowProcessId} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="font-medium">{process.workflowSubstage.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Stage: {process.workflowStage.name} | Process ID: {process.workflowProcessId}
-                    </p>
-                  </div>
-                  <Badge variant={process.status === 'COMPLETED' ? 'default' : 'secondary'}>
-                    {process.status}
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Auto:</span> {process.auto}
-                  </div>
-                  <div>
-                    <span className="font-medium">Attest:</span> {process.attest}
-                  </div>
-                  <div>
-                    <span className="font-medium">Upload:</span> {process.upload}
-                  </div>
-                  <div>
-                    <span className="font-medium">Approval:</span> {process.approval}
-                  </div>
-                </div>
-                
-                <div className="mt-3 text-xs text-muted-foreground">
-                  Last updated: {new Date(process.updatedOn).toLocaleString()} by {process.updatedBy}
-                </div>
+            {tollgateProcesses.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No tollgate processes found for this application and date.</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={actions.loadTollgateProcesses}
+                  className="mt-4"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
               </div>
-            ))}
+            ) : (
+              tollgateProcesses.map((process, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-medium">{process.name}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Process ID: {process.processId}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={process.status === 'COMPLETED' ? 'default' : 'secondary'}>
+                        {process.status}
+                      </Badge>
+                      {process.canReopen && (
+                        <Badge variant="outline" className="text-green-600">
+                          Can Reopen
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    Last updated: {new Date(process.lastUpdated).toLocaleString()}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Tollgate Reopen */}
+      {/* Tollgate Actions */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <RefreshCw className="h-5 w-5" />
-            Reopen Tollgate
+            Tollgate Actions
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Select Tollgate Process</label>
               <Select value={selectedTollgate} onValueChange={setSelectedTollgate}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select tollgate to reopen" />
+                  <SelectValue placeholder="Select tollgate process" />
                 </SelectTrigger>
                 <SelectContent>
-                  {tollgateProcesses.map((process) => (
-                    <SelectItem key={process.workflowProcessId} value={process.workflowProcessId.toString()}>
-                      {process.workflowSubstage.name}
+                  {tollgateProcesses.map((process, index) => (
+                    <SelectItem key={index} value={process.processId}>
+                      {process.name} - {process.status}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end">
-              <Button
-                onClick={handleTollgateReopen}
-                disabled={!selectedTollgate || loading}
-                className="w-full"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                Reopen Tollgate
-              </Button>
-            </div>
+            
+            {selectedTollgate && (
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => handleTollgateAction('reopen')}
+                  disabled={state.loading || !tollgateProcesses.find(p => p.processId === selectedTollgate)?.canReopen}
+                  className="flex-1"
+                >
+                  {state.loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                  Reopen Tollgate
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleTollgateAction('close')}
+                  disabled={state.loading}
+                  className="flex-1"
+                >
+                  {state.loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                  Close Tollgate
+                </Button>
+              </div>
+            )}
+            
+            {selectedTollgate && !tollgateProcesses.find(p => p.processId === selectedTollgate)?.canReopen && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  This tollgate process cannot be reopened. Please check the process status and permissions.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -591,20 +356,19 @@ const RoleAssignmentDashboard: React.FC<RoleAssignmentDashboardProps> = ({
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={() => {
-          fetchWorkflowRoles();
-          fetchUserAccesses();
-          fetchTollgateProcesses();
-        }} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          actions.loadRoleAssignments();
+          actions.loadTollgateProcesses();
+        }} disabled={state.loading}>
+          {state.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           Refresh
         </Button>
       </div>
 
       {/* Error Display */}
-      {error && (
+      {state.error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       )}
 

@@ -518,6 +518,155 @@ class RoleAssignmentService {
     }
   }
 
+  // Get user-specific roles for application (.NET API)
+  async getUserWorkflowApplicationRoles(userId: string): Promise<RoleAssignmentApiResponse<any[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Role Assignment Service] Using mock data for user workflow application roles');
+        await this.simulateNetworkDelay();
+        
+        const mockUserRoles = [
+          {
+            applicationId: 1,
+            roleId: 1,
+            userName: "kumarp15",
+            applicationName: "Daily Named PnL",
+            roleName: "PRODUCT CONTROL-PRODUCER-USER-RW"
+          },
+          {
+            applicationId: 1,
+            roleId: 2,
+            userName: "kumarp15",
+            applicationName: "Daily Named PnL",
+            roleName: "PRODUCT CONTROL-APPROVER-SME-RW"
+          }
+        ];
+        
+        return this.createApiResponse(mockUserRoles);
+      }
+
+      console.log('[Role Assignment Service] Fetching user workflow application roles from .NET API');
+      const response = await this.dotNetAxiosInstance.get(`/GetWorkflowApplicationToUserRoleMap/${userId}`);
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Role Assignment Service] Error fetching user workflow application roles:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch user workflow application roles'
+      );
+    }
+  }
+
+  // Get tollgate processes for reopening (Java API)
+  async getTollgateProcesses(
+    appId: number,
+    appGroupId: string,
+    businessDate: string
+  ): Promise<RoleAssignmentApiResponse<any[]>> {
+    try {
+      if (this.isMockMode()) {
+        console.log('[Role Assignment Service] Using mock data for tollgate processes');
+        await this.simulateNetworkDelay();
+        
+        const mockTollgateProcesses = [
+          {
+            processId: "TG1_VALIDATION",
+            name: "TG1 - Data Validation",
+            status: "COMPLETED",
+            canReopen: true,
+            lastUpdated: "2025-08-12 19:04:31"
+          },
+          {
+            processId: "TG2_APPROVAL", 
+            name: "TG2 - Management Approval",
+            status: "COMPLETED",
+            canReopen: true,
+            lastUpdated: "2025-08-12 18:30:15"
+          },
+          {
+            processId: "TG3_PUBLISH",
+            name: "TG3 - Publish Attestation",
+            status: "COMPLETED", 
+            canReopen: false,
+            lastUpdated: "2025-08-12 19:04:31"
+          }
+        ];
+        
+        return this.createApiResponse(mockTollgateProcesses);
+      }
+
+      console.log('[Role Assignment Service] Fetching tollgate processes from Java API');
+      const encodedDate = encodeURIComponent(businessDate);
+      const response = await this.javaAxiosInstance.get(
+        `/process/tollgate/${appId}/${appGroupId}/${encodedDate}`
+      );
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error('[Role Assignment Service] Error fetching tollgate processes:', error);
+      
+      return this.createApiResponse(
+        [],
+        false,
+        error.response?.data?.message || error.message || 'Failed to fetch tollgate processes'
+      );
+    }
+  }
+
+  // Reopen tollgate process (Java API)
+  async reopenTollgateProcess(
+    appId: number,
+    appGroupId: string,
+    businessDate: string,
+    processId: string,
+    action: 'reopen' | 'close'
+  ): Promise<RoleAssignmentApiResponse<any>> {
+    try {
+      if (this.isMockMode()) {
+        console.log(`[Role Assignment Service] Using mock ${action} for tollgate process:`, processId);
+        await this.simulateNetworkDelay(1000);
+        
+        return this.createApiResponse({ 
+          success: true, 
+          message: `Tollgate process ${processId} ${action}ed successfully`,
+          processId,
+          action,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      console.log(`[Role Assignment Service] ${action}ing tollgate process via Java API:`, processId);
+      const encodedDate = encodeURIComponent(businessDate);
+      
+      const payload = {
+        processId,
+        action,
+        appId,
+        appGroupId,
+        businessDate,
+        updatedBy: 'current_user' // This should come from auth context
+      };
+
+      const response = await this.javaAxiosInstance.post(
+        `/process/tollgate/${appId}/${appGroupId}/${encodedDate}`,
+        payload
+      );
+      
+      return this.createApiResponse(response.data);
+    } catch (error: any) {
+      console.error(`[Role Assignment Service] Error ${action}ing tollgate process:`, error);
+      
+      return this.createApiResponse(
+        null,
+        false,
+        error.response?.data?.message || error.message || `Failed to ${action} tollgate process`
+      );
+    }
+  }
+
   // Get environment info
   getEnvironmentInfo(): { mode: string; dotNetBaseUrl: string; javaBaseUrl: string; isMock: boolean } {
     return {

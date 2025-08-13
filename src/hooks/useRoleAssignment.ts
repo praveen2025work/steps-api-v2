@@ -25,7 +25,7 @@ interface UseRoleAssignmentReturn {
     assignRole: (username: string, roleId: number) => Promise<void>;
     removeRole: (username: string, roleId: number) => Promise<void>;
     loadTollgateProcesses: () => Promise<void>;
-    reopenTollgate: (processId: number) => Promise<void>;
+    reopenTollgate: (processId: string, action?: 'reopen' | 'close') => Promise<void>;
     clearPendingChanges: () => void;
     savePendingChanges: () => Promise<void>;
   };
@@ -117,7 +117,7 @@ export function useRoleAssignment({
 
     try {
       const businessDate = formatDateForApi(selectedDate);
-      const response = await roleAssignmentService.getTollgateProcess(appId, appGroupId, businessDate);
+      const response = await roleAssignmentService.getTollgateProcesses(appId, appGroupId, businessDate);
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to load tollgate processes');
@@ -127,8 +127,8 @@ export function useRoleAssignment({
         ...prev,
         loading: false,
         tollgateData: {
-          availableProcesses: [response.data], // API returns single process
-          selectedProcess: response.data
+          availableProcesses: response.data,
+          selectedProcess: null
         }
       }));
 
@@ -230,27 +230,41 @@ export function useRoleAssignment({
     }
   }, [appId, appGroupId, selectedDate, formatDateForApi, loadRoleAssignments]);
 
-  // Reopen tollgate process
-  const reopenTollgate = useCallback(async (processId: number) => {
+  // Reopen or close tollgate process
+  const reopenTollgate = useCallback(async (processId: string, action: 'reopen' | 'close' = 'reopen') => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      // This would be implemented based on the actual API for reopening tollgates
-      // For now, we'll just show a success message
-      toast.success(`Tollgate process ${processId} reopened successfully`);
+      const businessDate = formatDateForApi(selectedDate);
+      const response = await roleAssignmentService.reopenTollgateProcess(
+        appId, 
+        appGroupId, 
+        businessDate, 
+        processId, 
+        action
+      );
+
+      if (!response.success) {
+        throw new Error(response.error || `Failed to ${action} tollgate process`);
+      }
+
+      toast.success(`Tollgate process ${processId} ${action}ed successfully`);
+      
+      // Reload tollgate processes to reflect changes
+      await loadTollgateProcesses();
       
       setState(prev => ({ ...prev, loading: false }));
 
     } catch (error: any) {
-      console.error('[useRoleAssignment] Error reopening tollgate:', error);
+      console.error(`[useRoleAssignment] Error ${action}ing tollgate:`, error);
       setState(prev => ({
         ...prev,
         loading: false,
-        error: error.message || 'Failed to reopen tollgate'
+        error: error.message || `Failed to ${action} tollgate`
       }));
-      toast.error(error.message || 'Failed to reopen tollgate');
+      toast.error(error.message || `Failed to ${action} tollgate`);
     }
-  }, []);
+  }, [appId, appGroupId, selectedDate, formatDateForApi, loadTollgateProcesses]);
 
   // Clear pending changes
   const clearPendingChanges = useCallback(() => {
