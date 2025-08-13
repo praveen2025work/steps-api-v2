@@ -80,7 +80,7 @@ const HeaderContent = ({ router }: { router: any }) => {
               </DropdownMenuTrigger>
             </HoverCardTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{userInfo.name}</DropdownMenuLabel>
+              <DropdownMenuLabel>{userInfo.displayName}</DropdownMenuLabel>
               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{userInfo.emailAddress}</DropdownMenuLabel>
               <div className="px-2 py-1 text-xs text-muted-foreground">
                 Last updated: {lastUpdated.toLocaleTimeString()}

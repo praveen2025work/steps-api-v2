@@ -691,7 +691,7 @@ class RoleAssignmentService {
       // The payload is an array of workflowProcessIds
       const payload = workflowProcessIds;
 
-      const response = await this.javaAxiosInstance.post(url, payload);
+      const response = await this.javaAxiosInstance.put(url, payload);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
