@@ -4,15 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { useRoleAssignmentOptimized } from '@/hooks/useRoleAssignmentOptimized';
+import { useTollgateManagement } from '@/hooks/useTollgateManagement';
 import { 
   RefreshCw, 
   Loader2, 
   AlertCircle,
-  XCircle,
   Settings,
-  CheckCircle
 } from 'lucide-react';
 
 interface TollgateModalProps {
@@ -21,14 +18,7 @@ interface TollgateModalProps {
   appId: number;
   appGroupId: string;
   applicationName: string;
-}
-
-interface TollgateProcess {
-  processId: string;
-  name: string;
-  status: string;
-  canReopen: boolean;
-  lastUpdated: string;
+  workflowRefreshCallback: () => void;
 }
 
 const TollgateModal: React.FC<TollgateModalProps> = ({
@@ -36,61 +26,56 @@ const TollgateModal: React.FC<TollgateModalProps> = ({
   onClose,
   appId,
   appGroupId,
-  applicationName
+  applicationName,
+  workflowRefreshCallback,
 }) => {
-  const { state, actions } = useRoleAssignmentOptimized({
-    appId,
-    appGroupId,
-    enabled: isOpen
-  });
-  
-  const [selectedTollgate, setSelectedTollgate] = useState<string>('');
-  const [tollgateProcesses, setTollgateProcesses] = useState<TollgateProcess[]>([]);
-
-  // Load tollgate processes when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      actions.loadTollgateProcesses();
-    }
-  }, [isOpen]); // Remove actions.loadTollgateProcesses from dependencies to prevent loops
-
-  // Update local tollgate processes when hook data changes
-  useEffect(() => {
-    if (state.tollgateData?.availableProcesses) {
-      setTollgateProcesses(state.tollgateData.availableProcesses);
-    }
-  }, [state.tollgateData]);
-
-  const handleTollgateAction = async (action: 'reopen' | 'close') => {
-    if (!selectedTollgate) return;
-    
-    try {
-      await actions.reopenTollgate(selectedTollgate, action);
-      setSelectedTollgate(''); // Clear selection after action
-      // Keep modal open to show results
-    } catch (error) {
-      console.error('Error performing tollgate action:', error);
-    }
-  };
-
-  const handleClose = () => {
-    setSelectedTollgate('');
+  const handleSuccess = () => {
+    workflowRefreshCallback();
     onClose();
   };
 
-  const selectedProcess = tollgateProcesses.find(p => p.processId === selectedTollgate);
+  const { state, actions } = useTollgateManagement({
+    appId,
+    appGroupId,
+    enabled: isOpen,
+    onSuccess: handleSuccess,
+  });
+  
+  const [selectedProcessId, setSelectedProcessId] = useState<string>('');
+
+  useEffect(() => {
+    if (isOpen) {
+      // Reset selection when modal opens
+      setSelectedProcessId('');
+      actions.loadTollgateProcesses(true); // Force reload on open
+    }
+  }, [isOpen, actions.loadTollgateProcesses]);
+
+  const handleReopen = async () => {
+    if (!selectedProcessId) return;
+    
+    await actions.reopenTollgate(parseInt(selectedProcessId, 10));
+  };
+
+  const formatDateTime = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (e) {
+      return dateString;
+    }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Tollgate Management - {applicationName}
+            Reopen Tollgate - {applicationName}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 py-4">
           {/* Error Display */}
           {state.error && (
             <Alert variant="destructive">
@@ -100,132 +85,50 @@ const TollgateModal: React.FC<TollgateModalProps> = ({
           )}
 
           {/* Loading State */}
-          {state.loading && (
+          {state.loading && !state.processes.length ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin mr-3" />
               <span>Loading tollgate processes...</span>
             </div>
-          )}
-
-          {/* Available Tollgate Processes */}
-          {!state.loading && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium mb-3">Available Tollgate Processes</h3>
-                
-                {tollgateProcesses.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No tollgate processes found for this application and date.</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={actions.loadTollgateProcesses}
-                      className="mt-4"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Refresh
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {tollgateProcesses.map((process, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <h4 className="font-medium">{process.name}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              Process ID: {process.processId}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={process.status === 'COMPLETED' ? 'default' : 'secondary'}>
-                              {process.status}
-                            </Badge>
-                            {process.canReopen && (
-                              <Badge variant="outline" className="text-green-600">
-                                Can Reopen
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="text-xs text-muted-foreground">
-                          Last updated: {new Date(process.lastUpdated).toLocaleString()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Tollgate Actions */}
-              {tollgateProcesses.length > 0 && (
-                <>
-                  <Separator />
-                  
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium">Tollgate Actions</h3>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Select Tollgate Process</label>
-                      <Select value={selectedTollgate} onValueChange={setSelectedTollgate}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select tollgate process to manage" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {tollgateProcesses.map((process, index) => (
-                            <SelectItem key={index} value={process.processId}>
-                              <div className="flex items-center justify-between w-full">
-                                <span>{process.name}</span>
-                                <Badge 
-                                  variant={process.status === 'COMPLETED' ? 'default' : 'secondary'}
-                                  className="ml-2"
-                                >
-                                  {process.status}
-                                </Badge>
+          ) : (
+            <>
+              {state.processes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No completed tollgate processes found that can be reopened.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Select Tollgate Process to Reopen</label>
+                    <Select value={selectedProcessId} onValueChange={setSelectedProcessId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a process..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {state.processes.map((process) => (
+                          <SelectItem key={process.workflowProcessId} value={process.workflowProcessId.toString()}>
+                            <div className="flex flex-col gap-1 py-1">
+                              <div className="font-semibold">
+                                {process.workflowStage.name} - {process.workflowSubstage.name}
                               </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {selectedProcess && (
-                      <div className="space-y-3">
-                        <div className="p-3 bg-muted rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">{selectedProcess.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                Status: {selectedProcess.status} | 
-                                Last updated: {new Date(selectedProcess.lastUpdated).toLocaleString()}
-                              </p>
+                              <div className="text-xs text-muted-foreground grid grid-cols-3 gap-x-4">
+                                <span>ID: {process.workflowProcessId}</span>
+                                <span>Status: <Badge variant="secondary" className="text-xs px-1">{process.status}</Badge></span>
+                                <span>By: {process.updatedBy}</span>
+                              </div>
+                               <div className="text-xs text-muted-foreground">
+                                Updated: {formatDateTime(process.updatedOn)}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {selectedProcess.status === 'COMPLETED' ? (
-                                <CheckCircle className="h-5 w-5 text-green-500" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-red-500" />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {!selectedProcess.canReopen && (
-                          <Alert>
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>
-                              This tollgate process cannot be reopened. Please check the process status and permissions.
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                      </div>
-                    )}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </>
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
 
@@ -233,38 +136,24 @@ const TollgateModal: React.FC<TollgateModalProps> = ({
           <div className="flex items-center justify-between w-full">
             <Button
               variant="outline"
-              onClick={actions.loadTollgateProcesses}
+              onClick={() => actions.loadTollgateProcesses(true)}
               disabled={state.loading}
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className={`h-4 w-4 mr-2 ${state.loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             
             <div className="flex gap-2">
-              {selectedTollgate && (
-                <>
-                  <Button
-                    onClick={() => handleTollgateAction('reopen')}
-                    disabled={state.loading || !selectedProcess?.canReopen}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {state.loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                    Reopen Tollgate
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleTollgateAction('close')}
-                    disabled={state.loading}
-                    className="border-red-200 text-red-600 hover:bg-red-50"
-                  >
-                    {state.loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
-                    Close Tollgate
-                  </Button>
-                </>
-              )}
-              
-              <Button variant="outline" onClick={handleClose}>
-                Close
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleReopen}
+                disabled={state.loading || !selectedProcessId}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {state.loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Reopen Selected Tollgate
               </Button>
             </div>
           </div>

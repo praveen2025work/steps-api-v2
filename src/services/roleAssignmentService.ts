@@ -3,11 +3,11 @@ import {
   WorkflowUniqueRole,
   NplAccessRequest,
   NplAccessResponse,
-  TollgateProcessResponse,
   RoleAssignmentApiResponse,
   SystemEntitlements,
   UserEntitlements
 } from '@/types/role-assignment-types';
+import { TollgateProcess } from '@/types/tollgate-types';
 
 // Mock data for development
 const MOCK_UNIQUE_ROLES: WorkflowUniqueRole[] = [
@@ -62,43 +62,82 @@ const MOCK_NPL_ACCESS_RESPONSES: NplAccessResponse[] = [
   }
 ];
 
-const MOCK_TOLLGATE_PROCESS: TollgateProcessResponse = {
-  workflowProcessId: 24293160,
-  workflowSubstage: {
-    substageId: 2858,
-    name: "TG3 - Publish Attestation (PL Executor)",
-    defaultStage: 29,
-    paramMapping: "70;71;69;64;1292;1011;1812;",
-    attestationMapping: "128;3681;3682;",
-    updatedBy: "user999",
-    updatedOn: "2024-09-08 14:36:55",
-    entitlementMapping: 1,
-    sendEmailAtStart: "N",
-    followUp: "N"
-  },
-  workflowStage: {
-    stageId: 29,
-    workflowApplication: { appId: 1 },
-    name: "Publish",
-    updatedBy: "SYSTEM",
-    updatedOn: "2020-05-15 19:36:16"
-  },
-  workflowApplication: { appId: 1 },
-  status: "COMPLETED",
-  businessDate: "2025-04-30",
-  workflowAppConfigId: 129526,
-  appGroupId: "XXXX",
-  depSubStageSeq: 82,
-  auto: "N",
-  attest: "Y",
-  upload: "N",
-  updatedBy: "SYSTEM_TOOL",
-  updatedOn: "2025-08-12 19:04:31",
-  approval: "Y",
-  isActive: "Y",
-  adhoc: "N",
-  isAlteryx: "N"
-};
+const MOCK_TOLLGATE_PROCESSES: TollgateProcess[] = [
+    {
+      workflowProcessId: 24293160,
+      workflowSubstage: {
+        substageId: 2858,
+        name: "TG3 - Publish Attestation (PL Executor)",
+        defaultStage: 29,
+        paramMapping: "70;71;69;64;1292;1011;1812;",
+        attestationMapping: "128;3681;3682;",
+        updatedBy: "user999",
+        updatedOn: "2024-09-08 14:36:55",
+        entitlementMapping: 1,
+        sendEmailAtStart: "N",
+        followUp: "N"
+      },
+      workflowStage: {
+        stageId: 29,
+        workflowApplication: { appId: 1 },
+        name: "Publish",
+        updatedBy: "SYSTEM",
+        updatedOn: "2020-05-15 19:36:16"
+      },
+      workflowApplication: { appId: 1 },
+      status: "COMPLETED",
+      businessDate: "2025-04-30",
+      workflowAppConfigId: 129526,
+      appGroupId: "XXXX",
+      depSubStageSeq: 82,
+      auto: "N",
+      attest: "Y",
+      upload: "N",
+      updatedBy: "SYSTEM_TOOL",
+      updatedOn: "2025-08-12 19:04:31",
+      approval: "Y",
+      isActive: "Y",
+      adhoc: "N",
+      isAlteryx: "N"
+    },
+    {
+      workflowProcessId: 24293161,
+      workflowSubstage: {
+        substageId: 2859,
+        name: "TG2 - Management Approval",
+        defaultStage: 28,
+        paramMapping: "70;71;69;64;1292;1011;1812;",
+        attestationMapping: "128;3681;3682;",
+        updatedBy: "user998",
+        updatedOn: "2024-09-08 14:30:00",
+        entitlementMapping: 1,
+        sendEmailAtStart: "N",
+        followUp: "N"
+      },
+      workflowStage: {
+        stageId: 28,
+        workflowApplication: { appId: 1 },
+        name: "Approval",
+        updatedBy: "SYSTEM",
+        updatedOn: "2020-05-15 19:36:16"
+      },
+      workflowApplication: { appId: 1 },
+      status: "COMPLETED",
+      businessDate: "2025-04-30",
+      workflowAppConfigId: 129527,
+      appGroupId: "XXXX",
+      depSubStageSeq: 81,
+      auto: "N",
+      attest: "Y",
+      upload: "N",
+      updatedBy: "SYSTEM_TOOL",
+      updatedOn: "2025-08-12 18:30:15",
+      approval: "Y",
+      isActive: "Y",
+      adhoc: "N",
+      isAlteryx: "N"
+    }
+];
 
 class RoleAssignmentService {
   private dotNetAxiosInstance: AxiosInstance;
@@ -432,46 +471,6 @@ class RoleAssignmentService {
     }
   }
 
-  // Get tollgate process for reopening (Java API)
-  async getTollgateProcess(
-    appId: number,
-    appGroupId: string,
-    businessDate: string
-  ): Promise<RoleAssignmentApiResponse<TollgateProcessResponse>> {
-    try {
-      if (this.isMockMode()) {
-        console.log('[Role Assignment Service] Using mock data for tollgate process');
-        await this.simulateNetworkDelay();
-        
-        // Return mock tollgate process with the requested parameters
-        const mockProcess = {
-          ...MOCK_TOLLGATE_PROCESS,
-          workflowApplication: { appId },
-          appGroupId,
-          businessDate
-        };
-        
-        return this.createApiResponse(mockProcess);
-      }
-
-      console.log('[Role Assignment Service] Fetching tollgate process from Java API');
-      const encodedDate = encodeURIComponent(businessDate);
-      const response = await this.javaAxiosInstance.get<TollgateProcessResponse>(
-        `/process/tollgate/${appId}/${appGroupId}/${encodedDate}`
-      );
-      
-      return this.createApiResponse(response.data);
-    } catch (error: any) {
-      console.error('[Role Assignment Service] Error fetching tollgate process:', error);
-      
-      return this.createApiResponse(
-        {} as TollgateProcessResponse,
-        false,
-        error.response?.data?.message || error.message || 'Failed to fetch tollgate process'
-      );
-    }
-  }
-
   // Get system and user entitlements (combined from mock data or derived from roles)
   async getEntitlements(): Promise<RoleAssignmentApiResponse<{
     systemEntitlements: SystemEntitlements;
@@ -636,42 +635,17 @@ class RoleAssignmentService {
     appId: number,
     appGroupId: string,
     businessDate: string
-  ): Promise<RoleAssignmentApiResponse<any[]>> {
+  ): Promise<RoleAssignmentApiResponse<TollgateProcess[]>> {
     try {
       if (this.isMockMode()) {
         console.log('[Role Assignment Service] Using mock data for tollgate processes');
         await this.simulateNetworkDelay();
-        
-        const mockTollgateProcesses = [
-          {
-            processId: "TG1_VALIDATION",
-            name: "TG1 - Data Validation",
-            status: "COMPLETED",
-            canReopen: true,
-            lastUpdated: "2025-08-12 19:04:31"
-          },
-          {
-            processId: "TG2_APPROVAL", 
-            name: "TG2 - Management Approval",
-            status: "COMPLETED",
-            canReopen: true,
-            lastUpdated: "2025-08-12 18:30:15"
-          },
-          {
-            processId: "TG3_PUBLISH",
-            name: "TG3 - Publish Attestation",
-            status: "COMPLETED", 
-            canReopen: false,
-            lastUpdated: "2025-08-12 19:04:31"
-          }
-        ];
-        
-        return this.createApiResponse(mockTollgateProcesses);
+        return this.createApiResponse(MOCK_TOLLGATE_PROCESSES);
       }
 
       console.log('[Role Assignment Service] Fetching tollgate processes from Java API');
       const encodedDate = encodeURIComponent(businessDate);
-      const response = await this.javaAxiosInstance.get(
+      const response = await this.javaAxiosInstance.get<TollgateProcess[]>(
         `/process/tollgate/${appId}/${appGroupId}/${encodedDate}`
       );
       
@@ -692,48 +666,41 @@ class RoleAssignmentService {
     appId: number,
     appGroupId: string,
     businessDate: string,
-    processId: string,
-    action: 'reopen' | 'close'
+    workflowProcessIds: number[],
+    userId: string
   ): Promise<RoleAssignmentApiResponse<any>> {
     try {
       if (this.isMockMode()) {
-        console.log(`[Role Assignment Service] Using mock ${action} for tollgate process:`, processId);
+        console.log(`[Role Assignment Service] Using mock reopen for tollgate processes:`, workflowProcessIds);
         await this.simulateNetworkDelay(1000);
         
         return this.createApiResponse({ 
           success: true, 
-          message: `Tollgate process ${processId} ${action}ed successfully`,
-          processId,
-          action,
+          message: `Tollgate processes ${workflowProcessIds.join(', ')} reopened successfully`,
+          workflowProcessIds,
           timestamp: new Date().toISOString()
         });
       }
 
-      console.log(`[Role Assignment Service] ${action}ing tollgate process via Java API:`, processId);
+      console.log(`[Role Assignment Service] Reopening tollgate process via Java API:`, workflowProcessIds);
       const encodedDate = encodeURIComponent(businessDate);
       
-      const payload = {
-        processId,
-        action,
-        appId,
-        appGroupId,
-        businessDate,
-        updatedBy: 'current_user' // This should come from auth context
-      };
+      // The endpoint requires the user ID
+      const url = `/process/tollgate/reopen/${appId}/${appGroupId}/${encodedDate}/${userId}`;
 
-      const response = await this.javaAxiosInstance.post(
-        `/process/tollgate/${appId}/${appGroupId}/${encodedDate}`,
-        payload
-      );
+      // The payload is an array of workflowProcessIds
+      const payload = workflowProcessIds;
+
+      const response = await this.javaAxiosInstance.post(url, payload);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
-      console.error(`[Role Assignment Service] Error ${action}ing tollgate process:`, error);
+      console.error(`[Role Assignment Service] Error reopening tollgate process:`, error);
       
       return this.createApiResponse(
         null,
         false,
-        error.response?.data?.message || error.message || `Failed to ${action} tollgate process`
+        error.response?.data?.message || error.message || `Failed to reopen tollgate process`
       );
     }
   }
