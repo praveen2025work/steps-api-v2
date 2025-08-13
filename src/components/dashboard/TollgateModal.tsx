@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { useRoleAssignment } from '@/hooks/useRoleAssignment';
+import { useRoleAssignmentOptimized } from '@/hooks/useRoleAssignmentOptimized';
 import { 
   RefreshCw, 
   Loader2, 
@@ -38,7 +38,7 @@ const TollgateModal: React.FC<TollgateModalProps> = ({
   appGroupId,
   applicationName
 }) => {
-  const { state, actions } = useRoleAssignment({
+  const { state, actions } = useRoleAssignmentOptimized({
     appId,
     appGroupId,
     enabled: isOpen

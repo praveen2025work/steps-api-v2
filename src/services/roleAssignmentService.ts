@@ -225,6 +225,64 @@ class RoleAssignmentService {
     };
   }
 
+  // Convert date from dd-MMM-yyyy format to MM/dd/yyyy 00:00:00 format for API queries
+  private convertDateForApiQuery(dateString: string): string {
+    try {
+      // Parse dd-MMM-yyyy format (e.g., "30-Apr-2025")
+      const months: { [key: string]: string } = {
+        'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+        'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+        'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+      };
+      
+      const parts = dateString.split('-');
+      if (parts.length === 3) {
+        const day = parts[0];
+        const month = months[parts[1]];
+        const year = parts[2];
+        
+        if (month) {
+          return `${month}/${day}/${year} 00:00:00`;
+        }
+      }
+      
+      // Fallback: return original string
+      return dateString;
+    } catch (error) {
+      console.error('Error converting date for API query:', error);
+      return dateString;
+    }
+  }
+
+  // Convert date from dd-MMM-yyyy format to yyyy-MM-dd 00:00:00 format for API payloads
+  private convertDateForApiPayload(dateString: string): string {
+    try {
+      // Parse dd-MMM-yyyy format (e.g., "30-Apr-2025")
+      const months: { [key: string]: string } = {
+        'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+        'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+        'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+      };
+      
+      const parts = dateString.split('-');
+      if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = months[parts[1]];
+        const year = parts[2];
+        
+        if (month) {
+          return `${year}-${month}-${day} 00:00:00`;
+        }
+      }
+      
+      // Fallback: return original string
+      return dateString;
+    } catch (error) {
+      console.error('Error converting date for API payload:', error);
+      return dateString;
+    }
+  }
+
   // Get unique workflow roles (.NET API)
   async getWorkflowUniqueRoles(): Promise<RoleAssignmentApiResponse<WorkflowUniqueRole[]>> {
     try {
@@ -288,8 +346,17 @@ class RoleAssignmentService {
         return this.createApiResponse({ success: true });
       }
 
-      console.log('[Role Assignment Service] Assigning role access via Java API:', request);
-      const response = await this.javaAxiosInstance.post('/nplaccess', request);
+      // Convert date format for API payload if needed
+      const modifiedRequest = {
+        ...request,
+        workflowNplAccess: {
+          ...request.workflowNplAccess,
+          businessDate: this.convertDateForApiPayload(request.workflowNplAccess.businessDate)
+        }
+      };
+
+      console.log('[Role Assignment Service] Assigning role access via Java API:', modifiedRequest);
+      const response = await this.javaAxiosInstance.post('/nplaccess', modifiedRequest);
       
       return this.createApiResponse(response.data);
     } catch (error: any) {
@@ -338,14 +405,18 @@ class RoleAssignmentService {
 
       console.log('[Role Assignment Service] Fetching current role assignments from Java API');
       
-      // Build query parameters
+      // Build query parameters - format date as MM/dd/yyyy HH:mm:ss for the API
       const params = new URLSearchParams();
       params.append('appId', appId.toString());
       params.append('appGroupId', appGroupId);
       
       if (username) params.append('username', username);
       if (roleId) params.append('roleId', roleId.toString());
-      if (businessDate) params.append('businessDate', encodeURIComponent(businessDate));
+      if (businessDate) {
+        // Convert dd-MMM-yyyy to MM/dd/yyyy 00:00:00 format for the API
+        const formattedDate = this.convertDateForApiQuery(businessDate);
+        params.append('businessDate', encodeURIComponent(formattedDate));
+      }
 
       const response = await this.javaAxiosInstance.get<NplAccessResponse[]>(`/nplaccess?${params.toString()}`);
       

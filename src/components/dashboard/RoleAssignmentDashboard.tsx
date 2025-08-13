@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useDate } from '@/contexts/DateContext';
-import { useRoleAssignment } from '@/hooks/useRoleAssignment';
+import { useRoleAssignmentOptimized } from '@/hooks/useRoleAssignmentOptimized';
 import { 
   ArrowLeft, 
   Shield, 
@@ -48,7 +48,7 @@ const RoleAssignmentDashboard: React.FC<RoleAssignmentDashboardProps> = ({
   const { dateString } = useDate();
   
   // Use the role assignment hook
-  const { state, actions, computed } = useRoleAssignment({
+  const { state, actions, computed } = useRoleAssignmentOptimized({
     appId,
     appGroupId,
     enabled: true
