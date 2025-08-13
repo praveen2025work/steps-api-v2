@@ -68,38 +68,32 @@ const HeaderContent = ({ router }: { router: any }) => {
     }
 
     if (userInfo) {
-      const userButton = (
-        <Button variant="ghost" className="flex items-center space-x-2">
-          <User className="h-5 w-5" />
-          <span className="hidden sm:inline">{userInfo.displayName || userInfo.userName}</span>
-        </Button>
-      );
-
       return (
         <div className="relative">
           <HoverCard openDelay={300} closeDelay={150}>
-            <HoverCardTrigger asChild>
-              <div className="inline-block">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    {userButton}
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>{userInfo.displayName || userInfo.userName}</DropdownMenuLabel>
-                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{userInfo.emailAddress}</DropdownMenuLabel>
-                    <div className="px-2 py-1 text-xs text-muted-foreground">
-                      Last updated: {lastUpdated.toLocaleTimeString()}
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Profile</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/help')}>Help</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Logout</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </HoverCardTrigger>
+            <DropdownMenu>
+              <HoverCardTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center space-x-2">
+                    <User className="h-5 w-5" />
+                    <span className="hidden sm:inline">{userInfo.displayName || userInfo.userName}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+              </HoverCardTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>{userInfo.displayName || userInfo.userName}</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{userInfo.emailAddress}</DropdownMenuLabel>
+                <div className="px-2 py-1 text-xs text-muted-foreground">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/help')}>Help</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <HoverCardContent className="w-80" side="bottom" align="end" sideOffset={8}>
               <div className="space-y-2">
                 <h3 className="text-lg font-bold">{userInfo.displayName || userInfo.userName}</h3>
