@@ -30,8 +30,12 @@ const TollgateModal: React.FC<TollgateModalProps> = ({
   workflowRefreshCallback,
 }) => {
   const handleSuccess = () => {
-    workflowRefreshCallback();
+    // Close modal immediately on success
     onClose();
+    // Trigger workflow refresh after 5 seconds
+    setTimeout(() => {
+      workflowRefreshCallback();
+    }, 5000);
   };
 
   const { state, actions } = useTollgateManagement({
