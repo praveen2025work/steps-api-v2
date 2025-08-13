@@ -340,20 +340,10 @@ const RoleAssignmentDashboard: React.FC<RoleAssignmentDashboardProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Applications
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Shield className="h-6 w-6" />
-              Role Assignment Dashboard
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {applicationName} (App ID: {appId}, Group: {appGroupId}) • {dateString}
-            </p>
-          </div>
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {applicationName} (App ID: {appId}, Group: {appGroupId}) • {dateString}
+          </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => {
           actions.loadRoleAssignments();

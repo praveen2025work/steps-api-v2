@@ -34,6 +34,7 @@ import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { ChevronRight } from 'lucide-react';
 import { showSuccessToast, showInfoToast, showWarningToast } from '@/lib/toast';
 import AdhocStageManager from './AdhocStageManager';
+import WorkflowRoleManagement from './WorkflowRoleManagement';
 
 interface WorkflowUnifiedHeaderProps {
   workflowId: string;
@@ -154,10 +155,6 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
 
   const handleResetWorkflow = () => {
     showWarningToast("Reset Workflow functionality would be implemented here");
-  };
-
-  const handleReopenTollGate = () => {
-    showInfoToast("Reopen Toll Gate functionality would be implemented here");
   };
 
   return (
@@ -286,15 +283,17 @@ const WorkflowUnifiedHeaderContent: React.FC<WorkflowUnifiedHeaderProps & { rout
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7"
-            onClick={handleReopenTollGate}
-            title="Reopen Toll Gate"
-          >
-            <KeyRound className="h-3.5 w-3.5" />
-          </Button>
+          {/* Role Management and Tollgate Controls */}
+          {appGroupId && appId && (
+            <WorkflowRoleManagement
+              appId={appId}
+              appGroupId={appGroupId}
+              applicationName={workflowTitle}
+              variant="ghost"
+              size="sm"
+              className="h-7"
+            />
+          )}
           
           <Button 
             variant="outline" 
