@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import WorkflowDetailView from './WorkflowDetailView';
 import EnhancedWorkflowBreadcrumb from './EnhancedWorkflowBreadcrumb';
+import RoleAssignmentDashboard from './dashboard/RoleAssignmentDashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,8 @@ import {
   FileText,
   Clock,
   Activity,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from 'lucide-react';
 import { SafeRouter } from './SafeRouter';
 
@@ -76,6 +78,10 @@ const ApplicationsGrid = () => {
   
   // View mode state for workflow detail view
   const [viewMode, setViewMode] = useState<'classic' | 'modern' | 'step-function'>('classic');
+  
+  // Role assignment state
+  const [selectedAppForRoles, setSelectedAppForRoles] = useState<WorkflowApplication | null>(null);
+  const [appParameters, setAppParameters] = useState<Record<number, any[]>>({});
 
 
 
@@ -349,7 +355,80 @@ const ApplicationsGrid = () => {
     reset();
     setCurrentNodes([]);
     setSelectedWorkflow(null);
+    setSelectedAppForRoles(null);
     refresh(); // Re-fetch the list of applications
+  };
+
+  // Check if application has tollgate permissions enabled
+  const checkTollgatePermissions = async (appId: number): Promise<boolean> => {
+    try {
+      const response = await workflowService.getApplicationParameters(appId);
+      if (response.success) {
+        const tollgateParam = response.data.find(param => 
+          param.name.toLowerCase() === 'wf_tollgate_permissions' && 
+          param.active === 'Y'
+        );
+        return tollgateParam?.value?.toUpperCase() === 'Y';
+      }
+    } catch (error) {
+      console.error('[ApplicationsGrid] Error checking tollgate permissions:', error);
+    }
+    return false;
+  };
+
+  // Handle role assignment button click
+  const handleRoleAssignmentClick = async (app: WorkflowApplication, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent application click
+    
+    // Check if tollgate permissions are enabled
+    const hasTollgatePermissions = await checkTollgatePermissions(app.appId);
+    
+    if (hasTollgatePermissions) {
+      setSelectedAppForRoles(app);
+    } else {
+      // Show a message that role assignment is not available
+      console.log('[ApplicationsGrid] Role assignment not available for this application');
+    }
+  };
+
+  // Close role assignment dashboard
+  const handleCloseRoleAssignment = () => {
+    setSelectedAppForRoles(null);
+  };
+
+  // Load application parameters for checking tollgate permissions
+  useEffect(() => {
+    const loadAppParameters = async () => {
+      if (workflowApps.length > 0) {
+        const paramPromises = workflowApps.map(async (app) => {
+          try {
+            const response = await workflowService.getApplicationParameters(app.appId);
+            return { appId: app.appId, parameters: response.success ? response.data : [] };
+          } catch (error) {
+            return { appId: app.appId, parameters: [] };
+          }
+        });
+
+        const results = await Promise.all(paramPromises);
+        const paramMap: Record<number, any[]> = {};
+        results.forEach(result => {
+          paramMap[result.appId] = result.parameters;
+        });
+        setAppParameters(paramMap);
+      }
+    };
+
+    loadAppParameters();
+  }, [workflowApps]);
+
+  // Check if an application has tollgate permissions enabled
+  const hasRoleAssignmentEnabled = (appId: number): boolean => {
+    const params = appParameters[appId] || [];
+    const tollgateParam = params.find(param => 
+      param.name?.toLowerCase() === 'wf_tollgate_permissions' && 
+      param.active === 'Y'
+    );
+    return tollgateParam?.value?.toUpperCase() === 'Y';
   };
 
   // Convert workflow summary to WorkflowDetailView format
@@ -1107,13 +1186,31 @@ const ApplicationsGrid = () => {
                           <span>{app.percentageCompleted}%</span>
                         </div>
                       </div>
-                      {app.isWeekly && (
-                        <div className="mt-2">
-                          <Badge variant="outline" className="text-xs">
-                            Weekly Process
-                          </Badge>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-2">
+                          {app.isWeekly && (
+                            <Badge variant="outline" className="text-xs">
+                              Weekly Process
+                            </Badge>
+                          )}
+                          {hasRoleAssignmentEnabled(app.appId) && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              Role Assignment
+                            </Badge>
+                          )}
                         </div>
-                      )}
+                        {hasRoleAssignmentEnabled(app.appId) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => handleRoleAssignmentClick(app, e)}
+                            className="h-6 px-2 text-xs"
+                            title="Manage Role Assignments"
+                          >
+                            <Shield className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -1243,6 +1340,20 @@ const ApplicationsGrid = () => {
       )}
     </>
   );
+
+  // Show role assignment dashboard if selected
+  if (selectedAppForRoles) {
+    return (
+      <div className="space-y-6 pl-0">
+        <RoleAssignmentDashboard
+          appId={selectedAppForRoles.appId}
+          appGroupId={selectedAppForRoles.configId} // Using configId as appGroupId
+          applicationName={selectedAppForRoles.configName}
+          onClose={handleCloseRoleAssignment}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pl-0">

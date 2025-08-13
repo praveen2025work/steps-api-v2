@@ -45,21 +45,29 @@ const Logo: React.FC = () => {
       strokeLinejoin="round" 
       className={`${textColor}`}
     >
-      {/* Start node */}
-      <circle cx="5" cy="6" r="3" />
+      {/* Process flow nodes */}
+      <rect x="2" y="3" width="4" height="4" rx="1" />
+      <rect x="10" y="3" width="4" height="4" rx="1" />
+      <rect x="18" y="3" width="4" height="4" rx="1" />
+      
       {/* Decision diamond */}
-      <path d="M12 2 L16 6 L12 10 L8 6 Z" />
-      {/* End nodes */}
-      <circle cx="19" cy="6" r="3" />
-      <circle cx="5" cy="18" r="3" />
-      <circle cx="19" cy="18" r="3" />
-      {/* Connecting lines */}
-      <path d="M8 6h4" />
-      <path d="M16 6h3" />
-      <path d="M12 10v4" />
-      <path d="M12 14h-4" />
-      <path d="M12 14h4" />
-      <path d="M8 18h8" />
+      <path d="M10 12 L12 10 L14 12 L12 14 Z" />
+      
+      {/* End process nodes */}
+      <rect x="2" y="17" width="4" height="4" rx="1" />
+      <rect x="18" y="17" width="4" height="4" rx="1" />
+      
+      {/* Connecting arrows */}
+      <path d="M6 5h4" />
+      <path d="M14 5h4" />
+      <path d="M12 7v3" />
+      <path d="M10 12l-6 5" />
+      <path d="M14 12l6 5" />
+      
+      {/* Arrow heads */}
+      <path d="M9 4.5l1 0.5-1 0.5" />
+      <path d="M17 4.5l1 0.5-1 0.5" />
+      <path d="M11.5 9l0.5 1-0.5 1" />
     </svg>
   );
   

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,15 +25,33 @@ const DateSelector: React.FC<DateSelectorProps> = ({
 }) => {
   const { selectedDate, setSelectedDate, dateFormat } = useDate();
   const [open, setOpen] = useState(false);
+  const [displayMonth, setDisplayMonth] = useState(selectedDate);
+
+  // Update display month when selected date changes
+  useEffect(() => {
+    setDisplayMonth(selectedDate);
+  }, [selectedDate]);
+
+  // Reset display month when popover opens
+  useEffect(() => {
+    if (open) {
+      setDisplayMonth(selectedDate);
+    }
+  }, [open, selectedDate]);
 
   const handleSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
+      setDisplayMonth(date);
       if (onChange) {
         onChange(date);
       }
       setOpen(false);
     }
+  };
+
+  const handleMonthChange = (month: Date) => {
+    setDisplayMonth(month);
   };
 
   return (
@@ -53,7 +71,8 @@ const DateSelector: React.FC<DateSelectorProps> = ({
           mode="single"
           selected={selectedDate}
           onSelect={handleSelect}
-          month={selectedDate}
+          month={displayMonth}
+          onMonthChange={handleMonthChange}
           initialFocus
         />
       </PopoverContent>
