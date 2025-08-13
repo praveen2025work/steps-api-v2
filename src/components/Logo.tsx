@@ -31,7 +31,7 @@ const Logo: React.FC = () => {
   
   const { bgColor, textColor, spanColor } = getThemeColors();
   
-  // Custom workflow icon that represents process steps
+  // Modern workflow icon that represents connected process steps
   const WorkflowIcon = () => (
     <svg 
       xmlns="http://www.w3.org/2000/svg" 
@@ -45,11 +45,21 @@ const Logo: React.FC = () => {
       strokeLinejoin="round" 
       className={`${textColor}`}
     >
-      <path d="M2 9a3 3 0 0 1 0-6h12a3 3 0 0 1 0 6" />
-      <path d="M2 12h20" />
-      <path d="M22 15a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-      <path d="M13 15h-3" />
-      <path d="M7 15a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+      {/* Start node */}
+      <circle cx="5" cy="6" r="3" />
+      {/* Decision diamond */}
+      <path d="M12 2 L16 6 L12 10 L8 6 Z" />
+      {/* End nodes */}
+      <circle cx="19" cy="6" r="3" />
+      <circle cx="5" cy="18" r="3" />
+      <circle cx="19" cy="18" r="3" />
+      {/* Connecting lines */}
+      <path d="M8 6h4" />
+      <path d="M16 6h3" />
+      <path d="M12 10v4" />
+      <path d="M12 14h-4" />
+      <path d="M12 14h4" />
+      <path d="M8 18h8" />
     </svg>
   );
   

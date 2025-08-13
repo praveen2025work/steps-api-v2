@@ -53,6 +53,7 @@ const DateSelector: React.FC<DateSelectorProps> = ({
           mode="single"
           selected={selectedDate}
           onSelect={handleSelect}
+          month={selectedDate}
           initialFocus
         />
       </PopoverContent>
