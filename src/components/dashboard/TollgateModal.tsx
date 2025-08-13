@@ -52,7 +52,7 @@ const TollgateModal: React.FC<TollgateModalProps> = ({
     if (isOpen) {
       actions.loadTollgateProcesses();
     }
-  }, [isOpen]);
+  }, [isOpen]); // Remove actions.loadTollgateProcesses from dependencies to prevent loops
 
   // Update local tollgate processes when hook data changes
   useEffect(() => {

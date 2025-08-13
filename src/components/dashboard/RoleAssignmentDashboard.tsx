@@ -64,7 +64,7 @@ const RoleAssignmentDashboard: React.FC<RoleAssignmentDashboardProps> = ({
   // Load tollgate processes on component mount
   useEffect(() => {
     actions.loadTollgateProcesses();
-  }, [actions]);
+  }, []); // Remove actions.loadTollgateProcesses from dependencies to prevent loops
 
   // Update local tollgate processes when hook data changes
   useEffect(() => {
