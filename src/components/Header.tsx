@@ -71,9 +71,14 @@ const HeaderContent = ({ router }: { router: any }) => {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center space-x-2">
-              <User className="h-5 w-5" />
-              <span className="hidden sm:inline">{userInfo.displayName || userInfo.userName}</span>
+            <Button variant="ghost" className="flex flex-col items-start space-y-0 h-auto py-2 px-3">
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-medium">{userInfo.displayName || userInfo.userName}</span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
@@ -90,6 +95,7 @@ const HeaderContent = ({ router }: { router: any }) => {
               {userInfo.employeeId && <p><b>Employee ID:</b> {userInfo.employeeId}</p>}
               {userInfo.samAccountName && <p><b>SAM Account:</b> {userInfo.samAccountName}</p>}
               {userInfo.distinguishedName && <p><b>Distinguished Name:</b> {userInfo.distinguishedName}</p>}
+              <p><b>Last Updated:</b> {lastUpdated.toLocaleString()}</p>
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/settings')}>
